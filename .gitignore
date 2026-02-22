@@ -1,0 +1,9 @@
+node_modules/
+.output/
+dist/
+.env
+.env.local
+*.local
+.DS_Store
+.vite/
+*.tsbuildinfo
