@@ -11,6 +11,21 @@ import type { TaskFilter } from '../../types'
 import { getReadRepository } from '../repository/getRepository'
 import { TaskFilterSchema, TaskIdInputSchema } from '../schemas/schemas'
 
+/**
+ * Wraps a tool handler to catch errors and return them as a structured
+ * message instead of crashing the AI agentic loop.
+ */
+function safeToolHandler<TArgs, TResult>(fn: (args: TArgs) => Promise<TResult>) {
+	return async (args: TArgs): Promise<TResult | { error: string }> => {
+		try {
+			return await fn(args)
+		} catch (err) {
+			const message = err instanceof Error ? err.message : 'An unexpected error occurred'
+			return { error: message }
+		}
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Tasks
 // ---------------------------------------------------------------------------
@@ -22,7 +37,9 @@ const getTasksToolDef = toolDefinition({
 	inputSchema: TaskFilterSchema,
 })
 
-export const getTasksTool = getTasksToolDef.server((args) => getReadRepository().getTasks(args as TaskFilter))
+export const getTasksTool = getTasksToolDef.server(
+	safeToolHandler((args) => getReadRepository().getTasks(args as TaskFilter)),
+)
 
 const getTaskToolDef = toolDefinition({
 	name: 'getTask',
@@ -30,8 +47,8 @@ const getTaskToolDef = toolDefinition({
 	inputSchema: TaskIdInputSchema,
 })
 
-export const getTaskTool = getTaskToolDef.server((args) =>
-	getReadRepository().getTask((args as { taskId: string }).taskId),
+export const getTaskTool = getTaskToolDef.server(
+	safeToolHandler((args) => getReadRepository().getTask((args as { taskId: string }).taskId)),
 )
 
 // ---------------------------------------------------------------------------
@@ -44,4 +61,4 @@ const getAssigneesToolDef = toolDefinition({
 	inputSchema: z.object({}),
 })
 
-export const getAssigneesTool = getAssigneesToolDef.server(() => getReadRepository().getAssignees())
+export const getAssigneesTool = getAssigneesToolDef.server(safeToolHandler(() => getReadRepository().getAssignees()))

@@ -13,6 +13,15 @@ const ANONYMOUS_USER: UserIdentity = {
 }
 
 /**
+ * Typed context provided by the auth middleware to all downstream handlers.
+ * Access via `context` in server functions and route handlers.
+ */
+export interface AuthContext {
+	user: UserIdentity
+	userProfile: UserProfile | null
+}
+
+/**
  * Global request middleware that extracts user identity from the JWT in the
  * configured authorization header, loads the user profile from the repository,
  * and provides both in `context.user` and `context.userProfile`.

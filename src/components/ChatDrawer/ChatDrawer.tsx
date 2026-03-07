@@ -97,7 +97,7 @@ export function ChatDrawer({ opened, onClose }: ChatDrawerProps) {
 
 	useEffect(() => {
 		if (opened && aiAvailable === null) {
-			fetch('/api/chat/status')
+			fetch('/api/chat')
 				.then((res) => res.json())
 				.then((data) => setAiAvailable(data.available === true))
 				.catch(() => setAiAvailable(false))

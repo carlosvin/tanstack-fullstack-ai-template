@@ -7,6 +7,7 @@ type SentryLike = {
 }
 
 let _sentry: SentryLike | null = null
+let _loading: Promise<SentryLike | null> | null = null
 
 /**
  * Sentry-backed observability implementation.
@@ -16,29 +17,32 @@ let _sentry: SentryLike | null = null
  * To enable: `pnpm add @sentry/tanstackstart-react`
  */
 export class SentryObservability implements ObservabilityService {
-	private async sentry(): Promise<SentryLike | null> {
-		if (_sentry) return _sentry
-		try {
-			_sentry = await (Function('return import("@sentry/tanstackstart-react")')() as Promise<SentryLike>)
-		} catch {
-			_sentry = null
-		}
-		return _sentry
+	private loadSentry(): Promise<SentryLike | null> {
+		if (_sentry) return Promise.resolve(_sentry)
+		if (_loading) return _loading
+		_loading = (Function('return import("@sentry/tanstackstart-react")')() as Promise<SentryLike>)
+			.then((mod) => {
+				_sentry = mod
+				return mod
+			})
+			.catch(() => {
+				_sentry = null
+				return null
+			})
+		return _loading
 	}
 
 	async startSpan<T>(name: string, fn: () => Promise<T>): Promise<T> {
-		const s = await this.sentry()
+		const s = await this.loadSentry()
 		if (s) return s.startSpan({ name }, fn)
 		return fn()
 	}
 
-	async setUser(user: { email: string; name: string }): Promise<void> {
-		const s = await this.sentry()
-		s?.setUser({ email: user.email, username: user.name })
+	setUser(user: { email: string; name: string }): void {
+		this.loadSentry().then((s) => s?.setUser({ email: user.email, username: user.name }))
 	}
 
-	async captureError(error: unknown): Promise<void> {
-		const s = await this.sentry()
-		s?.captureException(error)
+	captureError(error: unknown): void {
+		this.loadSentry().then((s) => s?.captureException(error))
 	}
 }

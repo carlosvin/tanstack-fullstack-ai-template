@@ -1,14 +1,11 @@
 import { chat, convertMessagesToModelMessages, maxIterations, toServerSentEventsResponse } from '@tanstack/ai'
 import { createFileRoute } from '@tanstack/react-router'
-import { getAIAdapter, getMissingAIConfigMessage, isAIConfigured } from '../../services/ai/adapter'
+import type { AuthContext } from '../../middleware/auth'
+import { getAIAdapterService } from '../../services/ai/adapter'
 import { getAssigneesTool, getTasksTool, getTaskTool } from '../../services/ai/tools'
 import { getObservability } from '../../services/observability'
-import { getReadRepository } from '../../services/repository/getRepository'
 import { BrowserContextSchema } from '../../services/schemas/schemas'
 import type { BrowserContext, UserIdentity, UserProfile } from '../../types'
-import { extractIdentityFromJwt } from '../../utils/jwt'
-
-const AUTH_HEADER_NAME = process.env.AUTH_HEADER_NAME ?? 'Authorization'
 
 const BASE_SYSTEM_PROMPT = `You are a helpful task management assistant. You have access to tools that let you query the task database.
 
@@ -73,13 +70,15 @@ export const Route = createFileRoute('/api/chat')({
 	server: {
 		handlers: {
 			GET: () => {
-				return Response.json({ available: isAIConfigured() })
+				const ai = getAIAdapterService()
+				return Response.json({ available: ai.isConfigured() })
 			},
-			POST: async ({ request }) => {
-				const adapter = getAIAdapter()
+			POST: async ({ request, context }) => {
+				const ai = getAIAdapterService()
+				const adapter = ai.getAdapter() as Parameters<typeof chat>[0]['adapter'] | null
 
 				if (!adapter) {
-					const message = getMissingAIConfigMessage() ?? 'AI chat is not configured'
+					const message = ai.getMissingConfigMessage() ?? 'AI chat is not configured'
 					console.error(`[ai] ${message}`)
 					getObservability().captureError(new Error(message))
 					return Response.json({ error: message }, { status: 503 })
@@ -87,20 +86,12 @@ export const Route = createFileRoute('/api/chat')({
 
 				const body = await request.json()
 
-				const authHeader = request.headers.get(AUTH_HEADER_NAME)
-				const identity = extractIdentityFromJwt(authHeader)
-				const user: UserIdentity = identity.email ? identity : { email: '', name: 'Anonymous', groups: [] }
-
-				let profile: UserProfile | null = null
-				if (user.email) {
-					const repo = getReadRepository()
-					profile = await repo.getUserProfile(user.email)
-				}
+				const { user, userProfile } = context as AuthContext
 
 				const browserContextResult = BrowserContextSchema.safeParse(body.browserContext)
 				const browserContext: BrowserContext | null = browserContextResult.success ? browserContextResult.data : null
 
-				const systemPrompt = buildSystemPrompt(user, profile, browserContext)
+				const systemPrompt = buildSystemPrompt(user, userProfile, browserContext)
 
 				const stream = chat({
 					adapter,

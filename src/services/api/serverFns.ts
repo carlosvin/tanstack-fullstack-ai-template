@@ -1,6 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
+import type { AuthContext } from '../../middleware/auth'
+import { invalidateMiddleware } from '../../middleware/invalidate'
 import type { ProcessedResponse, Task, TaskInput, UserIdentity, UserProfile } from '../../types'
-import { HttpError } from '../../utils/httpError'
+import { requireAuth } from '../../utils/auth'
 import { getObservability } from '../observability'
 import { getReadRepository, getWritableRepository } from '../repository/getRepository'
 import { TaskFilterSchema, TaskIdInputSchema, TaskInputSchema } from '../schemas/schemas'
@@ -46,9 +48,9 @@ export async function getAssignees(): Promise<string[]> {
 // ============================================================================
 
 const getCurrentUserServerFn = createServerFn({ method: 'GET' }).handler(async ({ context }) => {
-	const ctx = context as { user?: UserIdentity; userProfile?: UserProfile | null }
-	const identity: UserIdentity = ctx.user ?? { email: '', name: 'Anonymous', groups: [] }
-	const profile: UserProfile | null = ctx.userProfile ?? null
+	const { user, userProfile } = context as AuthContext
+	const identity: UserIdentity = user ?? { email: '', name: 'Anonymous', groups: [] }
+	const profile: UserProfile | null = userProfile ?? null
 	return { identity, profile }
 })
 
@@ -62,12 +64,11 @@ export async function getCurrentUser(): Promise<{ identity: UserIdentity; profil
 // ============================================================================
 
 const createTaskServerFn = createServerFn({ method: 'POST' })
+	.middleware([invalidateMiddleware])
 	.inputValidator(TaskInputSchema)
 	.handler(async ({ data, context }) => {
-		const user = (context as any).user
-		if (!user?.email) throw new HttpError(401, 'Authentication required to create tasks')
-
-		return getObservability().startSpan('createTask', () => getWritableRepository().createTask(data, user.email))
+		const { email } = requireAuth(context as AuthContext)
+		return getObservability().startSpan('createTask', () => getWritableRepository().createTask(data, email))
 	})
 
 /** Creates a new task. Returns { data, error } instead of throwing. */
@@ -76,11 +77,10 @@ export async function createTask(input: TaskInput): Promise<ProcessedResponse<Ta
 }
 
 const updateTaskServerFn = createServerFn({ method: 'POST' })
+	.middleware([invalidateMiddleware])
 	.inputValidator(TaskIdInputSchema.extend({ updates: TaskInputSchema.partial() }))
 	.handler(async ({ data, context }) => {
-		const user = (context as any).user
-		if (!user?.email) throw new HttpError(401, 'Authentication required to update tasks')
-
+		requireAuth(context as AuthContext)
 		return getObservability().startSpan('updateTask', () =>
 			getWritableRepository().updateTask(data.taskId, data.updates),
 		)
@@ -92,11 +92,10 @@ export async function updateTask(taskId: string, updates: Partial<TaskInput>): P
 }
 
 const deleteTaskServerFn = createServerFn({ method: 'POST' })
+	.middleware([invalidateMiddleware])
 	.inputValidator(TaskIdInputSchema)
 	.handler(async ({ data, context }) => {
-		const user = (context as any).user
-		if (!user?.email) throw new HttpError(401, 'Authentication required to delete tasks')
-
+		requireAuth(context as AuthContext)
 		return getObservability().startSpan('deleteTask', () => getWritableRepository().deleteTask(data.taskId))
 	})
 

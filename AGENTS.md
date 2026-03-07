@@ -15,17 +15,17 @@ This document provides instructions for AI agents working on projects built from
 
 - `src/components`: React components. Each component in its own folder with `Component.tsx` and optional `Component.module.css` and `Component.test.tsx`.
 - `src/routes`: TanStack Router file-based routes. This is where pages are created. The route tree is auto-generated in `routeTree.gen.ts`.
-- `src/middleware`: TanStack Start middleware (auth, observability). Registered globally in `src/start.ts`.
+- `src/middleware`: TanStack Start middleware (auth, invalidation). Registered globally in `src/start.ts`.
 - `src/services/api`: Server function wrappers and shared response utilities.
-- `src/services/repository`: Repository interface, MongoDB and seed implementations, and the factory.
+- `src/services/repository`: Repository interface, implementations (MongoDB, seed), and the factory.
 - `src/services/schemas`: Centralized Zod schemas — the single source of truth for all domain types.
-- `src/services/ai`: AI chat adapter and tool definitions.
+- `src/services/ai`: AI adapter interface, implementation, and tool definitions.
 - `src/services/observability`: Observability interface with Sentry and no-op implementations.
 - `src/services/db`: Database client singleton.
-- `src/utils`: Generic helper functions (JWT, HTTP errors).
+- `src/utils`: Generic helper functions (JWT, HTTP errors, auth guards).
 - `src/types`: Re-exports from schemas.
 - `src/constants`: Shared constant arrays and enums.
-- `src/test-utils`: Test helpers.
+- `src/test-utils`: Vitest helpers.
 
 ### File Naming
 
@@ -62,7 +62,9 @@ This project uses [Mantine](https://mantine.dev/) as the primary UI framework.
 - **Zod-First Types**: All domain types are defined as Zod schemas in `src/services/schemas/schemas.ts` and TypeScript types are inferred via `z.infer<>`.
 - **Schema Metadata**: Use `.describe()` on Zod fields. Descriptions flow through to generated JSON Schemas for AI tools.
 - **Type Reuse**: Import types from `src/types`. Do not redefine existing types.
-- **State Management**: Minimize hooks and contexts. Use URL search parameters for page state.
+- **URL-as-State**: Page state (filters, selections, active tabs, modal open/close) **must** live in URL search params, not `useState`. This makes state shareable via URL, survives refresh, and enables deep-linking. Use `validateSearch` on routes with Zod schemas to define and validate search params.
+  - **Correct**: `const { filter } = Route.useSearch()` — state comes from the URL.
+  - **Incorrect**: `const [filter, setFilter] = useState('all')` — state trapped in component.
 - **Internal Links**: Use TanStack Router's `Link` component for internal navigation.
 
 ## 5. Middleware and Auth
@@ -71,11 +73,41 @@ This project uses [Mantine](https://mantine.dev/) as the primary UI framework.
 
 Authentication is handled via global request middleware registered in `src/start.ts`:
 
-- `authMiddleware` in `src/middleware/auth.ts` extracts the JWT from the configured header and provides `context.user` to all handlers.
-- Server functions access the user via `context.user` — no manual header extraction needed.
+- `authMiddleware` in `src/middleware/auth.ts` extracts the JWT from the configured header and provides `context.user` and `context.userProfile` to all handlers.
+- The decoded identity and loaded profile are available as the typed `AuthContext` interface, exported from `src/middleware/auth.ts`.
+- Server functions access the user via `context` — no manual header extraction needed.
 - The JWT header name is configurable via `AUTH_HEADER_NAME` env var (default: `Authorization`).
 
-### Adding Authorization
+### Auth Context
+
+The `AuthContext` interface is exported from `src/middleware/auth.ts`:
+
+```tsx
+interface AuthContext {
+  user: UserIdentity
+  userProfile: UserProfile | null
+}
+```
+
+Server functions use it as `const { user, userProfile } = context as AuthContext`.
+
+### Auth Guard Helpers
+
+Composable authorization guards are defined in `src/utils/auth.ts`:
+
+- `requireAuth(context)`: Throws `HttpError(401)` if user is anonymous. Returns the `UserIdentity`.
+- `requireGroup(context, group)`: Throws `HttpError(403)` if user is not in the specified group. Returns the `UserIdentity`.
+
+Usage in server functions:
+
+```tsx
+.handler(async ({ data, context }) => {
+  const { email } = requireAuth(context as AuthContext)
+  // ... mutation logic
+})
+```
+
+### Adding Custom Authorization
 
 Create composable middleware that builds on `authMiddleware`:
 
@@ -100,31 +132,65 @@ Route Loader → Server Function (serverFns.ts) → Repository → Database / Se
 - **Input Validation**: Server functions pass Zod schemas to `.inputValidator(Schema)`.
 - **Repository Pattern**: All data access goes through the repository interface.
 
-### Data Fetching (Queries)
+### 6.1. Data Fetching (Queries)
 
-- Use TanStack Router loaders for data fetching.
+- **Loaders-first**: Always fetch data in route `loader` functions via server functions. Never use `useEffect` + `useState` for data that can be loaded in a loader. Loaders provide automatic caching, parallel fetching, SSR support, and `pendingComponent` / stale-while-revalidate.
+- **No useEffect for data**: The only valid use of `useEffect` for data fetching is when reacting to a non-URL event (e.g., WebSocket message).
+- **Nested route data**: If a parent route has already loaded data, child routes should access it using `useLoaderData({ from: '...' })` instead of re-fetching.
 - Use `createServerFn({ method: 'GET' })` for queries.
 - Loaders should throw on failure for centralized error handling.
 
-### Data Writing (Mutations)
+### 6.2. Data Writing (Mutations)
 
 - Use `createServerFn({ method: 'POST' })` for mutations.
+- **Invalidation middleware**: All POST server functions must chain `.middleware([invalidateMiddleware])` before `.inputValidator()`. The middleware runs on the client after the mutation completes and calls `router.invalidate()`, which triggers loaders to re-fetch. Components do **not** call `router.invalidate()` manually.
 - Mutations should NOT throw. Use `processResponse()` to return `{ data, error }`.
 - Call mutations from event handlers. Provide toast feedback after mutations.
+
+```tsx
+const myMutationServerFn = createServerFn({ method: 'POST' })
+  .middleware([invalidateMiddleware])
+  .inputValidator(MyInputSchema)
+  .handler(async ({ data, context }) => {
+    requireAuth(context as AuthContext)
+    return getWritableRepository().doSomething(data)
+  })
+```
 
 ## 7. Routing (TanStack Router)
 
 - **File-Based Routing**: Routes are defined as files in `src/routes/`. The route tree is auto-generated.
 - **Nested Routes**: Use nested routes for modals and lazy-loaded UI.
+- **Loaders over useEffect**: Data fetching belongs in `loader`, not in component effects. See section 6.1.
 - **Preserve Search Params**: `navigate({ to: '/path', search: prev => ({ ...prev, newParam: 'value' }) })`.
 
 ## 8. AI Chat and Tools
 
-- **Adapter**: `src/services/ai/adapter.ts` wraps the AI provider (OpenAI by default). Swap the adapter to change providers.
-- **Tools**: `src/services/ai/tools.ts` defines read-only tools from repository methods using `toolDefinition` from `@tanstack/ai`.
-- **Endpoint**: `POST /api/chat` in `src/routes/api/chat.ts` with SSE streaming.
-- **System Prompt**: Keep the system prompt in the chat endpoint updated when the data model changes.
+### AI Adapter Interface
+
+The AI provider is behind the `AIAdapterService` interface defined in `src/services/ai/types.ts`:
+
+```tsx
+interface AIAdapterService {
+  isConfigured(): boolean
+  getMissingConfigMessage(): string | null
+  getAdapter(): unknown | null
+}
+```
+
+The default implementation in `src/services/ai/adapter.ts` uses `@tanstack/ai-openai` (OpenAI/Azure-compatible). To swap providers (Anthropic, Gemini, Ollama), create a new class implementing `AIAdapterService` and update the factory.
+
+### Tools
+
+- `src/services/ai/tools.ts` defines read-only tools from repository methods using `toolDefinition` from `@tanstack/ai`.
+- All tool handlers are wrapped with `safeToolHandler()`, which catches errors and returns `{ error: string }` instead of crashing the agentic loop.
 - When adding new repository read methods, expose them as AI tools.
+
+### Chat Endpoint
+
+- `POST /api/chat` in `src/routes/api/chat.ts` with SSE streaming.
+- Uses the auth middleware context (no manual JWT extraction).
+- Keep the system prompt updated when the data model changes.
 
 ## 9. Observability
 
@@ -133,13 +199,14 @@ Route Loader → Server Function (serverFns.ts) → Repository → Database / Se
 - **Server Init**: `instrument.server.mjs` conditionally initializes the server-side SDK.
 - **Client Init**: `src/router.tsx` conditionally initializes client-side tracing.
 - **Usage**: Wrap server function internals with `getObservability().startSpan('name', fn)`.
-- **To swap providers**: Replace the Sentry implementation and update `instrument.server.mjs`.
+- **To swap providers**: Implement `ObservabilityService`, update the factory, and replace `instrument.server.mjs`.
 
 ## 10. Testing
 
 - **Framework**: Vitest with jsdom environment.
 - **Libraries**: `@testing-library/react`, `@testing-library/user-event`, `@testing-library/dom`.
-- **Setup**: Global setup in `src/test-utils/setupTests.ts`.
+- **Setup**: Global setup in `src/test-utils/setupTests.ts` (includes `matchMedia`, `ResizeObserver`, `MutationObserver` mocks).
+- **Rendering**: `renderWithProviders()` in `src/test-utils/renderWithRouter.tsx` wraps with MantineProvider.
 - **Convention**: Test files co-located as `*.test.ts` or `*.test.tsx`.
 
 ## 11. Validate Changes

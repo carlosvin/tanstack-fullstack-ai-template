@@ -2,7 +2,9 @@
 
 A production-ready full-stack starter template for building **AI-promptable** internal tools and web applications.
 
-Built with [TanStack Start](https://tanstack.com/start), [Mantine](https://mantine.dev/), [TanStack AI](https://tanstack.com/ai), and [MongoDB](https://www.mongodb.com/) — with every external service behind an interface so you can swap implementations without touching application code.
+Built with [TanStack Start](https://tanstack.com/start) — with every external service behind an interface so you can swap implementations without touching application code.
+
+**Default stack**: [Mantine](https://mantine.dev/) + [MongoDB](https://www.mongodb.com/) + [TanStack AI](https://tanstack.com/ai) (OpenAI) + [Sentry](https://sentry.io/). All swappable.
 
 ## Quick Start
 
@@ -22,37 +24,88 @@ Open [http://localhost:3000](http://localhost:3000). The app works immediately w
 
 ## Architecture
 
+The architecture is organized in layers with clear interface boundaries. Everything below the dotted line is swappable — the interfaces are the contract, the implementations are your choice.
+
+```mermaid
+graph TB
+    subgraph client ["Client (Browser)"]
+        UILib["UI Components<br/><i>default: Mantine</i>"]
+        Router["TanStack Router<br/>file-based, type-safe"]
+        ChatUI["Chat Drawer<br/>TanStack AI React"]
+    end
+
+    subgraph middleware ["Global Middleware"]
+        Auth["Auth Middleware<br/>JWT → AuthContext"]
+        Invalidate["Invalidate Middleware<br/>POST → router.invalidate()"]
+    end
+
+    subgraph serverFns ["Server Functions (TanStack Start)"]
+        Queries["Queries (GET)<br/>route loaders"]
+        Mutations["Mutations (POST)<br/>event handlers"]
+        ChatAPI["Chat API (SSE)<br/>/api/chat"]
+    end
+
+    subgraph interfaces ["Interface Boundaries"]
+        RepoInterface["ReadRepository / WritableRepository"]
+        AIInterface["AIAdapterService"]
+        ObsInterface["ObservabilityService"]
+    end
+
+    subgraph implementations ["Swappable Implementations"]
+        direction LR
+        MongoDB["MongoDB"]
+        SeedRepo["Seed (in-memory)"]
+        OpenAI["OpenAI / Azure"]
+        Sentry["Sentry"]
+        NoOp["No-op"]
+    end
+
+    subgraph schemas ["Schema Layer"]
+        Zod["Zod Schemas<br/>single source of truth<br/>types + validation + AI metadata"]
+    end
+
+    Router --> Queries
+    ChatUI --> ChatAPI
+    UILib --> Mutations
+
+    Queries --> RepoInterface
+    Mutations --> RepoInterface
+    ChatAPI --> AIInterface
+    Queries --> ObsInterface
+    Mutations --> ObsInterface
+
+    RepoInterface --> MongoDB
+    RepoInterface --> SeedRepo
+    AIInterface --> OpenAI
+    ObsInterface --> Sentry
+    ObsInterface --> NoOp
+
+    Zod -.-> serverFns
+    Zod -.-> interfaces
+    Auth -.-> serverFns
+    Invalidate -.-> Mutations
 ```
-┌─────────────────────────────────────────────┐
-│  Client (React + Mantine)                   │
-│  ┌─────────┐ ┌──────────┐ ┌─────────────┐  │
-│  │ Routes  │ │ AppShell │ │ Chat Drawer │  │
-│  └────┬────┘ └──────────┘ └──────┬──────┘  │
-│       │                          │          │
-├───────┼──────────────────────────┼──────────┤
-│  Global Middleware (auth, observability)     │
-├───────┼──────────────────────────┼──────────┤
-│  Server Functions                           │
-│  ┌────┴────┐                ┌────┴─────┐    │
-│  │ Queries │                │ Chat API │    │
-│  │  (GET)  │                │  (POST)  │    │
-│  └────┬────┘                └────┬─────┘    │
-│       │                          │          │
-│  ┌────┴──────────────────────────┴─────┐    │
-│  │         Repository Interface        │    │
-│  ├────────────────┬────────────────────┤    │
-│  │  Seed (memory) │   MongoDB          │    │
-│  └────────────────┴────────────────────┘    │
-└─────────────────────────────────────────────┘
-```
+
+### Swappable Layers
+
+| Layer | Interface | Default | Alternatives |
+|-------|-----------|---------|-------------|
+| **Database** | `ReadRepository` / `WritableRepository` | MongoDB | Postgres, DynamoDB, Supabase, in-memory |
+| **AI Provider** | `AIAdapterService` | OpenAI (Azure) | Anthropic, Gemini, Ollama, any OpenAI-compatible |
+| **Observability** | `ObservabilityService` | Sentry | Datadog, OpenTelemetry, no-op |
+| **UI Library** | — (component layer) | Mantine | shadcn/ui, Chakra, Ant Design, Radix |
+| **Schema Validation** | — (Standard Schema spec) | Zod | ArkType, Valibot, Effect Schema |
 
 ### Key Design Decisions
 
 - **Repository Pattern**: All data access goes through an interface. A seed implementation ships for development; swap to MongoDB (or anything else) via environment variable.
-- **Auth via Middleware**: A global TanStack Start middleware extracts JWT identity from headers and provides `context.user` to every server function — no manual auth boilerplate per handler.
+- **Auth via Middleware**: A global TanStack Start middleware extracts JWT identity from headers and provides typed `AuthContext` to every server function — no manual auth boilerplate per handler.
+- **Invalidation Middleware**: All POST server functions chain `invalidateMiddleware`, which calls `router.invalidate()` on the client after mutations. Components never invalidate manually.
 - **Promptable by Default**: All read repository methods are exposed as AI tools via TanStack AI. The chat drawer lets users query data in natural language.
-- **Observability as a Plugin**: Sentry is behind an `ObservabilityService` interface. No DSN configured? A no-op implementation is used. Want Datadog? Implement the interface.
-- **Zod Schemas = Source of Truth**: Every domain type is a Zod schema with `.describe()` metadata. Types are inferred, JSON Schemas flow to AI tools automatically.
+- **Observability as a Plugin**: Behind an `ObservabilityService` interface. No DSN configured? A no-op implementation is used. Want Datadog? Implement the interface.
+- **Schemas = Source of Truth**: Every domain type is a schema with `.describe()` metadata. Types are inferred, JSON Schemas flow to AI tools automatically.
+- **URL-as-State**: Page state (filters, selections, tabs) lives in URL search params, not component state. Shareable, bookmarkable, survives refresh.
+- **Loaders-First**: Data is fetched in route loaders, never in `useEffect` + `useState`. Loaders provide caching, SSR, and parallel fetching for free.
 
 ## Project Structure
 
@@ -60,22 +113,36 @@ Open [http://localhost:3000](http://localhost:3000). The app works immediately w
 src/
 ├── start.ts                    # Global middleware registration
 ├── router.tsx                  # Router + client observability
-├── middleware/auth.ts          # JWT → context.user
+├── middleware/
+│   ├── auth.ts                 # JWT → AuthContext
+│   └── invalidate.ts           # POST → router.invalidate()
 ├── routes/                     # File-based routes (pages)
 ├── components/                 # React components
 ├── services/
 │   ├── schemas/schemas.ts      # Zod schemas (single source of truth)
 │   ├── repository/             # Interface + Seed + Mongo implementations
 │   ├── api/serverFns.ts        # Server functions (TanStack Start)
-│   ├── ai/                     # AI adapter + tool definitions
-│   ├── observability/          # Interface + Sentry + no-op
+│   ├── ai/
+│   │   ├── types.ts            # AIAdapterService interface
+│   │   ├── adapter.ts          # OpenAI implementation + factory
+│   │   └── tools.ts            # AI tool definitions
+│   ├── observability/
+│   │   ├── types.ts            # ObservabilityService interface
+│   │   ├── sentry.ts           # Sentry implementation
+│   │   ├── noop.ts             # No-op implementation
+│   │   └── index.ts            # Factory
 │   └── db/mongoClient.ts       # MongoDB singleton
-├── utils/                      # JWT decode, HTTP errors
+├── utils/
+│   ├── auth.ts                 # requireAuth(), requireGroup()
+│   ├── httpError.ts            # HttpError class
+│   └── jwt.ts                  # JWT decode
 ├── constants/                  # Shared enums
 └── test-utils/                 # Vitest helpers
 ```
 
 ## Environment Variables
+
+See [`.env.example`](.env.example) for the full list with documentation.
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
@@ -94,8 +161,8 @@ src/
 
 1. **Schema**: Add Zod schemas in `src/services/schemas/schemas.ts` with `.describe()` on every field.
 2. **Repository**: Add methods to the `ReadRepository` and/or `WritableRepository` interfaces in `types.ts`. Implement in both `seedRepository.ts` and `mongoRepository.ts`.
-3. **Server Functions**: Add `createServerFn` wrappers in `src/services/api/serverFns.ts`.
-4. **AI Tools**: Expose read methods as tools in `src/services/ai/tools.ts`. Update the system prompt.
+3. **Server Functions**: Add `createServerFn` wrappers in `src/services/api/serverFns.ts`. Chain `.middleware([invalidateMiddleware])` on mutations.
+4. **AI Tools**: Expose read methods as tools in `src/services/ai/tools.ts` wrapped with `safeToolHandler()`. Update the system prompt.
 5. **Routes**: Create route files under `src/routes/`. Use loaders to fetch data.
 6. **Tests**: Write unit tests for the seed repository and any new utilities.
 
@@ -105,13 +172,17 @@ Replace `mongoRepository.ts` with your implementation of the `Repository` interf
 
 ### Swapping the AI Provider
 
-Replace `src/services/ai/adapter.ts` with a different `@tanstack/ai-*` adapter (Anthropic, Gemini, Ollama, etc.).
+Create a new class implementing `AIAdapterService` from `src/services/ai/types.ts`. Update the factory in `adapter.ts`.
 
 ### Swapping Observability
 
-1. Replace the implementation in `src/services/observability/sentry.ts`.
-2. Update `instrument.server.mjs` for server-side init.
-3. Update `src/router.tsx` for client-side init.
+1. Create a new class implementing `ObservabilityService` from `src/services/observability/types.ts`.
+2. Update the factory in `src/services/observability/index.ts`.
+3. Update `instrument.server.mjs` for server-side init.
+
+### Swapping the UI Library
+
+Replace Mantine imports in components. The architectural layers (repository, server functions, middleware) are unaffected.
 
 ## Scripts
 
@@ -143,6 +214,70 @@ docker run --rm -p 3000:3000 my-app
 - **Testing**: [Vitest](https://vitest.dev/) + Testing Library
 - **Linting**: [Biome](https://biomejs.dev/)
 - **Server**: [Nitro](https://nitro.build/) (universal JavaScript server)
+
+## Using This Template
+
+### Option A: Clone and Build (New Project)
+
+```bash
+git clone https://github.com/your-org/tanstack-fullstack-template.git my-app
+cd my-app
+rm -rf .git && git init    # Start fresh git history
+pnpm install
+pnpm dev                   # Works immediately with seed data
+```
+
+Then follow the end-to-end workflow:
+
+1. Define your domain schemas in `src/services/schemas/schemas.ts` (Zod schemas with `.describe()` on every field, types inferred via `z.infer<>`)
+2. Define your repository interface in `src/services/repository/types.ts` (`ReadRepository` + `WritableRepository`)
+3. Implement the seed repository in `seedRepository.ts` (in-memory data for development)
+4. Add server functions in `src/services/api/serverFns.ts` (GET for loaders, POST with `invalidateMiddleware` for mutations)
+5. Expose read methods as AI tools in `src/services/ai/tools.ts` (wrapped with `safeToolHandler()`)
+6. Create file-based routes under `src/routes/` (data in loaders, state in URL search params)
+7. When ready for real data, implement `mongoRepository.ts` and set `MONGODB_URI`
+
+### Option B: AI-Assisted via Cursor Skill (New or Existing Project)
+
+This template ships with a [Cursor Skill](https://docs.cursor.com/context/skills) that guides an AI agent through applying the pattern step-by-step — either to a fresh project or to an existing codebase.
+
+**Install the skill** by copying the skill folder into your Cursor skills directory:
+
+```bash
+cp -r path/to/tanstack-fullstack-template/.cursor/skills/tanstack-fullstack-pattern ~/.cursor/skills/
+```
+
+Or create it as a project-level skill (shared with your team via git):
+
+```bash
+mkdir -p .cursor/skills
+cp -r path/to/tanstack-fullstack-template/.cursor/skills/tanstack-fullstack-pattern .cursor/skills/
+```
+
+Once installed, the skill is automatically available in Cursor. Ask the agent to apply the pattern:
+
+- *"Set up this project using the TanStack fullstack pattern"*
+- *"Add the repository pattern to this existing app"*
+- *"Migrate this project to use interface-first architecture"*
+
+The skill covers:
+- The 6 architectural layers and their boundaries
+- All 4 interface contracts (`ReadRepository`/`WritableRepository`, `AIAdapterService`, `ObservabilityService`, `AuthContext`)
+- Rigid rules (loaders-first, URL-as-state, schema-first types, invalidation middleware)
+- Implementation choices (swap any layer: database, AI, UI, observability, schema library)
+- A validation checklist to verify the pattern is correctly applied
+
+### Option C: Adopt Incrementally (Existing Project)
+
+You don't need to adopt the whole pattern at once. Each layer is independently valuable:
+
+1. **Schema layer** — Move types to a centralized schema file with `.describe()` metadata
+2. **Repository interface** — Extract data access behind `ReadRepository`/`WritableRepository`
+3. **Server functions** — Wrap repository calls with `createServerFn` and `processResponse()`
+4. **Auth middleware** — Add global JWT extraction and typed `AuthContext`
+5. **Observability interface** — Put monitoring behind `ObservabilityService`
+6. **AI tools** — Expose read methods as tools for the chat assistant
+7. **Route migration** — Move `useEffect` data fetching into loaders, `useState` into URL search params
 
 ## License
 
