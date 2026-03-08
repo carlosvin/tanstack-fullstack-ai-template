@@ -7,7 +7,7 @@ import { nitro } from 'nitro/vite'
 import { defineConfig } from 'vite'
 import viteTsConfigPaths from 'vite-tsconfig-paths'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
 	resolve: {
 		alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
 		dedupe: ['react', 'react-dom'],
@@ -31,6 +31,6 @@ export default defineConfig({
 		viteTsConfigPaths({ projects: ['./tsconfig.json'] }),
 		tanstackStart(),
 		viteReact(),
-		netlify(),
+		...(command === 'build' ? [netlify()] : []),
 	],
-})
+}))
