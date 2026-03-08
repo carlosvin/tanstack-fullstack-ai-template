@@ -24,29 +24,77 @@ Open [http://localhost:3000](http://localhost:3000). The app works immediately w
 
 ## Architecture
 
-The architecture is organized in layers with clear interface boundaries. Everything below the dotted line is swappable — the interfaces are the contract, the implementations are your choice.
+The architecture is organized in layers with clear interface boundaries. The interfaces are the contract — the implementations are your choice.
+
+### High-Level Overview
 
 ```mermaid
-graph TB
+flowchart TB
+    subgraph Client ["Client Layer"]
+        direction LR
+        Pages["Pages & Components"]
+        Chat["AI Chat Drawer"]
+    end
+
+    subgraph Mid ["Middleware Layer"]
+        direction LR
+        AuthMW["Auth\n(JWT → AuthContext)"]
+        InvMW["Invalidation\n(POST → cache refresh)"]
+    end
+
+    subgraph Server ["Server Function Layer"]
+        direction LR
+        GET["Queries (GET)\nroute loaders"]
+        POST["Mutations (POST)\nevent handlers"]
+        SSE["Chat API (SSE)\n/api/chat"]
+    end
+
+    subgraph Boundary ["Interface Boundary — swap anything below"]
+        direction LR
+        Repo["ReadRepository\nWritableRepository"]
+        AI["AIAdapterService"]
+        Obs["ObservabilityService"]
+    end
+
+    subgraph Impl ["Implementations (swappable)"]
+        direction LR
+        DB["MongoDB\nPostgres\nDynamoDB\n..."]
+        LLM["OpenAI\nAnthropic\nGemini\n..."]
+        Mon["Sentry\nDatadog\nno-op\n..."]
+    end
+
+    Schemas["Schema Layer (cross-cutting)\nZod · ArkType · Valibot"]
+
+    Client --> Mid --> Server
+    Server --> Boundary
+    Boundary --> Impl
+    Schemas -..-> Server
+    Schemas -..-> Boundary
+```
+
+### Detailed Data Flow
+
+```mermaid
+flowchart TB
     subgraph client ["Client (Browser)"]
-        UILib["UI Components<br/><i>default: Mantine</i>"]
-        Router["TanStack Router<br/>file-based, type-safe"]
-        ChatUI["Chat Drawer<br/>TanStack AI React"]
+        UILib["UI Components\n(default: Mantine)"]
+        Router["TanStack Router\nfile-based, type-safe"]
+        ChatUI["Chat Drawer\nTanStack AI React"]
     end
 
     subgraph middleware ["Global Middleware"]
-        Auth["Auth Middleware<br/>JWT → AuthContext"]
-        Invalidate["Invalidate Middleware<br/>POST → router.invalidate()"]
+        Auth["Auth Middleware\nJWT → AuthContext"]
+        Invalidate["Invalidate Middleware\nPOST → router.invalidate()"]
     end
 
     subgraph serverFns ["Server Functions (TanStack Start)"]
-        Queries["Queries (GET)<br/>route loaders"]
-        Mutations["Mutations (POST)<br/>event handlers"]
-        ChatAPI["Chat API (SSE)<br/>/api/chat"]
+        Queries["Queries (GET)\nroute loaders"]
+        Mutations["Mutations (POST)\nevent handlers"]
+        ChatAPI["Chat API (SSE)\n/api/chat"]
     end
 
     subgraph interfaces ["Interface Boundaries"]
-        RepoInterface["ReadRepository / WritableRepository"]
+        RepoInterface["ReadRepository\nWritableRepository"]
         AIInterface["AIAdapterService"]
         ObsInterface["ObservabilityService"]
     end
@@ -54,14 +102,14 @@ graph TB
     subgraph implementations ["Swappable Implementations"]
         direction LR
         MongoDB["MongoDB"]
-        SeedRepo["Seed (in-memory)"]
-        OpenAI["OpenAI / Azure"]
+        SeedRepo["Seed\n(in-memory)"]
+        OpenAI["OpenAI\nAzure"]
         Sentry["Sentry"]
         NoOp["No-op"]
     end
 
     subgraph schemas ["Schema Layer"]
-        Zod["Zod Schemas<br/>single source of truth<br/>types + validation + AI metadata"]
+        Zod["Zod Schemas\nsingle source of truth\ntypes + validation + AI metadata"]
     end
 
     Router --> Queries
@@ -262,6 +310,7 @@ Once installed, the skill is automatically available in Cursor. Ask the agent to
 - *"Migrate this project to use interface-first architecture"*
 
 The skill covers:
+
 - The 6 architectural layers and their boundaries
 - All 4 interface contracts (`ReadRepository`/`WritableRepository`, `AIAdapterService`, `ObservabilityService`, `AuthContext`)
 - Rigid rules (loaders-first, URL-as-state, schema-first types, invalidation middleware)
