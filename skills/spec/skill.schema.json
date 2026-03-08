@@ -1,0 +1,126 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://example.com/skills/spec/skill.schema.json",
+	"title": "CanonicalSkill",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"id",
+		"title",
+		"summary",
+		"projectName",
+		"projectSummary",
+		"version",
+		"tags",
+		"capabilities",
+		"triggers",
+		"inputs",
+		"outputs",
+		"constraints",
+		"steps",
+		"examples",
+		"content"
+	],
+	"properties": {
+		"id": {
+			"type": "string",
+			"pattern": "^[a-z0-9-]+$",
+			"minLength": 3
+		},
+		"title": {
+			"type": "string",
+			"minLength": 3
+		},
+		"summary": {
+			"type": "string",
+			"minLength": 10
+		},
+		"projectName": {
+			"type": "string",
+			"minLength": 3
+		},
+		"projectSummary": {
+			"type": "string",
+			"minLength": 10
+		},
+		"version": {
+			"type": "string",
+			"pattern": "^\\d+\\.\\d+\\.\\d+$"
+		},
+		"tags": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "string",
+				"minLength": 2
+			}
+		},
+		"capabilities": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "string",
+				"minLength": 2
+			}
+		},
+		"triggers": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "string",
+				"minLength": 2
+			}
+		},
+		"inputs": {
+			"type": "array",
+			"items": {
+				"type": "string",
+				"minLength": 1
+			}
+		},
+		"outputs": {
+			"type": "array",
+			"items": {
+				"type": "string",
+				"minLength": 1
+			}
+		},
+		"constraints": {
+			"type": "array",
+			"items": {
+				"type": "string",
+				"minLength": 1
+			}
+		},
+		"steps": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "string",
+				"minLength": 1
+			}
+		},
+		"examples": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["input", "output"],
+				"properties": {
+					"input": {
+						"type": "string",
+						"minLength": 1
+					},
+					"output": {
+						"type": "string",
+						"minLength": 1
+					}
+				}
+			}
+		},
+		"content": {
+			"type": "string",
+			"minLength": 20
+		}
+	}
+}

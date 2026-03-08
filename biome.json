@@ -35,6 +35,10 @@
 			"linter": { "enabled": false },
 			"formatter": { "enabled": false },
 			"assist": { "enabled": false }
+		},
+		{
+			"includes": ["skills/registry.json"],
+			"formatter": { "enabled": false }
 		}
 	]
 }

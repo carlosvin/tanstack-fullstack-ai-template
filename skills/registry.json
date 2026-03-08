@@ -1,0 +1,38 @@
+{
+  "$schema": "./spec/skill.schema.json",
+  "skills": [
+    {
+      "id": "tanstack-fullstack-pattern",
+      "title": "TanStack Fullstack Pattern",
+      "summary": "Apply the TanStack Start fullstack architectural pattern with interface-first boundaries for repository, AI, and observability services.",
+      "projectName": "TanStack AI-Promptable Full-Stack Template",
+      "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
+      "version": "1.0.0",
+      "tags": [
+        "tanstack-start",
+        "fullstack",
+        "architecture",
+        "interface-first",
+        "repository-pattern",
+        "ai-promptable"
+      ],
+      "capabilities": [
+        "AI promptable application architecture",
+        "Natural language querying through repository-backed AI tools",
+        "Swappable service implementations behind stable interfaces"
+      ],
+      "triggers": [
+        "fullstack template",
+        "TanStack Start project",
+        "repository pattern",
+        "interface-first",
+        "new app scaffold"
+      ],
+      "source": "skills/src/tanstack-fullstack-pattern.skill.yaml",
+      "outputs": {
+        "skill": ".agents/skills/tanstack-fullstack-pattern/SKILL.md",
+        "markdown": "skills/dist/tanstack-fullstack-pattern.md"
+      }
+    }
+  ]
+}

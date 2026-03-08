@@ -1,4 +1,4 @@
-# TanStack Full-Stack Template
+# TanStack AI-Promptable Full-Stack Template
 
 A production-ready full-stack starter template for building **AI-promptable** internal tools and web applications.
 
@@ -241,6 +241,8 @@ pnpm start      # Run production server
 pnpm test       # Run tests
 pnpm lint       # Lint + typecheck (Biome)
 pnpm format     # Auto-format (Biome)
+pnpm skills:build  # Generate Cursor + markdown skill artifacts
+pnpm skills:check  # Validate canonical skills and check for drift
 ```
 
 ## Docker
@@ -286,24 +288,32 @@ Then follow the end-to-end workflow:
 6. Create file-based routes under `src/routes/` (data in loaders, state in URL search params)
 7. When ready for real data, implement `mongoRepository.ts` and set `MONGODB_URI`
 
-### Option B: AI-Assisted via Cursor Skill (New or Existing Project)
+### Option B: AI-Assisted via Generated Skill (New or Existing Project)
 
-This template ships with a [Cursor Skill](https://docs.cursor.com/context/skills) that guides an AI agent through applying the pattern step-by-step — either to a fresh project or to an existing codebase.
+The skill is defined once in a canonical YAML source and generated into the [agentskills.io](https://agentskills.io) standard at `.agents/skills/tanstack-fullstack-pattern/`. Windsurf and other compatible tools read this path directly.
 
-**Install the skill** by copying the skill folder into your Cursor skills directory:
+**Use the skill in this repo:** clone the template — the skill is at `.agents/skills/tanstack-fullstack-pattern/`.
 
-```bash
-cp -r path/to/tanstack-fullstack-template/.cursor/skills/tanstack-fullstack-pattern ~/.cursor/skills/
-```
-
-Or create it as a project-level skill (shared with your team via git):
+**Install the skill globally** (available in all your projects):
 
 ```bash
-mkdir -p .cursor/skills
-cp -r path/to/tanstack-fullstack-template/.cursor/skills/tanstack-fullstack-pattern .cursor/skills/
+# Windsurf (reads .agents/skills/ when in repo; for global copy)
+cp -r .agents/skills/tanstack-fullstack-pattern ~/.codeium/windsurf/skills/
+
+# Cursor (copy from shared standard)
+cp -r .agents/skills/tanstack-fullstack-pattern ~/.cursor/skills/
+
+# Claude Code (copy from shared standard)
+cp -r .agents/skills/tanstack-fullstack-pattern ~/.claude/skills/
 ```
 
-Once installed, the skill is automatically available in Cursor. Ask the agent to apply the pattern:
+To regenerate after editing the canonical source:
+
+```bash
+pnpm skills:build
+```
+
+Once active, ask the agent to apply the pattern:
 
 - *"Set up this project using the TanStack fullstack pattern"*
 - *"Add the repository pattern to this existing app"*
