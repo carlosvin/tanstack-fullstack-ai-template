@@ -1,11 +1,11 @@
 ---
 title: Building AI-Promptable Full-Stack Apps: A Reproducible Architecture
 slug: building-ai-promptable-fullstack-apps
-description: How we extracted a reproducible full-stack architecture for AI-promptable internal tools with TanStack Start, interfaces for every external service, and Zod schemas as single source of truth.
+description: How we extracted a reproducible full-stack architecture for AI-promptable web apps with TanStack Start, interfaces for every external service, and Zod schemas as single source of truth.
 date: 2026-03-08
 ---
 
-Every time our team started a new internal tool, we faced the same problem: rebuild the same architecture from scratch. Authentication, database access, UI shell, AI integration — all the plumbing that has nothing to do with the actual business logic.
+Every time our team started a new full-stack web app, we faced the same problem: rebuild the same architecture from scratch. Authentication, database access, UI shell, AI integration - all the plumbing that has nothing to do with the actual business logic.
 
 After building several applications this way, we extracted the common patterns into a template. This post explains the architecture and the reasoning behind each decision.
 
@@ -13,7 +13,7 @@ After building several applications this way, we extracted the common patterns i
 
 ## The Problem
 
-Internal tools share a remarkable amount of infrastructure:
+Most full-stack web apps share a remarkable amount of infrastructure:
 
 - A database-backed API with CRUD operations
 - Authentication from a JWT in request headers
@@ -21,7 +21,7 @@ Internal tools share a remarkable amount of infrastructure:
 - Error monitoring and performance tracing
 - Increasingly, an AI assistant that can query the data
 
-Yet every project starts from `npm init` and rebuilds all of this. The code looks similar but is never quite the same, making it hard to maintain patterns across a growing portfolio of tools.
+Whether you are building an internal tool, a customer-facing product, or an admin surface, teams often rebuild the same foundation from scratch. The code looks similar but is never quite the same, making it hard to maintain patterns across a growing portfolio of apps.
 
 ## The Stack
 
