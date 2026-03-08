@@ -38,32 +38,32 @@ flowchart TB
 
     subgraph Mid ["Middleware Layer"]
         direction LR
-        AuthMW["Auth\n(JWT → AuthContext)"]
-        InvMW["Invalidation\n(POST → cache refresh)"]
+        AuthMW["Auth (JWT)"]
+        InvMW["Invalidation (POST)"]
     end
 
     subgraph Server ["Server Function Layer"]
         direction LR
-        GET["Queries (GET)\nroute loaders"]
-        POST["Mutations (POST)\nevent handlers"]
-        SSE["Chat API (SSE)\n/api/chat"]
+        GET["Queries (GET)"]
+        POST["Mutations (POST)"]
+        SSE["Chat API (SSE)"]
     end
 
     subgraph Boundary ["Interface Boundary — swap anything below"]
         direction LR
-        Repo["ReadRepository\nWritableRepository"]
+        Repo["Repository"]
         AI["AIAdapterService"]
         Obs["ObservabilityService"]
     end
 
     subgraph Impl ["Implementations (swappable)"]
         direction LR
-        DB["MongoDB\nPostgres\nDynamoDB\n..."]
-        LLM["OpenAI\nAnthropic\nGemini\n..."]
-        Mon["Sentry\nDatadog\nno-op\n..."]
+        DB["MongoDB, Postgres, ..."]
+        LLM["OpenAI, Anthropic, ..."]
+        Mon["Sentry, Datadog, ..."]
     end
 
-    Schemas["Schema Layer (cross-cutting)\nZod · ArkType · Valibot"]
+    Schemas["Schemas (Zod / ArkType / Valibot)"]
 
     Client --> Mid --> Server
     Server --> Boundary
@@ -77,24 +77,24 @@ flowchart TB
 ```mermaid
 flowchart TB
     subgraph client ["Client (Browser)"]
-        UILib["UI Components\n(default: Mantine)"]
-        Router["TanStack Router\nfile-based, type-safe"]
-        ChatUI["Chat Drawer\nTanStack AI React"]
+        UILib["UI Components"]
+        Router["TanStack Router"]
+        ChatUI["Chat Drawer"]
     end
 
     subgraph middleware ["Global Middleware"]
-        Auth["Auth Middleware\nJWT → AuthContext"]
-        Invalidate["Invalidate Middleware\nPOST → router.invalidate()"]
+        Auth["Auth Middleware"]
+        Invalidate["Invalidate Middleware"]
     end
 
     subgraph serverFns ["Server Functions (TanStack Start)"]
-        Queries["Queries (GET)\nroute loaders"]
-        Mutations["Mutations (POST)\nevent handlers"]
-        ChatAPI["Chat API (SSE)\n/api/chat"]
+        Queries["Queries (GET)"]
+        Mutations["Mutations (POST)"]
+        ChatAPI["Chat API (SSE)"]
     end
 
     subgraph interfaces ["Interface Boundaries"]
-        RepoInterface["ReadRepository\nWritableRepository"]
+        RepoInterface["Repository"]
         AIInterface["AIAdapterService"]
         ObsInterface["ObservabilityService"]
     end
@@ -102,14 +102,14 @@ flowchart TB
     subgraph implementations ["Swappable Implementations"]
         direction LR
         MongoDB["MongoDB"]
-        SeedRepo["Seed\n(in-memory)"]
-        OpenAI["OpenAI\nAzure"]
+        SeedRepo["Seed (in-memory)"]
+        OpenAI["OpenAI / Azure"]
         Sentry["Sentry"]
         NoOp["No-op"]
     end
 
     subgraph schemas ["Schema Layer"]
-        Zod["Zod Schemas\nsingle source of truth\ntypes + validation + AI metadata"]
+        Zod["Zod Schemas"]
     end
 
     Router --> Queries
