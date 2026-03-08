@@ -6,12 +6,14 @@ Built with [TanStack Start](https://tanstack.com/start) — with every external 
 
 **Default stack**: [Mantine](https://mantine.dev/) + [MongoDB](https://www.mongodb.com/) + [TanStack AI](https://tanstack.com/ai) (OpenAI) + [Sentry](https://sentry.io/). All swappable.
 
+**[Live Demo](https://leafy-manatee-16b96c.netlify.app)** | **[Blog Post](building-ai-promptable-fullstack-apps.md)**
+
 ## Quick Start
 
 ```bash
 # Clone the template
-git clone https://github.com/your-org/tanstack-fullstack-template.git
-cd tanstack-fullstack-template
+git clone https://github.com/carlosvin/tanstack-fullstack-ai-template.git
+cd tanstack-fullstack-ai-template
 
 # Install dependencies
 pnpm install
@@ -287,7 +289,7 @@ docker run --rm -p 3000:3000 my-app
 ### Option A: Clone and Build (New Project)
 
 ```bash
-git clone https://github.com/your-org/tanstack-fullstack-template.git my-app
+git clone https://github.com/carlosvin/tanstack-fullstack-ai-template.git my-app
 cd my-app
 rm -rf .git && git init    # Start fresh git history
 pnpm install

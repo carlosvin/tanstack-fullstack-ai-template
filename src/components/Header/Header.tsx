@@ -1,6 +1,6 @@
-import { ActionIcon, Group, Text, Tooltip, useMantineColorScheme } from '@mantine/core'
+import { ActionIcon, Button, Group, Text, Tooltip, useMantineColorScheme } from '@mantine/core'
 import { Link } from '@tanstack/react-router'
-import { CheckSquare, ListTodo, MessageCircle, Moon, Sun } from 'lucide-react'
+import { CheckSquare, Github, ListTodo, MessageCircle, Moon, Sun } from 'lucide-react'
 import type { UserIdentity, UserProfile } from '../../types'
 
 interface HeaderProps {
@@ -46,17 +46,35 @@ export function Header({ currentUser, onOpenChat }: HeaderProps) {
 					</Text>
 				)}
 
+				<Tooltip label="View source on GitHub">
+					<ActionIcon
+						component="a"
+						href="https://github.com/carlosvin/tanstack-fullstack-ai-template"
+						target="_blank"
+						rel="noopener noreferrer"
+						variant="subtle"
+						size="lg"
+						aria-label="View source on GitHub"
+					>
+						<Github size={18} />
+					</ActionIcon>
+				</Tooltip>
+
 				<Tooltip label={`Switch to ${colorScheme === 'dark' ? 'light' : 'dark'} mode`}>
 					<ActionIcon type="button" variant="subtle" onClick={toggleColorScheme} size="lg">
 						{colorScheme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
 					</ActionIcon>
 				</Tooltip>
 
-				<Tooltip label="Ask AI">
-					<ActionIcon type="button" variant="subtle" onClick={handleOpenChat} size="lg" aria-label="Open AI chat">
-						<MessageCircle size={18} />
-					</ActionIcon>
-				</Tooltip>
+				<Button
+					variant="light"
+					size="compact-sm"
+					leftSection={<MessageCircle size={16} />}
+					onClick={handleOpenChat}
+					aria-label="Open AI chat"
+				>
+					Ask AI
+				</Button>
 			</Group>
 		</Group>
 	)
