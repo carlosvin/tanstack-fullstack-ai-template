@@ -1,4 +1,5 @@
 import { fileURLToPath, URL } from 'node:url'
+import netlify from '@netlify/vite-plugin-tanstack-start' // ← add this
 import { devtools } from '@tanstack/devtools-vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact from '@vitejs/plugin-react-swc'
@@ -24,5 +25,12 @@ export default defineConfig({
 		globals: true,
 		setupFiles: ['./src/test-utils/setupTests.ts'],
 	},
-	plugins: [devtools(), nitro(), viteTsConfigPaths({ projects: ['./tsconfig.json'] }), tanstackStart(), viteReact()],
+	plugins: [
+		devtools(),
+		nitro(),
+		netlify(),
+		viteTsConfigPaths({ projects: ['./tsconfig.json'] }),
+		tanstackStart(),
+		viteReact(),
+	],
 })
