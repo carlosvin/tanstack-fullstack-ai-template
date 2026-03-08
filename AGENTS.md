@@ -59,8 +59,8 @@ This project uses [Mantine](https://mantine.dev/) as the primary UI framework.
 
 - **Functional Components**: Prefer functional components and hooks over class components.
 - **Type Safety**: Use TypeScript features like interfaces, types, and generics effectively.
-- **Zod-First Types**: All domain types are defined as Zod schemas in `src/services/schemas/schemas.ts` and TypeScript types are inferred via `z.infer<>`.
-- **Schema Metadata**: Use `.describe()` on Zod fields. Descriptions flow through to generated JSON Schemas for AI tools.
+- **Zod-First Types**: All domain types are defined as Zod schemas in `src/services/schemas/schemas.ts` and TypeScript types are inferred via `z.infer<>`. ArkType is a strong alternative (template uses Zod for wider adoption).
+- **Schema Metadata**: Use `.describe()` on Zod fields. With Zod v4 you can add extra metadata (e.g. formatting, units) for UI and AI hints. Descriptions and metadata flow through to generated JSON Schemas for AI tools.
 - **Type Reuse**: Import types from `src/types`. Do not redefine existing types.
 - **URL-as-State**: Page state (filters, selections, active tabs, modal open/close) **must** live in URL search params, not `useState`. This makes state shareable via URL, survives refresh, and enables deep-linking. Use `validateSearch` on routes with Zod schemas to define and validate search params.
   - **Correct**: `const { filter } = Route.useSearch()` — state comes from the URL.

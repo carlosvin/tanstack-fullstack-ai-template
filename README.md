@@ -144,6 +144,8 @@ flowchart TB
 | **UI Library** | — (component layer) | [Mantine](https://mantine.dev/) | [MongoDB.design](https://www.mongodb.design/), [shadcn/ui](https://ui.shadcn.com/), [Chakra](https://chakra-ui.com/), [Ant Design](https://ant.design/), [Radix](https://www.radix-ui.com/) |
 | **Schema Validation** | — ([Standard Schema](https://github.com/standard-schema/standard-schema) spec) | [Zod](https://zod.dev/) | [ArkType](https://arktype.io/), [Valibot](https://valibot.dev/), [Effect Schema](https://effect.website/docs/schema/introduction/) |
 
+**Schema library note:** [ArkType](https://arktype.io/) is a very good alternative to Zod (and many prefer its syntax). This template uses Zod because it is more widely known and has broad ecosystem support. With Zod v4 you can attach extra metadata to fields—e.g. formatting or units—which helps both UI rendering and AI tool hints; the same idea applies if you swap to ArkType or another schema library.
+
 ### Key Design Decisions
 
 - **Repository Pattern**: All data access goes through an interface. A seed implementation ships for development; swap to MongoDB (or anything else) via environment variable.

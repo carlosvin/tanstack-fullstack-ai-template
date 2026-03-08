@@ -62,37 +62,37 @@ A factory function auto-detects which to use based on whether `MONGODB_URI` is s
 
 TanStack Start supports [global middleware](https://tanstack.com/start/latest/docs/framework/react/guide/middleware) — functions that run on every request before any handler executes.
 
-We use this for authentication:
+We use this for authentication: the middleware reads the JWT from the configured header, decodes the identity, and when the user is authenticated it loads their profile from the repository. Both are attached to the request context:
 
 ```typescript
 // src/middleware/auth.ts
-export const authMiddleware = createMiddleware().server(({ next, request }) => {
+export const authMiddleware = createMiddleware().server(async ({ next, request }) => {
   const authHeader = request.headers.get(AUTH_HEADER_NAME)
   const identity = extractIdentityFromJwt(authHeader)
-  
-  const user = identity.email
-    ? identity
-    : process.env.NODE_ENV !== 'production'
-      ? DEV_USER
-      : ANONYMOUS_USER
+  const user = identity.email ? identity : ANONYMOUS_USER
 
-  return next({ context: { user } })
+  let userProfile = null
+  if (user.email) {
+    userProfile = await getReadRepository().getUserProfile(user.email)
+  }
+
+  return next({ context: { user, userProfile } })
 })
 ```
 
 Registered globally in `src/start.ts`:
 
 ```typescript
-export default createStart({
+export const startInstance = createStart(() => ({
   requestMiddleware: [authMiddleware],
-})
+}))
 ```
 
-Every server function automatically receives `context.user` — no manual header extraction, no `requireAuth()` boilerplate. Authorization checks become composable middleware that builds on the auth context.
+Every server function automatically receives `context.user` and `context.userProfile` — no manual header extraction. For protected handlers, use the composable guards `requireAuth(context)` and `requireGroup(context, group)` from `src/utils/auth.ts`; they throw with 401/403 so your handler code stays minimal.
 
 ### Promptable by Design
 
-This is the pattern we are most excited about. Every read method in the repository is automatically exposed as an AI tool:
+This is the pattern we are most excited about. Every read method in the repository is exposed as an AI tool. Tool handlers are wrapped with `safeToolHandler()` so that failures return `{ error: string }` instead of crashing the agent loop:
 
 ```typescript
 const getTasksToolDef = toolDefinition({
@@ -102,13 +102,13 @@ const getTasksToolDef = toolDefinition({
 })
 
 export const getTasksTool = getTasksToolDef.server(
-  args => getReadRepository().getTasks(args)
+  safeToolHandler((args) => getReadRepository().getTasks(args))
 )
 ```
 
 Because we use Zod schemas with `.describe()` on every field, the AI model receives rich JSON Schema metadata explaining what each parameter means. The model can then compose tool calls to answer complex queries.
 
-A chat drawer component connected via Server-Sent Events gives users a natural language interface to their data — for free, just by maintaining the repository interface.
+A chat drawer talks to the backend via `POST /api/chat` with Server-Sent Events (SSE) streaming. Users get a natural language interface to their data — for free, just by maintaining the repository interface.
 
 ### Observability as a Plugin
 
@@ -123,6 +123,10 @@ export interface ObservabilityService {
 ```
 
 Sentry is the default implementation. If `VITE_SENTRY_DSN` is not set, a no-op implementation is used — the app works perfectly fine without any observability configured. To switch to Datadog, New Relic, or anything else, implement the three methods.
+
+### Data Flow and Conventions
+
+A few conventions keep the app predictable. **Loaders-first**: all data is fetched in route loaders, not in `useEffect` + `useState`; loaders give you caching, SSR, and parallel fetching for free. **URL-as-state**: filters, tabs, and modal open/close live in URL search params so state is shareable, bookmarkable, and survives refresh. **Mutations**: POST server functions chain `invalidateMiddleware`, so after a mutation the client automatically calls `router.invalidate()` and refetches; components never invalidate manually. Mutations use `processResponse()` and return `{ data, error }` instead of throwing, so the UI can show toasts or inline errors without try/catch in every handler.
 
 ## Zod Schemas as the Single Source of Truth
 
@@ -147,6 +151,12 @@ This single definition serves four purposes:
 
 No more maintaining separate interfaces, validation logic, and documentation that inevitably drift apart.
 
+**Why Zod?** [ArkType](https://arktype.io/) is a very good alternative and I personally prefer its syntax; we went with Zod here because it is more widely known. Zod v4 also lets you add extra metadata on fields—formatting hints, units, etc.—which is useful for formatting in the UI and for giving better hints to the AI when it uses your schemas.
+
+### Project structure
+
+The important pieces live under `src/`: `middleware/` (auth, invalidation), `services/schemas/` (Zod as single source of truth), `services/repository/` (interface plus seed and Mongo implementations), `services/api/` (server functions), `services/ai/` (adapter and tool definitions), and `routes/` (file-based pages). The repo README has the full tree.
+
 ## Getting Started in 30 Seconds
 
 ```bash
@@ -156,21 +166,33 @@ pnpm install
 pnpm dev
 ```
 
+For a new project you can run `rm -rf .git && git init` after cloning to start fresh history. Use `pnpm build`, `pnpm test`, and `pnpm lint` (and `pnpm format`) to validate your fork. To run in production via Docker: `docker build -t my-app .` then `docker run --rm -p 3000:3000 my-app`.
+
 The app starts with seed data — a working task management system with dashboard, list views, detail pages, dark/light mode, and an AI chat drawer. No database, no API keys, no environment variables needed.
 
-When you're ready to connect to a real database, set `MONGODB_URI`. When you want AI chat, set the OpenAI variables. When you want monitoring, set `VITE_SENTRY_DSN`. Each capability layers on independently.
+When you're ready to add real backends, set the relevant variables. The repo includes an `.env.example` with full documentation; the main ones are:
+
+| Variable | Purpose |
+| -------- | ------ |
+| `MONGODB_URI` | Use a real database instead of in-memory seed data |
+| `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT` | Enable the AI chat assistant (OpenAI-compatible) |
+| `VITE_SENTRY_DSN` | Enable error and performance monitoring |
+| `AUTH_HEADER_NAME` | HTTP header for the JWT (default: `Authorization`) |
+
+Each capability layers on independently. You can clone and replace the Task domain with your own, use the generated Cursor/Windsurf skill for AI-assisted setup, or adopt layers incrementally; the repo README has the details.
 
 ## Extending the Template
 
-Adding a new domain entity is a five-step process:
+Adding a new domain entity is a six-step process:
 
 1. **Zod schema** in `schemas.ts` with `.describe()` annotations
 2. **Repository methods** in the interface, then implement in seed and MongoDB
-3. **Server functions** wrapping the repository
-4. **AI tools** exposing the read methods
+3. **Server functions** wrapping the repository (GET for loaders, POST with `invalidateMiddleware` for mutations)
+4. **AI tools** exposing the read methods (wrapped with `safeToolHandler()`)
 5. **Routes** for the UI pages
+6. **Tests** for the seed repository and any new utilities
 
-Because every layer follows the same pattern, adding a new entity takes minutes, not hours.
+Because every layer follows the same pattern, adding a new entity takes minutes, not hours. The database, AI provider, and observability layer are behind interfaces; to swap one, implement the interface and update the factory (e.g. `getRepository.ts` for the repository, the AI adapter factory, or the observability factory in the repo).
 
 ## Conclusion
 
