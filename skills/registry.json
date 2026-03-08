@@ -19,6 +19,7 @@
       "capabilities": [
         "AI promptable application architecture",
         "Natural language querying through repository-backed AI tools",
+        "URL-aware AI prompt context using current location and route patterns",
         "Swappable service implementations behind stable interfaces"
       ],
       "triggers": [

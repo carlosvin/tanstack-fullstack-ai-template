@@ -97,7 +97,7 @@ Every server function automatically receives `context.user` and `context.userPro
 
 ### Promptable by Design
 
-This is the pattern we are most excited about. Every read method in the repository is exposed as an AI tool. Tool handlers are wrapped with `safeToolHandler()` so that failures return `{ error: string }` instead of crashing the agent loop:
+This is the pattern we are most excited about. AI tools call the **same server functions** that route loaders and event handlers use — a single code path for validation, auth, observability, and data access. Tool handlers are wrapped with `withErrorHandling()` so that failures return `{ error: string, code?: number }` instead of crashing the agent loop:
 
 ```typescript
 const getTasksToolDef = toolDefinition({
@@ -106,16 +106,22 @@ const getTasksToolDef = toolDefinition({
   inputSchema: TaskFilterSchema,  // Zod schema with .describe()
 })
 
-export const getTasksTool = getTasksToolDef.server(
-  safeToolHandler((args) => getReadRepository().getTasks(args))
+export const getTasksTool = getTasksToolDef.server((args) =>
+  withErrorHandling(() => getTasks({ data: TaskFilterSchema.parse(args) }))
 )
 ```
 
 Because we use Zod schemas with `.describe()` on every field, the AI model receives rich JSON Schema metadata explaining what each parameter means. The model can then compose tool calls to answer complex queries.
 
-We also expose **create**, **update**, and **delete** as AI tools (via context-dependent tool factories that receive the request’s `AuthContext`). A **getCurrentUserContext** tool lets the AI check who is logged in and what they can do — e.g. "Anyone logged in can create; only the task creator can edit or delete." When the user is not allowed, mutation tools return an error with a status **code** (401 or 403), and the AI explains it in plain language: "You need to log in to create tasks" or "Only the task creator can edit that task."
+We also expose **create**, **update**, and **delete** as AI tools. Since these call the same server functions used by the UI — which already have `requireAuthMiddleware` chained in — auth and creator checks happen automatically. A **getCurrentUserContext** tool lets the AI check who is logged in and what they can do. When the user is not allowed, mutation server functions throw with 401 or 403, `withErrorHandling()` catches this and returns `{ error, code }`, and the AI explains it in plain language: “You need to log in to create tasks” or “Only the task creator can edit that task.”
 
-A chat drawer talks to the backend via `POST /api/chat` with Server-Sent Events (SSE) streaming. Users get a natural language interface to their data — and to create, edit, and delete tasks when permitted — with permission-aware error handling.
+The template also uses [TanStack AI client tools](https://tanstack.com/ai/latest/docs/guides/client-tools) — tools that execute in the browser instead of on the server. **navigate** triggers `router.navigate()` to open a page, and **invalidateRouter** calls `router.invalidate()` so the UI refreshes after AI-driven mutations. Their definitions live in `tools.ts` (shared with the server), but the implementations run in the chat drawer component via `@tanstack/ai-client`.
+
+A chat drawer talks to the backend via `POST /api/chat` with Server-Sent Events (SSE) streaming. The client sends browser context plus current location (`currentPathname`, `currentSearch`, `currentHref`), and the server injects this into the system prompt as `Current Location` context.
+
+We also keep a navigation manifest in sync with the route tree (`src/services/ai/navigationManifest.ts`) so the model understands URL structure, including dynamic routes like `/tasks/$taskId` (concrete URLs: `/tasks/<taskId>`). This lets the assistant interpret references such as "this page" and "this task" using the route the user is currently viewing.
+
+Users get a natural language interface to their data — and to create, edit, and delete tasks when permitted — with permission-aware error handling.
 
 ### Observability as a Plugin
 
@@ -133,7 +139,7 @@ Sentry is the default implementation. If `VITE_SENTRY_DSN` is not set, a no-op i
 
 ### Data Flow and Conventions
 
-A few conventions keep the app predictable. **Loaders-first**: all data is fetched in route loaders, not in `useEffect` + `useState`; loaders give you caching, SSR, and parallel fetching for free. **URL-as-state**: filters, tabs, and modal open/close live in URL search params so state is shareable, bookmarkable, and survives refresh. **Mutations**: POST server functions chain `invalidateMiddleware`, so after a mutation the client automatically calls `router.invalidate()` and refetches; components never invalidate manually. Mutations use `processResponse()` and return `{ data, error }` instead of throwing, so the UI can show toasts or inline errors without try/catch in every handler.
+A few conventions keep the app predictable. **Loaders-first**: all data is fetched in route loaders, not in `useEffect` + `useState`; loaders give you caching, SSR, and parallel fetching for free. **URL-as-state**: filters, tabs, and modal open/close live in URL search params so state is shareable, bookmarkable, and survives refresh. **Mutations**: POST server functions chain `invalidateMiddleware`, so after a mutation the client automatically calls `router.invalidate()` and refetches; components never invalidate manually. Mutation server functions **throw** on error; route callers wrap with `processResponse()` for a `{ data, error }` result, so the UI can show toasts or inline errors without try/catch in every handler. **E2E tested**: Playwright tests run the full app against the seed repository, covering routes, filters, CRUD, and auth gating — no database needed.
 
 ## Zod Schemas as the Single Source of Truth
 
@@ -195,9 +201,9 @@ Adding a new domain entity is a six-step process:
 1. **Zod schema** in `schemas.ts` with `.describe()` annotations
 2. **Repository methods** in the interface, then implement in seed and MongoDB
 3. **Server functions** wrapping the repository (GET for loaders, POST with `invalidateMiddleware` for mutations)
-4. **AI tools** exposing the read methods (wrapped with `safeToolHandler()`), and optionally mutation tools plus **getCurrentUserContext** (factories taking `AuthContext`) with `safeToolHandlerWithCode()` so 401/403 surface for the AI
+4. **AI tools** that call the server functions (wrapped with `withErrorHandling()`), plus a **getCurrentUserContext** tool so the AI knows who is logged in and what they can do
 5. **Routes** for the UI pages
-6. **Tests** for the seed repository and any new utilities
+6. **Tests** for the seed repository, new utilities, and E2E flows (Playwright runs against seed data)
 
 Because every layer follows the same pattern, adding a new entity takes minutes, not hours. The database, AI provider, and observability layer are behind interfaces; to swap one, implement the interface and update the factory (e.g. `getRepository.ts` for the repository, the AI adapter factory, or the observability factory in the repo).
 
@@ -210,6 +216,7 @@ The goal is not a framework — it's a **starting point**. Fork the template, re
 - AI-powered data querying and task create/edit/delete with permission-aware errors (401/403)
 - Dark/light mode UI
 - Swappable database, AI provider, and observability
+- E2E tests via Playwright against seed data (no database needed)
 - Docker-ready deployment
 
 All with zero configuration for local development.
@@ -218,4 +225,4 @@ The code is open source. We hope it saves you the same weeks of scaffolding it s
 
 ---
 
-*Built with TanStack Start, Mantine, TanStack AI, MongoDB, Zod, Sentry, Vitest, and Biome.*
+*Built with TanStack Start, Mantine, TanStack AI, MongoDB, Zod, Sentry, Vitest, Playwright, and Biome.*

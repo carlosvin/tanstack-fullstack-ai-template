@@ -150,13 +150,15 @@ flowchart TB
 
 - **Repository Pattern**: All data access goes through an interface. A seed implementation ships for development; swap to MongoDB (or anything else) via environment variable.
 - **Auth via Middleware**: A global TanStack Start middleware extracts JWT identity from headers and provides typed `AuthContext` to every server function. Mutations additionally use function-level `requireAuthMiddleware` so only POST server functions require authentication; queries stay unauthenticated.
-- **Invalidation Middleware**: All POST server functions chain `invalidateMiddleware`, which calls `router.invalidate()` on the client after mutations. Components never invalidate manually.
+- **Invalidation Middleware**: All POST server functions chain `invalidateMiddleware`, which calls `router.invalidate()` on the client after mutations. Components never invalidate manually. The AI chat uses an `invalidateRouter` client tool for the same purpose.
 - **Task CRUD UI**: Add, edit, and delete tasks from the list and detail pages. Only the task creator can edit or delete; anyone logged in can create. Buttons are gated by auth and creator checks.
-- **Promptable by Default**: All read repository methods are exposed as AI tools; create, update, and delete are also exposed. A **getCurrentUserContext** tool lets the AI check who is logged in and what they can do. When the user is not allowed, tools return errors with 401/403 so the AI can inform the user (e.g. "You need to log in to create tasks" or "Only the task creator can edit that task").
+- **Promptable by Default**: AI tools call the same server functions that the UI uses — a single code path for validation, auth, and data access. Read and mutation tools are wrapped with `withErrorHandling()`. A **getCurrentUserContext** tool lets the AI check who is logged in and what they can do. When the user is not allowed, tools return errors with 401/403 so the AI can inform the user. [Client tools](https://tanstack.com/ai/latest/docs/guides/client-tools) (`navigate`, `invalidateRouter`) run in the browser via `@tanstack/ai-client`.
+- **URL-Aware AI Prompt**: The chat request includes browser context and current location (`currentPathname`, `currentSearch`, `currentHref`). The system prompt includes this as `Current Location` context and uses route-pattern guidance (for example `/tasks/$taskId` -> `/tasks/<taskId>`) so references like "this task" resolve to the page in view.
 - **Observability as a Plugin**: Behind an `ObservabilityService` interface. No DSN configured? A no-op implementation is used. Want Datadog? Implement the interface.
 - **Schemas = Source of Truth**: Every domain type is a schema with `.describe()` metadata. Types are inferred, JSON Schemas flow to AI tools automatically.
 - **URL-as-State**: Page state (filters, selections, tabs) lives in URL search params, not component state. Shareable, bookmarkable, survives refresh.
 - **Loaders-First**: Data is fetched in route loaders, never in `useEffect` + `useState`. Loaders provide caching, SSR, and parallel fetching for free.
+- **E2E Tests Against Seed Data**: Playwright tests run against the dev server with `REPOSITORY_TYPE=seed`. An unsigned JWT fixture provides authenticated browser contexts. Tests cover dashboard, task list, task detail, and full CRUD — all without a real database.
 
 ## Project Structure
 
@@ -190,6 +192,13 @@ src/
 │   └── jwt.ts                  # JWT decode
 ├── constants/                  # Shared enums
 └── test-utils/                 # Vitest helpers
+
+e2e/                               # Playwright E2E tests
+├── auth.ts                        # Unsigned JWT helper + authenticated fixtures
+├── dashboard.spec.ts
+├── tasks-list.spec.ts
+├── task-detail.spec.ts
+└── task-crud.spec.ts
 ```
 
 ## Environment Variables
@@ -214,9 +223,11 @@ See [`.env.example`](.env.example) for the full list with documentation.
 1. **Schema**: Add Zod schemas in `src/services/schemas/schemas.ts` with `.describe()` on every field.
 2. **Repository**: Add methods to the `ReadRepository` and/or `WritableRepository` interfaces in `types.ts`. Implement in both `seedRepository.ts` and `mongoRepository.ts`.
 3. **Server Functions**: Add `createServerFn` wrappers in `src/services/api/serverFns.ts`. Chain `.middleware([invalidateMiddleware])` on mutations.
-4. **AI Tools**: Expose read methods as tools in `src/services/ai/tools.ts` wrapped with `safeToolHandler()`. Update the system prompt.
+4. **AI Tools**: Expose methods as tools in `src/services/ai/tools.ts` that call your server functions, wrapped with `withErrorHandling()`. Update the system prompt.
+   - Keep `src/services/ai/navigationManifest.ts` aligned with routes (including dynamic segments like `/tasks/$taskId`).
+   - Ensure chat requests include current URL context in `browserContext` so the prompt can reason about the current page.
 5. **Routes**: Create route files under `src/routes/`. Use loaders to fetch data.
-6. **Tests**: Write unit tests for the seed repository and any new utilities.
+6. **Tests**: Write unit tests for the seed repository and E2E tests in `e2e/` for the new routes.
 
 ### Swapping the Database
 
@@ -242,7 +253,8 @@ Replace Mantine imports in components. The architectural layers (repository, ser
 pnpm dev        # Start dev server on port 3000
 pnpm build      # Production build
 pnpm start      # Run production server
-pnpm test       # Run tests
+pnpm test       # Run unit tests (Vitest)
+pnpm test:e2e   # Run E2E tests (Playwright, uses seed data)
 pnpm lint       # Lint + typecheck (Biome)
 pnpm format     # Auto-format (Biome)
 pnpm skills:build  # Generate Cursor + markdown skill artifacts
@@ -266,7 +278,7 @@ docker run --rm -p 3000:3000 my-app
 - **Validation**: [Zod](https://zod.dev/) (schemas as source of truth)
 - **Auth**: [jose](https://github.com/panva/jose) (JWT decode, any JS runtime)
 - **Observability**: [Sentry](https://sentry.io/) (behind interface, optional)
-- **Testing**: [Vitest](https://vitest.dev/) + [Testing Library](https://testing-library.com/)
+- **Testing**: [Vitest](https://vitest.dev/) + [Testing Library](https://testing-library.com/) (unit), [Playwright](https://playwright.dev/) (E2E)
 - **Linting**: [Biome](https://biomejs.dev/)
 - **Server**: [Nitro](https://nitro.build/) (universal JavaScript server)
 
@@ -288,7 +300,7 @@ Then follow the end-to-end workflow:
 2. Define your repository interface in `src/services/repository/types.ts` (`ReadRepository` + `WritableRepository`)
 3. Implement the seed repository in `seedRepository.ts` (in-memory data for development)
 4. Add server functions in `src/services/api/serverFns.ts` (GET for loaders, POST with `invalidateMiddleware` for mutations)
-5. Expose read methods as AI tools in `src/services/ai/tools.ts` (wrapped with `safeToolHandler()`)
+5. Expose methods as AI tools in `src/services/ai/tools.ts` that call your server functions (wrapped with `withErrorHandling()`)
 6. Create file-based routes under `src/routes/` (data in loaders, state in URL search params)
 7. When ready for real data, implement `mongoRepository.ts` and set `MONGODB_URI`
 

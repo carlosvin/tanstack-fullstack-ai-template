@@ -14,7 +14,7 @@ This architecture achieves:
 
 - Zero-config development with seed implementations
 - Swappable database, AI provider, observability, and UI layer
-- AI promptability by exposing read repository methods as tools
+- AI promptability by exposing server functions as tools (single code path with the UI)
 - End-to-end type safety from schema-first definitions
 - URL-driven page state and loader-driven data fetching
 
@@ -25,9 +25,12 @@ This architecture achieves:
 3. Loaders-first data fetching: fetch route data in loaders through server functions.
 4. URL-as-state: filters, tabs, selections, and modal state live in URL search params.
 5. Middleware chain: auth is global middleware, invalidation runs on mutation server functions.
-6. Mutation pattern: POST server functions use `invalidateMiddleware -> inputValidator -> handler` and return normalized `{ data, error }`.
+6. Mutation pattern: POST server functions use `requireAuthMiddleware -> invalidateMiddleware -> inputValidator -> handler` and **throw** on error. Route callers wrap with `processResponse()` for `{ data, error }`.
 7. Query pattern: GET server functions validate input and throw on failure for centralized route error handling.
-8. AI tools from repository: expose read repository methods as tools wrapped with `safeToolHandler()`.
+8. AI tools from server functions: tools call the same server functions the UI uses, wrapped with `withErrorHandling()`. Tools do not call the repository directly.
+9. Keep AI chat context URL-aware: pass current location to `/api/chat` and keep route pattern metadata (for example `/tasks/$taskId`) aligned in the navigation manifest.
+10. Middleware chaining: `requireAuthMiddleware` chains `authMiddleware` so downstream handlers receive typed context without `context as AuthContext` casts.
+11. Client tools: `navigate` and `invalidateRouter` are TanStack AI client tools — definitions in `tools.ts`, implementations in the chat UI via `@tanstack/ai-client`.
 
 ## Interface Contracts
 
@@ -76,13 +79,17 @@ interface ObservabilityService {
 4. Add query/mutation server functions in `src/services/api/serverFns.ts`.
 5. Register auth and invalidation middleware in `src/start.ts`.
 6. Add AI tools and keep chat system prompt aligned with data model.
-7. Build routes using loaders and `validateSearch` for URL state.
+7. Keep `src/services/ai/navigationManifest.ts` aligned with route structure, including dynamic segments.
+8. Include `browserContext` location fields (`currentPathname`, `currentSearch`, `currentHref`) in chat requests for prompt grounding.
+9. Build routes using loaders and `validateSearch` for URL state.
+10. Add E2E tests in `e2e/` using Playwright against the seed repository.
 
 ## Validation Checklist
 
 - Every external dependency is behind an interface.
 - Domain types are schema-first and inferred.
 - No `useEffect + useState` data fetching where loaders can be used.
-- Mutation server functions include invalidation middleware.
-- Read repository methods are represented as AI tools.
-- `pnpm dev`, `pnpm lint`, `pnpm test`, and `pnpm build` pass.
+- Mutation server functions include invalidation middleware and throw on error.
+- AI tools call server functions, not the repository directly.
+- No `context as AuthContext` casts — middleware chaining provides types.
+- `pnpm dev`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, and `pnpm build` pass.

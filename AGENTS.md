@@ -220,11 +220,21 @@ When adding client tools: export the `toolDefinition(...)` from `tools.ts`, pass
 
 ## 10. Testing
 
+### Unit Tests (Vitest)
+
 - **Framework**: Vitest with jsdom environment.
 - **Libraries**: `@testing-library/react`, `@testing-library/user-event`, `@testing-library/dom`.
 - **Setup**: Global setup in `src/test-utils/setupTests.ts` (includes `matchMedia`, `ResizeObserver`, `MutationObserver` mocks).
 - **Rendering**: `renderWithProviders()` in `src/test-utils/renderWithRouter.tsx` wraps with MantineProvider.
 - **Convention**: Test files co-located as `*.test.ts` or `*.test.tsx`.
+
+### E2E Tests (Playwright)
+
+- **Framework**: Playwright with Chromium.
+- **Config**: `playwright.config.ts` — single worker, serial CRUD tests, `REPOSITORY_TYPE=seed`.
+- **Auth fixture**: `e2e/auth.ts` provides `authedPage` / `authedContext` fixtures using unsigned JWTs sent via `extraHTTPHeaders`.
+- **Convention**: Spec files in `e2e/` as `*.spec.ts`.
+- **Running**: `pnpm test:e2e` (reuses existing dev server or starts one with seed data).
 
 ## 11. Validate Changes
 
@@ -233,7 +243,8 @@ Always verify changes with:
 ```bash
 pnpm format    # Auto-fix formatting
 pnpm lint      # Check for lint errors and type errors
-pnpm test      # Run all tests
+pnpm test      # Run unit tests
+pnpm test:e2e  # Run E2E tests (requires dev server or lets Playwright start one)
 pnpm build     # Verify production build
 ```
 
