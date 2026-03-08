@@ -8,3 +8,5 @@ dist/
 .vite/
 *.tsbuildinfo
 .tanstack
+playwright-report/
+test-results/
