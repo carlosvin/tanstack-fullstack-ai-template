@@ -28,9 +28,9 @@ export default defineConfig({
 	plugins: [
 		devtools(),
 		nitro(),
-		netlify(),
 		viteTsConfigPaths({ projects: ['./tsconfig.json'] }),
 		tanstackStart(),
 		viteReact(),
+		netlify(),
 	],
 })
