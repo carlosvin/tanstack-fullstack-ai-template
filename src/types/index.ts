@@ -9,6 +9,7 @@ export type {
 	Task,
 	TaskFilter,
 	TaskInput,
+	UpdateTaskInput,
 	UserIdentity,
 	UserProfile,
 } from '../services/schemas/schemas'

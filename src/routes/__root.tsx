@@ -1,24 +1,14 @@
 import '@mantine/core/styles.css'
 import '@mantine/notifications/styles.css'
 import '../styles.css'
-import {
-	AppShell,
-	Button,
-	ColorSchemeScript,
-	Container,
-	createTheme,
-	MantineProvider,
-	Stack,
-	Text,
-	Title,
-} from '@mantine/core'
+import { Button, ColorSchemeScript, Container, createTheme, MantineProvider, Stack, Text, Title } from '@mantine/core'
 import { Notifications } from '@mantine/notifications'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { createRootRoute, HeadContent, Scripts, useRouter } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { Home } from 'lucide-react'
+import { AppLayout } from '../components/AppLayout/AppLayout'
 import { ErrorDisplay } from '../components/ErrorDisplay/ErrorDisplay'
-import { Header } from '../components/Header/Header'
 import { getCurrentUser } from '../services/api/serverFns'
 
 export const Route = createRootRoute({
@@ -85,12 +75,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			<body>
 				<MantineProvider defaultColorScheme="auto" theme={theme}>
 					<Notifications position="top-right" />
-					<AppShell header={{ height: 52 }} padding="md">
-						<AppShell.Header>
-							<Header currentUser={Route.useLoaderData()?.currentUser} />
-						</AppShell.Header>
-						<AppShell.Main>{children}</AppShell.Main>
-					</AppShell>
+					<AppLayout currentUser={Route.useLoaderData()?.currentUser}>{children}</AppLayout>
 				</MantineProvider>
 				<TanStackDevtools
 					config={{ position: 'bottom-right' }}

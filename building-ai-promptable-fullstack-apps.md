@@ -1,4 +1,9 @@
-# Building AI-Promptable Full-Stack Apps: A Reproducible Architecture
+---
+title: Building AI-Promptable Full-Stack Apps: A Reproducible Architecture
+slug: building-ai-promptable-fullstack-apps
+description: How we extracted a reproducible full-stack architecture for AI-promptable internal tools with TanStack Start, interfaces for every external service, and Zod schemas as single source of truth.
+date: 2026-03-08
+---
 
 Every time our team started a new internal tool, we faced the same problem: rebuild the same architecture from scratch. Authentication, database access, UI shell, AI integration — all the plumbing that has nothing to do with the actual business logic.
 
@@ -88,7 +93,7 @@ export const startInstance = createStart(() => ({
 }))
 ```
 
-Every server function automatically receives `context.user` and `context.userProfile` — no manual header extraction. For protected handlers, use the composable guards `requireAuth(context)` and `requireGroup(context, group)` from `src/utils/auth.ts`; they throw with 401/403 so your handler code stays minimal.
+Every server function automatically receives `context.user` and `context.userProfile` — no manual header extraction. For mutations, we chain a function-level **requireAuthMiddleware** (`src/middleware/requireAuth.ts`) so only POST server functions require authentication; read-only queries stay unauthenticated. The handler can then assume `context.user` is defined. For other cases, use the composable guards `requireAuth(context)` and `requireGroup(context, group)` from `src/utils/auth.ts`; they throw with 401/403 so your handler code stays minimal.
 
 ### Promptable by Design
 
@@ -108,7 +113,9 @@ export const getTasksTool = getTasksToolDef.server(
 
 Because we use Zod schemas with `.describe()` on every field, the AI model receives rich JSON Schema metadata explaining what each parameter means. The model can then compose tool calls to answer complex queries.
 
-A chat drawer talks to the backend via `POST /api/chat` with Server-Sent Events (SSE) streaming. Users get a natural language interface to their data — for free, just by maintaining the repository interface.
+We also expose **create**, **update**, and **delete** as AI tools (via context-dependent tool factories that receive the request’s `AuthContext`). A **getCurrentUserContext** tool lets the AI check who is logged in and what they can do — e.g. "Anyone logged in can create; only the task creator can edit or delete." When the user is not allowed, mutation tools return an error with a status **code** (401 or 403), and the AI explains it in plain language: "You need to log in to create tasks" or "Only the task creator can edit that task."
+
+A chat drawer talks to the backend via `POST /api/chat` with Server-Sent Events (SSE) streaming. Users get a natural language interface to their data — and to create, edit, and delete tasks when permitted — with permission-aware error handling.
 
 ### Observability as a Plugin
 
@@ -188,7 +195,7 @@ Adding a new domain entity is a six-step process:
 1. **Zod schema** in `schemas.ts` with `.describe()` annotations
 2. **Repository methods** in the interface, then implement in seed and MongoDB
 3. **Server functions** wrapping the repository (GET for loaders, POST with `invalidateMiddleware` for mutations)
-4. **AI tools** exposing the read methods (wrapped with `safeToolHandler()`)
+4. **AI tools** exposing the read methods (wrapped with `safeToolHandler()`), and optionally mutation tools plus **getCurrentUserContext** (factories taking `AuthContext`) with `safeToolHandlerWithCode()` so 401/403 surface for the AI
 5. **Routes** for the UI pages
 6. **Tests** for the seed repository and any new utilities
 
@@ -199,8 +206,8 @@ Because every layer follows the same pattern, adding a new entity takes minutes,
 The goal is not a framework — it's a **starting point**. Fork the template, replace the Task domain with your own, and you have a production-ready full-stack application with:
 
 - Type-safe server functions
-- JWT authentication via middleware
-- AI-powered data querying
+- JWT authentication via middleware (mutations use requireAuthMiddleware)
+- AI-powered data querying and task create/edit/delete with permission-aware errors (401/403)
 - Dark/light mode UI
 - Swappable database, AI provider, and observability
 - Docker-ready deployment

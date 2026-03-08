@@ -5,7 +5,7 @@ import { getTasks } from '../services/api/serverFns'
 import type { Task } from '../types'
 
 export const Route = createFileRoute('/')({
-	loader: () => getTasks(),
+	loader: () => getTasks({}),
 	component: DashboardPage,
 })
 

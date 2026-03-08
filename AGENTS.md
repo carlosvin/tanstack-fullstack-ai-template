@@ -16,7 +16,7 @@ This document provides instructions for AI agents working on projects built from
 - `src/components`: React components. Each component in its own folder with `Component.tsx` and optional `Component.module.css` and `Component.test.tsx`.
 - `src/routes`: TanStack Router file-based routes. This is where pages are created. The route tree is auto-generated in `routeTree.gen.ts`.
 - `src/middleware`: TanStack Start middleware (auth, invalidation). Registered globally in `src/start.ts`.
-- `src/services/api`: Server function wrappers and shared response utilities.
+- `src/services/api`: Server functions (exported directly from `createServerFn`) and shared response utilities.
 - `src/services/repository`: Repository interface, implementations (MongoDB, seed), and the factory.
 - `src/services/schemas`: Centralized Zod schemas — the single source of truth for all domain types.
 - `src/services/ai`: AI adapter interface, implementation, and tool definitions.
@@ -77,6 +77,7 @@ Authentication is handled via global request middleware registered in `src/start
 - The decoded identity and loaded profile are available as the typed `AuthContext` interface, exported from `src/middleware/auth.ts`.
 - Server functions access the user via `context` — no manual header extraction needed.
 - The JWT header name is configurable via `AUTH_HEADER_NAME` env var (default: `Authorization`).
+- **Mutations only**: POST server functions chain `requireAuthMiddleware` from `src/middleware/requireAuth.ts`, so auth is required only for server functions that mutate; GET (query) handlers remain unauthenticated.
 
 ### Auth Context
 
@@ -89,7 +90,7 @@ interface AuthContext {
 }
 ```
 
-Server functions use it as `const { user, userProfile } = context as AuthContext`.
+`requireAuthMiddleware` chains `authMiddleware`, so `context.user` and `context.userProfile` are typed automatically in downstream handlers — no casts needed.
 
 ### Auth Guard Helpers
 
@@ -98,27 +99,21 @@ Composable authorization guards are defined in `src/utils/auth.ts`:
 - `requireAuth(context)`: Throws `HttpError(401)` if user is anonymous. Returns the `UserIdentity`.
 - `requireGroup(context, group)`: Throws `HttpError(403)` if user is not in the specified group. Returns the `UserIdentity`.
 
-Usage in server functions:
+For mutations, use `requireAuthMiddleware` so the handler runs only when the user is authenticated; the handler can then read `context.user` directly (typed via middleware chaining):
 
 ```tsx
+.middleware([requireAuthMiddleware, invalidateMiddleware])
 .handler(async ({ data, context }) => {
-  const { email } = requireAuth(context as AuthContext)
-  // ... mutation logic
+  // context.user is typed — no cast needed
+  return getWritableRepository().doSomething(data, context.user.email)
 })
 ```
 
+For one-off auth in other handlers, use `requireAuth(context)` or `requireGroup(context, group)`; they throw 401/403.
+
 ### Adding Custom Authorization
 
-Create composable middleware that builds on `authMiddleware`:
-
-```tsx
-const requireAuthMiddleware = createMiddleware({ type: 'function' })
-  .middleware([authMiddleware])
-  .server(({ next, context }) => {
-    if (!context.user.email) throw new HttpError(401, 'Auth required')
-    return next()
-  })
-```
+Create composable middleware that chains `authMiddleware` for context typing (see `src/middleware/requireAuth.ts` for the pattern). Chain it with `invalidateMiddleware` on POST server functions.
 
 ## 6. Server Functions and Data Access
 
@@ -128,9 +123,10 @@ This is a full-stack TanStack Start application. There is no separate backend AP
 Route Loader → Server Function (serverFns.ts) → Repository → Database / Seed Data
 ```
 
-- **Server Functions**: Defined with `createServerFn` from `@tanstack/react-start` in `src/services/api/`.
+- **Server Functions**: Defined with `createServerFn` from `@tanstack/react-start` in `src/services/api/serverFns.ts` and exported directly (no wrapper functions). All core logic (repository calls, authorization, observability spans) lives inside the `.handler()` callback.
 - **Input Validation**: Server functions pass Zod schemas to `.inputValidator(Schema)`.
 - **Repository Pattern**: All data access goes through the repository interface.
+- **Calling convention**: Callers pass `{ data: inputData }` to server functions (e.g. `getTasks({ data: filter })`).
 
 ### 6.1. Data Fetching (Queries)
 
@@ -143,18 +139,21 @@ Route Loader → Server Function (serverFns.ts) → Repository → Database / Se
 ### 6.2. Data Writing (Mutations)
 
 - Use `createServerFn({ method: 'POST' })` for mutations.
-- **Invalidation middleware**: All POST server functions must chain `.middleware([invalidateMiddleware])` before `.inputValidator()`. The middleware runs on the client after the mutation completes and calls `router.invalidate()`, which triggers loaders to re-fetch. Components do **not** call `router.invalidate()` manually.
-- Mutations should NOT throw. Use `processResponse()` to return `{ data, error }`.
+- **Invalidation middleware**: All POST server functions must chain `.middleware([requireAuthMiddleware, invalidateMiddleware])`. The middleware runs on the client after the mutation completes and calls `router.invalidate()`, which triggers loaders to re-fetch. Components do **not** call `router.invalidate()` manually.
+- Mutation server functions throw on error. Callers in route components wrap calls with `processResponse()` to get `{ data, error }`.
 - Call mutations from event handlers. Provide toast feedback after mutations.
 
 ```tsx
-const myMutationServerFn = createServerFn({ method: 'POST' })
-  .middleware([invalidateMiddleware])
+export const myMutation = createServerFn({ method: 'POST' })
+  .middleware([requireAuthMiddleware, invalidateMiddleware])
   .inputValidator(MyInputSchema)
   .handler(async ({ data, context }) => {
-    requireAuth(context as AuthContext)
-    return getWritableRepository().doSomething(data)
+    // context.user is typed via requireAuthMiddleware
+    return getWritableRepository().doSomething(data, context.user.email)
   })
+
+// In a route component:
+const result = await processResponse(() => myMutation({ data: input }))
 ```
 
 ## 7. Routing (TanStack Router)
@@ -180,11 +179,29 @@ interface AIAdapterService {
 
 The default implementation in `src/services/ai/adapter.ts` uses `@tanstack/ai-openai` (OpenAI/Azure-compatible). To swap providers (Anthropic, Gemini, Ollama), create a new class implementing `AIAdapterService` and update the factory.
 
-### Tools
+### Server Tools
 
-- `src/services/ai/tools.ts` defines read-only tools from repository methods using `toolDefinition` from `@tanstack/ai`.
-- All tool handlers are wrapped with `safeToolHandler()`, which catches errors and returns `{ error: string }` instead of crashing the agentic loop.
+- `src/services/ai/tools.ts` defines server tools using `toolDefinition` from `@tanstack/ai`. Server tools call the same exported server functions that route loaders and event handlers use.
+- Tool handlers use `withErrorHandling()` to catch errors and return `{ error: string, code?: number }` so the AI can interpret 401/403/404 (e.g. "You need to log in", "Only the task creator can do that").
+- Tool args are typed via `Schema.parse(args)` since `@tanstack/ai`'s `.server()` types the handler arg as `unknown`.
 - When adding new repository read methods, expose them as AI tools.
+- **getCurrentUserContext** returns who is logged in and a permissions summary. **createTask**, **updateTask**, **deleteTask** call the same server functions as the UI; auth and creator checks run inside the server function handlers.
+
+### Client Tools
+
+Client tools execute in the browser and are defined in `src/services/ai/tools.ts` (definition-only, no `.server()` call) with implementations in [ChatDrawer](src/components/ChatDrawer/ChatDrawer.tsx) using `@tanstack/ai-client`:
+
+- **navigate**: Triggers `router.navigate()` in the browser. Accepts `to` (path) and optional `search` (query params). Validates paths via `isUserFacingPath()`.
+- **invalidateRouter**: Calls `router.invalidate()` to refresh page data. The AI calls this after mutation tools so the user sees updated data.
+
+When adding client tools: export the `toolDefinition(...)` from `tools.ts`, pass it to `chat()` in the chat endpoint, and add a `.client()` implementation in `ChatDrawer.tsx` via `clientTools()`.
+
+### App navigation and links
+
+- **Navigation structure**: The app navigation structure for the AI is derived from [src/routeTree.gen.ts](src/routeTree.gen.ts) and exposed via [src/services/ai/navigationManifest.ts](src/services/ai/navigationManifest.ts). When you add or change routes or search params, update the manifest so the AI system prompt stays in sync.
+- The AI is instructed to use **markdown links** in replies (e.g. `[View task](/tasks/123)`, `[Tasks](/tasks)`) and to use **query params** in links where applicable (e.g. `/tasks?status=done`).
+- The AI can trigger client-side navigation by calling the **navigate** client tool with `to` and optional `search`; the browser executes it automatically via `@tanstack/ai-client`.
+- The chat UI ([ChatDrawer](src/components/ChatDrawer/ChatDrawer.tsx)) renders internal links in assistant messages as TanStack Router `Link` components so clicks do client-side navigation; external links open in a new tab.
 
 ### Chat Endpoint
 

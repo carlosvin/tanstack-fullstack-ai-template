@@ -57,6 +57,12 @@ export const BrowserContextSchema = z.object({
 	timezone: z.string().describe('IANA timezone of the user browser, e.g. "America/New_York"'),
 	locale: z.string().describe('Browser locale, e.g. "en-US"'),
 	currentTime: z.string().describe('ISO 8601 timestamp of the current time in the user browser'),
+	currentPathname: z.string().optional().describe('Current browser pathname, e.g. "/tasks/abc123"'),
+	currentSearch: z.string().optional().describe('Current browser query string, e.g. "?status=done"'),
+	currentHref: z
+		.string()
+		.optional()
+		.describe('Current full browser URL, e.g. "https://app.local/tasks/abc123?status=done"'),
 })
 
 export type BrowserContext = z.infer<typeof BrowserContextSchema>
@@ -100,6 +106,12 @@ export type TaskFilter = z.infer<typeof TaskFilterSchema>
 export const TaskIdInputSchema = z.object({
 	taskId: z.string().describe('The unique ID of the task'),
 })
+
+export const UpdateTaskInputSchema = TaskIdInputSchema.extend({
+	updates: TaskInputSchema.partial().describe('Fields to update (title, description, status, priority, assignee)'),
+})
+
+export type UpdateTaskInput = z.infer<typeof UpdateTaskInputSchema>
 
 // ---------------------------------------------------------------------------
 // API response wrapper for mutations

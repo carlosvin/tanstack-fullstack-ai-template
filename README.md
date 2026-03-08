@@ -149,9 +149,10 @@ flowchart TB
 ### Key Design Decisions
 
 - **Repository Pattern**: All data access goes through an interface. A seed implementation ships for development; swap to MongoDB (or anything else) via environment variable.
-- **Auth via Middleware**: A global TanStack Start middleware extracts JWT identity from headers and provides typed `AuthContext` to every server function — no manual auth boilerplate per handler.
+- **Auth via Middleware**: A global TanStack Start middleware extracts JWT identity from headers and provides typed `AuthContext` to every server function. Mutations additionally use function-level `requireAuthMiddleware` so only POST server functions require authentication; queries stay unauthenticated.
 - **Invalidation Middleware**: All POST server functions chain `invalidateMiddleware`, which calls `router.invalidate()` on the client after mutations. Components never invalidate manually.
-- **Promptable by Default**: All read repository methods are exposed as AI tools via TanStack AI. The chat drawer lets users query data in natural language.
+- **Task CRUD UI**: Add, edit, and delete tasks from the list and detail pages. Only the task creator can edit or delete; anyone logged in can create. Buttons are gated by auth and creator checks.
+- **Promptable by Default**: All read repository methods are exposed as AI tools; create, update, and delete are also exposed. A **getCurrentUserContext** tool lets the AI check who is logged in and what they can do. When the user is not allowed, tools return errors with 401/403 so the AI can inform the user (e.g. "You need to log in to create tasks" or "Only the task creator can edit that task").
 - **Observability as a Plugin**: Behind an `ObservabilityService` interface. No DSN configured? A no-op implementation is used. Want Datadog? Implement the interface.
 - **Schemas = Source of Truth**: Every domain type is a schema with `.describe()` metadata. Types are inferred, JSON Schemas flow to AI tools automatically.
 - **URL-as-State**: Page state (filters, selections, tabs) lives in URL search params, not component state. Shareable, bookmarkable, survives refresh.
@@ -165,6 +166,7 @@ src/
 ├── router.tsx                  # Router + client observability
 ├── middleware/
 │   ├── auth.ts                 # JWT → AuthContext
+│   ├── requireAuth.ts          # Function middleware for mutations (401 if not logged in)
 │   └── invalidate.ts           # POST → router.invalidate()
 ├── routes/                     # File-based routes (pages)
 ├── components/                 # React components

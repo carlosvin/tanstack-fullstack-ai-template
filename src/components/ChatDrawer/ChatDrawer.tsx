@@ -13,13 +13,56 @@ import {
 	ThemeIcon,
 	Tooltip,
 } from '@mantine/core'
+import { clientTools, createChatClientOptions } from '@tanstack/ai-client'
 import type { UIMessage } from '@tanstack/ai-react'
 import { fetchServerSentEvents, useChat } from '@tanstack/ai-react'
+import { Link, useRouter } from '@tanstack/react-router'
 import { AlertTriangle, Bot, Send, Square, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { isUserFacingPath } from '../../services/ai/navigationManifest'
+import { invalidateRouterToolDef, NavigateInputSchema, navigateToolDef } from '../../services/ai/tools'
 import styles from './ChatDrawer.module.css'
+
+function isInternalPath(href: string): boolean {
+	try {
+		const path = href.startsWith('/') ? href : new URL(href).pathname
+		return path.startsWith('/') && !path.startsWith('/api/')
+	} catch {
+		return href.startsWith('/') && !href.startsWith('/api/')
+	}
+}
+
+function parseInternalHref(href: string): { to: string; search?: Record<string, string> } {
+	const [pathname, searchStr] = href.split('?')
+	const to = pathname ?? href
+	if (!searchStr) return { to }
+	const search: Record<string, string> = {}
+	for (const pair of searchStr.split('&')) {
+		const [key, value] = pair.split('=')
+		if (key && value !== undefined) search[decodeURIComponent(key)] = decodeURIComponent(value)
+	}
+	return { to, search }
+}
+
+/** Renders internal app links as Router Link, external as <a>. */
+function MarkdownLink({ href, children }: { href?: string; children?: React.ReactNode }) {
+	if (!href) return <span>{children}</span>
+	if (!isInternalPath(href)) {
+		return (
+			<a href={href} target="_blank" rel="noopener noreferrer">
+				{children}
+			</a>
+		)
+	}
+	const { to, search } = parseInternalHref(href)
+	return (
+		<Link to={to} search={search} preload="intent" style={{ color: 'inherit', textDecoration: 'underline' }}>
+			{children}
+		</Link>
+	)
+}
 
 interface ChatDrawerProps {
 	opened: boolean
@@ -32,6 +75,12 @@ function getToolLabel(toolName: string): string {
 		getTasks: 'searching tasks',
 		getTask: 'loading task details',
 		getAssignees: 'checking assignees',
+		navigate: 'opening page',
+		invalidateRouter: 'refreshing data',
+		getCurrentUserContext: 'checking permissions',
+		createTask: 'creating task',
+		updateTask: 'updating task',
+		deleteTask: 'deleting task',
 	}
 	return labels[toolName] ?? toolName
 }
@@ -62,8 +111,9 @@ function MessageBubble({ message }: { message: UIMessage }) {
 			)}
 			{toolCallNames.length > 0 && (
 				<Group gap={4} mb={4}>
+					{/* Tool call list order is stable; index needed for duplicate tool names in same message */}
 					{toolCallNames.map((name, i) => (
-						<Badge key={`${name}-${i}`} size="xs" variant="light">
+						<Badge key={`${message.id}-${name}-${String(i)}`} size="xs" variant="light">
 							{getToolLabel(name)}
 						</Badge>
 					))}
@@ -80,7 +130,9 @@ function MessageBubble({ message }: { message: UIMessage }) {
 						<Text size="sm">{textContent}</Text>
 					) : (
 						<div className={styles.markdown}>
-							<Markdown remarkPlugins={[remarkGfm]}>{textContent}</Markdown>
+							<Markdown remarkPlugins={[remarkGfm]} components={{ a: MarkdownLink }}>
+								{textContent}
+							</Markdown>
 						</div>
 					)}
 				</Paper>
@@ -94,6 +146,7 @@ export function ChatDrawer({ opened, onClose }: ChatDrawerProps) {
 	const viewport = useRef<HTMLDivElement>(null)
 	const [input, setInput] = useState('')
 	const [aiAvailable, setAiAvailable] = useState<boolean | null>(null)
+	const router = useRouter()
 
 	useEffect(() => {
 		if (opened && aiAvailable === null) {
@@ -104,6 +157,21 @@ export function ChatDrawer({ opened, onClose }: ChatDrawerProps) {
 		}
 	}, [opened, aiAvailable])
 
+	const navigateClient = navigateToolDef.client((args) => {
+		const navInput = NavigateInputSchema.parse(args)
+		const path = navInput.to.startsWith('/') ? navInput.to : `/${navInput.to}`
+		if (!isUserFacingPath(path)) return { success: false }
+		router.navigate({ to: path, search: navInput.search ?? undefined })
+		return { success: true }
+	})
+
+	const invalidateClient = invalidateRouterToolDef.client(() => {
+		router.invalidate()
+		return { success: true }
+	})
+
+	const tools = clientTools(navigateClient, invalidateClient)
+
 	const connection = useMemo(
 		() =>
 			fetchServerSentEvents('/api/chat', () => ({
@@ -112,15 +180,18 @@ export function ChatDrawer({ opened, onClose }: ChatDrawerProps) {
 						timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 						locale: navigator.language,
 						currentTime: new Date().toISOString(),
+						currentPathname: window.location.pathname,
+						currentSearch: window.location.search,
+						currentHref: window.location.href,
 					},
 				},
 			})),
 		[],
 	)
 
-	const { messages, sendMessage, isLoading, clear, stop } = useChat({
-		connection,
-	})
+	const chatOptions = createChatClientOptions({ connection, tools })
+
+	const { messages, sendMessage, isLoading, clear, stop } = useChat(chatOptions)
 
 	const scrollToBottom = useCallback(() => {
 		viewport.current?.scrollTo({ top: viewport.current.scrollHeight, behavior: 'smooth' })

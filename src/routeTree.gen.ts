@@ -11,9 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TasksIndexRouteImport } from './routes/tasks/index'
+import { Route as TasksNewRouteImport } from './routes/tasks/new'
 import { Route as TasksTaskIdRouteImport } from './routes/tasks/$taskId'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as TasksTaskIdEditRouteImport } from './routes/tasks/$taskId.edit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -23,6 +25,11 @@ const IndexRoute = IndexRouteImport.update({
 const TasksIndexRoute = TasksIndexRouteImport.update({
   id: '/tasks/',
   path: '/tasks/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TasksNewRoute = TasksNewRouteImport.update({
+  id: '/tasks/new',
+  path: '/tasks/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TasksTaskIdRoute = TasksTaskIdRouteImport.update({
@@ -40,48 +47,76 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TasksTaskIdEditRoute = TasksTaskIdEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => TasksTaskIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/api/chat': typeof ApiChatRoute
   '/api/health': typeof ApiHealthRoute
-  '/tasks/$taskId': typeof TasksTaskIdRoute
+  '/tasks/$taskId': typeof TasksTaskIdRouteWithChildren
+  '/tasks/new': typeof TasksNewRoute
   '/tasks/': typeof TasksIndexRoute
+  '/tasks/$taskId/edit': typeof TasksTaskIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/chat': typeof ApiChatRoute
   '/api/health': typeof ApiHealthRoute
-  '/tasks/$taskId': typeof TasksTaskIdRoute
+  '/tasks/$taskId': typeof TasksTaskIdRouteWithChildren
+  '/tasks/new': typeof TasksNewRoute
   '/tasks': typeof TasksIndexRoute
+  '/tasks/$taskId/edit': typeof TasksTaskIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/api/chat': typeof ApiChatRoute
   '/api/health': typeof ApiHealthRoute
-  '/tasks/$taskId': typeof TasksTaskIdRoute
+  '/tasks/$taskId': typeof TasksTaskIdRouteWithChildren
+  '/tasks/new': typeof TasksNewRoute
   '/tasks/': typeof TasksIndexRoute
+  '/tasks/$taskId/edit': typeof TasksTaskIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/chat' | '/api/health' | '/tasks/$taskId' | '/tasks/'
+  fullPaths:
+    | '/'
+    | '/api/chat'
+    | '/api/health'
+    | '/tasks/$taskId'
+    | '/tasks/new'
+    | '/tasks/'
+    | '/tasks/$taskId/edit'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/chat' | '/api/health' | '/tasks/$taskId' | '/tasks'
+  to:
+    | '/'
+    | '/api/chat'
+    | '/api/health'
+    | '/tasks/$taskId'
+    | '/tasks/new'
+    | '/tasks'
+    | '/tasks/$taskId/edit'
   id:
     | '__root__'
     | '/'
     | '/api/chat'
     | '/api/health'
     | '/tasks/$taskId'
+    | '/tasks/new'
     | '/tasks/'
+    | '/tasks/$taskId/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiHealthRoute: typeof ApiHealthRoute
-  TasksTaskIdRoute: typeof TasksTaskIdRoute
+  TasksTaskIdRoute: typeof TasksTaskIdRouteWithChildren
+  TasksNewRoute: typeof TasksNewRoute
   TasksIndexRoute: typeof TasksIndexRoute
 }
 
@@ -99,6 +134,13 @@ declare module '@tanstack/react-router' {
       path: '/tasks'
       fullPath: '/tasks/'
       preLoaderRoute: typeof TasksIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tasks/new': {
+      id: '/tasks/new'
+      path: '/tasks/new'
+      fullPath: '/tasks/new'
+      preLoaderRoute: typeof TasksNewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tasks/$taskId': {
@@ -122,14 +164,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tasks/$taskId/edit': {
+      id: '/tasks/$taskId/edit'
+      path: '/edit'
+      fullPath: '/tasks/$taskId/edit'
+      preLoaderRoute: typeof TasksTaskIdEditRouteImport
+      parentRoute: typeof TasksTaskIdRoute
+    }
   }
 }
+
+interface TasksTaskIdRouteChildren {
+  TasksTaskIdEditRoute: typeof TasksTaskIdEditRoute
+}
+
+const TasksTaskIdRouteChildren: TasksTaskIdRouteChildren = {
+  TasksTaskIdEditRoute: TasksTaskIdEditRoute,
+}
+
+const TasksTaskIdRouteWithChildren = TasksTaskIdRoute._addFileChildren(
+  TasksTaskIdRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApiChatRoute: ApiChatRoute,
   ApiHealthRoute: ApiHealthRoute,
-  TasksTaskIdRoute: TasksTaskIdRoute,
+  TasksTaskIdRoute: TasksTaskIdRouteWithChildren,
+  TasksNewRoute: TasksNewRoute,
   TasksIndexRoute: TasksIndexRoute,
 }
 export const routeTree = rootRouteImport

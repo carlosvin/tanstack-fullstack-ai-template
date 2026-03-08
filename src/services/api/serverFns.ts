@@ -1,105 +1,79 @@
 import { createServerFn } from '@tanstack/react-start'
-import type { AuthContext } from '../../middleware/auth'
+import { authMiddleware } from '../../middleware/auth'
 import { invalidateMiddleware } from '../../middleware/invalidate'
-import type { ProcessedResponse, Task, TaskInput, UserIdentity, UserProfile } from '../../types'
-import { requireAuth } from '../../utils/auth'
+import { requireAuthMiddleware } from '../../middleware/requireAuth'
+import { HttpError } from '../../utils/httpError'
 import { getObservability } from '../observability'
 import { getReadRepository, getWritableRepository } from '../repository/getRepository'
-import { TaskFilterSchema, TaskIdInputSchema, TaskInputSchema } from '../schemas/schemas'
-import { processResponse } from './processResponse'
+import { TaskFilterSchema, TaskIdInputSchema, TaskInputSchema, UpdateTaskInputSchema } from '../schemas/schemas'
 
 // ============================================================================
-// Queries (GET) — accessed from route loaders
+// Queries (GET) — accessed from route loaders and AI tools
 // ============================================================================
 
-const getTasksServerFn = createServerFn({ method: 'GET' })
+export const getTasks = createServerFn({ method: 'GET' })
 	.inputValidator(TaskFilterSchema.optional())
 	.handler(async ({ data: filter }) => {
 		return getObservability().startSpan('getTasks', () => getReadRepository().getTasks(filter ?? undefined))
 	})
 
-/** Loads all tasks with optional filters. */
-export async function getTasks(filter?: Parameters<typeof getTasksServerFn>[0]): Promise<Task[]> {
-	return getTasksServerFn(filter)
-}
-
-const getTaskServerFn = createServerFn({ method: 'GET' })
+export const getTask = createServerFn({ method: 'GET' })
 	.inputValidator(TaskIdInputSchema)
 	.handler(async ({ data }) => {
 		return getObservability().startSpan('getTask', () => getReadRepository().getTask(data.taskId))
 	})
 
-/** Loads a single task by ID. */
-export async function getTask(taskId: string): Promise<Task | null> {
-	return getTaskServerFn({ data: { taskId } })
-}
-
-const getAssigneesServerFn = createServerFn({ method: 'GET' }).handler(async () => {
+export const getAssignees = createServerFn({ method: 'GET' }).handler(async () => {
 	return getObservability().startSpan('getAssignees', () => getReadRepository().getAssignees())
 })
-
-/** Loads all distinct assignee emails. */
-export async function getAssignees(): Promise<string[]> {
-	return getAssigneesServerFn()
-}
 
 // ============================================================================
 // Current user — identity + profile from middleware context
 // ============================================================================
 
-const getCurrentUserServerFn = createServerFn({ method: 'GET' }).handler(async ({ context }) => {
-	const { user, userProfile } = context as AuthContext
-	const identity: UserIdentity = user ?? { email: '', name: 'Anonymous', groups: [] }
-	const profile: UserProfile | null = userProfile ?? null
-	return { identity, profile }
-})
-
-/** Returns the current user identity and profile loaded by the auth middleware. */
-export async function getCurrentUser(): Promise<{ identity: UserIdentity; profile: UserProfile | null }> {
-	return getCurrentUserServerFn()
-}
-
-// ============================================================================
-// Mutations (POST) — called from event handlers
-// ============================================================================
-
-const createTaskServerFn = createServerFn({ method: 'POST' })
-	.middleware([invalidateMiddleware])
-	.inputValidator(TaskInputSchema)
-	.handler(async ({ data, context }) => {
-		const { email } = requireAuth(context as AuthContext)
-		return getObservability().startSpan('createTask', () => getWritableRepository().createTask(data, email))
+export const getCurrentUser = createServerFn({ method: 'GET' })
+	.middleware([authMiddleware])
+	.handler(async ({ context }) => {
+		const identity = context.user ?? { email: '', name: 'Anonymous', groups: [] }
+		const profile = context.userProfile ?? null
+		return { identity, profile }
 	})
 
-/** Creates a new task. Returns { data, error } instead of throwing. */
-export async function createTask(input: TaskInput): Promise<ProcessedResponse<Task>> {
-	return processResponse(() => createTaskServerFn({ data: input }))
-}
+// ============================================================================
+// Mutations (POST) — called from event handlers and AI tools
+// ============================================================================
 
-const updateTaskServerFn = createServerFn({ method: 'POST' })
-	.middleware([invalidateMiddleware])
-	.inputValidator(TaskIdInputSchema.extend({ updates: TaskInputSchema.partial() }))
+export const createTask = createServerFn({ method: 'POST' })
+	.middleware([requireAuthMiddleware, invalidateMiddleware])
+	.inputValidator(TaskInputSchema)
 	.handler(async ({ data, context }) => {
-		requireAuth(context as AuthContext)
+		return getObservability().startSpan('createTask', () =>
+			getWritableRepository().createTask(data, context.user.email),
+		)
+	})
+
+export const updateTask = createServerFn({ method: 'POST' })
+	.middleware([requireAuthMiddleware, invalidateMiddleware])
+	.inputValidator(UpdateTaskInputSchema)
+	.handler(async ({ data, context }) => {
+		const task = await getReadRepository().getTask(data.taskId)
+		if (!task) throw new HttpError(404, 'Task not found')
+		if (task.createdBy && task.createdBy !== context.user.email) {
+			throw new HttpError(403, 'Only the task creator can edit this task')
+		}
 		return getObservability().startSpan('updateTask', () =>
 			getWritableRepository().updateTask(data.taskId, data.updates),
 		)
 	})
 
-/** Updates an existing task. Returns { data, error } instead of throwing. */
-export async function updateTask(taskId: string, updates: Partial<TaskInput>): Promise<ProcessedResponse<Task | null>> {
-	return processResponse(() => updateTaskServerFn({ data: { taskId, updates } }))
-}
-
-const deleteTaskServerFn = createServerFn({ method: 'POST' })
-	.middleware([invalidateMiddleware])
+export const deleteTask = createServerFn({ method: 'POST' })
+	.middleware([requireAuthMiddleware, invalidateMiddleware])
 	.inputValidator(TaskIdInputSchema)
 	.handler(async ({ data, context }) => {
-		requireAuth(context as AuthContext)
+		const task = await getReadRepository().getTask(data.taskId)
+		if (!task) throw new HttpError(404, 'Task not found')
+		if (task.createdBy && task.createdBy !== context.user.email) {
+			throw new HttpError(403, 'Only the task creator can delete this task')
+		}
 		return getObservability().startSpan('deleteTask', () => getWritableRepository().deleteTask(data.taskId))
 	})
-
-/** Deletes a task by ID. Returns { data, error } instead of throwing. */
-export async function deleteTask(taskId: string): Promise<ProcessedResponse<boolean>> {
-	return processResponse(() => deleteTaskServerFn({ data: { taskId } }))
-}
