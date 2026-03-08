@@ -135,7 +135,7 @@ Populated by `authMiddleware`, available in all server functions and route handl
 | **Database** | MongoDB | Implement `ReadRepository` / `WritableRepository` | Postgres, DynamoDB, Supabase, Drizzle, Prisma, in-memory |
 | **AI provider** | OpenAI (Azure) | Implement `AIAdapterService`, return a TanStack AI-compatible adapter | Anthropic, Gemini, Ollama, Groq, any OpenAI-compatible |
 | **Observability** | Sentry | Implement `ObservabilityService` | Datadog, OpenTelemetry, New Relic, no-op |
-| **UI library** | Mantine | Component layer only — no interface needed | shadcn/ui, Chakra, Ant Design, Radix, Tailwind |
+| **UI library** | Mantine | Component layer only — no interface needed | MongoDB.design, shadcn/ui, Chakra, Ant Design, Radix, Tailwind |
 
 ## New Project Workflow
 

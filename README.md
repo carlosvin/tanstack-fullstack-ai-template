@@ -90,11 +90,11 @@ graph TB
 
 | Layer | Interface | Default | Alternatives |
 |-------|-----------|---------|-------------|
-| **Database** | `ReadRepository` / `WritableRepository` | MongoDB | Postgres, DynamoDB, Supabase, in-memory |
-| **AI Provider** | `AIAdapterService` | OpenAI (Azure) | Anthropic, Gemini, Ollama, any OpenAI-compatible |
-| **Observability** | `ObservabilityService` | Sentry | Datadog, OpenTelemetry, no-op |
-| **UI Library** | — (component layer) | Mantine | shadcn/ui, Chakra, Ant Design, Radix |
-| **Schema Validation** | — (Standard Schema spec) | Zod | ArkType, Valibot, Effect Schema |
+| **Database** | `ReadRepository` / `WritableRepository` | [MongoDB](https://www.mongodb.com/) | [Postgres](https://www.postgresql.org/), [DynamoDB](https://aws.amazon.com/dynamodb/), [Supabase](https://supabase.com/), in-memory |
+| **AI Provider** | `AIAdapterService` | [OpenAI](https://platform.openai.com/) (Azure) | [Anthropic](https://www.anthropic.com/), [Gemini](https://ai.google.dev/), [Ollama](https://ollama.com/), any OpenAI-compatible |
+| **Observability** | `ObservabilityService` | [Sentry](https://sentry.io/) | [Datadog](https://www.datadoghq.com/), [OpenTelemetry](https://opentelemetry.io/), no-op |
+| **UI Library** | — (component layer) | [Mantine](https://mantine.dev/) | [MongoDB.design](https://www.mongodb.design/), [shadcn/ui](https://ui.shadcn.com/), [Chakra](https://chakra-ui.com/), [Ant Design](https://ant.design/), [Radix](https://www.radix-ui.com/) |
+| **Schema Validation** | — ([Standard Schema](https://github.com/standard-schema/standard-schema) spec) | [Zod](https://zod.dev/) | [ArkType](https://arktype.io/), [Valibot](https://valibot.dev/), [Effect Schema](https://effect.website/docs/schema/introduction/) |
 
 ### Key Design Decisions
 
@@ -210,8 +210,9 @@ docker run --rm -p 3000:3000 my-app
 - **UI**: [Mantine](https://mantine.dev/) (component library + hooks)
 - **Database**: [MongoDB](https://www.mongodb.com/) (via repository pattern)
 - **Validation**: [Zod](https://zod.dev/) (schemas as source of truth)
+- **Auth**: [jose](https://github.com/panva/jose) (JWT decode, any JS runtime)
 - **Observability**: [Sentry](https://sentry.io/) (behind interface, optional)
-- **Testing**: [Vitest](https://vitest.dev/) + Testing Library
+- **Testing**: [Vitest](https://vitest.dev/) + [Testing Library](https://testing-library.com/)
 - **Linting**: [Biome](https://biomejs.dev/)
 - **Server**: [Nitro](https://nitro.build/) (universal JavaScript server)
 
