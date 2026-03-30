@@ -7,7 +7,31 @@ projectName: TanStack AI-Promptable Full-Stack Template
 projectSummary: >-
   A production-ready TanStack Start template designed to make internal tools AI
   promptable by default.
-version: 1.0.0
+version: 1.2.0
+author:
+  name: Carlos Martin-Sanchez
+  url: https://github.com/carlosvin
+license: MIT
+homepage: https://github.com/carlosvin/tanstack-fullstack-ai-template
+repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
+documentationUrl: https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/skills/README.md
+status: stable
+supportedTools:
+  - id: windsurf
+    name: Windsurf
+    installMode: native
+    tested: false
+    notes: Reads `.agents/skills/` directly when the skill lives in the project.
+  - id: cursor
+    name: Cursor
+    installMode: copy
+    tested: false
+    notes: Copy the generated skill folder into the global Cursor skills directory.
+  - id: claude-code
+    name: Claude Code
+    installMode: copy
+    tested: false
+    notes: Copy the generated skill folder into the Claude Code skills directory.
 tags:
   - tanstack-start
   - fullstack
@@ -20,6 +44,7 @@ capabilities:
   - Natural language querying through repository-backed AI tools
   - URL-aware AI prompt context using current location and route patterns
   - Swappable service implementations behind stable interfaces
+  - Layer-specific schemas with explicit mapping between repository and tool contracts
 triggers:
   - fullstack template
   - TanStack Start project
@@ -35,11 +60,15 @@ outputs:
 constraints:
   - External services are accessed through interfaces only
   - Domain types come from schemas and inferred types
+  - Repository and tools use separate schemas with explicit mapping between layers
+  - AI and UI consume tools-layer schemas only, never repository schemas directly
   - Route data fetching is done in loaders, not effects
   - Mutations use invalidation middleware and normalized responses
 steps:
   - Define schemas as source of truth and infer types
+  - "Split schemas by layer: repository input/output schemas and tool-facing schemas"
   - Define repository interfaces and provide seed + real implementations
+  - Map repository inputs/outputs to tool schemas at the tools boundary
   - Add server functions with GET query and POST mutation conventions
   - Register auth + invalidation middleware
   - Expose read repository methods as safe AI tools
@@ -62,19 +91,39 @@ content: |
   - Swappable database, AI provider, observability, and UI layer
   - AI promptability by exposing read repository methods as tools
   - End-to-end type safety from schema-first definitions
+  - Explicit schema boundaries between repository and tools layers
   - URL-driven page state and loader-driven data fetching
 
   ## Rigid Rules (Must Follow)
 
   1. Interface-first services: every external service (database, AI, observability) is accessed through an interface.
   2. Schema-first types: domain types are schema-derived and inferred, never duplicated manually.
-  3. Loaders-first data fetching: fetch route data in loaders through server functions.
-  4. URL-as-state: filters, tabs, selections, and modal state live in URL search params.
-  5. Middleware chain: auth is global middleware, invalidation runs on mutation server functions.
-  6. Mutation pattern: POST server functions use `invalidateMiddleware -> inputValidator -> handler` and return normalized `{ data, error }`.
-  7. Query pattern: GET server functions validate input and throw on failure for centralized route error handling.
-  8. AI tools from repository: expose read repository methods as tools wrapped with `safeToolHandler()`.
-  9. Keep AI chat context URL-aware: pass current location to `/api/chat` and keep route pattern metadata (for example `/tasks/$taskId`) aligned in the navigation manifest.
+  3. Separation of concerns for schemas: keep repository-layer schemas separate from tools-layer schemas.
+  4. Repository contracts use repository input/output schemas only.
+  5. Tools define their own schemas and map to and from repository schemas explicitly.
+  6. AI and UI interact only with tools-layer schemas; they must not depend directly on repository schemas.
+  7. Loaders-first data fetching: fetch route data in loaders through server functions.
+  8. URL-as-state: filters, tabs, selections, and modal state live in URL search params.
+  9. Middleware chain: auth is global middleware, invalidation runs on mutation server functions.
+  10. Mutation pattern: POST server functions use `invalidateMiddleware -> inputValidator -> handler` and return normalized `{ data, error }`.
+  11. Query pattern: GET server functions validate input and throw on failure for centralized route error handling.
+  12. AI tools from repository: expose read repository methods as tools wrapped with `safeToolHandler()`.
+  13. Keep AI chat context URL-aware: pass current location to `/api/chat` and keep route pattern metadata (for example `/tasks/$taskId`) aligned in the navigation manifest.
+
+  ## Schema Boundaries
+
+  Separate schemas by layer so contracts stay stable and each layer can evolve independently.
+
+  - Repository layer: define repository input schemas for persistence operations and repository output schemas for persisted records and query results.
+  - Tools layer: define tool input/output schemas that represent the contract exposed to AI and UI.
+  - Mapping layer: translate repository schemas to tool schemas, and tool schemas back to repository schemas when needed.
+  - Dependency rule: repository implementations do not know about tool schemas, and AI/UI do not know about repository schemas.
+
+  Example flow:
+
+  `AI or UI -> tools schema -> mapping -> repository schema -> repository implementation`
+
+  `repository output schema -> mapping -> tools schema -> AI or UI`
 
   ## Interface Contracts
 
@@ -117,21 +166,26 @@ content: |
 
   ## Migration / Build Workflow
 
-  1. Define schemas in `src/services/schemas/schemas.ts` and export inferred types from `src/types`.
-  2. Define repository interfaces in `src/services/repository/types.ts`.
-  3. Implement seed repository first, then production repository.
-  4. Add query/mutation server functions in `src/services/api/serverFns.ts`.
-  5. Register auth and invalidation middleware in `src/start.ts`.
-  6. Add AI tools and keep chat system prompt aligned with data model.
-  7. Keep `src/services/ai/navigationManifest.ts` aligned with route structure, including dynamic segments.
-  8. Include `browserContext` location fields (`currentPathname`, `currentSearch`, `currentHref`) in chat requests for prompt grounding.
-  9. Build routes using loaders and `validateSearch` for URL state.
-  10. Add E2E tests in `e2e/` using Playwright against the seed repository.
+  1. Define repository input/output schemas in `src/services/schemas/schemas.ts` and export inferred types from `src/types`.
+  2. Define tool-layer input/output schemas separately from repository schemas.
+  3. Add explicit mappers between tool schemas and repository schemas.
+  4. Define repository interfaces in `src/services/repository/types.ts` using repository-layer contracts.
+  5. Implement seed repository first, then production repository.
+  6. Add query/mutation server functions in `src/services/api/serverFns.ts`.
+  7. Add AI tools that validate and return tool-layer schemas, using mapping at the tools boundary.
+  8. Register auth and invalidation middleware in `src/start.ts`.
+  9. Keep `src/services/ai/navigationManifest.ts` aligned with route structure, including dynamic segments.
+  10. Include `browserContext` location fields (`currentPathname`, `currentSearch`, `currentHref`) in chat requests for prompt grounding.
+  11. Build routes using loaders and `validateSearch` for URL state, consuming only tool-layer schemas.
+  12. Add E2E tests in `e2e/` using Playwright against the seed repository.
 
   ## Validation Checklist
 
   - Every external dependency is behind an interface.
   - Domain types are schema-first and inferred.
+  - Repository schemas and tool schemas are defined separately.
+  - Mapping exists between repository contracts and tool contracts.
+  - AI and UI do not import or depend on repository schemas directly.
   - No `useEffect + useState` data fetching where loaders can be used.
   - Mutation server functions include invalidation middleware.
   - Read repository methods are represented as AI tools.

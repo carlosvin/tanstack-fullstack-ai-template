@@ -1,9 +1,32 @@
----
-name: tanstack-fullstack-pattern
-description: Apply the TanStack Start fullstack architectural pattern with interface-first boundaries for repository, AI, and observability services. Project: TanStack AI-Promptable Full-Stack Template. Triggers on "fullstack template", "TanStack Start project", "repository pattern", "interface-first", "new app scaffold".
----
+# TanStack Fullstack Pattern
 
-> This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.
+- Project: `TanStack AI-Promptable Full-Stack Template`
+- Project summary: A production-ready TanStack Start template designed to make internal tools AI promptable by default.
+- Author: Carlos Martin-Sanchez (https://github.com/carlosvin)
+- License: MIT
+- Homepage: https://github.com/carlosvin/tanstack-fullstack-ai-template
+- Repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
+- Documentation: https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/skills/README.md
+- Status: stable
+- Supported tools: Windsurf [native, not yet verified], Cursor [copy, not yet verified], Claude Code [copy, not yet verified]
+- Capabilities: AI promptable application architecture, Natural language querying through repository-backed AI tools, URL-aware AI prompt context using current location and route patterns, Swappable service implementations behind stable interfaces, Layer-specific schemas with explicit mapping between repository and tool contracts
+- ID: `tanstack-fullstack-pattern`
+- Version: `1.2.0`
+- Tags: tanstack-start, fullstack, architecture, interface-first, repository-pattern, ai-promptable
+
+## Summary
+
+Apply the TanStack Start fullstack architectural pattern with interface-first boundaries for repository, AI, and observability services.
+
+## Triggers
+
+- fullstack template
+- TanStack Start project
+- repository pattern
+- interface-first
+- new app scaffold
+
+## Canonical Content
 # TanStack Fullstack Pattern
 
 An interface-first fullstack architecture built on TanStack Start. The pattern defines six layers with clear boundaries - the interfaces are rigid, and implementations are swappable.

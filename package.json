@@ -9,6 +9,7 @@
 		"start": "node --import ./.output/server/instrument.server.mjs .output/server/index.mjs",
 		"preview": "vite preview",
 		"test": "vitest run",
+		"test:skills": "vitest run scripts/skills/buildSkills.test.ts",
 		"test:e2e": "playwright test",
 		"format": "biome check --write --unsafe",
 		"lint": "biome check && pnpm typecheck && pnpm skills:check",

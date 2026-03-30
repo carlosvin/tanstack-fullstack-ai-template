@@ -1,6 +1,6 @@
 {
 	"$schema": "https://json-schema.org/draft/2020-12/schema",
-	"$id": "https://example.com/skills/spec/skill.schema.json",
+	"$id": "https://raw.githubusercontent.com/carlosvin/tanstack-fullstack-ai-template/main/skills/spec/skill.schema.json",
 	"title": "CanonicalSkill",
 	"type": "object",
 	"additionalProperties": false,
@@ -11,6 +11,13 @@
 		"projectName",
 		"projectSummary",
 		"version",
+		"author",
+		"license",
+		"homepage",
+		"repository",
+		"documentationUrl",
+		"status",
+		"supportedTools",
 		"tags",
 		"capabilities",
 		"triggers",
@@ -46,6 +53,72 @@
 		"version": {
 			"type": "string",
 			"pattern": "^\\d+\\.\\d+\\.\\d+$"
+		},
+		"author": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["name"],
+			"properties": {
+				"name": {
+					"type": "string",
+					"minLength": 2
+				},
+				"url": {
+					"type": "string",
+					"pattern": "^https?://.+$"
+				}
+			}
+		},
+		"license": {
+			"type": "string",
+			"minLength": 2
+		},
+		"homepage": {
+			"type": "string",
+			"pattern": "^https?://.+$"
+		},
+		"repository": {
+			"type": "string",
+			"pattern": "^https?://.+$"
+		},
+		"documentationUrl": {
+			"type": "string",
+			"pattern": "^https?://.+$"
+		},
+		"status": {
+			"type": "string",
+			"enum": ["stable", "beta", "experimental", "deprecated"]
+		},
+		"supportedTools": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["id", "name", "installMode", "tested"],
+				"properties": {
+					"id": {
+						"type": "string",
+						"pattern": "^[a-z0-9-]+$",
+						"minLength": 2
+					},
+					"name": {
+						"type": "string",
+						"minLength": 2
+					},
+					"installMode": {
+						"type": "string",
+						"enum": ["native", "copy"]
+					},
+					"tested": {
+						"type": "boolean"
+					},
+					"notes": {
+						"type": "string",
+						"minLength": 1
+					}
+				}
+			}
 		},
 		"tags": {
 			"type": "array",
@@ -102,6 +175,7 @@
 		},
 		"examples": {
 			"type": "array",
+			"minItems": 1,
 			"items": {
 				"type": "object",
 				"additionalProperties": false,

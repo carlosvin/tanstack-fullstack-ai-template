@@ -69,7 +69,7 @@ export class MongoRepository implements Repository {
 			updatedAt: now,
 			createdBy,
 		}
-		await col.insertOne(task as any)
+		await col.insertOne(task)
 		return task
 	}
 

@@ -10,6 +10,7 @@ This project stores skills in a vendor-agnostic canonical format and generates p
 Each canonical file contains:
 
 - Portable metadata (`id`, `title`, `summary`, `version`, `tags`, `triggers`)
+- Publication metadata (`author`, `license`, `homepage`, `repository`, `documentationUrl`, `status`, `supportedTools`)
 - Structured execution hints (`inputs`, `outputs`, `constraints`, `steps`, `examples`)
 - Canonical markdown body in `content`
 
@@ -22,6 +23,8 @@ Generated files are derived from canonical source and should not be edited manua
 | `.agents/skills/<id>/SKILL.md` | [agentskills.io](https://agentskills.io) standard — read natively by Windsurf and any compatible tool |
 | `skills/dist/<id>.md` | Portable docs (GitHub, wikis, copy-paste) |
 | `skills/registry.json` | Machine-readable manifest for discovery |
+
+Generated outputs are committed on purpose so other projects can consume the skill without running the build pipeline first.
 
 Tools that don't yet read `.agents/skills/` (e.g. Cursor, Claude Code) can use the same `SKILL.md` by copying the skill folder into their tool's directory (e.g. `~/.cursor/skills/` or `.claude/skills/`).
 

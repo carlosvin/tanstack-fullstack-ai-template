@@ -310,6 +310,8 @@ Then follow the end-to-end workflow:
 
 The skill is defined once in a canonical YAML source and generated into the [agentskills.io](https://agentskills.io) standard at `.agents/skills/tanstack-fullstack-pattern/`. Windsurf and other compatible tools read this path directly.
 
+The generated outputs are committed intentionally so you can copy the skill into another project or tool without running the build pipeline first. The machine-readable metadata lives in `skills/registry.json`, and the portable markdown copy lives in `skills/dist/`.
+
 **Use the skill in this repo:** clone the template — the skill is at `.agents/skills/tanstack-fullstack-pattern/`.
 
 **Install the skill globally** (available in all your projects):
@@ -331,6 +333,20 @@ To regenerate after editing the canonical source:
 pnpm skills:build
 ```
 
+To verify the generated outputs are current:
+
+```bash
+pnpm skills:check
+pnpm test:skills
+```
+
+To verify that your editor actually loaded the skill, ask the agent a direct pattern question such as:
+
+- *"What are the rigid rules in the TanStack fullstack pattern?"*
+- *"How should this project structure repository and observability services?"*
+
+If the skill loaded correctly, the response should mention the interface-first boundaries, loaders-first data fetching, URL-as-state, and mutation invalidation conventions.
+
 Once active, ask the agent to apply the pattern:
 
 - *"Set up this project using the TanStack fullstack pattern"*
@@ -344,6 +360,8 @@ The skill covers:
 - Rigid rules (loaders-first, URL-as-state, schema-first types, invalidation middleware)
 - Implementation choices (swap any layer: database, AI, UI, observability, schema library)
 - A validation checklist to verify the pattern is correctly applied
+
+Tool support note: the canonical metadata now tracks support targets and install mode per tool. The current target tools are Windsurf (`native`) plus Cursor and Claude Code (`copy`). Use `skills/registry.json` as the source of truth for current support status.
 
 ### Option C: Adopt Incrementally (Existing Project)
 

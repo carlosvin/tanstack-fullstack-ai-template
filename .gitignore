@@ -1,6 +1,7 @@
 node_modules/
 .output/
 dist/
+!skills/dist/
 .env
 .env.local
 *.local
@@ -12,3 +13,5 @@ playwright-report/
 test-results/
 # Local Netlify folder
 .netlify
+# Local skill plugin config (machine-specific)
+skills/plugin.local.json

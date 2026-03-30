@@ -1,0 +1,51 @@
+name: Skills
+
+on:
+    pull_request:
+        paths:
+            - ".github/workflows/skills.yml"
+            - ".gitignore"
+            - "package.json"
+            - "pnpm-lock.yaml"
+            - "scripts/skills/**"
+            - "skills/**"
+            - ".agents/skills/**"
+    push:
+        branches:
+            - main
+        paths:
+            - ".github/workflows/skills.yml"
+            - ".gitignore"
+            - "package.json"
+            - "pnpm-lock.yaml"
+            - "scripts/skills/**"
+            - "skills/**"
+            - ".agents/skills/**"
+
+jobs:
+    validate-skills:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 10
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: pnpm
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Validate generated skill outputs
+              run: pnpm skills:check
+
+            - name: Run skill builder tests
+              run: pnpm test:skills

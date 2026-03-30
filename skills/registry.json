@@ -7,7 +7,39 @@
       "summary": "Apply the TanStack Start fullstack architectural pattern with interface-first boundaries for repository, AI, and observability services.",
       "projectName": "TanStack AI-Promptable Full-Stack Template",
       "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
-      "version": "1.0.0",
+      "version": "1.2.0",
+      "author": {
+        "name": "Carlos Martin-Sanchez",
+        "url": "https://github.com/carlosvin"
+      },
+      "license": "MIT",
+      "homepage": "https://github.com/carlosvin/tanstack-fullstack-ai-template",
+      "repository": "https://github.com/carlosvin/tanstack-fullstack-ai-template",
+      "documentationUrl": "https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/skills/README.md",
+      "status": "stable",
+      "supportedTools": [
+        {
+          "id": "windsurf",
+          "name": "Windsurf",
+          "installMode": "native",
+          "tested": false,
+          "notes": "Reads `.agents/skills/` directly when the skill lives in the project."
+        },
+        {
+          "id": "cursor",
+          "name": "Cursor",
+          "installMode": "copy",
+          "tested": false,
+          "notes": "Copy the generated skill folder into the global Cursor skills directory."
+        },
+        {
+          "id": "claude-code",
+          "name": "Claude Code",
+          "installMode": "copy",
+          "tested": false,
+          "notes": "Copy the generated skill folder into the Claude Code skills directory."
+        }
+      ],
       "tags": [
         "tanstack-start",
         "fullstack",
@@ -20,7 +52,8 @@
         "AI promptable application architecture",
         "Natural language querying through repository-backed AI tools",
         "URL-aware AI prompt context using current location and route patterns",
-        "Swappable service implementations behind stable interfaces"
+        "Swappable service implementations behind stable interfaces",
+        "Layer-specific schemas with explicit mapping between repository and tool contracts"
       ],
       "triggers": [
         "fullstack template",
@@ -29,8 +62,44 @@
         "interface-first",
         "new app scaffold"
       ],
+      "inputs": [
+        "Existing or new TanStack Start codebase",
+        "Domain requirements for data model and auth"
+      ],
+      "outputs": [
+        "Interface-first architecture with swappable implementations",
+        "Loader-first routes and URL-driven state conventions"
+      ],
+      "constraints": [
+        "External services are accessed through interfaces only",
+        "Domain types come from schemas and inferred types",
+        "Repository and tools use separate schemas with explicit mapping between layers",
+        "AI and UI consume tools-layer schemas only, never repository schemas directly",
+        "Route data fetching is done in loaders, not effects",
+        "Mutations use invalidation middleware and normalized responses"
+      ],
+      "steps": [
+        "Define schemas as source of truth and infer types",
+        "Split schemas by layer: repository input/output schemas and tool-facing schemas",
+        "Define repository interfaces and provide seed + real implementations",
+        "Map repository inputs/outputs to tool schemas at the tools boundary",
+        "Add server functions with GET query and POST mutation conventions",
+        "Register auth + invalidation middleware",
+        "Expose read repository methods as safe AI tools",
+        "Keep route state in URL search params with validateSearch"
+      ],
+      "examples": [
+        {
+          "input": "Add a new domain entity to the template",
+          "output": "Update schema, repository interfaces, server functions, routes, and AI tools"
+        },
+        {
+          "input": "Swap MongoDB to Postgres",
+          "output": "Implement repository interface and switch factory without app-level changes"
+        }
+      ],
       "source": "skills/src/tanstack-fullstack-pattern.skill.yaml",
-      "outputs": {
+      "outputsByFormat": {
         "skill": ".agents/skills/tanstack-fullstack-pattern/SKILL.md",
         "markdown": "skills/dist/tanstack-fullstack-pattern.md"
       }
