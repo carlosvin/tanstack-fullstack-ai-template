@@ -37,10 +37,13 @@ export function toSkillDescription(skill) {
 
 // Produces the agentskills.io standard SKILL.md format for .agents/skills/.
 export function renderAgentSkill(skill) {
+	const frontmatterYaml = YAML.stringify({
+		name: skill.id,
+		description: toSkillDescription(skill),
+	}).trimEnd()
 	const frontmatter = [
 		'---',
-		`name: ${skill.id}`,
-		`description: ${toSkillDescription(skill)}`,
+		frontmatterYaml,
 		'---',
 		'',
 		'> This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.',

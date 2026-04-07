@@ -1,6 +1,10 @@
 ---
 name: tanstack-fullstack-pattern
-description: Apply the TanStack Start fullstack architectural pattern with interface-first boundaries for repository, AI, and observability services. Project: TanStack AI-Promptable Full-Stack Template. Triggers on "fullstack template", "TanStack Start project", "repository pattern", "interface-first", "new app scaffold".
+description: 'Apply the TanStack Start fullstack architectural pattern with
+  interface-first boundaries for repository, AI, and observability services.
+  Project: TanStack AI-Promptable Full-Stack Template. Triggers on "fullstack
+  template", "TanStack Start project", "repository pattern", "interface-first",
+  "new app scaffold".'
 ---
 
 > This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.
