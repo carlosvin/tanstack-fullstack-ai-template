@@ -127,6 +127,50 @@ interface ObservabilityService {
 11. Build routes using loaders and `validateSearch` for URL state, consuming only tool-layer schemas.
 12. Add E2E tests in `e2e/` using Playwright against the seed repository.
 
+## Looking Up TanStack Documentation
+
+Use the TanStack CLI to fetch up-to-date documentation and search across all TanStack libraries directly from the terminal. This avoids relying on potentially stale training data.
+
+### Available Libraries
+
+Run `npx @tanstack/cli libraries` to list all library IDs. Key libraries for this pattern:
+
+| Library | ID |
+|---|---|
+| TanStack Start | `start` |
+| TanStack Router | `router` |
+| TanStack Query | `query` |
+| TanStack AI | `ai` |
+| TanStack Form | `form` |
+
+### Fetch a Documentation Page
+
+```bash
+npx @tanstack/cli doc <library> <path>
+# Examples:
+npx @tanstack/cli doc start framework/react/overview
+npx @tanstack/cli doc router framework/react/guide/search-params
+npx @tanstack/cli doc ai overview
+```
+
+### Search Documentation
+
+```bash
+npx @tanstack/cli search-docs "<query>"
+# Examples:
+npx @tanstack/cli search-docs "server functions middleware"
+npx @tanstack/cli search-docs "search params validation" --library router
+npx @tanstack/cli search-docs "streaming chat" --library ai --framework react
+```
+
+Use `--json` on any command for structured output suitable for automated processing.
+
+### When to Use the CLI
+
+- Before implementing a new pattern (loaders, mutations, search params, AI tools), fetch the relevant doc page.
+- When a lint or type error suggests an API mismatch, search the docs for the correct signature.
+- When adding a new TanStack library, fetch its overview page first.
+
 ## Validation Checklist
 
 - Every external dependency is behind an interface.
