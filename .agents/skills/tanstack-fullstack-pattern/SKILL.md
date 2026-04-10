@@ -8,6 +8,7 @@ description: 'Apply the TanStack Start fullstack architectural pattern with
 ---
 
 > This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.
+>
 # TanStack Fullstack Pattern
 
 An interface-first fullstack architecture built on TanStack Start. The pattern defines six layers with clear boundaries - the interfaces are rigid, and implementations are swappable.
@@ -152,6 +153,17 @@ Use `--json` on any command for structured output suitable for automated process
 - When a lint or type error suggests an API mismatch, search the docs for the correct signature.
 - When adding a new TanStack library, fetch its overview page first.
 
+## Post-Setup Verification
+
+After applying this pattern (new project or migration), complete these steps before considering the setup done:
+
+1. **Install dependencies** with `pnpm install`. Use the latest compatible versions of all packages — run `pnpm update` and resolve any breaking changes.
+2. **Lint and format**: Use [Biome](https://biomejs.dev/) as the default linter and formatter. Start with `recommended` rules and minimal overrides. Run `pnpm format && pnpm lint` and fix all errors.
+3. **Ensure at least one passing test**: Write a simple unit test (e.g. for the seed repository or a utility function) and confirm `pnpm test` passes.
+4. **Build**: Run `pnpm build` and verify the production build succeeds with zero errors.
+
+Only after all four steps pass is the pattern correctly applied.
+
 ## Validation Checklist
 
 - Every external dependency is behind an interface.
@@ -162,4 +174,7 @@ Use `--json` on any command for structured output suitable for automated process
 - No `useEffect + useState` data fetching where loaders can be used.
 - Mutation server functions include invalidation middleware.
 - Read repository methods are represented as AI tools.
-- `pnpm dev`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, and `pnpm build` pass.
+- Biome linting passes with `recommended` rules (`pnpm lint`).
+- At least one unit test exists and passes (`pnpm test`).
+- Production build succeeds (`pnpm build`).
+- `pnpm dev`, `pnpm lint`, `pnpm test`, `pnpm test:e2e`, and `pnpm build` all pass.

@@ -236,16 +236,27 @@ When adding client tools: export the `toolDefinition(...)` from `tools.ts`, pass
 - **Convention**: Spec files in `e2e/` as `*.spec.ts`.
 - **Running**: `pnpm test:e2e` (reuses existing dev server or starts one with seed data).
 
-## 11. Validate Changes
+## 11. Linting and Formatting
+
+This project uses [Biome](https://biomejs.dev/) as the default linter and formatter — **not** ESLint or Prettier. The configuration lives in `biome.json` with `recommended` rules and minimal overrides. When adding new rules, prefer Biome's built-in `recommended` set and keep custom overrides to a minimum.
+
+## 12. Validate Changes
 
 Always verify changes with:
 
 ```bash
-pnpm format    # Auto-fix formatting
-pnpm lint      # Check for lint errors and type errors
-pnpm test      # Run unit tests
-pnpm test:e2e  # Run E2E tests (requires dev server or lets Playwright start one)
+pnpm format    # Auto-fix formatting (Biome)
+pnpm lint      # Check for lint errors and type errors (Biome + tsc)
+pnpm test      # Run unit tests (Vitest)
+pnpm test:e2e  # Run E2E tests (Playwright, requires dev server or lets Playwright start one)
 pnpm build     # Verify production build
 ```
 
-Linting uses Biome, not ESLint.
+### Post-Setup / Migration Verification
+
+When creating a new project from this template or migrating an existing one, confirm all of the following before considering the setup complete:
+
+1. Dependencies installed with latest compatible versions (`pnpm install && pnpm update`).
+2. `pnpm format && pnpm lint` passes with zero errors.
+3. At least one unit test exists and `pnpm test` passes.
+4. `pnpm build` succeeds with zero errors.
