@@ -1,4 +1,4 @@
-import type { Task, TaskFilter, TaskInput, UserProfile } from '../../types'
+import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserProfileRepo } from '../schemas/repository'
 
 /**
  * Read-only repository interface.
@@ -6,16 +6,16 @@ import type { Task, TaskFilter, TaskInput, UserProfile } from '../../types'
  */
 export interface ReadRepository {
 	/** Get all tasks, optionally filtered. */
-	getTasks(filter?: TaskFilter): Promise<Task[]>
+	getTasks(filter?: TaskRepoFilter): Promise<TaskRepo[]>
 
 	/** Get a single task by ID. Returns null if not found. */
-	getTask(taskId: string): Promise<Task | null>
+	getTask(taskId: string): Promise<TaskRepo | null>
 
 	/** Get all distinct assignee emails. */
 	getAssignees(): Promise<string[]>
 
 	/** Get a user profile by email. Returns null if not found. */
-	getUserProfile(email: string): Promise<UserProfile | null>
+	getUserProfile(email: string): Promise<UserProfileRepo | null>
 }
 
 /**
@@ -24,10 +24,10 @@ export interface ReadRepository {
  */
 export interface WritableRepository {
 	/** Create a new task. Returns the created task with generated ID and timestamps. */
-	createTask(input: TaskInput, createdBy?: string): Promise<Task>
+	createTask(input: TaskRepoInput, createdBy?: string): Promise<TaskRepo>
 
 	/** Update an existing task. Returns the updated task or null if not found. */
-	updateTask(taskId: string, input: Partial<TaskInput>): Promise<Task | null>
+	updateTask(taskId: string, input: Partial<TaskRepoInput>): Promise<TaskRepo | null>
 
 	/** Delete a task by ID. Returns true if deleted, false if not found. */
 	deleteTask(taskId: string): Promise<boolean>

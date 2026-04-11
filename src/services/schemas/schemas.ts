@@ -103,6 +103,10 @@ export const TaskFilterSchema = z.object({
 
 export type TaskFilter = z.infer<typeof TaskFilterSchema>
 
+export const UserProfileByEmailSchema = z.object({
+	email: z.string().describe('Email address of the user whose profile to look up'),
+})
+
 export const TaskIdInputSchema = z.object({
 	taskId: z.string().describe('The unique ID of the task'),
 })
@@ -124,7 +128,7 @@ export const AppErrorSchema = z.object({
 
 export type AppError = z.infer<typeof AppErrorSchema>
 
-/** Standard response wrapper for mutations. Avoids throwing in server functions. */
+/** Normalized mutation response. UI callers get this from `processResponse()`. */
 export interface ProcessedResponse<T> {
 	data?: T
 	error?: AppError

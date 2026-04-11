@@ -1,8 +1,8 @@
-import type { Task, TaskFilter, TaskInput, UserProfile } from '../../types'
+import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserProfileRepo } from '../schemas/repository'
 import type { Repository } from './types'
 
 /** Sample seed data for development without a database. */
-const SEED_TASKS: Task[] = [
+const SEED_TASKS: TaskRepo[] = [
 	{
 		id: 'task-1',
 		title: 'Set up project repository',
@@ -60,7 +60,7 @@ const SEED_TASKS: Task[] = [
 	},
 ]
 
-const SEED_USERS: UserProfile[] = [
+const SEED_USERS: UserProfileRepo[] = [
 	{
 		email: 'alice@example.com',
 		name: 'Alice Johnson',
@@ -90,10 +90,10 @@ let nextId = SEED_TASKS.length + 1
  * Mutations modify the in-memory array (not persisted across restarts).
  */
 export class SeedRepository implements Repository {
-	private tasks: Task[] = [...SEED_TASKS]
-	private users: UserProfile[] = [...SEED_USERS]
+	private tasks: TaskRepo[] = [...SEED_TASKS]
+	private users: UserProfileRepo[] = [...SEED_USERS]
 
-	async getTasks(filter?: TaskFilter): Promise<Task[]> {
+	async getTasks(filter?: TaskRepoFilter): Promise<TaskRepo[]> {
 		let result = [...this.tasks]
 
 		if (filter?.status) {
@@ -113,7 +113,7 @@ export class SeedRepository implements Repository {
 		return result
 	}
 
-	async getTask(taskId: string): Promise<Task | null> {
+	async getTask(taskId: string): Promise<TaskRepo | null> {
 		return this.tasks.find((t) => t.id === taskId) ?? null
 	}
 
@@ -122,13 +122,13 @@ export class SeedRepository implements Repository {
 		return [...assignees].sort()
 	}
 
-	async getUserProfile(email: string): Promise<UserProfile | null> {
+	async getUserProfile(email: string): Promise<UserProfileRepo | null> {
 		return this.users.find((u) => u.email.toLowerCase() === email.toLowerCase()) ?? null
 	}
 
-	async createTask(input: TaskInput, createdBy?: string): Promise<Task> {
+	async createTask(input: TaskRepoInput, createdBy?: string): Promise<TaskRepo> {
 		const now = new Date().toISOString()
-		const task: Task = {
+		const task: TaskRepo = {
 			...input,
 			id: `task-${++nextId}`,
 			createdAt: now,
@@ -139,7 +139,7 @@ export class SeedRepository implements Repository {
 		return task
 	}
 
-	async updateTask(taskId: string, input: Partial<TaskInput>): Promise<Task | null> {
+	async updateTask(taskId: string, input: Partial<TaskRepoInput>): Promise<TaskRepo | null> {
 		const index = this.tasks.findIndex((t) => t.id === taskId)
 		if (index === -1) return null
 

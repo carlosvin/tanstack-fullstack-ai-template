@@ -6,6 +6,7 @@ import viteReact from '@vitejs/plugin-react-swc'
 import { nitro } from 'nitro/vite'
 import { defineConfig } from 'vite'
 import viteTsConfigPaths from 'vite-tsconfig-paths'
+import { configDefaults } from 'vitest/config'
 
 export default defineConfig(({ command }) => ({
 	resolve: {
@@ -24,6 +25,7 @@ export default defineConfig(({ command }) => ({
 		environment: 'jsdom',
 		globals: true,
 		setupFiles: ['./src/test-utils/setupTests.ts'],
+		exclude: [...configDefaults.exclude, 'e2e/**'],
 	},
 	plugins: [
 		devtools(),

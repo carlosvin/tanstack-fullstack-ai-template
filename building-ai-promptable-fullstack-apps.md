@@ -99,7 +99,7 @@ Every server function automatically receives `context.user` and `context.userPro
 
 ### Promptable by Design
 
-This is the pattern we are most excited about. AI tools call the **same server functions** that route loaders and event handlers use — a single code path for validation, auth, observability, and data access. Tool handlers are wrapped with `withErrorHandling()` so that failures return `{ error: string, code?: number }` instead of crashing the agent loop:
+This is the pattern we are most excited about. AI tools call the **same server functions** that route loaders and event handlers use — a single code path for validation, auth, observability, and data access. Tool handlers go through a shared helper such as `createSafeServerTool()` so that failures return `{ error: string, code?: number }` instead of crashing the agent loop:
 
 ```typescript
 const getTasksToolDef = toolDefinition({
@@ -108,14 +108,15 @@ const getTasksToolDef = toolDefinition({
   inputSchema: TaskFilterSchema,  // Zod schema with .describe()
 })
 
-export const getTasksTool = getTasksToolDef.server((args) =>
-  withErrorHandling(() => getTasks({ data: TaskFilterSchema.parse(args) }))
+export const getTasksTool = createSafeServerTool(
+  getTasksToolDef,
+  async (args) => getTasks({ data: TaskFilterSchema.parse(args) }),
 )
 ```
 
 Because we use Zod schemas with `.describe()` on every field, the AI model receives rich JSON Schema metadata explaining what each parameter means. The model can then compose tool calls to answer complex queries.
 
-We also expose **create**, **update**, and **delete** as AI tools. Since these call the same server functions used by the UI — which already have `requireAuthMiddleware` chained in — auth and creator checks happen automatically. A **getCurrentUserContext** tool lets the AI check who is logged in and what they can do. When the user is not allowed, mutation server functions throw with 401 or 403, `withErrorHandling()` catches this and returns `{ error, code }`, and the AI explains it in plain language: “You need to log in to create tasks” or “Only the task creator can edit that task.”
+We also expose **create**, **update**, and **delete** as AI tools. Since these call the same server functions used by the UI — which already have `requireAuthMiddleware` chained in — auth and creator checks happen automatically. A **getCurrentUserContext** tool lets the AI check who is logged in and what they can do. When the user is not allowed, mutation server functions throw with 401 or 403, the shared server-tool helper turns those into `{ error, code }`, and the AI explains it in plain language: “You need to log in to create tasks” or “Only the task creator can edit that task.”
 
 The template also uses [TanStack AI client tools](https://tanstack.com/ai/latest/docs/guides/client-tools) — tools that execute in the browser instead of on the server. **navigate** triggers `router.navigate()` to open a page, and **invalidateRouter** calls `router.invalidate()` so the UI refreshes after AI-driven mutations. Their definitions live in `tools.ts` (shared with the server), but the implementations run in the chat drawer component via `@tanstack/ai-client`.
 
@@ -205,7 +206,7 @@ Adding a new domain entity is a six-step process:
 1. **Zod schema** in `schemas.ts` with `.describe()` annotations
 2. **Repository methods** in the interface, then implement in seed and MongoDB
 3. **Server functions** wrapping the repository (GET for loaders, POST with `invalidateMiddleware` for mutations)
-4. **AI tools** that call the server functions (wrapped with `withErrorHandling()`), plus a **getCurrentUserContext** tool so the AI knows who is logged in and what they can do
+4. **AI tools** that call the server functions through `createSafeServerTool()`, plus a **getCurrentUserContext** tool so the AI knows who is logged in and what they can do
 5. **Routes** for the UI pages
 6. **Tests** for the seed repository, new utilities, and E2E flows (Playwright runs against seed data)
 

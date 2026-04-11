@@ -2,8 +2,12 @@ import type { ProcessedResponse } from '../../types'
 import { HttpError } from '../../utils/httpError'
 
 /**
- * Wraps a mutation call and normalizes errors into a ProcessedResponse.
- * Server functions for mutations should NOT throw — they return { data, error } instead.
+ * Wraps a mutation server function call and normalizes thrown errors into a
+ * `ProcessedResponse`. Mutation handlers throw `HttpError` on auth/not-found
+ * failures; this helper catches those (and unexpected errors) so callers get
+ * `{ data }` or `{ error }` without try/catch boilerplate.
+ *
+ * AI tools use `safeToolHandler` for the same purpose.
  */
 export async function processResponse<T>(fn: () => Promise<T>): Promise<ProcessedResponse<T>> {
 	try {

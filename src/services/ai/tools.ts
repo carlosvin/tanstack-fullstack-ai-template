@@ -10,25 +10,24 @@
 import { toolDefinition } from '@tanstack/ai'
 import { z } from 'zod'
 import { TASK_PRIORITIES, TASK_STATUSES } from '../../constants/options'
-import { HttpError } from '../../utils/httpError'
-import { createTask, deleteTask, getAssignees, getCurrentUser, getTask, getTasks, updateTask } from '../api/serverFns'
-import { TaskFilterSchema, TaskIdInputSchema, TaskInputSchema, UpdateTaskInputSchema } from '../schemas/schemas'
-
-/**
- * Wraps an async thunk to catch errors and return them as a structured
- * message instead of crashing the AI agentic loop.
- */
-async function withErrorHandling<T>(fn: () => Promise<T>): Promise<T | { error: string; code?: number }> {
-	try {
-		return await fn()
-	} catch (err) {
-		if (err instanceof HttpError) {
-			return { error: err.message, code: err.statusCode }
-		}
-		const message = err instanceof Error ? err.message : 'An unexpected error occurred'
-		return { error: message }
-	}
-}
+import {
+	createTask,
+	deleteTask,
+	getAssignees,
+	getCurrentUser,
+	getTask,
+	getTasks,
+	getUserProfile,
+	updateTask,
+} from '../api/serverFns'
+import {
+	TaskFilterSchema,
+	TaskIdInputSchema,
+	TaskInputSchema,
+	UpdateTaskInputSchema,
+	UserProfileByEmailSchema,
+} from '../schemas/schemas'
+import { createSafeServerTool } from './serverTool'
 
 // ---------------------------------------------------------------------------
 // Tasks (queries)
@@ -41,8 +40,9 @@ const getTasksToolDef = toolDefinition({
 	inputSchema: TaskFilterSchema,
 })
 
-export const getTasksTool = getTasksToolDef.server((args) =>
-	withErrorHandling(() => getTasks({ data: TaskFilterSchema.parse(args) })),
+/** AI server tool: query tasks with optional filters. */
+export const getTasksTool = createSafeServerTool(getTasksToolDef, async (args) =>
+	getTasks({ data: TaskFilterSchema.parse(args) }),
 )
 
 const getTaskToolDef = toolDefinition({
@@ -51,8 +51,9 @@ const getTaskToolDef = toolDefinition({
 	inputSchema: TaskIdInputSchema,
 })
 
-export const getTaskTool = getTaskToolDef.server((args) =>
-	withErrorHandling(() => getTask({ data: TaskIdInputSchema.parse(args) })),
+/** AI server tool: fetch a single task by ID. */
+export const getTaskTool = createSafeServerTool(getTaskToolDef, async (args) =>
+	getTask({ data: TaskIdInputSchema.parse(args) }),
 )
 
 // ---------------------------------------------------------------------------
@@ -65,7 +66,24 @@ const getAssigneesToolDef = toolDefinition({
 	inputSchema: z.object({}),
 })
 
-export const getAssigneesTool = getAssigneesToolDef.server(() => withErrorHandling(() => getAssignees()))
+/** AI server tool: list distinct assignee emails. */
+export const getAssigneesTool = createSafeServerTool(getAssigneesToolDef, async () => getAssignees())
+
+// ---------------------------------------------------------------------------
+// User profile lookup
+// ---------------------------------------------------------------------------
+
+const getUserProfileToolDef = toolDefinition({
+	name: 'getUserProfile',
+	description:
+		'Look up a user profile by email. Returns name, role, and avatar URL. Useful for resolving assignee display names from emails returned by getAssignees or task.assignee.',
+	inputSchema: UserProfileByEmailSchema,
+})
+
+/** AI server tool: resolve a user profile from an email address. */
+export const getUserProfileTool = createSafeServerTool(getUserProfileToolDef, async (args) =>
+	getUserProfile({ data: UserProfileByEmailSchema.parse(args) }),
+)
 
 // ---------------------------------------------------------------------------
 // Client tools — definition-only (implementations in ChatDrawer.tsx)
@@ -79,11 +97,13 @@ const NavigateSearchSchema = z
 	})
 	.optional()
 
+/** Input schema for the navigate client tool. */
 export const NavigateInputSchema = z.object({
 	to: z.string().describe('Path to navigate to (e.g. /, /tasks, /tasks/123)'),
 	search: NavigateSearchSchema.describe('Optional query params for /tasks (status, priority, search)'),
 })
 
+/** AI client tool definition: trigger in-app navigation. Implementation in ChatDrawer.tsx. */
 export const navigateToolDef = toolDefinition({
 	name: 'navigate',
 	description:
@@ -92,6 +112,7 @@ export const navigateToolDef = toolDefinition({
 	outputSchema: z.object({ success: z.boolean() }),
 })
 
+/** AI client tool definition: refresh page data after mutations. Implementation in ChatDrawer.tsx. */
 export const invalidateRouterToolDef = toolDefinition({
 	name: 'invalidateRouter',
 	description:
@@ -111,15 +132,14 @@ const getCurrentUserContextToolDef = toolDefinition({
 	inputSchema: z.object({}),
 })
 
-export const getCurrentUserContextTool = getCurrentUserContextToolDef.server(() =>
-	withErrorHandling(async () => {
-		const { identity, profile } = await getCurrentUser()
-		const permissions = identity.email
-			? 'Anyone logged in can create tasks. Only the task creator can edit or delete a task (check task.createdBy).'
-			: 'Log in to create, edit, or delete tasks.'
-		return { identity, profile, permissions }
-	}),
-)
+/** AI server tool: returns identity, profile, and a permissions summary for the current user. */
+export const getCurrentUserContextTool = createSafeServerTool(getCurrentUserContextToolDef, async () => {
+	const { identity, profile } = await getCurrentUser()
+	const permissions = identity.email
+		? 'Anyone logged in can create tasks. Only the task creator can edit or delete a task (check task.createdBy).'
+		: 'Log in to create, edit, or delete tasks.'
+	return { identity, profile, permissions }
+})
 
 // ---------------------------------------------------------------------------
 // Mutations — server functions throw on error; safeToolHandler catches.
@@ -132,12 +152,11 @@ const createTaskToolDef = toolDefinition({
 	inputSchema: TaskInputSchema,
 })
 
-export const createTaskTool = createTaskToolDef.server((args) =>
-	withErrorHandling(async () => {
-		const task = await createTask({ data: TaskInputSchema.parse(args) })
-		return { task, message: 'Task created.' }
-	}),
-)
+/** AI server tool: create a new task (requires auth). */
+export const createTaskTool = createSafeServerTool(createTaskToolDef, async (args) => {
+	const task = await createTask({ data: TaskInputSchema.parse(args) })
+	return { task, message: 'Task created.' }
+})
 
 const updateTaskToolDef = toolDefinition({
 	name: 'updateTask',
@@ -146,12 +165,11 @@ const updateTaskToolDef = toolDefinition({
 	inputSchema: UpdateTaskInputSchema,
 })
 
-export const updateTaskTool = updateTaskToolDef.server((args) =>
-	withErrorHandling(async () => {
-		const task = await updateTask({ data: UpdateTaskInputSchema.parse(args) })
-		return { task, message: 'Task updated.' }
-	}),
-)
+/** AI server tool: update an existing task (creator-only). */
+export const updateTaskTool = createSafeServerTool(updateTaskToolDef, async (args) => {
+	const task = await updateTask({ data: UpdateTaskInputSchema.parse(args) })
+	return { task, message: 'Task updated.' }
+})
 
 const deleteTaskToolDef = toolDefinition({
 	name: 'deleteTask',
@@ -160,9 +178,8 @@ const deleteTaskToolDef = toolDefinition({
 	inputSchema: TaskIdInputSchema,
 })
 
-export const deleteTaskTool = deleteTaskToolDef.server((args) =>
-	withErrorHandling(async () => {
-		await deleteTask({ data: TaskIdInputSchema.parse(args) })
-		return { message: 'Task deleted.' }
-	}),
-)
+/** AI server tool: delete a task (creator-only). */
+export const deleteTaskTool = createSafeServerTool(deleteTaskToolDef, async (args) => {
+	await deleteTask({ data: TaskIdInputSchema.parse(args) })
+	return { message: 'Task deleted.' }
+})

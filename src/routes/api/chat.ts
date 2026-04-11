@@ -10,6 +10,7 @@ import {
 	getCurrentUserContextTool,
 	getTasksTool,
 	getTaskTool,
+	getUserProfileTool,
 	invalidateRouterToolDef,
 	navigateToolDef,
 	updateTaskTool,
@@ -55,7 +56,7 @@ Each task has:
 ## Guidelines
 - Use the getTasks tool with filters when the user asks about tasks matching criteria.
 - Use the getTask tool when the user asks about a specific task.
-- Use getAssignees to discover team members.
+- Use getAssignees to discover team members, and getUserProfile to resolve display names and roles from emails.
 - Format responses clearly using markdown.
 - When listing tasks, include their status and priority.
 - Be concise but thorough.`
@@ -148,6 +149,7 @@ export const Route = createFileRoute('/api/chat')({
 					getTasksTool,
 					getTaskTool,
 					getAssigneesTool,
+					getUserProfileTool,
 					getCurrentUserContextTool,
 					createTaskTool,
 					updateTaskTool,

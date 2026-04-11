@@ -1,6 +1,6 @@
 import type { Collection, Db, Filter } from 'mongodb'
-import type { Task, TaskFilter, TaskInput, UserProfile } from '../../types'
 import { getDb } from '../db/mongoClient'
+import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserProfileRepo } from '../schemas/repository'
 import type { Repository } from './types'
 
 const TASKS_COLLECTION = 'tasks'
@@ -20,14 +20,14 @@ export class MongoRepository implements Repository {
 		return this.dbPromise
 	}
 
-	private async collection(): Promise<Collection<Task>> {
+	private async collection(): Promise<Collection<TaskRepo>> {
 		const db = await this.db()
-		return db.collection<Task>(TASKS_COLLECTION)
+		return db.collection<TaskRepo>(TASKS_COLLECTION)
 	}
 
-	async getTasks(filter?: TaskFilter): Promise<Task[]> {
+	async getTasks(filter?: TaskRepoFilter): Promise<TaskRepo[]> {
 		const col = await this.collection()
-		const query: Filter<Task> = {}
+		const query: Filter<TaskRepo> = {}
 
 		if (filter?.status) query.status = filter.status
 		if (filter?.priority) query.priority = filter.priority
@@ -39,12 +39,12 @@ export class MongoRepository implements Repository {
 			]
 		}
 
-		return col.find(query).sort({ updatedAt: -1 }).toArray() as Promise<Task[]>
+		return col.find(query).sort({ updatedAt: -1 }).toArray() as Promise<TaskRepo[]>
 	}
 
-	async getTask(taskId: string): Promise<Task | null> {
+	async getTask(taskId: string): Promise<TaskRepo | null> {
 		const col = await this.collection()
-		return col.findOne({ id: taskId }) as Promise<Task | null>
+		return col.findOne({ id: taskId }) as Promise<TaskRepo | null>
 	}
 
 	async getAssignees(): Promise<string[]> {
@@ -53,16 +53,16 @@ export class MongoRepository implements Repository {
 		return assignees.filter((a): a is string => typeof a === 'string').sort()
 	}
 
-	async getUserProfile(email: string): Promise<UserProfile | null> {
+	async getUserProfile(email: string): Promise<UserProfileRepo | null> {
 		const db = await this.db()
-		const col = db.collection<UserProfile>(USERS_COLLECTION)
-		return col.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } }) as Promise<UserProfile | null>
+		const col = db.collection<UserProfileRepo>(USERS_COLLECTION)
+		return col.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } }) as Promise<UserProfileRepo | null>
 	}
 
-	async createTask(input: TaskInput, createdBy?: string): Promise<Task> {
+	async createTask(input: TaskRepoInput, createdBy?: string): Promise<TaskRepo> {
 		const col = await this.collection()
 		const now = new Date().toISOString()
-		const task: Task = {
+		const task: TaskRepo = {
 			...input,
 			id: crypto.randomUUID(),
 			createdAt: now,
@@ -73,14 +73,14 @@ export class MongoRepository implements Repository {
 		return task
 	}
 
-	async updateTask(taskId: string, input: Partial<TaskInput>): Promise<Task | null> {
+	async updateTask(taskId: string, input: Partial<TaskRepoInput>): Promise<TaskRepo | null> {
 		const col = await this.collection()
 		const result = await col.findOneAndUpdate(
 			{ id: taskId },
 			{ $set: { ...input, updatedAt: new Date().toISOString() } },
 			{ returnDocument: 'after' },
 		)
-		return result as Task | null
+		return result as TaskRepo | null
 	}
 
 	async deleteTask(taskId: string): Promise<boolean> {

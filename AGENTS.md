@@ -140,7 +140,7 @@ Route Loader → Server Function (serverFns.ts) → Repository → Database / Se
 
 - Use `createServerFn({ method: 'POST' })` for mutations.
 - **Invalidation middleware**: All POST server functions must chain `.middleware([requireAuthMiddleware, invalidateMiddleware])`. The middleware runs on the client after the mutation completes and calls `router.invalidate()`, which triggers loaders to re-fetch. Components do **not** call `router.invalidate()` manually.
-- Mutation server functions throw on error. Callers in route components wrap calls with `processResponse()` to get `{ data, error }`.
+- Mutation server functions throw `HttpError` on auth/not-found failures. UI callers wrap with `processResponse()` to get `{ data, error }`. AI tools use `safeToolHandler()` for the same normalization.
 - Call mutations from event handlers. Provide toast feedback after mutations.
 
 ```tsx
@@ -182,9 +182,9 @@ The default implementation in `src/services/ai/adapter.ts` uses `@tanstack/ai-op
 ### Server Tools
 
 - `src/services/ai/tools.ts` defines server tools using `toolDefinition` from `@tanstack/ai`. Server tools call the same exported server functions that route loaders and event handlers use.
-- Tool handlers use `withErrorHandling()` to catch errors and return `{ error: string, code?: number }` so the AI can interpret 401/403/404 (e.g. "You need to log in", "Only the task creator can do that").
+- Tool handlers use the shared `createSafeServerTool()` / `safeToolHandler()` pattern to catch errors and return `{ error: string, code?: number }` so the AI can interpret 401/403/404 (e.g. "You need to log in", "Only the task creator can do that").
 - Tool args are typed via `Schema.parse(args)` since `@tanstack/ai`'s `.server()` types the handler arg as `unknown`.
-- When adding new repository read methods, expose them as AI tools.
+- When adding new repository methods (reads and writes), expose them as AI tools.
 - **getCurrentUserContext** returns who is logged in and a permissions summary. **createTask**, **updateTask**, **deleteTask** call the same server functions as the UI; auth and creator checks run inside the server function handlers.
 
 ### Client Tools
@@ -223,7 +223,7 @@ When adding client tools: export the `toolDefinition(...)` from `tools.ts`, pass
 ### Unit Tests (Vitest)
 
 - **Framework**: Vitest with jsdom environment.
-- **Libraries**: `@testing-library/react`, `@testing-library/user-event`, `@testing-library/dom`.
+- **Libraries**: `@testing-library/react`, `@testing-library/dom`.
 - **Setup**: Global setup in `src/test-utils/setupTests.ts` (includes `matchMedia`, `ResizeObserver`, `MutationObserver` mocks).
 - **Rendering**: `renderWithProviders()` in `src/test-utils/renderWithRouter.tsx` wraps with MantineProvider.
 - **Convention**: Test files co-located as `*.test.ts` or `*.test.tsx`.
