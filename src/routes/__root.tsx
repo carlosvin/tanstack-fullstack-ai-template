@@ -67,7 +67,7 @@ function NotFoundPage() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
-		<html lang="en">
+		<html lang="en" suppressHydrationWarning>
 			<head>
 				<ColorSchemeScript defaultColorScheme="auto" />
 				<HeadContent />

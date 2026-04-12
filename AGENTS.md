@@ -280,6 +280,15 @@ This avoids a flash of disabled UI and keeps the chrome clean when no AI provide
 
 Unless the user specifies otherwise, the AI chat is rendered in a Mantine [`Drawer`](https://mantine.dev/core/drawer/) positioned on the **right** side (`position="right"`, `size="lg"`). The drawer is mounted at the root layout level (`AppLayout`) so messages persist across route navigation. The `useDisclosure` hook from `@mantine/hooks` controls open/close state.
 
+### Chat Drawer Rendering
+
+Assistant messages are rendered with [`react-markdown`](https://github.com/remarkjs/react-markdown) + [`remark-gfm`](https://github.com/remarkjs/remark-gfm) inside a `div` with the `.markdown` CSS Module class from `ChatDrawer.module.css`.
+
+- **Tables**: GFM tables render as native `<table>` elements styled in the CSS Module with Mantine CSS variables (`--mantine-color-default-border`, `--mantine-color-default-hover`, `--mantine-font-size-xs`). Do **not** use Mantine `Table` components for markdown output — extend the `.markdown` CSS class instead.
+- **Code blocks**: `pre` and `code` elements are styled in the same CSS Module using `--mantine-font-family-monospace` and `--mantine-radius-md`. No syntax highlighting library is included by default.
+- **Internal links**: A custom `MarkdownLink` component detects internal paths (starts with `/`, not `/api/`) and renders TanStack Router `Link` with `preload="intent"` and query param parsing. Clicking navigates the app via client-side routing without closing the drawer or losing chat history — the drawer is mounted at the root layout level (`AppLayout`) so its `useChat` message state survives route changes. External links render as `<a target="_blank" rel="noopener noreferrer">`.
+- **Adding markdown features**: To support new markdown elements (e.g. syntax highlighting, custom block renderers), add a `components` entry to the `Markdown` component in `ChatDrawer.tsx` and extend the `.markdown` CSS Module rules using Mantine CSS variables for theme consistency.
+
 ### Chat Endpoint
 
 - `POST /api/chat` in `src/routes/api/chat.ts` with SSE streaming.
