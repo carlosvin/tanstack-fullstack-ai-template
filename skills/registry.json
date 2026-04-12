@@ -84,7 +84,8 @@
         "Route files are thin; page components are extracted into src/components/ for testability",
         "AI chat is conditionally enabled based on adapter configuration at the root loader level",
         "Server-side logging uses pino; console.* is not used in server code",
-        "App version is extracted from package.json at build time and injected into all observability tools"
+        "App version is extracted from package.json at build time and injected into all observability tools",
+        "Dependencies are kept at latest compatible versions; exact pins are avoided unless a known incompatibility exists"
       ],
       "steps": [
         "Define schemas as source of truth and infer types",
@@ -93,6 +94,7 @@
         "Map repository inputs/outputs to tool schemas at the tools boundary",
         "Add server functions with GET query and POST mutation conventions",
         "Register auth + invalidation middleware",
+        "Ask the user which LLM provider they want and install the matching TanStack AI adapter",
         "Expose every repository method (reads and writes) as safe AI tools",
         "Keep route state in URL search params with validateSearch"
       ],

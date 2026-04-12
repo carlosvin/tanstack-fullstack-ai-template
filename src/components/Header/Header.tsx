@@ -1,6 +1,6 @@
 import { ActionIcon, Button, Group, Text, Tooltip, useMantineColorScheme } from '@mantine/core'
 import { Link } from '@tanstack/react-router'
-import { CheckSquare, Github, ListTodo, MessageCircle, Moon, Sun } from 'lucide-react'
+import { CheckSquare, Code, ListTodo, MessageCircle, Moon, Sun } from 'lucide-react'
 import type { UserIdentity, UserProfile } from '../../types'
 
 interface HeaderProps {
@@ -56,7 +56,7 @@ export function Header({ currentUser, onOpenChat }: HeaderProps) {
 						size="lg"
 						aria-label="View source on GitHub"
 					>
-						<Github size={18} />
+						<Code size={18} />
 					</ActionIcon>
 				</Tooltip>
 

@@ -64,6 +64,8 @@ An interface-first fullstack architecture built on TanStack Start. The pattern d
 21. Icon library: use `lucide-react` as the default icon library. Keep one icon library per project for visual consistency.
 22. Structured logging: use `pino` for all server-side logging instead of `console.*`. Configure `@sentry/pino-transport` so error-level logs are automatically forwarded to Sentry when `VITE_SENTRY_DSN` is set. The logger singleton lives in `src/services/logger.ts`.
 23. Build-time app version: extract the semver version from `package.json` at build time via Vite `define` and expose it as `__APP_VERSION__`. Inject it into Sentry (`release`), the pino logger (default `version` field), and any other observability tool so every error report and log line is tagged with the deployed version.
+24. Latest dependencies: always install and keep dependencies at their latest compatible versions. Never pin exact versions unless there is a known incompatibility. Run `pnpm outdated` to check and `pnpm update` to align the lockfile. When adding packages use `pnpm add <pkg>` (no version suffix) so the package manager resolves the newest release.
+25. Ask for LLM provider: when scaffolding a new project or when the user's LLM preference is unclear, ask which provider they want before writing the adapter. TanStack AI has adapter packages for OpenAI, Anthropic, Google Gemini, and Ollama. The default is `@tanstack/ai-openai`; install only the chosen adapter package and configure the matching env vars in `adapter.ts`. Do not assume OpenAI without asking.
 
 ## Schema Boundaries
 
@@ -144,6 +146,7 @@ Use `npx @tanstack/cli` to fetch up-to-date docs instead of relying on training 
 
 ## AI Chat Pipeline
 
+- The default adapter uses `@tanstack/ai-openai` (`createOpenaiChat`). Set `OPENAI_API_KEY` to enable; optionally set `OPENAI_MODEL` (default `gpt-4o`) and `OPENAI_BASE_URL` for Azure or compatible APIs. To swap providers, implement `AIAdapterService` and update the factory in `adapter.ts`. See AGENTS.md section 8 for full adapter details.
 - Server tools use `toolDefinition` from `@tanstack/ai` and call the same exported server functions as route loaders. Args typed via `Schema.parse(args)` since `.server()` types args as `unknown`.
 - `POST /api/chat` (`src/routes/api/chat.ts`) uses SSE streaming and the auth middleware context.
 - Keep the system prompt updated when the data model or routes change.

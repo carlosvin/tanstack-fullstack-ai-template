@@ -211,7 +211,18 @@ interface AIAdapterService {
 }
 ```
 
-The default implementation in `src/services/ai/adapter.ts` uses `@tanstack/ai-openai` (OpenAI/Azure-compatible). To swap providers (Anthropic, Gemini, Ollama), create a new class implementing `AIAdapterService` and update the factory.
+**When scaffolding a new project or when the LLM preference is not clear, ask the user which provider they want.** TanStack AI has adapter packages for multiple providers:
+
+| Provider | Adapter package | Required env var(s) |
+|----------|----------------|---------------------|
+| OpenAI (default) | `@tanstack/ai-openai` | `OPENAI_API_KEY` |
+| Anthropic | `@tanstack/ai-anthropic` | `ANTHROPIC_API_KEY` |
+| Google Gemini | `@tanstack/ai-gemini` | `GEMINI_API_KEY` |
+| Ollama (local) | `@tanstack/ai-ollama` | `OLLAMA_BASE_URL` |
+
+Install only the chosen adapter package (e.g. `pnpm add @tanstack/ai-openai`), implement the corresponding `AIAdapterService` class in `src/services/ai/adapter.ts`, and configure the matching env vars. Do not assume OpenAI without asking.
+
+The default implementation uses `@tanstack/ai-openai` with plain OpenAI. Set `OPENAI_API_KEY` to enable AI chat. Optionally set `OPENAI_MODEL` (default: `gpt-4o`) and `OPENAI_BASE_URL` for Azure OpenAI, proxies, or compatible APIs.
 
 ### Server Tools
 
@@ -402,7 +413,14 @@ When `VITE_SENTRY_DSN` is set, the Sentry transport receives error-level logs al
 
 This project uses [Biome](https://biomejs.dev/) as the default linter and formatter — **not** ESLint or Prettier. The configuration lives in `biome.json` with `recommended` rules and minimal overrides. When adding new rules, prefer Biome's built-in `recommended` set and keep custom overrides to a minimum.
 
-## 12. Validate Changes
+## 12. Dependency Management
+
+- **Always use latest versions**: When adding dependencies, run `pnpm add <pkg>` without a version suffix so the package manager resolves the newest release. Never pin exact versions unless there is a known incompatibility.
+- **Keep dependencies up to date**: Run `pnpm outdated` to check for stale packages and `pnpm update` to align the lockfile with the latest compatible versions within current ranges.
+- **Major version upgrades are conscious decisions**: When `pnpm outdated` shows a major version bump, upgrade explicitly with `pnpm add <pkg>@latest`, then verify with `pnpm lint && pnpm test && pnpm build` before committing.
+- **After any dependency change**, run the full validation checklist (section 13) to catch regressions.
+
+## 13. Validate Changes
 
 Always verify changes with:
 
