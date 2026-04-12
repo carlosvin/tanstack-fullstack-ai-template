@@ -9,7 +9,7 @@
 - Documentation: https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/skills/README.md
 - Status: stable
 - Supported tools: Windsurf [native, not yet verified], Cursor [copy, not yet verified], Claude Code [copy, not yet verified]
-- Capabilities: AI promptable application architecture, Promptable-by-default AI chat in a side drawer when credentials are present, Natural language querying through repository-backed AI tools, URL-aware AI prompt context using current location and route patterns, Swappable service implementations behind stable interfaces, Layer-specific schemas with explicit mapping between repository and tool contracts, Thin routes with extracted, testable page components
+- Capabilities: AI promptable application architecture, Promptable-by-default AI chat in a side drawer when credentials are present, Natural language querying through repository-backed AI tools, URL-aware AI prompt context using current location and route patterns, Swappable service implementations behind stable interfaces, Layer-specific schemas with explicit mapping between repository and tool contracts, Thin routes with extracted, testable page components, Structured server-side logging with pino and automatic Sentry error forwarding, Build-time semver version injected into observability tools for release tracking
 - ID: `tanstack-fullstack-pattern`
 - Version: `1.8.0`
 - Tags: tanstack-start, fullstack, architecture, interface-first, repository-pattern, ai-promptable
@@ -54,7 +54,7 @@ An interface-first fullstack architecture built on TanStack Start. The pattern d
 11. Query pattern: GET server functions throw on failure for centralized error handling.
 12. Maximize AI tool coverage: expose **every** repository method (reads and writes) via `createSafeServerTool()` so failures return `{ error, code }`. If a server function exists, it gets a tool.
 13. Router capabilities as AI client tools: expose `router.navigate()` and `router.invalidate()` as client tools via `toolDefinition()`.
-14. AI chat context is URL-aware: pass current location to `/api/chat`; keep the navigation manifest aligned with routes.
+14. AI system prompt context: `buildSystemPrompt()` injects three context blocks into every AI chat request. (a) **Current User** — name, email, role from the auth middleware context (server-side; no client round-trip needed). (b) **Browser Context** — timezone, locale, and current date/time from `browserContext` sent by `ChatDrawer` (client-side). (c) **Current Location** — pathname, search params, and full URL from `browserContext`; route patterns (e.g. `/tasks/$taskId`) are matched to resolve dynamic segments. The navigation manifest mirrors `routeTree.gen.ts` and lists each route's search params. When adding routes, update `navigationManifest.ts` and add pattern-matching in `buildSystemPrompt()` for new dynamic segments.
 15. JSDoc on exports: every exported function, interface, type, and constant gets a JSDoc comment stating *what* and *why*.
 16. Chat persists across navigation: render `ChatDrawer` at the root layout level so messages survive route changes.
 17. AI renders rich markdown: use `react-markdown` + `remark-gfm` for tables, code blocks, links. Internal paths render as Router `Link` components; the AI uses markdown links (e.g. `[Pending tasks](/tasks?status=pending)`) for in-app navigation.
@@ -62,6 +62,8 @@ An interface-first fullstack architecture built on TanStack Start. The pattern d
 19. Promptable by default: check AI availability at the root loader level via `getAIAvailability()` (calls `getAIAdapterService().isConfigured()`). Pass the result through the layout. Only render the chat trigger and drawer when AI is configured — no disabled-state fallback.
 20. AI chat drawer: unless the user specifies otherwise, render the AI chat in a Mantine `Drawer` positioned on the right (`position="right"`, `size="lg"`), mounted at the root layout level so messages persist across navigation.
 21. Icon library: use `lucide-react` as the default icon library. Keep one icon library per project for visual consistency.
+22. Structured logging: use `pino` for all server-side logging instead of `console.*`. Configure `@sentry/pino-transport` so error-level logs are automatically forwarded to Sentry when `VITE_SENTRY_DSN` is set. The logger singleton lives in `src/services/logger.ts`.
+23. Build-time app version: extract the semver version from `package.json` at build time via Vite `define` and expose it as `__APP_VERSION__`. Inject it into Sentry (`release`), the pino logger (default `version` field), and any other observability tool so every error report and log line is tagged with the deployed version.
 
 ## Schema Boundaries
 

@@ -55,7 +55,9 @@
         "URL-aware AI prompt context using current location and route patterns",
         "Swappable service implementations behind stable interfaces",
         "Layer-specific schemas with explicit mapping between repository and tool contracts",
-        "Thin routes with extracted, testable page components"
+        "Thin routes with extracted, testable page components",
+        "Structured server-side logging with pino and automatic Sentry error forwarding",
+        "Build-time semver version injected into observability tools for release tracking"
       ],
       "triggers": [
         "fullstack template",
@@ -80,7 +82,9 @@
         "Route data fetching is done in loaders, not effects",
         "Mutations use invalidation middleware; handlers return data or throw, callers normalize errors",
         "Route files are thin; page components are extracted into src/components/ for testability",
-        "AI chat is conditionally enabled based on adapter configuration at the root loader level"
+        "AI chat is conditionally enabled based on adapter configuration at the root loader level",
+        "Server-side logging uses pino; console.* is not used in server code",
+        "App version is extracted from package.json at build time and injected into all observability tools"
       ],
       "steps": [
         "Define schemas as source of truth and infer types",

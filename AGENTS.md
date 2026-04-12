@@ -237,6 +237,23 @@ When adding client tools: export the `toolDefinition(...)` from `tools.ts`, pass
 - The AI can trigger client-side navigation by calling the **navigate** client tool with `to` and optional `search`; the browser executes it automatically via `@tanstack/ai-client`.
 - The chat UI ([ChatDrawer](src/components/ChatDrawer/ChatDrawer.tsx)) renders internal links in assistant messages as TanStack Router `Link` components so clicks do client-side navigation; external links open in a new tab.
 
+### AI System Prompt Context
+
+`buildSystemPrompt()` in `src/routes/api/chat.ts` assembles three context blocks so the AI knows **who** is asking, **where** they are in the world, and **what page** they are on. The client sends browser-only data (`browserContext` via `ChatDrawer`); the server adds server-only data (user identity from auth middleware). Both are merged into the system prompt.
+
+1. **`ChatDrawer`** (client) captures the browser environment (timezone, locale, current time) and current location (pathname, search, href) into `browserContext` and sends it with every `/api/chat` request.
+2. **`BrowserContextSchema`** (`src/services/schemas/schemas.ts`) validates the payload on the server.
+3. **`## Current User`** (server) — `buildSystemPrompt()` reads the authenticated user from the auth middleware context and injects name, email, and role. No client data needed; this comes from the JWT. The AI uses this to personalize replies and understand permissions without a tool call.
+4. **`## Browser Context`** (server + client data) — same function injects timezone, locale, and the user's local date/time formatted using their locale and timezone from `browserContext`.
+5. **`## Current Location`** (server + client data) — same function injects the current path, full URL, and any resolved dynamic segments (e.g. matching `/tasks/$taskId` to extract the concrete task id so the AI can resolve "this task").
+6. **Navigation manifest** — `navigationManifest.ts` lists all user-facing routes and their search params (mirroring `src/routeTree.gen.ts`). This is injected into the system prompt so the AI knows which query params exist for each route and can form valid links and `navigate` tool calls.
+
+When adding or changing routes:
+
+- Update `APP_NAVIGATION` in `navigationManifest.ts` with the new route, description, and any `searchParams` (name + description). The manifest is the AI's view of the app structure.
+- If a new route has dynamic segments (e.g. `$projectId`), add pattern-matching logic in `buildSystemPrompt()` so the AI can resolve "this project" to the current id.
+- Search param names and descriptions in the manifest should match the Zod schemas in `validateSearch` on the corresponding route file.
+
 ### Promptable by Default
 
 The app is AI-promptable out of the box when the required credentials are set. AI availability is checked at the **root loader level** via `getAIAvailability()` in `src/services/api/serverFns.ts`, which calls `getAIAdapterService().isConfigured()`. The result flows through the component tree:
@@ -266,6 +283,102 @@ Unless the user specifies otherwise, the AI chat is rendered in a Mantine [`Draw
 - **Client Init**: `src/router.tsx` conditionally initializes client-side tracing.
 - **Usage**: Wrap server function internals with `getObservability().startSpan('name', fn)`.
 - **To swap providers**: Implement `ObservabilityService`, update the factory, and replace `instrument.server.mjs`.
+
+### App Version
+
+The app follows [semver](https://semver.org/). The version in `package.json` is extracted at **build time** via Vite's `define` option and exposed as the global constant `__APP_VERSION__`. This constant is injected into every observability tool so that error reports, log lines, and traces are tagged with the exact deployed version.
+
+**Vite config** (`vite.config.ts`):
+
+```typescript
+import { readFileSync } from 'node:fs'
+const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'))
+
+export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
+  // ...existing config
+})
+```
+
+**TypeScript declaration** (add to `src/vite-env.d.ts` or a global `.d.ts`):
+
+```typescript
+declare const __APP_VERSION__: string
+```
+
+**Sentry** — pass as `release` in `instrument.server.mjs` and in client init so errors are grouped by version:
+
+```javascript
+Sentry.init({
+  dsn: sentryDsn,
+  release: process.env.npm_package_version ?? 'unknown',
+  // ...existing config
+})
+```
+
+For the client-side Sentry init, use the Vite-injected constant:
+
+```typescript
+Sentry.init({ dsn, release: __APP_VERSION__ })
+```
+
+**Pino logger** — include `version` as a default binding so every log line carries it:
+
+```typescript
+export const logger = pino({
+  level: 'info',
+  base: { version: __APP_VERSION__ },
+}, transport)
+```
+
+**Other tools** — any new observability integration should read `__APP_VERSION__` for the same purpose. The pattern ensures a single source of truth (`package.json`) with no manual version strings.
+
+### Logging
+
+This project uses [`pino`](https://getpino.io/) as the default server-side structured logger. Do **not** use `console.log` / `console.error` / `console.warn` in server code — use the logger instead.
+
+**Setup**: The logger singleton lives in `src/services/logger.ts`. It conditionally adds the [`@sentry/pino-transport`](https://docs.sentry.io/platforms/javascript/guides/node/configuration/integrations/pino/) so that error-level logs (`logger.error(...)`) are automatically captured by Sentry when `VITE_SENTRY_DSN` is set. When no DSN is configured, pino logs to stdout with pretty-printing in development.
+
+```tsx
+import { logger } from '../services/logger'
+
+logger.info({ repo: type }, 'Using repository')
+logger.error({ err, taskId }, 'Failed to update task')
+```
+
+**Installation**:
+
+```bash
+pnpm add pino
+pnpm add -D pino-pretty          # pretty-print in development
+pnpm add @sentry/pino-transport  # optional: forward errors to Sentry
+```
+
+**Configuration pattern** (`src/services/logger.ts`):
+
+```typescript
+import pino from 'pino'
+
+const transport = process.env.VITE_SENTRY_DSN
+  ? pino.transport({
+      targets: [
+        { target: '@sentry/pino-transport', level: 'error' },
+        {
+          target: process.env.NODE_ENV === 'production' ? 'pino/file' : 'pino-pretty',
+          level: 'info',
+        },
+      ],
+    })
+  : process.env.NODE_ENV === 'production'
+    ? undefined
+    : pino.transport({ target: 'pino-pretty' })
+
+export const logger = pino({ level: 'info' }, transport)
+```
+
+When `VITE_SENTRY_DSN` is set, the Sentry transport receives error-level logs alongside the regular output target. When Sentry is not configured, the logger simply writes to stdout (pretty in dev, JSON in production). No code changes are needed when toggling Sentry on or off.
 
 ## 10. Testing
 
