@@ -12,6 +12,8 @@ description: 'Use when scaffolding a new TanStack Start project, adding domain
 
 An interface-first fullstack architecture built on TanStack Start. The pattern defines clear interface boundaries between layers -- interfaces are rigid, implementations are swappable.
 
+> **Companion documentation:** In repositories built from this template, [AGENTS.md](AGENTS.md) holds the project handbook -- file structure, Mantine styling, auth snippets, Biome, testing/E2E commands, and the full validation checklist. This skill focuses on the architectural contract; refer to AGENTS.md for operational detail.
+
 ## Pattern Overview
 
 - Zero-config development with seed implementations and swappable service layers
@@ -29,7 +31,7 @@ An interface-first fullstack architecture built on TanStack Start. The pattern d
 7. Loaders-first data fetching: fetch route data in loaders through server functions.
 8. URL-as-state: filters, tabs, selections live in URL search params via `validateSearch` (Zod/ArkType). Use `loaderDeps` to feed validated search into loaders.
 9. Middleware chain: auth is global middleware, invalidation runs on mutation server functions.
-10. Mutation pattern: POST server functions chain `.middleware([requireAuthMiddleware, invalidateMiddleware])` and return normalized `{ data, error }`.
+10. Mutation pattern: POST server functions chain `.middleware([requireAuthMiddleware, invalidateMiddleware])`, return domain data or throw `HttpError`. Callers normalize errors: UI via `processResponse()`, AI tools via `safeToolHandler()` / `createSafeServerTool()`.
 11. Query pattern: GET server functions throw on failure for centralized error handling.
 12. Maximize AI tool coverage: expose **every** repository method (reads and writes) via `createSafeServerTool()` so failures return `{ error, code }`. If a server function exists, it gets a tool.
 13. Router capabilities as AI client tools: expose `router.navigate()` and `router.invalidate()` as client tools via `toolDefinition()`.
@@ -93,17 +95,13 @@ interface WritableRepository {
 }
 ```
 
-## Styling and UI (Mantine)
+## Styling, Auth, and Observability
 
-- Use Mantine components and styling props (`c`, `fw`, `size`, `variant`, responsive object syntax) before custom CSS.
-- Design tokens (colors, fonts, spacing, radius) go in `createTheme()` at `__root.tsx`.
-- CSS Modules only when Mantine props cannot express the style; use `--mantine-color-*` variables. All components must support light and dark schemes.
+These topics are documented once in [AGENTS.md](AGENTS.md) to avoid drift:
 
-## Auth and Middleware
-
-- `authMiddleware` (global) extracts JWT from configurable header (`AUTH_HEADER_NAME`) and provides typed `context.user` / `context.userProfile`.
-- `requireAuthMiddleware` chains auth; POST mutations require it, GET queries stay unauthenticated. Guards: `requireAuth(context)` throws 401, `requireGroup(context, group)` throws 403.
-- Custom authorization: composable middleware chaining `authMiddleware` + `invalidateMiddleware` on POST server functions.
+- **Mantine UI** -- see AGENTS.md section 3 (component-first styling, CSS Modules, dark mode).
+- **Auth and Middleware** -- see AGENTS.md section 5 (middleware chain, `AuthContext`, guard helpers, code samples). Rigid rules 9--10 above are the normative summary.
+- **Observability** -- see AGENTS.md section 9 (interface, Sentry/no-op, swap steps).
 
 ## Migration / Build Workflow
 
@@ -145,17 +143,6 @@ const navigateClient = navigateToolDef.client((args) => {
 const tools = clientTools(navigateClient, invalidateClient)
 ```
 
-## Observability
+## Verification
 
-- `ObservabilityService` interface in `src/services/observability/types.ts`; Sentry and no-op implementations with factory.
-- Server init: `instrument.server.mjs`; client init: `src/router.tsx`. Usage: `getObservability().startSpan('name', fn)`.
-- To swap providers: implement `ObservabilityService`, update factory, replace `instrument.server.mjs`.
-
-## Post-Setup Verification
-
-Run in order: `pnpm install && pnpm update` (latest compatible versions), `pnpm format && pnpm lint` (Biome, zero errors), `pnpm test` (at least one passing), `pnpm build` (production build succeeds).
-
-## Testing
-
-- **Unit**: Vitest + jsdom + Testing Library; `renderWithProviders()` wraps MantineProvider. Co-located as `*.test.ts(x)`.
-- **E2E**: Playwright (Chromium), `REPOSITORY_TYPE=seed`, specs in `e2e/*.spec.ts`. Auth fixture provides `authedPage` / `authedContext` via unsigned JWTs.
+Testing setup (Vitest, Playwright, auth fixtures) and the full validation checklist are in [AGENTS.md](AGENTS.md) sections 10 and 12. Quick smoke test: `pnpm format && pnpm lint && pnpm test && pnpm build`.

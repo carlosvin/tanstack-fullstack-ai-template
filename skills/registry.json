@@ -7,7 +7,7 @@
       "summary": "Use when scaffolding a new TanStack Start project, adding domain entities to the fullstack template, or implementing the interface-first repository pattern with AI-promptable tools.",
       "projectName": "TanStack AI-Promptable Full-Stack Template",
       "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
-      "version": "1.6.0",
+      "version": "1.7.0",
       "author": {
         "name": "Carlos Martin-Sanchez",
         "url": "https://github.com/carlosvin"
@@ -76,7 +76,7 @@
         "Repository and tools use separate schemas with explicit mapping between layers",
         "AI and UI consume tools-layer schemas only, never repository schemas directly",
         "Route data fetching is done in loaders, not effects",
-        "Mutations use invalidation middleware and normalized responses"
+        "Mutations use invalidation middleware; handlers return data or throw, callers normalize errors"
       ],
       "steps": [
         "Define schemas as source of truth and infer types",
