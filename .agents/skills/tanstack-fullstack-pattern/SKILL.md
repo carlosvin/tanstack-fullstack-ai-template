@@ -39,6 +39,10 @@ An interface-first fullstack architecture built on TanStack Start. The pattern d
 15. JSDoc on exports: every exported function, interface, type, and constant gets a JSDoc comment stating *what* and *why*.
 16. Chat persists across navigation: render `ChatDrawer` at the root layout level so messages survive route changes.
 17. AI renders rich markdown: use `react-markdown` + `remark-gfm` for tables, code blocks, links. Internal paths render as Router `Link` components; the AI uses markdown links (e.g. `[Pending tasks](/tasks?status=pending)`) for in-app navigation.
+18. Thin routes: route files contain only route config (`createFileRoute`, `validateSearch`, `loaderDeps`, `loader`, `component`). Page UI lives in extracted components under `src/components/PageName/PageName.tsx`. The route component bridges loader data to the page component via props.
+19. Promptable by default: check AI availability at the root loader level via `getAIAvailability()` (calls `getAIAdapterService().isConfigured()`). Pass the result through the layout. Only render the chat trigger and drawer when AI is configured — no disabled-state fallback.
+20. AI chat drawer: unless the user specifies otherwise, render the AI chat in a Mantine `Drawer` positioned on the right (`position="right"`, `size="lg"`), mounted at the root layout level so messages persist across navigation.
+21. Icon library: use `lucide-react` as the default icon library. Keep one icon library per project for visual consistency.
 
 ## Schema Boundaries
 

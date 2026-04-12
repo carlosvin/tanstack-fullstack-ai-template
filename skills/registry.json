@@ -7,7 +7,7 @@
       "summary": "Use when scaffolding a new TanStack Start project, adding domain entities to the fullstack template, or implementing the interface-first repository pattern with AI-promptable tools.",
       "projectName": "TanStack AI-Promptable Full-Stack Template",
       "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
-      "version": "1.7.0",
+      "version": "1.8.0",
       "author": {
         "name": "Carlos Martin-Sanchez",
         "url": "https://github.com/carlosvin"
@@ -50,10 +50,12 @@
       ],
       "capabilities": [
         "AI promptable application architecture",
+        "Promptable-by-default AI chat in a side drawer when credentials are present",
         "Natural language querying through repository-backed AI tools",
         "URL-aware AI prompt context using current location and route patterns",
         "Swappable service implementations behind stable interfaces",
-        "Layer-specific schemas with explicit mapping between repository and tool contracts"
+        "Layer-specific schemas with explicit mapping between repository and tool contracts",
+        "Thin routes with extracted, testable page components"
       ],
       "triggers": [
         "fullstack template",
@@ -76,7 +78,9 @@
         "Repository and tools use separate schemas with explicit mapping between layers",
         "AI and UI consume tools-layer schemas only, never repository schemas directly",
         "Route data fetching is done in loaders, not effects",
-        "Mutations use invalidation middleware; handlers return data or throw, callers normalize errors"
+        "Mutations use invalidation middleware; handlers return data or throw, callers normalize errors",
+        "Route files are thin; page components are extracted into src/components/ for testability",
+        "AI chat is conditionally enabled based on adapter configuration at the root loader level"
       ],
       "steps": [
         "Define schemas as source of truth and infer types",

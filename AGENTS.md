@@ -15,8 +15,8 @@ The **deep architectural contract** -- rigid rules, three schema layers, cross-l
 
 ## 2. File and Project Structure
 
-- `src/components`: React components. Each component in its own folder with `Component.tsx` and optional `Component.module.css` and `Component.test.tsx`.
-- `src/routes`: TanStack Router file-based routes. This is where pages are created. The route tree is auto-generated in `routeTree.gen.ts`.
+- `src/components`: React components. Each component in its own folder with `Component.tsx` and optional `Component.module.css` and `Component.test.tsx`. Page-level components (e.g. `DashboardPage`, `TasksPage`) also live here so they can be tested independently.
+- `src/routes`: TanStack Router file-based routes. Route files should be **thin** — only route config (`createFileRoute`, `validateSearch`, `loaderDeps`, `loader`) and a component reference that delegates to an extracted page component from `src/components/`. The route tree is auto-generated in `routeTree.gen.ts`.
 - `src/middleware`: TanStack Start middleware (auth, invalidation). Registered globally in `src/start.ts`.
 - `src/services/api`: Server functions (exported directly from `createServerFn`) and shared response utilities.
 - `src/services/repository`: Repository interface, implementations (MongoDB, seed), and the factory.
@@ -34,6 +34,27 @@ The **deep architectural contract** -- rigid rules, three schema layers, cross-l
 - Use `PascalCase` for component files (e.g., `MyComponent.tsx`).
 - Use `camelCase` for utility, service, and route files.
 - Test files are co-located with source as `*.test.ts` or `*.test.tsx`.
+
+### Thin Routes, Extracted Page Components
+
+Route files should contain only route configuration. Page UI lives in `src/components/PageName/PageName.tsx`:
+
+```tsx
+// src/routes/index.tsx — thin route
+import { createFileRoute } from '@tanstack/react-router'
+import { DashboardPage } from '../components/DashboardPage/DashboardPage'
+import { getTasks } from '../services/api/serverFns'
+
+export const Route = createFileRoute('/')({
+  loader: () => getTasks({}),
+  component: () => {
+    const tasks = Route.useLoaderData()
+    return <DashboardPage tasks={tasks} />
+  },
+})
+```
+
+The page component receives data as props and is framework-agnostic — it can be rendered in Vitest with `renderWithProviders()` without a running router. Shared display helpers (e.g. color mappers) belong in `src/utils/`.
 
 ### Code Organization
 
@@ -56,6 +77,16 @@ This project uses [Mantine](https://mantine.dev/) as the primary UI framework.
 - **Avoid inline styles**: Use Mantine props or CSS Modules instead.
 - **Avoid `!important`**: Minimize its use.
 - **Dark mode**: All components must work in both light and dark color schemes.
+
+### Icons
+
+This project uses [`lucide-react`](https://lucide.dev/) as the default icon library. Lucide icons are tree-shakeable and visually consistent across the template. Import individual icons by name:
+
+```tsx
+import { CheckCircle, Trash2 } from 'lucide-react'
+```
+
+If your team prefers [`@tabler/icons-react`](https://tabler.io/icons) (the Mantine-adjacent set), it is a compatible alternative — but keep one library per project to avoid visual inconsistency.
 
 ## 4. TypeScript and React
 
@@ -205,6 +236,21 @@ When adding client tools: export the `toolDefinition(...)` from `tools.ts`, pass
 - The AI is instructed to use **markdown links** in replies (e.g. `[View task](/tasks/123)`, `[Tasks](/tasks)`) and to use **query params** in links where applicable (e.g. `/tasks?status=done`).
 - The AI can trigger client-side navigation by calling the **navigate** client tool with `to` and optional `search`; the browser executes it automatically via `@tanstack/ai-client`.
 - The chat UI ([ChatDrawer](src/components/ChatDrawer/ChatDrawer.tsx)) renders internal links in assistant messages as TanStack Router `Link` components so clicks do client-side navigation; external links open in a new tab.
+
+### Promptable by Default
+
+The app is AI-promptable out of the box when the required credentials are set. AI availability is checked at the **root loader level** via `getAIAvailability()` in `src/services/api/serverFns.ts`, which calls `getAIAdapterService().isConfigured()`. The result flows through the component tree:
+
+1. `__root.tsx` loader fetches `aiAvailable` alongside `currentUser`.
+2. `AppLayout` receives `aiAvailable` and conditionally mounts the chat trigger and drawer.
+3. `Header` shows the "Ask AI" button only when `aiAvailable` is true.
+4. `ChatDrawer` is only rendered when AI is configured — no disabled state or alert needed.
+
+This avoids a flash of disabled UI and keeps the chrome clean when no AI provider is configured.
+
+### Chat Drawer Convention
+
+Unless the user specifies otherwise, the AI chat is rendered in a Mantine [`Drawer`](https://mantine.dev/core/drawer/) positioned on the **right** side (`position="right"`, `size="lg"`). The drawer is mounted at the root layout level (`AppLayout`) so messages persist across route navigation. The `useDisclosure` hook from `@mantine/hooks` controls open/close state.
 
 ### Chat Endpoint
 
