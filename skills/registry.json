@@ -95,6 +95,7 @@
         "Add server functions with GET query and POST mutation conventions",
         "Register auth + invalidation middleware",
         "Ask the user which LLM provider they want and install the matching TanStack AI adapter",
+        "Ask the user about their domain and generate a tailored system prompt for chat.ts",
         "Expose every repository method (reads and writes) as safe AI tools",
         "Keep route state in URL search params with validateSearch"
       ],

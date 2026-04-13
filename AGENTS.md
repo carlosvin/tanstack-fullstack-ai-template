@@ -213,14 +213,19 @@ interface AIAdapterService {
 
 **When scaffolding a new project or when the LLM preference is not clear, ask the user which provider they want.** TanStack AI has adapter packages for multiple providers:
 
-| Provider | Adapter package | Required env var(s) |
-|----------|----------------|---------------------|
-| OpenAI (default) | `@tanstack/ai-openai` | `OPENAI_API_KEY` |
-| Anthropic | `@tanstack/ai-anthropic` | `ANTHROPIC_API_KEY` |
-| Google Gemini | `@tanstack/ai-gemini` | `GEMINI_API_KEY` |
-| Ollama (local) | `@tanstack/ai-ollama` | `OLLAMA_BASE_URL` |
+| Provider | Adapter package | Required env var(s) | Notes |
+|----------|----------------|---------------------|-------|
+| OpenRouter (recommended) | `@tanstack/ai-openrouter` | `OPENROUTER_API_KEY` | 300+ models with a single API key |
+| OpenAI (default) | `@tanstack/ai-openai` | `OPENAI_API_KEY` | GPT series; `openaiText('gpt-5.2')` or `createOpenaiChat(key, config)` |
+| Anthropic | `@tanstack/ai-anthropic` | `ANTHROPIC_API_KEY` | Claude series; `anthropicText('claude-sonnet-4-5')` |
+| Google Gemini | `@tanstack/ai-gemini` | `GEMINI_API_KEY` | Gemini series |
+| Ollama (local) | `@tanstack/ai-ollama` | `OLLAMA_BASE_URL` | Local models, no API key needed |
+| Groq | `@tanstack/ai-groq` | `GROQ_API_KEY` | Fast inference |
+| xAI Grok | `@tanstack/ai-grok` | `GROK_API_KEY` | Grok series |
 
 Install only the chosen adapter package (e.g. `pnpm add @tanstack/ai-openai`), implement the corresponding `AIAdapterService` class in `src/services/ai/adapter.ts`, and configure the matching env vars. Do not assume OpenAI without asking.
+
+Each adapter package exposes a convenience function (`openaiText`, `anthropicText`, etc.) that reads the API key from the environment automatically, and a `create*` factory (`createOpenaiChat`, `createAnthropicChat`, etc.) for explicit key configuration. Use the convenience function for simplicity; use the factory when you need custom base URLs or multi-tenant setups.
 
 The default implementation uses `@tanstack/ai-openai` with plain OpenAI. Set `OPENAI_API_KEY` to enable AI chat. Optionally set `OPENAI_MODEL` (default: `gpt-4o`) and `OPENAI_BASE_URL` for Azure OpenAI, proxies, or compatible APIs.
 
@@ -234,12 +239,37 @@ The default implementation uses `@tanstack/ai-openai` with plain OpenAI. Set `OP
 
 ### Client Tools
 
-Client tools execute in the browser and are defined in `src/services/ai/tools.ts` (definition-only, no `.server()` call) with implementations in [ChatDrawer](src/components/ChatDrawer/ChatDrawer.tsx) using `@tanstack/ai-client`:
+Client tools execute in the browser and are defined in `src/services/ai/tools.ts` (definition-only, no `.server()` call) with implementations in [ChatDrawer](src/components/ChatDrawer/ChatDrawer.tsx) using `clientTools()` from `@tanstack/ai-client`:
 
 - **navigate**: Triggers `router.navigate()` in the browser. Accepts `to` (path) and optional `search` (query params). Validates paths via `isUserFacingPath()`.
 - **invalidateRouter**: Calls `router.invalidate()` to refresh page data. The AI calls this after mutation tools so the user sees updated data.
 
 When adding client tools: export the `toolDefinition(...)` from `tools.ts`, pass it to `chat()` in the chat endpoint, and add a `.client()` implementation in `ChatDrawer.tsx` via `clientTools()`.
+
+### Chat Client Setup
+
+The chat UI uses `useChat` from `@tanstack/ai-react` and `fetchServerSentEvents` from `@tanstack/ai-client` to connect to the `/api/chat` SSE endpoint. Client tools are wired with `clientTools()` and passed to `useChat` — they execute automatically when the AI calls them (no `onToolCall` callback needed):
+
+```tsx
+import { useChat, fetchServerSentEvents } from '@tanstack/ai-react'
+import { clientTools, createChatClientOptions } from '@tanstack/ai-client'
+
+const navigateClient = navigateToolDef.client((args) => {
+  router.navigate({ to: args.to, search: args.search ?? undefined })
+  return { success: true }
+})
+const tools = clientTools(navigateClient, invalidateClient)
+
+const { messages, sendMessage, isLoading } = useChat(
+  createChatClientOptions({
+    connection: fetchServerSentEvents('/api/chat'),
+    tools,
+    body: { browserContext },
+  }),
+)
+```
+
+`createChatClientOptions()` enables full type inference for messages via `InferChatMessages<typeof options>`. The `body` field passes additional data (like `browserContext`) alongside messages to the server endpoint.
 
 ### App navigation and links
 
@@ -289,11 +319,69 @@ Assistant messages are rendered with [`react-markdown`](https://github.com/remar
 - **Internal links**: A custom `MarkdownLink` component detects internal paths (starts with `/`, not `/api/`) and renders TanStack Router `Link` with `preload="intent"` and query param parsing. Clicking navigates the app via client-side routing without closing the drawer or losing chat history — the drawer is mounted at the root layout level (`AppLayout`) so its `useChat` message state survives route changes. External links render as `<a target="_blank" rel="noopener noreferrer">`.
 - **Adding markdown features**: To support new markdown elements (e.g. syntax highlighting, custom block renderers), add a `components` entry to the `Markdown` component in `ChatDrawer.tsx` and extend the `.markdown` CSS Module rules using Mantine CSS variables for theme consistency.
 
-### Chat Endpoint
+### System Prompt Generation
 
-- `POST /api/chat` in `src/routes/api/chat.ts` with SSE streaming.
-- Uses the auth middleware context (no manual JWT extraction).
-- Keep the system prompt updated when the data model changes.
+When scaffolding a new project, **ask the user about their domain** — entities, what the AI should be able to do, and permissions — then generate a tailored `BASE_SYSTEM_PROMPT` in `src/routes/api/chat.ts`. Do not copy the template's task-management prompt; every section must reflect the app being built.
+
+`buildSystemPrompt()` composes `BASE_SYSTEM_PROMPT` + navigation manifest + dynamic context (Current User, Browser Context, Current Location) into a single string passed to `chat({ systemPrompts: [...] })`. The base prompt should follow this structure:
+
+```
+## Capabilities
+- What the AI can do in this app (query data, create/update/delete entities, navigate, etc.)
+- List every tool the AI has access to and when to use each one
+
+## Data Model
+- Each entity with its fields, types, and relationships
+- Use a flat list: field name, type, and description
+
+## Links and navigation
+- Instruct the AI to use markdown links in replies (e.g. `[View item](/items/123)`)
+- List available query params for filtering (e.g. `/items?status=active&priority=high`)
+- Reference the navigate tool for client-side navigation
+
+## Mutations and data refresh
+- After mutation tools (create, update, delete), always call invalidateRouter
+- List which tools are mutations
+
+## Permissions and errors
+- Map HTTP error codes to user-facing messages:
+  - 401 → "You need to log in"
+  - 403 → "You don't have permission"
+  - 404 → "Not found"
+- Reference getCurrentUserContext for checking permissions
+
+## Guidelines
+- Formatting conventions (markdown, concise, include status/priority when listing)
+- When to use which tool (e.g. filter tool for criteria, detail tool for specific items)
+```
+
+The dynamic context sections (Current User, Browser Context, Current Location) are appended automatically by `buildSystemPrompt()` — see the "AI System Prompt Context" subsection above.
+
+### Chat Endpoint (`src/routes/api/chat.ts`)
+
+The chat endpoint is a TanStack Start file-based route at `/api/chat` with two server handlers. It is the central wiring point that connects the AI adapter, system prompt, tools, and auth context.
+
+**File structure:** `BASE_SYSTEM_PROMPT` (domain-specific static prompt) → `buildSystemPrompt()` (composes base + manifest + dynamic context) → GET handler (`{ available }`) + POST handler (SSE stream).
+
+**GET handler** — returns `{ available: boolean }` via `getAIAdapterService().isConfigured()`. The root loader calls this to decide whether to render the chat UI.
+
+**POST handler** — the main chat flow:
+
+1. **Check adapter** — get the adapter from `getAIAdapterService().getAdapter()`. If `null`, log the error, report to observability, and return `503`.
+2. **Parse request** — `request.json()` yields `{ messages, browserContext }`.
+3. **Extract auth** — `context as AuthContext` provides `user` and `userProfile` from the global auth middleware (no manual JWT extraction).
+4. **Validate browser context** — `BrowserContextSchema.safeParse(body.browserContext)` validates client-sent data; failures are treated as `null` (graceful degradation).
+5. **Build system prompt** — `buildSystemPrompt(user, userProfile, browserContext)` assembles the full prompt string.
+6. **Assemble tools** — array of all server tool implementations (`.server()`) and client tool definitions (definition-only, no `.server()`).
+7. **Stream** — `chat({ adapter, messages, systemPrompts, tools, agentLoopStrategy })` returns an async iterable; `toServerSentEventsResponse(stream)` converts it to an HTTP `Response` with SSE headers.
+
+**When modifying this file:**
+
+- Add new server tools to the `tools` array when you expose new repository methods.
+- Add new client tool definitions (e.g. `navigateToolDef`) to the same array — they are definition-only on the server and wired in the browser via `.client()`.
+- Update `BASE_SYSTEM_PROMPT` when the data model, routes, tools, or permission rules change.
+- Add pattern-matching in `buildSystemPrompt()` when new routes have dynamic segments (e.g. `$projectId`).
+- Update `getNavigationPromptSection()` in `navigationManifest.ts` when routes or search params change.
 
 ## 9. Observability
 
