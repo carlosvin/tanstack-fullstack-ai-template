@@ -77,6 +77,7 @@ This project uses [Mantine](https://mantine.dev/) as the primary UI framework.
 - **Avoid inline styles**: Use Mantine props or CSS Modules instead.
 - **Avoid `!important`**: Minimize its use.
 - **Dark mode**: All components must work in both light and dark color schemes.
+- **Hydration-safe color scheme reads**: When a component's rendered output depends on the active color scheme (e.g. swapping a logo variant, icon, or chart palette), read it with `useComputedColorScheme('light', { getInitialValueInEffect: true })` and gate any derived value behind a `useIsMounted()` (or `useHasHydrated()`) check. `useMantineColorScheme()` returns `'auto'` on the server and on the first client render; using it directly for render-affecting values produces hydration mismatches and a flash of the wrong asset.
 
 ### Icons
 
@@ -98,6 +99,9 @@ If your team prefers [`@tabler/icons-react`](https://tabler.io/icons) (the Manti
   - **Correct**: `const { filter } = Route.useSearch()` — state comes from the URL.
   - **Incorrect**: `const [filter, setFilter] = useState('all')` — state trapped in component.
 - **Internal Links**: Use TanStack Router's `Link` component for internal navigation.
+- **`satisfies` over `as`**: Do not use `as` to bypass type checking (`as never`, `as Record<string, unknown>`, `as SomeProps`). Prefer `as const satisfies SomeSchema` to validate a literal against a type without widening it, or fix the root type (update the interface, add a proper adapter, narrow with `in`/type guards). The **only** acceptable `as` casts are at clearly documented library boundaries where a third-party type is provably too strict, and each such cast must have an adjacent comment explaining why. For error inspection in `catch` blocks, use the `in` operator instead of casting `unknown` errors.
+  - **Good**: `if (typeof err === 'object' && err !== null && 'status' in err && typeof err.status === 'number') { … }`
+  - **Bad**: `const raw = err as Record<string, unknown>; const status = raw.status as number`
 
 ## 5. Middleware and Auth
 
@@ -147,6 +151,14 @@ For one-off auth in other handlers, use `requireAuth(context)` or `requireGroup(
 
 Create composable middleware that chains `authMiddleware` for context typing (see `src/middleware/requireAuth.ts` for the pattern). Chain it with `invalidateMiddleware` on POST server functions.
 
+### Public-Route Allowlist
+
+`authMiddleware` maintains a `PUBLIC_ROUTES` set (health checks, `.well-known`, static asset paths, public config endpoints) for which it returns a synthetic anonymous `AuthContext` instead of throwing `401`. Anonymous users have `user` and `userProfile` set to explicit `Anonymous` sentinels so the context shape is always uniform — downstream code, typings, and AI tools never need to branch on "maybe no user". Keep the allowlist small and specific; every other path requires authentication.
+
+### Pre-Auth Redirect Middleware (Legacy Path Compatibility)
+
+When a URL scheme changes (renaming a route segment, collapsing multiple paths into one, moving from hash-based to path-based routing), register a **pre-auth** middleware that short-circuits the request with a `308 Permanent Redirect` **before** `authMiddleware` runs. This avoids spurious `401` responses on old links shared in emails, bookmarks, or external systems. Implement the redirect via `new Response(null, { status: 308, headers: { Location: newPath } })` using a **relative** `Location` so it works across dev, staging, and production without hard-coded origins. Keep the allowlist of legacy paths small and retire entries once upstream consumers have migrated.
+
 ## 6. Server Functions and Data Access
 
 This is a full-stack TanStack Start application. There is no separate backend API. The [skill](.agents/skills/tanstack-fullstack-pattern/SKILL.md) defines the rigid layering rules and the "every repo method gets a tool" policy.
@@ -193,7 +205,10 @@ const result = await processResponse(() => myMutation({ data: input }))
 - **File-Based Routing**: Routes are defined as files in `src/routes/`. The route tree is auto-generated.
 - **Nested Routes**: Use nested routes for modals and lazy-loaded UI.
 - **Loaders over useEffect**: Data fetching belongs in `loader`, not in component effects. See section 6.1.
-- **Preserve Search Params**: `navigate({ to: '/path', search: prev => ({ ...prev, newParam: 'value' }) })`.
+- **Preserve Search Params**: `navigate({ to: '/path', search: prev => ({ ...prev, newParam: 'value' }) })` — always use the functional form so the router diffs prior search params instead of requiring the caller to read them via `useSearch()` first. Reading `useSearch()` only to spread it into a `navigate` call re-subscribes the component to search changes and is the most common source of unnecessary re-renders.
+- **`loaderDeps` for cache keying**: When a loader's output depends on `validateSearch` params (filters, pagination, search text), use `loaderDeps: ({ search }) => search` and pull from `deps` inside the loader. Do not read `useSearch()` inside the loader — only `deps` participates in the router's cache key. Use `loaderDeps` to pick *only* the search fields that affect the fetch; unrelated fields (e.g. an "expanded" flag that affects UI only) should be excluded so they do not invalidate the cache.
+- **Link wrapper**: Prefer the project-local `Link` wrapper (see rule 32 in the skill) over raw `@tanstack/react-router` `Link` so internal navigation preserves search params by default.
+- **Child routes read from parent loaders**: Deep components access already-loaded parent data via `getRouteApi('/parent-path').useLoaderData()` or `useLoaderData({ from: '/parent-path' })` rather than re-fetching. Loader-derived values (permissions, feature flags, the active user) flow into client hooks as stable snapshots — no `useEffect` + `useState` for data the loader already has.
 
 ## 8. AI Chat and Tools
 
@@ -236,6 +251,27 @@ The default implementation uses `@tanstack/ai-openai` with plain OpenAI. Set `OP
 - Tool args are typed via `Schema.parse(args)` since `@tanstack/ai`'s `.server()` types the handler arg as `unknown`.
 - When adding new repository methods (reads and writes), expose them as AI tools.
 - **getCurrentUserContext** returns who is logged in and a permissions summary. **createTask**, **updateTask**, **deleteTask** call the same server functions as the UI; auth and creator checks run inside the server function handlers.
+
+### Virtual-Field Explanation Registry
+
+Some fields the AI surfaces are **computed**, not stored (e.g. a `status` derived from dates, a `health` score computed from a mix of columns, a `priority` inferred from SLA distance). The AI should not be asked to invent the rule each time. Instead, keep a single `fieldMetadata.ts` module that maps each virtual field to a short, stable explanation string, and expose an `explainField(fieldName)` AI tool plus a JSDoc-visible `VIRTUAL_FIELDS` constant consumed by the system prompt. When you add or change a derivation in the repository / mapping layer, update the registry in the same commit. This prevents the AI from answering "why is this Pending?" with a plausible-sounding guess that drifts from the actual rule.
+
+### Fluent System Prompt Builder
+
+For apps whose `buildSystemPrompt()` starts composing many conditional blocks (permissions, feature flags, location, time, navigation manifest, entity summaries), extract a tiny fluent builder in `src/services/ai/promptBuilder.ts`:
+
+```tsx
+// Pseudocode — keep the API small
+const prompt = new SystemPromptBuilder()
+  .section('Capabilities', capabilitiesText)
+  .sectionIf(user.isAdmin, 'Admin-only tools', adminToolsText)
+  .section('Current User', renderCurrentUser(user))
+  .section('Browser Context', renderBrowserContext(ctx))
+  .section('Navigation', getNavigationPromptSection())
+  .build()
+```
+
+The builder's only responsibility is: ordered sections, conditional inclusion, consistent `## Heading` / blank-line framing, and a final `.build(): string`. It must not know domain details. Prefer this once a `buildSystemPrompt()` function exceeds ~5 appended strings.
 
 ### Client Tools
 
@@ -498,6 +534,10 @@ When `VITE_SENTRY_DSN` is set, the Sentry transport receives error-level logs al
 - **Rendering**: `renderWithProviders()` in `src/test-utils/renderWithRouter.tsx` wraps with MantineProvider.
 - **Convention**: Test files co-located as `*.test.ts` or `*.test.tsx`.
 
+### Test Factories (Zod Round-Trip)
+
+Define test factories (`makeTask()`, `makeUser()`, …) in `src/test-utils/factories.ts`. Every factory accepts a `Partial<T>` overrides bag, merges it with sensible defaults, and then **runs the result through `Schema.parse()`** before returning. This guarantees fixtures always match the schema — adding a required field or changing a validation rule surfaces as a failing factory call rather than a runtime crash deep in a test. Factories should not inline business logic (e.g. computing `healthStatus`); call the same pure helpers the repository uses, so fixture data and production data derive from one source of truth.
+
 ### E2E Tests (Playwright)
 
 - **Framework**: Playwright with Chromium.
@@ -505,6 +545,10 @@ When `VITE_SENTRY_DSN` is set, the Sentry transport receives error-level logs al
 - **Auth fixture**: `e2e/auth.ts` provides `authedPage` / `authedContext` fixtures using unsigned JWTs sent via `extraHTTPHeaders`.
 - **Convention**: Spec files in `e2e/` as `*.spec.ts`.
 - **Running**: `pnpm test:e2e` (reuses existing dev server or starts one with seed data).
+
+#### Dual `webServer` with in-process mock backend
+
+When the app calls an external service that is not part of the repository (a third-party API, a search service, a feature-flag backend), run two Playwright `webServer` entries side by side: (1) the app itself, (2) an in-process HTTP mock server that the app is pointed at via env var. The mock server exposes an internal `/__reset` endpoint that each test calls in `beforeEach` to clear recorded requests and restore default responses — this gives deterministic, isolated tests without Docker or external processes. Keep the mock server's fixtures typed against the same schemas the real client consumes so contract drift surfaces as a type error.
 
 ## 11. Linting and Formatting
 
@@ -517,7 +561,101 @@ This project uses [Biome](https://biomejs.dev/) as the default linter and format
 - **Major version upgrades are conscious decisions**: When `pnpm outdated` shows a major version bump, upgrade explicitly with `pnpm add <pkg>@latest`, then verify with `pnpm lint && pnpm test && pnpm build` before committing.
 - **After any dependency change**, run the full validation checklist (section 13) to catch regressions.
 
-## 13. Validate Changes
+## 13. Public Runtime Config
+
+Some config values differ per deployment (Sentry DSN, environment name, feature flags) but are **not secrets** and the client needs them immediately. Do not bake them into the Vite bundle via `import.meta.env` — that ties the built artifact to one environment. Instead, expose them through a GET server function and inline the result into the HTML document as `window.__ENV__` so the client can read them synchronously before any module runs.
+
+### Server function
+
+```tsx
+// src/services/api/serverFns.ts
+export const getPublicEnv = createServerFn({ method: 'GET' }).handler(async () => {
+  return {
+    sentryDsn: process.env.VITE_SENTRY_DSN ?? null,
+    environment: process.env.ENV ?? 'development',
+    featureFlags: {
+      /* flags that are safe to expose */
+    },
+  }
+})
+```
+
+### Inline into the document
+
+Call `getPublicEnv()` in the root loader and inject the result via a `<script>` tag in `RootDocument` (`src/routes/__root.tsx`). Use `JSON.stringify(...).replace(/</g, '\\u003c')` so the payload cannot break out of the `<script>` tag:
+
+```tsx
+const envJson = JSON.stringify(publicEnv).replace(/</g, '\\u003c')
+// In RootDocument <head>:
+<script
+  // biome-ignore lint/security/noDangerouslySetInnerHtml: seeds window.__ENV__ before client JS runs
+  dangerouslySetInnerHTML={{ __html: `window.__ENV__ = ${envJson};` }}
+/>
+```
+
+### Declare the global type
+
+```ts
+// src/vite-env.d.ts
+declare global {
+  interface Window {
+    __ENV__: {
+      sentryDsn: string | null
+      environment: string
+      featureFlags: Record<string, boolean>
+    }
+  }
+}
+export {}
+```
+
+Client-side SDK initialization (Sentry, analytics, etc.) reads `window.__ENV__` at the top of its init module. Because the script tag is emitted before client JS, reads are always synchronous and well-typed.
+
+## 14. Bulk Edit Pattern
+
+For lists where users need to change many rows at once (multi-row updates of status, priority, ownership), use a dedicated `/entity/edit?selected=id1&selected=id2` route driven entirely by URL state:
+
+1. **Selection** lives in the parent list's URL search param as a repeated key (`selected=...`). A small `useMultiEditSelection()` hook reads it via `useSearch()` and provides `toggle`, `clear`, `isSelected`.
+2. **Edit route** validates `selected: z.array(z.string()).default([])` in `validateSearch` and fetches those rows in a single loader call.
+3. **Category tabs** group editable fields (e.g. "Base", "Ownership", "Details") via a Mantine `SegmentedControl` backed by another URL search param so switching categories never loses progress.
+4. **Dirty tracking** keeps a cross-tab `Map<rowId, Partial<Fields>>` so only changed cells are included in the save payload.
+5. **An "Apply all" row** lets the user set a single value for a column across every selected row; clicking it writes that value into every row's dirty map.
+6. **Batch server function** uses MongoDB `bulkWrite` (or the equivalent) for a single round-trip, validates permissions per row, and chains `invalidateMiddleware` so the list refetches on success.
+7. **Close/cancel** clears the `selected` search param on the parent list so stale selections don't leak across navigations.
+
+Keep the multi-edit form layout agnostic of entity specifics by defining column metadata (label, editor type, permission check, read-only flag) in a single table so new fields plug in without touching the form component.
+
+## 15. Override / Overlay Repository Pattern
+
+Some entities are sourced from upstream systems (a data warehouse export, a Google Sheet, a vendor API) but users need to annotate them with app-local fields (notes, custom categorization, manual corrections). The clean way to model this is an **overrides overlay**:
+
+- **Source collection** (read-only, refreshed by a pipeline) holds the upstream rows.
+- **Overrides collection** holds sparse per-entity documents with only the user-edited fields plus audit metadata (`lastModifiedBy`, `lastModifiedDate`).
+- **Read path**: repository loads source rows and overrides in parallel, then runs a **pure `applyOverrides(source, override)`** function that shallow-merges override values over source values, treating `null` as "revert to source". The merged view is what the UI and AI see.
+- **Write path**: mutations target the overrides collection with `$set` for provided fields and `$unset` for explicit `null`s, using `upsert: true` via `bulkWrite` so concurrent edits are resilient.
+- **UI affordance**: the form renders the current (merged) value and shows a subtle "Revert to source" affordance next to overridden fields. Clicking it sets the field to `null` on the next save, which `$unset`s it and restores the source value on next read.
+
+Keep the overlay function pure and unit-tested — it is the single place where "what does the user see" is defined.
+
+## 16. Sortable Tables (Controlled Mode)
+
+The reusable `ApplicationListTable`-style component exposes both **uncontrolled** and **controlled** sort modes:
+
+- **Uncontrolled** (default): the component manages its own sort state internally. Use for simple lists where sort does not need to persist.
+- **Controlled**: the consumer passes `sortBy`, `sortDirection`, and `onSortChange`. Use when sort state must live in the URL (deep-linking, shareable views) or when multiple tables need to share a sort.
+
+Sort logic lives in a pure `sortRows(rows, sortBy, direction)` function, unit-tested independently of React. Date columns sort chronologically; rows where the sort field is `null`/`undefined` always sink to the bottom regardless of direction so they don't interleave with valid data. Avoid ad-hoc per-column sort comparators — centralize them in one typed map keyed by column id.
+
+## 17. Autosave Forms with Concurrency Guards
+
+For detail panels that persist changes via PATCH as the user edits, two failure modes must be defended against:
+
+1. **Spurious mount PATCH**: A `useEffect` that "corrects" the initial value (e.g. clamps a number, normalizes a string) will fire on mount and trigger a PATCH before the user has done anything. Guard with a `hasMounted` ref that is `false` on the first run; only run the correction logic on subsequent runs. An even simpler approach is to make the initial state already-correct so no correction is needed.
+2. **Concurrent PATCH collisions**: A fast typist can produce two debounced PATCHes in flight at once, where the second overwrites the first. Track an `isPatching` ref; at the top of the debounced handler, bail out if `isPatching.current` is true (the pending patch bag still holds the changes). When the in-flight PATCH resolves, call `flushPatch.flush()` if the pending bag is non-empty so the next request fires immediately without an extra debounce wait. This gives "at most one PATCH in flight, immediate retry" semantics.
+
+Encapsulate both behaviors in a `useEntityPatch(id, options)` hook so form components only deal with "merge these fields"; the hook owns debouncing, in-flight tracking, pending-change coalescing, and toast feedback.
+
+## 18. Validate Changes
 
 Always verify changes with:
 

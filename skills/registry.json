@@ -7,7 +7,7 @@
       "summary": "Use when scaffolding a new TanStack Start project, adding domain entities to the fullstack template, or implementing the interface-first repository pattern with AI-promptable tools.",
       "projectName": "TanStack AI-Promptable Full-Stack Template",
       "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
-      "version": "1.8.0",
+      "version": "1.9.0",
       "author": {
         "name": "Carlos Martin-Sanchez",
         "url": "https://github.com/carlosvin"
@@ -57,7 +57,12 @@
         "Layer-specific schemas with explicit mapping between repository and tool contracts",
         "Thin routes with extracted, testable page components",
         "Structured server-side logging with pino and automatic Sentry error forwarding",
-        "Build-time semver version injected into observability tools for release tracking"
+        "Build-time semver version injected into observability tools for release tracking",
+        "Public runtime config exposed to the browser via window.__ENV__ without relying on import.meta.env",
+        "Consistent router UX defaults for preload, stale time, and scroll restoration",
+        "Distinct-value filter discovery tools that ground AI filter values in real data",
+        "Single markdown artifact backing the help page, an AI tool, and the chat's recommended-prompt list",
+        "Public-route allowlist on the auth middleware that returns a synthetic anonymous context for health checks and well-known paths"
       ],
       "triggers": [
         "fullstack template",
@@ -85,7 +90,12 @@
         "AI chat is conditionally enabled based on adapter configuration at the root loader level",
         "Server-side logging uses pino; console.* is not used in server code",
         "App version is extracted from package.json at build time and injected into all observability tools",
-        "Dependencies are kept at latest compatible versions; exact pins are avoided unless a known incompatibility exists"
+        "Dependencies are kept at latest compatible versions; exact pins are avoided unless a known incompatibility exists",
+        "Non-secret runtime config is exposed via a GET server function and inlined into the document as window.__ENV__ before client JS runs",
+        "Internal navigation uses a project-local Link wrapper that preserves search params by default",
+        "Auth middleware declares an explicit public-route allowlist that returns a synthetic anonymous AuthContext",
+        "Every enum-ish field exposes a distinct-values AI tool so the assistant grounds filter arguments in real data",
+        "Router configures defaultStaleTime, defaultPreload, defaultPreloadStaleTime, scrollRestoration, and a root notFoundComponent"
       ],
       "steps": [
         "Define schemas as source of truth and infer types",
@@ -97,6 +107,12 @@
         "Ask the user which LLM provider they want and install the matching TanStack AI adapter",
         "Ask the user about their domain and generate a tailored system prompt for chat.ts",
         "Expose every repository method (reads and writes) as safe AI tools",
+        "Expose a distinct-values server function and AI tool for every enum-ish field",
+        "Wire a public env bridge (GET server function + window.__ENV__ script tag) for non-secret runtime config",
+        "Configure consistent router UX defaults and a root notFoundComponent",
+        "Use a project-local Link wrapper that preserves search by default",
+        "Allowlist public routes in the auth middleware with a synthetic anonymous context",
+        "Back the help page, an AI help tool, and the chat's recommended-prompt list from one markdown file",
         "Keep route state in URL search params with validateSearch"
       ],
       "examples": [
