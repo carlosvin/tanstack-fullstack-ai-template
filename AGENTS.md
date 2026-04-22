@@ -98,7 +98,7 @@ If your team prefers [`@tabler/icons-react`](https://tabler.io/icons) (the Manti
   - **Correct**: `const { filter } = Route.useSearch()` — state comes from the URL.
   - **Incorrect**: `const [filter, setFilter] = useState('all')` — state trapped in component.
 - **Internal Links**: Use TanStack Router's `Link` component for internal navigation.
-- **`satisfies` over `as`**: Do not use `as` to bypass type checking (`as never`, `as Record<string, unknown>`, `as SomeProps`). Prefer `as const satisfies SomeSchema` to validate a literal against a type without widening it, or fix the root type (update the interface, add a proper adapter, narrow with `in`/type guards). The **only** acceptable `as` casts are at clearly documented library boundaries where a third-party type is provably too strict, and each such cast must have an adjacent comment explaining why. For error inspection in `catch` blocks, use the `in` operator instead of casting `unknown` errors.
+- **`satisfies` over `as`**: Do not use `as` to bypass type checking (`as never`, `as Record<string, unknown>`, `as SomeProps`). Prefer `as const satisfies SomeSchema` for literals, and prefer schema runtime parsing (`Schema.parse`/`safeParse`) at boundaries where data comes from outside our type-safe system. Once data is inside our typed flow, preserve and propagate types end-to-end instead of re-casting or widening. The **only** acceptable `as` casts are at clearly documented library boundaries where a third-party type is provably too strict, and each such cast must have an adjacent comment explaining why. For error inspection in `catch` blocks, use the `in` operator instead of casting `unknown` errors.
   - **Good**: `if (typeof err === 'object' && err !== null && 'status' in err && typeof err.status === 'number') { … }`
   - **Bad**: `const raw = err as Record<string, unknown>; const status = raw.status as number`
 
@@ -550,7 +550,7 @@ This project uses [Biome](https://biomejs.dev/) as the default linter and format
 - **Always use latest versions**: When adding dependencies, run `pnpm add <pkg>` without a version suffix so the package manager resolves the newest release. Never pin exact versions unless there is a known incompatibility.
 - **Keep dependencies up to date**: Run `pnpm outdated` to check for stale packages and `pnpm update` to align the lockfile with the latest compatible versions within current ranges.
 - **Major version upgrades are conscious decisions**: When `pnpm outdated` shows a major version bump, upgrade explicitly with `pnpm add <pkg>@latest`, then verify with `pnpm lint && pnpm test && pnpm build` before committing.
-- **After any dependency change**, run the full validation checklist (section 18) to catch regressions.
+- **After any dependency change**, run the full validation checklist (section 17) to catch regressions.
 
 ## 13. Public Runtime Config
 
@@ -628,25 +628,16 @@ Some entities are sourced from upstream systems (a data warehouse export, a Goog
 
 Keep the overlay function pure and unit-tested — it is the single place where "what does the user see" is defined.
 
-## 16. Sortable Tables (Controlled Mode)
+## 16. Prefer Controlled Components
 
-The reusable `ApplicationListTable`-style component exposes both **uncontrolled** and **controlled** sort modes:
+Prefer controlled components in general. Keep data and state orchestration at the route level, and keep UI components focused on rendering and events.
 
-- **Uncontrolled** (default): the component manages its own sort state internally. Use for simple lists where sort does not need to persist.
-- **Controlled**: the consumer passes `sortBy`, `sortDirection`, and `onSortChange`. Use when sort state must live in the URL (deep-linking, shareable views) or when multiple tables need to share a sort.
+- **Loaders fetch data, components receive props**: Route loaders own data fetching and pass data down to page/components. Avoid embedding read-fetch lifecycle logic in reusable UI components.
+- **State lives in route search params**: Filters, sorting, pagination, active tabs, and modal state belong in validated route search params so URLs remain shareable and restorable.
+- **Controlled inputs are easier to test**: Components that receive value/state via props and emit callbacks (`value` + `onChange`) are simpler to unit test, easier to reuse, and easier to reason about than components with hidden internal state.
+- **Use uncontrolled only with clear justification**: Keep uncontrolled state for isolated UX details that are intentionally local and not part of route/application state.
 
-Sort logic lives in a pure `sortRows(rows, sortBy, direction)` function, unit-tested independently of React. Date columns sort chronologically; rows where the sort field is `null`/`undefined` always sink to the bottom regardless of direction so they don't interleave with valid data. Avoid ad-hoc per-column sort comparators — centralize them in one typed map keyed by column id.
-
-## 17. Autosave Forms with Concurrency Guards
-
-For detail panels that persist changes via PATCH as the user edits, two failure modes must be defended against:
-
-1. **Spurious mount PATCH**: A `useEffect` that "corrects" the initial value (e.g. clamps a number, normalizes a string) will fire on mount and trigger a PATCH before the user has done anything. Guard with a `hasMounted` ref that is `false` on the first run; only run the correction logic on subsequent runs. An even simpler approach is to make the initial state already-correct so no correction is needed.
-2. **Concurrent PATCH collisions**: A fast typist can produce two debounced PATCHes in flight at once, where the second overwrites the first. Track an `isPatching` ref; at the top of the debounced handler, bail out if `isPatching.current` is true (the pending patch bag still holds the changes). When the in-flight PATCH resolves, call `flushPatch.flush()` if the pending bag is non-empty so the next request fires immediately without an extra debounce wait. This gives "at most one PATCH in flight, immediate retry" semantics.
-
-Encapsulate both behaviors in a `useEntityPatch(id, options)` hook so form components only deal with "merge these fields"; the hook owns debouncing, in-flight tracking, pending-change coalescing, and toast feedback.
-
-## 18. Validate Changes
+## 17. Validate Changes
 
 Always verify changes with:
 
