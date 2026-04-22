@@ -77,7 +77,6 @@ This project uses [Mantine](https://mantine.dev/) as the primary UI framework.
 - **Avoid inline styles**: Use Mantine props or CSS Modules instead.
 - **Avoid `!important`**: Minimize its use.
 - **Dark mode**: All components must work in both light and dark color schemes.
-- **Hydration-safe color scheme reads**: When a component's rendered output depends on the active color scheme (e.g. swapping a logo variant, icon, or chart palette), read it with `useComputedColorScheme('light', { getInitialValueInEffect: true })` and gate any derived value behind a `useIsMounted()` (or `useHasHydrated()`) check. `useMantineColorScheme()` returns `'auto'` on the server and on the first client render; using it directly for render-affecting values produces hydration mismatches and a flash of the wrong asset.
 
 ### Icons
 
@@ -534,10 +533,6 @@ When `VITE_SENTRY_DSN` is set, the Sentry transport receives error-level logs al
 - **Rendering**: `renderWithProviders()` in `src/test-utils/renderWithRouter.tsx` wraps with MantineProvider.
 - **Convention**: Test files co-located as `*.test.ts` or `*.test.tsx`.
 
-### Test Factories (Zod Round-Trip)
-
-Define test factories (`makeTask()`, `makeUser()`, …) in `src/test-utils/factories.ts`. Every factory accepts a `Partial<T>` overrides bag, merges it with sensible defaults, and then **runs the result through `Schema.parse()`** before returning. This guarantees fixtures always match the schema — adding a required field or changing a validation rule surfaces as a failing factory call rather than a runtime crash deep in a test. Factories should not inline business logic (e.g. computing `healthStatus`); call the same pure helpers the repository uses, so fixture data and production data derive from one source of truth.
-
 ### E2E Tests (Playwright)
 
 - **Framework**: Playwright with Chromium.
@@ -545,10 +540,6 @@ Define test factories (`makeTask()`, `makeUser()`, …) in `src/test-utils/facto
 - **Auth fixture**: `e2e/auth.ts` provides `authedPage` / `authedContext` fixtures using unsigned JWTs sent via `extraHTTPHeaders`.
 - **Convention**: Spec files in `e2e/` as `*.spec.ts`.
 - **Running**: `pnpm test:e2e` (reuses existing dev server or starts one with seed data).
-
-#### Dual `webServer` with in-process mock backend
-
-When the app calls an external service that is not part of the repository (a third-party API, a search service, a feature-flag backend), run two Playwright `webServer` entries side by side: (1) the app itself, (2) an in-process HTTP mock server that the app is pointed at via env var. The mock server exposes an internal `/__reset` endpoint that each test calls in `beforeEach` to clear recorded requests and restore default responses — this gives deterministic, isolated tests without Docker or external processes. Keep the mock server's fixtures typed against the same schemas the real client consumes so contract drift surfaces as a type error.
 
 ## 11. Linting and Formatting
 
@@ -559,7 +550,7 @@ This project uses [Biome](https://biomejs.dev/) as the default linter and format
 - **Always use latest versions**: When adding dependencies, run `pnpm add <pkg>` without a version suffix so the package manager resolves the newest release. Never pin exact versions unless there is a known incompatibility.
 - **Keep dependencies up to date**: Run `pnpm outdated` to check for stale packages and `pnpm update` to align the lockfile with the latest compatible versions within current ranges.
 - **Major version upgrades are conscious decisions**: When `pnpm outdated` shows a major version bump, upgrade explicitly with `pnpm add <pkg>@latest`, then verify with `pnpm lint && pnpm test && pnpm build` before committing.
-- **After any dependency change**, run the full validation checklist (section 13) to catch regressions.
+- **After any dependency change**, run the full validation checklist (section 18) to catch regressions.
 
 ## 13. Public Runtime Config
 

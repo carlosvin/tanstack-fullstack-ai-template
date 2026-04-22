@@ -61,8 +61,7 @@
         "Public runtime config exposed to the browser via window.__ENV__ without relying on import.meta.env",
         "Consistent router UX defaults for preload, stale time, and scroll restoration",
         "Distinct-value filter discovery tools that ground AI filter values in real data",
-        "Single markdown artifact backing the help page, an AI tool, and the chat's recommended-prompt list",
-        "Public-route allowlist on the auth middleware that returns a synthetic anonymous context for health checks and well-known paths"
+        "Single markdown artifact backing the help page, an AI tool, and the chat's recommended-prompt list"
       ],
       "triggers": [
         "fullstack template",
@@ -93,7 +92,6 @@
         "Dependencies are kept at latest compatible versions; exact pins are avoided unless a known incompatibility exists",
         "Non-secret runtime config is exposed via a GET server function and inlined into the document as window.__ENV__ before client JS runs",
         "Internal navigation uses a project-local Link wrapper that preserves search params by default",
-        "Auth middleware declares an explicit public-route allowlist that returns a synthetic anonymous AuthContext",
         "Every enum-ish field exposes a distinct-values AI tool so the assistant grounds filter arguments in real data",
         "Router configures defaultStaleTime, defaultPreload, defaultPreloadStaleTime, scrollRestoration, and a root notFoundComponent"
       ],
@@ -111,7 +109,6 @@
         "Wire a public env bridge (GET server function + window.__ENV__ script tag) for non-secret runtime config",
         "Configure consistent router UX defaults and a root notFoundComponent",
         "Use a project-local Link wrapper that preserves search by default",
-        "Allowlist public routes in the auth middleware with a synthetic anonymous context",
         "Back the help page, an AI help tool, and the chat's recommended-prompt list from one markdown file",
         "Keep route state in URL search params with validateSearch"
       ],

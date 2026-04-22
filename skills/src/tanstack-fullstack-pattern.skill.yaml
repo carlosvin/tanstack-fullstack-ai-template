@@ -61,8 +61,6 @@ capabilities:
     data
   - Single markdown artifact backing the help page, an AI tool, and the chat's
     recommended-prompt list
-  - Public-route allowlist on the auth middleware that returns a synthetic
-    anonymous context for health checks and well-known paths
 triggers:
   - fullstack template
   - TanStack Start project
@@ -97,8 +95,6 @@ constraints:
     into the document as window.__ENV__ before client JS runs
   - Internal navigation uses a project-local Link wrapper that preserves search
     params by default
-  - Auth middleware declares an explicit public-route allowlist that returns a
-    synthetic anonymous AuthContext
   - Every enum-ish field exposes a distinct-values AI tool so the assistant
     grounds filter arguments in real data
   - Router configures defaultStaleTime, defaultPreload, defaultPreloadStaleTime,
@@ -122,8 +118,6 @@ steps:
     for non-secret runtime config
   - Configure consistent router UX defaults and a root notFoundComponent
   - Use a project-local Link wrapper that preserves search by default
-  - Allowlist public routes in the auth middleware with a synthetic anonymous
-    context
   - Back the help page, an AI help tool, and the chat's recommended-prompt list
     from one markdown file
   - Keep route state in URL search params with validateSearch
@@ -175,13 +169,11 @@ content: |
   25. Generate the system prompt: when scaffolding a new app, ask the user about their domain — entities, capabilities, and permissions — then generate a tailored `BASE_SYSTEM_PROMPT` in `src/routes/api/chat.ts` with six sections (Capabilities, Data Model, Links and navigation, Mutations and data refresh, Permissions and errors, Guidelines). Do not reuse the template's task-management prompt. `buildSystemPrompt()` composes this base with dynamic context (rule 14) and the navigation manifest. `chat()` from `@tanstack/ai` receives it via `systemPrompts: string[]`. See AGENTS.md section 8 "System Prompt Generation" for the full template.
   26. Repository-resolved authorization: `authMiddleware` extracts JWT claims **and** calls a repository method (e.g. `getReadRepository().getUserAccess(email)`) to enrich `AuthContext` with application-defined access data — roles, group memberships, owned scopes, superuser flags. Downstream guards (`requireAuth`, `requireGroup`, any app-specific `requireOwnerOf`) and AI tools read this enriched context so UI and AI see the same permission signals. Authorization checks live **inside** server-function handlers (not only in UI components), so permissions are enforced regardless of whether the caller is the UI, the AI, or a direct HTTP client.
   27. Write attribution via traceability context: `WritableRepository` methods accept an optional `TraceabilityContext` (`createdBy`, `createdDate`, `lastModifiedBy`, `lastModifiedDate`) built from the authenticated identity. Mutation server-function handlers construct it from `ctx.context.user.email` (available after `requireAuthMiddleware`) and pass it to the repository. Seed and production implementations apply it consistently. This gives UI and AI callers the same audit trail without duplicating logic at each call site.
-  28. JSON-only server functions and tools; HTTP file routes for everything else: `createServerFn` (and therefore AI tools) handles JSON queries and mutations only. Non-JSON responses — file downloads (CSV/JSON exports, PDFs), uploads, webhooks, and streaming — go through TanStack Start HTTP file routes using `server.handlers.GET|POST` under `src/routes/api/*.ts`. The `/api/chat` SSE endpoint (rule 14) is the canonical example. These file routes still reuse server-function wrappers or repository methods internally so the data path stays unified, but the transport layer is explicit about its shape.
   29. Explicit agent loop depth: configure `agentLoopStrategy: maxIterations(N)` explicitly on the `chat()` call (default N=10). This caps the number of consecutive tool-calling iterations the AI can run before returning a final answer, which bounds latency, cost, and infinite-loop risk. Tune N only after measuring; do not rely on the framework default.
   30. Public runtime config bridge: expose non-secret runtime config (Sentry DSN, environment name, feature flags) via a GET server function `getPublicEnv()` and inline the result as `window.__ENV__` in the root `RootDocument` using a small `<script>` tag emitted before client JS runs. Escape `<` in the inlined JSON to avoid breaking the HTML parser. Never rely on `import.meta.env` alone for values that must differ across runtime environments built from the same bundle. See AGENTS.md section "Public Runtime Config" for the template.
   31. Router UX defaults bundle: in `src/router.tsx`, configure `defaultStaleTime` (long for read-heavy dashboards, short for mutation-heavy apps), `defaultPreload: 'intent'`, `defaultPreloadStaleTime: 0` (always-fresh preloads), `scrollRestoration: true` (with a `getScrollRestorationKey` when needed), and a `notFoundComponent` on the root route. These defaults are a single coherent bundle — do not ship a router config without them.
   32. Link wrapper preserves search: export a project-local `Link` component (e.g. `src/components/Link/Link.tsx`) that wraps TanStack Router's `Link` with `search: true` as the default. Use this wrapper for every internal link so filters, tabs, and other URL state never silently drop on navigation. Reserve raw `<a>` for external URLs.
-  33. Public-route allowlist in auth middleware: `authMiddleware` declares a `PUBLIC_ROUTES` set (health checks, `.well-known`, static asset paths) for which it returns a synthetic anonymous `AuthContext` (user/userProfile set to an `Anonymous` sentinel) instead of throwing 401. Keeps the `AuthContext` shape consistent so downstream code, typings, and AI tools never branch on "maybe no user".
-  34. Sentry user context + feedback: when Sentry is enabled, bind the signed-in user via `Sentry.setUser({ email, username })` from the shell component as soon as the identity loads (no extra round-trip). Add `feedbackIntegration({ autoInject: false })` and expose a header button that calls `openFeedback()`, giving users a controlled way to report issues with automatic user attribution.
+  34. Sentry user context + feedback: when Sentry is enabled, bind the signed-in user via `Sentry.setUser({ email, username })` from the shell component as soon as the identity loads (no extra round-trip).
   35. Single markdown artifact for help + AI + suggested prompts: maintain one `docs/help.md` imported with `?raw`. Back three surfaces from it: (a) a `/help` route that renders it with `react-markdown`; (b) an AI tool that returns the content so the assistant can answer "how do I..." questions; (c) a parser that extracts `- [ ]` / `- [x]` lines as the chat's recommended-question list. Zero duplication between docs, assistant, and suggested prompts.
   36. Distinct-value filter discovery: for every enum-ish field, the repository exposes a `getDistinctValues(field)` method that flows through a GET server function into a read-only AI tool (`getDistinctStatuses`, `getDistinctCategories`, …). The AI calls these to ground filter values in real data instead of guessing. The root loader can preload the same lists for UI filter bars so UI and AI share one vocabulary.
 
