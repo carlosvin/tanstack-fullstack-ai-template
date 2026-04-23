@@ -9,14 +9,14 @@
 - Documentation: https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/skills/README.md
 - Status: stable
 - Supported tools: Windsurf [native, not yet verified], Cursor [copy, not yet verified], Claude Code [copy, not yet verified]
-- Capabilities: AI promptable application architecture, Promptable-by-default AI chat in a side drawer when credentials are present, Natural language querying through repository-backed AI tools, URL-aware AI prompt context using current location and route patterns, Swappable service implementations behind stable interfaces, Layer-specific schemas with explicit mapping between repository and tool contracts, Thin routes with extracted, testable page components, Structured server-side logging with pino and automatic Sentry error forwarding, Build-time semver version injected into observability tools for release tracking, Public runtime config exposed to the browser via window.__ENV__ without relying on import.meta.env, Consistent router UX defaults for preload, stale time, and scroll restoration, Distinct-value filter discovery tools that ground AI filter values in real data, Single markdown artifact backing the help page, an AI tool, and the chat's recommended-prompt list
+- Capabilities: AI promptable application architecture, Promptable-by-default AI chat in a side drawer when credentials are present, Natural language querying through repository-backed AI tools, URL-aware AI prompt context using current location and route patterns, Swappable service implementations behind stable interfaces, Layer-specific schemas with explicit mapping between repository and tool contracts, Thin routes with extracted, testable page components, Structured server-side logging with pino and automatic Sentry error forwarding, Build-time semver version injected into observability tools for release tracking, Public runtime config exposed to the browser via window.__ENV__ without relying on import.meta.env, Consistent router UX defaults for preload, stale time, and scroll restoration, Distinct-value filter discovery tools that ground AI filter values in real data, Single markdown artifact backing the help page, an AI tool, and the chat's recommended-prompt list, Parent layout routes that centralize beforeLoad guards and shared loader data for nested child routes
 - ID: `tanstack-fullstack-pattern`
-- Version: `1.9.0`
+- Version: `1.10.0`
 - Tags: tanstack-start, fullstack, architecture, interface-first, repository-pattern, ai-promptable
 
 ## Summary
 
-Use when scaffolding a new TanStack Start project, adding domain entities to the fullstack template, or implementing the interface-first repository pattern with AI-promptable tools.
+Use when scaffolding a new TanStack Start project, adding domain entities to the fullstack template, or implementing the interface-first repository pattern with AI-promptable tools, or nested layout routes duplicate beforeLoad checks or loaders that should live on a parent route, or TanStack Router, Start, or AI behavior must be verified against current documentation instead of training data.
 
 ## Triggers
 
@@ -25,6 +25,10 @@ Use when scaffolding a new TanStack Start project, adding domain entities to the
 - repository pattern
 - interface-first
 - new app scaffold
+- nested routes
+- layout route
+- beforeLoad
+- tanstack cli
 
 ## Canonical Content
 # TanStack Fullstack Pattern
@@ -72,6 +76,7 @@ An interface-first fullstack architecture built on TanStack Start. The pattern d
 30. Public runtime config bridge: expose non-secret runtime config (Sentry DSN, environment name, feature flags) via a GET server function `getPublicEnv()` and inline the result as `window.__ENV__` in the root `RootDocument` using a small `<script>` tag emitted before client JS runs. Escape `<` in the inlined JSON to avoid breaking the HTML parser. Never rely on `import.meta.env` alone for values that must differ across runtime environments built from the same bundle. See AGENTS.md section "Public Runtime Config" for the template.
 31. Router UX defaults bundle: in `src/router.tsx`, configure `defaultStaleTime` (long for read-heavy dashboards, short for mutation-heavy apps), `defaultPreload: 'intent'`, `defaultPreloadStaleTime: 0` (always-fresh preloads), `scrollRestoration: true` (with a `getScrollRestorationKey` when needed), and a `notFoundComponent` on the root route. These defaults are a single coherent bundle — do not ship a router config without them.
 32. Link wrapper preserves search: export a project-local `Link` component (e.g. `src/components/Link/Link.tsx`) that wraps TanStack Router's `Link` with `search: true` as the default. Use this wrapper for every internal link so filters, tabs, and other URL state never silently drop on navigation. Reserve raw `<a>` for external URLs.
+33. Parent layout routes deduplicate subtree work: when several child routes under the same URL prefix need the same redirect, synchronous guard, or expensive read, implement it **once** on the **parent** layout route. Use the parent's `beforeLoad` for navigation gates and synchronous checks; use the parent's `loader` (still via server functions) for shared data that every descendant needs. Child loaders fetch **only** data specific to that segment. Descendants read parent loader output with `getRouteApi('/parent/path').useLoaderData()` or `useLoaderData({ from: '/parent/path' })` — do not copy the parent's `beforeLoad` or re-fetch the parent's loader payload in each child. Structure files to match TanStack Router's layout conventions (e.g. `routes/foo/route.tsx` wrapping `routes/foo/*`).
 34. Sentry user context + feedback: when Sentry is enabled, bind the signed-in user via `Sentry.setUser({ email, username })` from the shell component as soon as the identity loads (no extra round-trip).
 35. Single markdown artifact for help + AI + suggested prompts: maintain one `docs/help.md` imported with `?raw`. Back three surfaces from it: (a) a `/help` route that renders it with `react-markdown`; (b) an AI tool that returns the content so the assistant can answer "how do I..." questions; (c) a parser that extracts `- [ ]` / `- [x]` lines as the chat's recommended-question list. Zero duplication between docs, assistant, and suggested prompts.
 36. Distinct-value filter discovery: for every enum-ish field, the repository exposes a `getDistinctValues(field)` method that flows through a GET server function into a read-only AI tool (`getDistinctStatuses`, `getDistinctCategories`, …). The AI calls these to ground filter values in real data instead of guessing. The root loader can preload the same lists for UI filter bars so UI and AI share one vocabulary.
@@ -146,16 +151,25 @@ These topics are documented once in [AGENTS.md](AGENTS.md) to avoid drift:
 3. **Server functions**: GET queries + POST mutations in `serverFns.ts` with `.inputValidator(ToolSchema)`.
 4. **AI tools**: every server function gets a `toolDefinition` + `createSafeServerTool()`; client tools (`navigate`, `invalidateRouter`) wired in `ChatDrawer.tsx`.
 5. **Middleware + manifest**: register auth + invalidation in `start.ts`; keep `navigationManifest.ts` aligned with routes.
-6. **Routes**: `validateSearch` (Zod/ArkType), `loaderDeps`, loaders calling server functions.
+6. **Routes**: `validateSearch` (Zod/ArkType), `loaderDeps`, loaders calling server functions; nest under layout parents when children share `beforeLoad` or loader data (rule 33).
 7. **Chat + tests**: pass `browserContext` location to `/api/chat`; E2E specs in `e2e/` against seed repository.
 
-## TanStack AI Documentation
+## TanStack documentation (official CLI)
 
-Use `npx @tanstack/cli` to fetch up-to-date TanStack AI docs instead of relying on training data:
+Prefer **current** TanStack guidance over training-data recall. The TanStack team ships a CLI that mirrors the docs site.
 
-- `npx @tanstack/cli search-docs "<query>" --library ai` — search TanStack AI docs
-- `npx @tanstack/cli doc ai <path>` — fetch a page (e.g. `api/ai`, `adapters/openai`, `getting-started/quick-start`)
-- `npx @tanstack/cli libraries` — list all TanStack libraries with versions
+- Run `npx @tanstack/cli --help` first to see the command surface; use `npx @tanstack/cli help <command>` (e.g. `help search-docs`) for flags and arguments on the machine you are using.
+- `npx @tanstack/cli libraries` — list library **IDs** and versions (use these IDs with `doc` and `search-docs --library`).
+- `npx @tanstack/cli search-docs "<query>" [--library router|start|ai|query|table|...] [--framework <name>] [--limit N]` — find doc sections before changing router, Start, or AI code.
+- `npx @tanstack/cli doc <library> <path> [--docs-version latest]` — fetch a full doc page (library examples: `router`, `start`, `ai`, `query`; path examples mirror the docs tree, e.g. `framework/react/guide/data-loading` — confirm the exact path via `search-docs` when unsure).
+
+**Quick reference**
+
+| Need | Starting point |
+|------|----------------|
+| Correct loader / `beforeLoad` / layout behavior | `search-docs` with `--library router` (or `start` for TanStack Start) |
+| Exact chat / tool / adapter API | `search-docs` / `doc` with `--library ai` |
+| Unknown CLI flag | `npx @tanstack/cli --help` and command-specific `--help` |
 
 ## AI Architecture
 
