@@ -4,10 +4,10 @@
     {
       "id": "tanstack-fullstack-pattern",
       "title": "TanStack Fullstack Pattern",
-      "summary": "Use when scaffolding a new TanStack Start project, adding domain entities to the fullstack template, or implementing the interface-first repository pattern with AI-promptable tools.",
+      "summary": "Use when scaffolding a new TanStack Start project, adding domain entities to the fullstack template, or implementing the interface-first repository pattern with AI-promptable tools, or nested layout routes duplicate beforeLoad checks or loaders that should live on a parent route, or TanStack Router, Start, or AI behavior must be verified against current documentation instead of training data.",
       "projectName": "TanStack AI-Promptable Full-Stack Template",
       "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
-      "version": "1.9.0",
+      "version": "1.10.0",
       "author": {
         "name": "Carlos Martin-Sanchez",
         "url": "https://github.com/carlosvin"
@@ -61,14 +61,19 @@
         "Public runtime config exposed to the browser via window.__ENV__ without relying on import.meta.env",
         "Consistent router UX defaults for preload, stale time, and scroll restoration",
         "Distinct-value filter discovery tools that ground AI filter values in real data",
-        "Single markdown artifact backing the help page, an AI tool, and the chat's recommended-prompt list"
+        "Single markdown artifact backing the help page, an AI tool, and the chat's recommended-prompt list",
+        "Parent layout routes that centralize beforeLoad guards and shared loader data for nested child routes"
       ],
       "triggers": [
         "fullstack template",
         "TanStack Start project",
         "repository pattern",
         "interface-first",
-        "new app scaffold"
+        "new app scaffold",
+        "nested routes",
+        "layout route",
+        "beforeLoad",
+        "tanstack cli"
       ],
       "inputs": [
         "Existing or new TanStack Start codebase",
@@ -92,6 +97,8 @@
         "Dependencies are kept at latest compatible versions; exact pins are avoided unless a known incompatibility exists",
         "Non-secret runtime config is exposed via a GET server function and inlined into the document as window.__ENV__ before client JS runs",
         "Internal navigation uses a project-local Link wrapper that preserves search params by default",
+        "Shared route gates and expensive reads are implemented on the parent layout route (beforeLoad + loader); child routes avoid duplicating the same work",
+        "TanStack Router, Start, Query, Table, and AI guidance follows the official docs surfaced via npx @tanstack/cli, not memorized APIs",
         "Every enum-ish field exposes a distinct-values AI tool so the assistant grounds filter arguments in real data",
         "Router configures defaultStaleTime, defaultPreload, defaultPreloadStaleTime, scrollRestoration, and a root notFoundComponent"
       ],
@@ -110,7 +117,8 @@
         "Configure consistent router UX defaults and a root notFoundComponent",
         "Use a project-local Link wrapper that preserves search by default",
         "Back the help page, an AI help tool, and the chat's recommended-prompt list from one markdown file",
-        "Keep route state in URL search params with validateSearch"
+        "Keep route state in URL search params with validateSearch",
+        "Model nested URLs with parent layout routes so beforeLoad and shared loaders run once per navigation; children read parent loader data via getRouteApi or useLoaderData from the parent path"
       ],
       "examples": [
         {
