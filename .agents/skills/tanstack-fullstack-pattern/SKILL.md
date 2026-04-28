@@ -16,7 +16,7 @@ description: 'Use when scaffolding a new TanStack Start project, adding domain
 
 An interface-first fullstack architecture built on TanStack Start. The pattern defines clear interface boundaries between layers -- interfaces are rigid, implementations are swappable.
 
-> **Companion documentation:** In repositories built from this template, [AGENTS.md](AGENTS.md) holds the project handbook -- file structure, Mantine styling, auth snippets, Biome, testing/E2E commands, and the full validation checklist. This skill focuses on the architectural contract; refer to AGENTS.md for operational detail.
+> **Companion documentation:** In repositories built from this template, [AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) holds the project handbook -- file structure, Mantine styling, auth snippets, Biome, testing/E2E commands, and the full validation checklist. This skill focuses on the architectural contract; refer to AGENTS.md for operational detail.
 
 ## Pattern Overview
 
@@ -119,7 +119,7 @@ interface WritableRepository {
 
 ## Styling, Auth, and Observability
 
-These topics are documented once in [AGENTS.md](AGENTS.md) to avoid drift:
+These topics are documented once in [AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) to avoid drift:
 
 - **Mantine UI** -- see AGENTS.md section 3 (component-first styling, CSS Modules, dark mode).
 - **Auth and Middleware** -- see AGENTS.md section 5 (middleware chain, `AuthContext`, guard helpers, code samples). Rigid rules 9--10 above are the normative summary.
@@ -171,4 +171,4 @@ A TanStack Start file-based route at `/api/chat` with two handlers:
 
 ## Verification
 
-Testing setup (Vitest, Playwright, auth fixtures) and the full validation checklist are in [AGENTS.md](AGENTS.md) sections 10 and 12. Quick smoke test: `pnpm format && pnpm lint && pnpm test && pnpm build`.
+Testing setup (Vitest, Playwright, auth fixtures) and the full validation checklist are in [AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) sections 10 and 12. Quick smoke test: `pnpm format && pnpm lint && pnpm test && pnpm build`.

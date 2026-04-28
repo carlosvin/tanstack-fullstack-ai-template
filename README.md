@@ -338,6 +338,14 @@ The generated outputs are committed intentionally so you can copy the skill into
 
 **Install the skill globally** (available in all your projects):
 
+Run this one-liner in your terminal to automatically download and install the skill into the global directories for Cursor, Windsurf, and Claude Code:
+
+```bash
+curl -sL https://raw.githubusercontent.com/carlosvin/tanstack-fullstack-ai-template/main/scripts/skills/install.sh | bash -s -- --force
+```
+
+To manually install instead:
+
 ```bash
 # Windsurf (reads .agents/skills/ when in repo; for global copy)
 cp -r .agents/skills/tanstack-fullstack-pattern ~/.codeium/windsurf/skills/
