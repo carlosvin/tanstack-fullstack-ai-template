@@ -22,21 +22,21 @@
           "id": "windsurf",
           "name": "Windsurf",
           "installMode": "native",
-          "tested": false,
+          "tested": true,
           "notes": "Reads `.agents/skills/` directly when the skill lives in the project."
         },
         {
           "id": "cursor",
           "name": "Cursor",
           "installMode": "copy",
-          "tested": false,
+          "tested": true,
           "notes": "Copy the generated skill folder into the global Cursor skills directory."
         },
         {
           "id": "claude-code",
           "name": "Claude Code",
           "installMode": "copy",
-          "tested": false,
+          "tested": true,
           "notes": "Copy the generated skill folder into the Claude Code skills directory."
         }
       ],

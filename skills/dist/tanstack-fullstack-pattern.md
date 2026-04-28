@@ -8,7 +8,7 @@
 - Repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 - Documentation: https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/skills/README.md
 - Status: stable
-- Supported tools: Windsurf [native, not yet verified], Cursor [copy, not yet verified], Claude Code [copy, not yet verified]
+- Supported tools: Windsurf [native, tested], Cursor [copy, tested], Claude Code [copy, tested]
 - Capabilities: AI promptable application architecture, Promptable-by-default AI chat in a side drawer when credentials are present, Natural language querying through repository-backed AI tools, URL-aware AI prompt context using current location and route patterns, Swappable service implementations behind stable interfaces, Layer-specific schemas with explicit mapping between repository and tool contracts, Thin routes with extracted, testable page components, Structured server-side logging with pino and automatic Sentry error forwarding, Build-time semver version injected into observability tools for release tracking, Public runtime config exposed to the browser via window.__ENV__ without relying on import.meta.env, Consistent router UX defaults for preload, stale time, and scroll restoration, Distinct-value filter discovery tools that ground AI filter values in real data, Single markdown artifact backing the help page, an AI tool, and the chat's recommended-prompt list, Parent layout routes that centralize beforeLoad guards and shared loader data for nested child routes
 - ID: `tanstack-fullstack-pattern`
 - Version: `1.10.0`
@@ -35,7 +35,7 @@ Use when scaffolding a new TanStack Start project, adding domain entities to the
 
 An interface-first fullstack architecture built on TanStack Start. The pattern defines clear interface boundaries between layers -- interfaces are rigid, implementations are swappable.
 
-> **Companion documentation:** In repositories built from this template, [AGENTS.md](AGENTS.md) holds the project handbook -- file structure, Mantine styling, auth snippets, Biome, testing/E2E commands, and the full validation checklist. This skill focuses on the architectural contract; refer to AGENTS.md for operational detail.
+> **Companion documentation:** In repositories built from this template, [AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) holds the project handbook -- file structure, Mantine styling, auth snippets, Biome, testing/E2E commands, and the full validation checklist. This skill focuses on the architectural contract; refer to AGENTS.md for operational detail.
 
 ## Pattern Overview
 
@@ -138,7 +138,7 @@ interface WritableRepository {
 
 ## Styling, Auth, and Observability
 
-These topics are documented once in [AGENTS.md](AGENTS.md) to avoid drift:
+These topics are documented once in [AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) to avoid drift:
 
 - **Mantine UI** -- see AGENTS.md section 3 (component-first styling, CSS Modules, dark mode).
 - **Auth and Middleware** -- see AGENTS.md section 5 (middleware chain, `AuthContext`, guard helpers, code samples). Rigid rules 9--10 above are the normative summary.
@@ -190,4 +190,4 @@ A TanStack Start file-based route at `/api/chat` with two handlers:
 
 ## Verification
 
-Testing setup (Vitest, Playwright, auth fixtures) and the full validation checklist are in [AGENTS.md](AGENTS.md) sections 10 and 12. Quick smoke test: `pnpm format && pnpm lint && pnpm test && pnpm build`.
+Testing setup (Vitest, Playwright, auth fixtures) and the full validation checklist are in [AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) sections 10 and 12. Quick smoke test: `pnpm format && pnpm lint && pnpm test && pnpm build`.

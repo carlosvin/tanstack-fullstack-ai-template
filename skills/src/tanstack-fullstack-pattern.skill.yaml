@@ -5,8 +5,8 @@ summary: >-
   the fullstack template, or implementing the interface-first repository pattern
   with AI-promptable tools, or nested layout routes duplicate beforeLoad checks
   or loaders that should live on a parent route, or TanStack Router, Start, or
-  AI behavior must be verified against current documentation instead of
-  training data.
+  AI behavior must be verified against current documentation instead of training
+  data.
 projectName: TanStack AI-Promptable Full-Stack Template
 projectSummary: >-
   A production-ready TanStack Start template designed to make internal tools AI
@@ -24,17 +24,17 @@ supportedTools:
   - id: windsurf
     name: Windsurf
     installMode: native
-    tested: false
+    tested: true
     notes: Reads `.agents/skills/` directly when the skill lives in the project.
   - id: cursor
     name: Cursor
     installMode: copy
-    tested: false
+    tested: true
     notes: Copy the generated skill folder into the global Cursor skills directory.
   - id: claude-code
     name: Claude Code
     installMode: copy
-    tested: false
+    tested: true
     notes: Copy the generated skill folder into the Claude Code skills directory.
 tags:
   - tanstack-start
@@ -58,14 +58,13 @@ capabilities:
     tracking
   - Public runtime config exposed to the browser via window.__ENV__ without
     relying on import.meta.env
-  - Consistent router UX defaults for preload, stale time, and scroll
-    restoration
+  - Consistent router UX defaults for preload, stale time, and scroll restoration
   - Distinct-value filter discovery tools that ground AI filter values in real
     data
   - Single markdown artifact backing the help page, an AI tool, and the chat's
     recommended-prompt list
-  - Parent layout routes that centralize beforeLoad guards and shared loader data
-    for nested child routes
+  - Parent layout routes that centralize beforeLoad guards and shared loader
+    data for nested child routes
 triggers:
   - fullstack template
   - TanStack Start project
@@ -125,8 +124,7 @@ steps:
   - Ask the user about their domain and generate a tailored system prompt for
     chat.ts
   - Expose every repository method (reads and writes) as safe AI tools
-  - Expose a distinct-values server function and AI tool for every enum-ish
-    field
+  - Expose a distinct-values server function and AI tool for every enum-ish field
   - Wire a public env bridge (GET server function + window.__ENV__ script tag)
     for non-secret runtime config
   - Configure consistent router UX defaults and a root notFoundComponent
@@ -148,7 +146,7 @@ content: |
 
   An interface-first fullstack architecture built on TanStack Start. The pattern defines clear interface boundaries between layers -- interfaces are rigid, implementations are swappable.
 
-  > **Companion documentation:** In repositories built from this template, [AGENTS.md](AGENTS.md) holds the project handbook -- file structure, Mantine styling, auth snippets, Biome, testing/E2E commands, and the full validation checklist. This skill focuses on the architectural contract; refer to AGENTS.md for operational detail.
+  > **Companion documentation:** In repositories built from this template, [AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) holds the project handbook -- file structure, Mantine styling, auth snippets, Biome, testing/E2E commands, and the full validation checklist. This skill focuses on the architectural contract; refer to AGENTS.md for operational detail.
 
   ## Pattern Overview
 
@@ -251,7 +249,7 @@ content: |
 
   ## Styling, Auth, and Observability
 
-  These topics are documented once in [AGENTS.md](AGENTS.md) to avoid drift:
+  These topics are documented once in [AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) to avoid drift:
 
   - **Mantine UI** -- see AGENTS.md section 3 (component-first styling, CSS Modules, dark mode).
   - **Auth and Middleware** -- see AGENTS.md section 5 (middleware chain, `AuthContext`, guard helpers, code samples). Rigid rules 9--10 above are the normative summary.
@@ -303,4 +301,4 @@ content: |
 
   ## Verification
 
-  Testing setup (Vitest, Playwright, auth fixtures) and the full validation checklist are in [AGENTS.md](AGENTS.md) sections 10 and 12. Quick smoke test: `pnpm format && pnpm lint && pnpm test && pnpm build`.
+  Testing setup (Vitest, Playwright, auth fixtures) and the full validation checklist are in [AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) sections 10 and 12. Quick smoke test: `pnpm format && pnpm lint && pnpm test && pnpm build`.
