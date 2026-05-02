@@ -1,5 +1,5 @@
-id: tanstack-fullstack-pattern
-title: TanStack Fullstack Pattern
+id: tanstack-promptable-fullstack-app-template
+title: TanStack Promptable Fullstack App Template
 summary: >-
   Use when scaffolding a new TanStack Start project, adding domain entities to
   the fullstack template, or implementing the interface-first repository pattern
@@ -65,6 +65,7 @@ capabilities:
     recommended-prompt list
   - Parent layout routes that centralize beforeLoad guards and shared loader
     data for nested child routes
+  - Dynamic route schema extraction for AI tool-calling and context awareness
 triggers:
   - fullstack template
   - TanStack Start project
@@ -106,7 +107,8 @@ constraints:
   - Shared route gates and expensive reads are implemented on the parent layout
     route (beforeLoad + loader); child routes avoid duplicating the same work
   - TanStack Router, Start, Query, Table, and AI guidance follows the official
-    docs surfaced via npx @tanstack/cli, not memorized APIs
+    docs. Always leverage the CLI via `npx @tanstack/cli --help` to check the current docs, rather than relying on memorized APIs.
+  - Actively ask the skill user for clarifications when needed, especially when making choices about movable pieces or architectural decisions.
   - Every enum-ish field exposes a distinct-values AI tool so the assistant
     grounds filter arguments in real data
   - Router configures defaultStaleTime, defaultPreload, defaultPreloadStaleTime,
@@ -166,7 +168,7 @@ content: |
   8. URL-as-state: filters, tabs, selections live in URL search params via `validateSearch` (Zod/ArkType). Use `loaderDeps` to feed validated search into loaders.
   9. Middleware chain: auth is global middleware, invalidation runs on mutation server functions.
   10. Mutation pattern: POST server functions chain `.middleware([requireAuthMiddleware, invalidateMiddleware])`, return domain data or throw `HttpError`. Callers normalize errors: UI via `processResponse()`, AI tools via `safeToolHandler()` / `createSafeServerTool()`.
-  11. Query pattern: GET server functions throw on failure for centralized error handling.
+  11. Query pattern: GET server functions throw on failure for centralized error handling. When possible, use static server functions for performance improvements.
   12. Maximize AI tool coverage: expose **every** repository method (reads and writes) via `createSafeServerTool()` so failures return `{ error, code }`. If a server function exists, it gets a tool.
   13. Router capabilities as AI client tools: expose `router.navigate()` and `router.invalidate()` as client tools via `toolDefinition()`.
   14. AI system prompt context: `buildSystemPrompt()` injects three context blocks into every AI chat request. (a) **Current User** — name, email, role from the auth middleware context (server-side; no client round-trip needed). (b) **Browser Context** — timezone, locale, and current date/time from `browserContext` sent by `ChatDrawer` (client-side). (c) **Current Location** — pathname, search params, and full URL from `browserContext`; route patterns (e.g. `/tasks/$taskId`) are matched to resolve dynamic segments. The navigation manifest mirrors `routeTree.gen.ts` and lists each route's search params. When adding routes, update `navigationManifest.ts` and add pattern-matching in `buildSystemPrompt()` for new dynamic segments.
@@ -298,6 +300,10 @@ content: |
   - **POST** — check adapter → parse `{ messages, browserContext }` → extract auth from `context as AuthContext` → validate `BrowserContextSchema` → `buildSystemPrompt()` → assemble tools array → `chat({ adapter, messages, systemPrompts, tools, agentLoopStrategy })` → `toServerSentEventsResponse(stream)`.
 
   `buildSystemPrompt()` composes `BASE_SYSTEM_PROMPT` (rule 25) + navigation manifest + dynamic context (rule 14). When modifying: add tools to the array, update `BASE_SYSTEM_PROMPT` when the data model changes, add pattern-matching for new dynamic route segments. See AGENTS.md section 8 "System Prompt Generation" for the six-section prompt template.
+
+  ## Dynamic Route Schema Extraction for AI
+
+  To help the AI navigate accurately using client tools, dynamically extract your TanStack Router configuration from `router.flatRoutes`. Map this array to extract `fullPath`, `staticData.description` (for page context), path params (from segments starting with `$`), and search params (by inspecting `validateSearch` keys). Passing this structured map in the system prompt allows the AI to discover available routes and required parameters without hallucinating URLs.
 
   ## Verification
 
