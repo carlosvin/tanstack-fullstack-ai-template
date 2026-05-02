@@ -90,6 +90,7 @@ If your team prefers [`@tabler/icons-react`](https://tabler.io/icons) (the Manti
 
 ## 4. TypeScript and React
 
+- **Server Components by Default**: TanStack Start supports React Server Components. Rely on Server Components by default. Reduce the usage of `"use client"` directives. Only use `"use client"` at the top of files when React hooks (`useState`, `useEffect`) or browser APIs are strictly necessary. Keep client components as small and leaf-level as possible.
 - **Functional Components**: Prefer functional components and hooks over class components.
 - **Type Safety**: Use TypeScript features like interfaces, types, and generics effectively.
 - **Zod-First Types**: All domain types are defined as Zod schemas and TypeScript types are inferred via `z.infer<>`. Tools-layer schemas live in `src/services/schemas/schemas.ts` (with `.describe()` on every field for AI JSON Schema); repository-layer schemas live in `repository.ts`. See the [skill](.agents/skills/tanstack-fullstack-pattern/SKILL.md) for the three schema layers, `loaderDeps`, and cross-layer `Schema.parse()` mapping.
