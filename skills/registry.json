@@ -7,7 +7,7 @@
       "summary": "Use when scaffolding a new TanStack Start project, adding domain entities to the fullstack template, or implementing the interface-first repository pattern with AI-promptable tools, or nested layout routes duplicate beforeLoad checks or loaders that should live on a parent route, or TanStack Router, Start, or AI behavior must be verified against current documentation instead of training data.",
       "projectName": "TanStack AI-Promptable Full-Stack Template",
       "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
-      "version": "1.10.0",
+      "version": "1.11.0",
       "author": {
         "name": "Carlos Martin-Sanchez",
         "url": "https://github.com/carlosvin"
@@ -63,7 +63,12 @@
         "Distinct-value filter discovery tools that ground AI filter values in real data",
         "Single markdown artifact backing the help page, an AI tool, and the chat's recommended-prompt list",
         "Parent layout routes that centralize beforeLoad guards and shared loader data for nested child routes",
-        "Dynamic route schema extraction for AI tool-calling and context awareness"
+        "Dynamic route schema extraction for AI tool-calling and context awareness",
+        "Schema metadata and framework introspection used as the primary source for AI-facing field, route, and filter explanations",
+        "Optional computed-field explanation registries only for virtual values that schemas cannot describe",
+        "Upstream-source overlay repositories with sparse user-owned overrides",
+        "URL-driven bulk edit routes with dirty tracking and batched mutation functions",
+        "TanStack Intent integration for package-specific skill discovery"
       ],
       "triggers": [
         "fullstack template",
@@ -74,7 +79,9 @@
         "nested routes",
         "layout route",
         "beforeLoad",
-        "tanstack cli"
+        "tanstack cli",
+        "tanstack intent",
+        "package skills"
       ],
       "inputs": [
         "Existing or new TanStack Start codebase",
@@ -103,7 +110,13 @@
         "Actively ask the skill user for clarifications when needed, especially when making choices about movable pieces or architectural decisions.",
         "Every enum-ish field exposes a distinct-values AI tool so the assistant grounds filter arguments in real data",
         "Router configures defaultStaleTime, defaultPreload, defaultPreloadStaleTime, scrollRestoration, and a root notFoundComponent",
-        "Reduce the usage of \"use client\". Rely on Server Components by default. Only use \"use client\" when state, effects, or browser APIs are strictly necessary."
+        "Reduce the usage of \"use client\". Rely on Server Components by default. Only use \"use client\" when state, effects, or browser APIs are strictly necessary.",
+        "Prefer schema metadata and introspection over hand-maintained AI metadata. Use Zod/ArkType `.describe()`, route `validateSearch`, tool schemas, router `staticData`, and JSON Schema output wherever possible",
+        "Hand-maintained virtual-field registries are a fallback only for computed fields whose semantics cannot be inferred from schemas",
+        "Request context is a single flat value carried by TanStack middleware. Avoid custom nested `context.context`-style wrappers; destructure `ctx.context` early in handlers",
+        "Avoid unnecessary packages. Add dependencies only when required by the chosen stack, requested capability, or validation contract; when needed, use the latest stable compatible release through the package manager",
+        "Use TanStack Intent and CLI as executable guidance; do not add them as project dependencies unless a generated app explicitly needs them as part of its own tooling",
+        "Generated apps must be validated locally by starting dev mode and pinging `/api/health` when required environment configuration is available"
       ],
       "steps": [
         "Define schemas as source of truth and infer types",
@@ -121,7 +134,10 @@
         "Use a project-local Link wrapper that preserves search by default",
         "Back the help page, an AI help tool, and the chat's recommended-prompt list from one markdown file",
         "Keep route state in URL search params with validateSearch",
-        "Model nested URLs with parent layout routes so beforeLoad and shared loaders run once per navigation; children read parent loader data via getRouteApi or useLoaderData from the parent path"
+        "Model nested URLs with parent layout routes so beforeLoad and shared loaders run once per navigation; children read parent loader data via getRouteApi or useLoaderData from the parent path",
+        "Prefer schema/router introspection over static hand-maintained AI route and field manifests",
+        "For upstream-owned data, model source rows plus sparse override documents and merge them with a pure overlay function",
+        "For bulk edits, store selected IDs in URL search params and persist only changed fields through a batched mutation"
       ],
       "examples": [
         {
