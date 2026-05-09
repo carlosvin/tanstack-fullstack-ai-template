@@ -2,7 +2,7 @@
 
 This document is the default agent and contributor guide for projects built from this template. It covers project structure, conventions, tooling, and operational detail.
 
-The **deep architectural contract** -- rigid rules, three schema layers, cross-layer mapping, interface contracts, migration workflow, and the TanStack CLI docs tip -- lives in the [TanStack Fullstack Pattern skill](.agents/skills/tanstack-fullstack-pattern/SKILL.md) (generated from `skills/src/*.skill.yaml`; regenerate with `pnpm skills:build`).
+The **deep architectural contract** -- rigid rules, three schema layers, cross-layer mapping, interface contracts, migration workflow, and the TanStack CLI docs tip -- lives in the [TanStack Promptable Fullstack App Template skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) (generated from `skills/src/*.skill.yaml`; regenerate with `pnpm skills:build`).
 
 ## 1. General Principles
 
@@ -20,7 +20,7 @@ The **deep architectural contract** -- rigid rules, three schema layers, cross-l
 - `src/middleware`: TanStack Start middleware (auth, invalidation). Registered globally in `src/start.ts`.
 - `src/services/api`: Server functions (exported directly from `createServerFn`) and shared response utilities.
 - `src/services/repository`: Repository interface, implementations (MongoDB, seed), and the factory.
-- `src/services/schemas`: Centralized Zod schemas — tools-layer schemas in `schemas.ts`, repository-layer schemas in `repository.ts`. See the [skill](.agents/skills/tanstack-fullstack-pattern/SKILL.md) for the full three-layer model.
+- `src/services/schemas`: Centralized Zod schemas — tools-layer schemas in `schemas.ts`, repository-layer schemas in `repository.ts`. See the [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) for the full three-layer model.
 - `src/services/ai`: AI adapter interface, implementation, and tool definitions.
 - `src/services/observability`: Observability interface with Sentry and no-op implementations.
 - `src/services/db`: Database client singleton.
@@ -93,7 +93,7 @@ If your team prefers [`@tabler/icons-react`](https://tabler.io/icons) (the Manti
 - **Server Components by Default**: TanStack Start supports React Server Components. Rely on Server Components by default. Reduce the usage of `"use client"` directives. Only use `"use client"` at the top of files when React hooks (`useState`, `useEffect`) or browser APIs are strictly necessary. Keep client components as small and leaf-level as possible.
 - **Functional Components**: Prefer functional components and hooks over class components.
 - **Type Safety**: Use TypeScript features like interfaces, types, and generics effectively.
-- **Zod-First Types**: All domain types are defined as Zod schemas and TypeScript types are inferred via `z.infer<>`. Tools-layer schemas live in `src/services/schemas/schemas.ts` (with `.describe()` on every field for AI JSON Schema); repository-layer schemas live in `repository.ts`. See the [skill](.agents/skills/tanstack-fullstack-pattern/SKILL.md) for the three schema layers, `loaderDeps`, and cross-layer `Schema.parse()` mapping.
+- **Zod-First Types**: All domain types are defined as Zod schemas and TypeScript types are inferred via `z.infer<>`. Tools-layer schemas live in `src/services/schemas/schemas.ts` (with `.describe()` on every field for AI JSON Schema); repository-layer schemas live in `repository.ts`. See the [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) for the three schema layers, `loaderDeps`, and cross-layer `Schema.parse()` mapping.
 - **Type Reuse**: Import types from `src/types`. Do not redefine existing types.
 - **URL-as-State**: Page state (filters, selections, active tabs, modal open/close) **must** live in URL search params, not `useState`. This makes state shareable via URL, survives refresh, and enables deep-linking. Use `validateSearch` on routes with Zod schemas to define and validate search params.
   - **Correct**: `const { filter } = Route.useSearch()` — state comes from the URL.
@@ -161,7 +161,7 @@ When a URL scheme changes (renaming a route segment, collapsing multiple paths i
 
 ## 6. Server Functions and Data Access
 
-This is a full-stack TanStack Start application. There is no separate backend API. The [skill](.agents/skills/tanstack-fullstack-pattern/SKILL.md) defines the rigid layering rules and the "every repo method gets a tool" policy.
+This is a full-stack TanStack Start application. There is no separate backend API. The [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) defines the rigid layering rules and the "every repo method gets a tool" policy.
 
 ```
 Route Loader → Server Function (serverFns.ts) → Repository → Database / Seed Data
@@ -212,7 +212,7 @@ const result = await processResponse(() => myMutation({ data: input }))
 
 ## 8. AI Chat and Tools
 
-Server and client tool coverage expectations, the AI chat pipeline, and client-tool wiring samples are in the [skill](.agents/skills/tanstack-fullstack-pattern/SKILL.md). This section covers adapter details, file paths, and the navigation manifest.
+Server and client tool coverage expectations, the AI chat pipeline, and client-tool wiring samples are in the [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md). This section covers adapter details, file paths, and the navigation manifest.
 
 ### AI Adapter Interface
 

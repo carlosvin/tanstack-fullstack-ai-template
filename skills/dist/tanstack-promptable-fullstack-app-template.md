@@ -1,17 +1,36 @@
----
-name: tanstack-fullstack-pattern
-description: 'Use when scaffolding a new TanStack Start project, adding domain
-  entities to the fullstack template, or implementing the interface-first
-  repository pattern with AI-promptable tools, or nested layout routes duplicate
-  beforeLoad checks or loaders that should live on a parent route, or TanStack
-  Router, Start, or AI behavior must be verified against current documentation
-  instead of training data. Project: TanStack AI-Promptable Full-Stack Template.
-  Triggers on "fullstack template", "TanStack Start project", "repository
-  pattern", "interface-first", "new app scaffold", "nested routes", "layout
-  route", "beforeLoad", "tanstack cli".'
----
+# TanStack Promptable Fullstack App Template
 
-> This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.
+- Project: `TanStack AI-Promptable Full-Stack Template`
+- Project summary: A production-ready TanStack Start template designed to make internal tools AI promptable by default.
+- Author: Carlos Martin-Sanchez (https://github.com/carlosvin)
+- License: MIT
+- Homepage: https://github.com/carlosvin/tanstack-fullstack-ai-template
+- Repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
+- Documentation: https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/skills/README.md
+- Status: stable
+- Supported tools: Windsurf [native, tested], Cursor [copy, tested], Claude Code [copy, tested]
+- Capabilities: AI promptable application architecture, Promptable-by-default AI chat in a side drawer when credentials are present, Natural language querying through repository-backed AI tools, URL-aware AI prompt context using current location and route patterns, Swappable service implementations behind stable interfaces, Layer-specific schemas with explicit mapping between repository and tool contracts, Thin routes with extracted, testable page components, Structured server-side logging with pino and automatic Sentry error forwarding, Build-time semver version injected into observability tools for release tracking, Public runtime config exposed to the browser via window.__ENV__ without relying on import.meta.env, Consistent router UX defaults for preload, stale time, and scroll restoration, Distinct-value filter discovery tools that ground AI filter values in real data, Single markdown artifact backing the help page, an AI tool, and the chat's recommended-prompt list, Parent layout routes that centralize beforeLoad guards and shared loader data for nested child routes, Dynamic route schema extraction for AI tool-calling and context awareness
+- ID: `tanstack-promptable-fullstack-app-template`
+- Version: `1.10.0`
+- Tags: tanstack-start, fullstack, architecture, interface-first, repository-pattern, ai-promptable
+
+## Summary
+
+Use when scaffolding a new TanStack Start project, adding domain entities to the fullstack template, or implementing the interface-first repository pattern with AI-promptable tools, or nested layout routes duplicate beforeLoad checks or loaders that should live on a parent route, or TanStack Router, Start, or AI behavior must be verified against current documentation instead of training data.
+
+## Triggers
+
+- fullstack template
+- TanStack Start project
+- repository pattern
+- interface-first
+- new app scaffold
+- nested routes
+- layout route
+- beforeLoad
+- tanstack cli
+
+## Canonical Content
 # TanStack Fullstack Pattern
 
 An interface-first fullstack architecture built on TanStack Start. The pattern defines clear interface boundaries between layers -- interfaces are rigid, implementations are swappable.
@@ -36,7 +55,7 @@ An interface-first fullstack architecture built on TanStack Start. The pattern d
 8. URL-as-state: filters, tabs, selections live in URL search params via `validateSearch` (Zod/ArkType). Use `loaderDeps` to feed validated search into loaders.
 9. Middleware chain: auth is global middleware, invalidation runs on mutation server functions.
 10. Mutation pattern: POST server functions chain `.middleware([requireAuthMiddleware, invalidateMiddleware])`, return domain data or throw `HttpError`. Callers normalize errors: UI via `processResponse()`, AI tools via `safeToolHandler()` / `createSafeServerTool()`.
-11. Query pattern: GET server functions throw on failure for centralized error handling.
+11. Query pattern: GET server functions throw on failure for centralized error handling. When possible, use static server functions for performance improvements.
 12. Maximize AI tool coverage: expose **every** repository method (reads and writes) via `createSafeServerTool()` so failures return `{ error, code }`. If a server function exists, it gets a tool.
 13. Router capabilities as AI client tools: expose `router.navigate()` and `router.invalidate()` as client tools via `toolDefinition()`.
 14. AI system prompt context: `buildSystemPrompt()` injects three context blocks into every AI chat request. (a) **Current User** — name, email, role from the auth middleware context (server-side; no client round-trip needed). (b) **Browser Context** — timezone, locale, and current date/time from `browserContext` sent by `ChatDrawer` (client-side). (c) **Current Location** — pathname, search params, and full URL from `browserContext`; route patterns (e.g. `/tasks/$taskId`) are matched to resolve dynamic segments. The navigation manifest mirrors `routeTree.gen.ts` and lists each route's search params. When adding routes, update `navigationManifest.ts` and add pattern-matching in `buildSystemPrompt()` for new dynamic segments.
@@ -56,11 +75,12 @@ An interface-first fullstack architecture built on TanStack Start. The pattern d
 29. Explicit agent loop depth: configure `agentLoopStrategy: maxIterations(N)` explicitly on the `chat()` call (default N=10). This caps the number of consecutive tool-calling iterations the AI can run before returning a final answer, which bounds latency, cost, and infinite-loop risk. Tune N only after measuring; do not rely on the framework default.
 30. Public runtime config bridge: expose non-secret runtime config (Sentry DSN, environment name, feature flags) via a GET server function `getPublicEnv()` and inline the result as `window.__ENV__` in the root `RootDocument` using a small `<script>` tag emitted before client JS runs. Escape `<` in the inlined JSON to avoid breaking the HTML parser. Never rely on `import.meta.env` alone for values that must differ across runtime environments built from the same bundle. See AGENTS.md section "Public Runtime Config" for the template.
 31. Router UX defaults bundle: in `src/router.tsx`, configure `defaultStaleTime` (long for read-heavy dashboards, short for mutation-heavy apps), `defaultPreload: 'intent'`, `defaultPreloadStaleTime: 0` (always-fresh preloads), `scrollRestoration: true` (with a `getScrollRestorationKey` when needed), and a `notFoundComponent` on the root route. These defaults are a single coherent bundle — do not ship a router config without them.
-32. Link wrapper preserves search: export a project-local `Link` component (e.g. `src/components/Link/Link.tsx`) that wraps TanStack Router's `Link` with `search: true` as the default. Use this wrapper for every internal link so filters, tabs, and other URL state never silently drop on navigation. Reserve raw `<a>` for external URLs.
+32. Link wrapper preserves search & styling: export a project-local `Link` component (e.g. `src/components/Link/Link.tsx`) that wraps TanStack Router's `Link` with `search: true` as the default. Use this wrapper for every internal link so filters, tabs, and other URL state never silently drop on navigation. Ensure that links are still rendered using the chosen component library's corresponding element (e.g., using `createLink` or the `component` prop) so they inherit the correct styling. Reserve raw `<a>` for external URLs.
 33. Parent layout routes deduplicate subtree work: when several child routes under the same URL prefix need the same redirect, synchronous guard, or expensive read, implement it **once** on the **parent** layout route. Use the parent's `beforeLoad` for navigation gates and synchronous checks; use the parent's `loader` (still via server functions) for shared data that every descendant needs. Child loaders fetch **only** data specific to that segment. Descendants read parent loader output with `getRouteApi('/parent/path').useLoaderData()` or `useLoaderData({ from: '/parent/path' })` — do not copy the parent's `beforeLoad` or re-fetch the parent's loader payload in each child. Structure files to match TanStack Router's layout conventions (e.g. `routes/foo/route.tsx` wrapping `routes/foo/*`).
 34. Sentry user context + feedback: when Sentry is enabled, bind the signed-in user via `Sentry.setUser({ email, username })` from the shell component as soon as the identity loads (no extra round-trip).
 35. Single markdown artifact for help + AI + suggested prompts: maintain one `docs/help.md` imported with `?raw`. Back three surfaces from it: (a) a `/help` route that renders it with `react-markdown`; (b) an AI tool that returns the content so the assistant can answer "how do I..." questions; (c) a parser that extracts `- [ ]` / `- [x]` lines as the chat's recommended-question list. Zero duplication between docs, assistant, and suggested prompts.
 36. Distinct-value filter discovery: for every enum-ish field, the repository exposes a `getDistinctValues(field)` method that flows through a GET server function into a read-only AI tool (`getDistinctStatuses`, `getDistinctCategories`, …). The AI calls these to ground filter values in real data instead of guessing. The root loader can preload the same lists for UI filter bars so UI and AI share one vocabulary.
+37. Reduce `"use client"` usage: TanStack Start supports full SSR and React Server Components. Rely on Server Components by default. Only use `"use client"` when state (`useState`), effects (`useEffect`), or browser APIs are strictly necessary. Keep client components small and at the leaf level.
 
 ## Schema Boundaries
 
@@ -168,6 +188,10 @@ A TanStack Start file-based route at `/api/chat` with two handlers:
 - **POST** — check adapter → parse `{ messages, browserContext }` → extract auth from `context as AuthContext` → validate `BrowserContextSchema` → `buildSystemPrompt()` → assemble tools array → `chat({ adapter, messages, systemPrompts, tools, agentLoopStrategy })` → `toServerSentEventsResponse(stream)`.
 
 `buildSystemPrompt()` composes `BASE_SYSTEM_PROMPT` (rule 25) + navigation manifest + dynamic context (rule 14). When modifying: add tools to the array, update `BASE_SYSTEM_PROMPT` when the data model changes, add pattern-matching for new dynamic route segments. See AGENTS.md section 8 "System Prompt Generation" for the six-section prompt template.
+
+## Dynamic Route Schema Extraction for AI
+
+To help the AI navigate accurately using client tools, dynamically extract your TanStack Router configuration from `router.flatRoutes`. Map this array to extract `fullPath`, `staticData.description` (for page context), path params (from segments starting with `$`), and search params (by inspecting `validateSearch` keys). Passing this structured map in the system prompt allows the AI to discover available routes and required parameters without hallucinating URLs.
 
 ## Verification
 
