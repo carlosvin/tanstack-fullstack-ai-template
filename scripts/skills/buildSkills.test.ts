@@ -24,8 +24,8 @@ afterEach(async () => {
 	await Promise.all(createdDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })))
 })
 
-const validSkill = `id: tanstack-fullstack-pattern
-title: TanStack Fullstack Pattern
+const validSkill = `id: tanstack-promptable-fullstack-app-template
+title: TanStack Promptable Fullstack App Template
 summary: Apply the TanStack Start fullstack architectural pattern with interface-first boundaries.
 projectName: TanStack AI-Promptable Full-Stack Template
 projectSummary: A production-ready TanStack Start template designed to make internal tools AI promptable by default.
@@ -61,7 +61,7 @@ examples:
   - input: Add a new domain entity to the template
     output: Update schema, repository interfaces, server functions, routes, and AI tools
 content: |
-  # TanStack Fullstack Pattern
+  # TanStack Promptable Fullstack App Template
 
   Example content.
 `
@@ -76,17 +76,17 @@ describe('buildSkills', () => {
 		const parsedRegistry = JSON.parse(registry)
 		expect(parsedRegistry.skills[0].author.name).toBe('Carlos Martin-Sanchez')
 		expect(parsedRegistry.skills[0].supportedTools[0].id).toBe('windsurf')
-		expect(parsedRegistry.skills[0].outputsByFormat.skill).toBe('.agents/skills/tanstack-fullstack-pattern/SKILL.md')
+		expect(parsedRegistry.skills[0].outputsByFormat.skill).toBe('.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md')
 
 		const agentSkill = await readFile(
-			path.join(rootDir, '.agents', 'skills', 'tanstack-fullstack-pattern', 'SKILL.md'),
+			path.join(rootDir, '.agents', 'skills', 'tanstack-promptable-fullstack-app-template', 'SKILL.md'),
 			'utf8',
 		)
-		expect(agentSkill).toContain('name: tanstack-fullstack-pattern')
+		expect(agentSkill).toContain('name: tanstack-promptable-fullstack-app-template')
 	})
 
 	it('fails with a clear error when YAML is malformed', async () => {
-		const rootDir = await createWorkspace('id: tanstack-fullstack-pattern\nsummary: [broken\n')
+		const rootDir = await createWorkspace('id: tanstack-promptable-fullstack-app-template\nsummary: [broken\n')
 
 		await expect(buildSkills({ rootDir })).rejects.toThrow(/Failed to parse YAML/)
 	})
@@ -102,7 +102,7 @@ describe('buildSkills', () => {
 		const rootDir = await createWorkspace(validSkill)
 		await buildSkills({ rootDir })
 		await writeFile(
-			path.join(rootDir, '.agents', 'skills', 'tanstack-fullstack-pattern', 'SKILL.md'),
+			path.join(rootDir, '.agents', 'skills', 'tanstack-promptable-fullstack-app-template', 'SKILL.md'),
 			'drift\n',
 			'utf8',
 		)

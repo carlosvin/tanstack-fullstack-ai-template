@@ -33,10 +33,10 @@ You can install this repository's generated Agent Skill directly from GitHub:
 npx skills add carlosvin/tanstack-fullstack-ai-template --list
 
 # Install the TanStack fullstack pattern skill
-npx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-fullstack-pattern
+npx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-promptable-fullstack-app-template
 
 # Optional: install globally (available across projects)
-npx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-fullstack-pattern -g
+npx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-promptable-fullstack-app-template -g
 
 # Optional: verify installed skills
 npx skills list
@@ -44,7 +44,7 @@ npx skills list
 
 The skill is published in the standard location used by the CLI:
 
-- `.agents/skills/tanstack-fullstack-pattern/SKILL.md`
+- `.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md`
 
 ## Architecture
 
@@ -330,11 +330,11 @@ Then follow the end-to-end workflow:
 
 ### Option B: AI-Assisted via Generated Skill (New or Existing Project)
 
-The skill is defined once in a canonical YAML source and generated into the [agentskills.io](https://agentskills.io) standard at `.agents/skills/tanstack-fullstack-pattern/`. Windsurf and other compatible tools read this path directly.
+The skill is defined once in a canonical YAML source and generated into the [agentskills.io](https://agentskills.io) standard at `.agents/skills/tanstack-promptable-fullstack-app-template/`. Windsurf and other compatible tools read this path directly.
 
 The generated outputs are committed intentionally so you can copy the skill into another project or tool without running the build pipeline first. The machine-readable metadata lives in `skills/registry.json`, and the portable markdown copy lives in `skills/dist/`.
 
-**Use the skill in this repo:** clone the template — the skill is at `.agents/skills/tanstack-fullstack-pattern/`.
+**Use the skill in this repo:** clone the template — the skill is at `.agents/skills/tanstack-promptable-fullstack-app-template/`.
 
 **Install the skill globally** (available in all your projects):
 
@@ -348,13 +348,13 @@ To manually install instead:
 
 ```bash
 # Windsurf (reads .agents/skills/ when in repo; for global copy)
-cp -r .agents/skills/tanstack-fullstack-pattern ~/.codeium/windsurf/skills/
+cp -r .agents/skills/tanstack-promptable-fullstack-app-template ~/.codeium/windsurf/skills/
 
 # Cursor (copy from shared standard)
-cp -r .agents/skills/tanstack-fullstack-pattern ~/.cursor/skills/
+cp -r .agents/skills/tanstack-promptable-fullstack-app-template ~/.cursor/skills/
 
 # Claude Code (copy from shared standard)
-cp -r .agents/skills/tanstack-fullstack-pattern ~/.claude/skills/
+cp -r .agents/skills/tanstack-promptable-fullstack-app-template ~/.claude/skills/
 ```
 
 To regenerate after editing the canonical source:

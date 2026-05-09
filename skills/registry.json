@@ -2,8 +2,8 @@
   "$schema": "./spec/skill.schema.json",
   "skills": [
     {
-      "id": "tanstack-fullstack-pattern",
-      "title": "TanStack Fullstack Pattern",
+      "id": "tanstack-promptable-fullstack-app-template",
+      "title": "TanStack Promptable Fullstack App Template",
       "summary": "Use when scaffolding a new TanStack Start project, adding domain entities to the fullstack template, or implementing the interface-first repository pattern with AI-promptable tools, or nested layout routes duplicate beforeLoad checks or loaders that should live on a parent route, or TanStack Router, Start, or AI behavior must be verified against current documentation instead of training data.",
       "projectName": "TanStack AI-Promptable Full-Stack Template",
       "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
@@ -62,7 +62,8 @@
         "Consistent router UX defaults for preload, stale time, and scroll restoration",
         "Distinct-value filter discovery tools that ground AI filter values in real data",
         "Single markdown artifact backing the help page, an AI tool, and the chat's recommended-prompt list",
-        "Parent layout routes that centralize beforeLoad guards and shared loader data for nested child routes"
+        "Parent layout routes that centralize beforeLoad guards and shared loader data for nested child routes",
+        "Dynamic route schema extraction for AI tool-calling and context awareness"
       ],
       "triggers": [
         "fullstack template",
@@ -96,11 +97,13 @@
         "App version is extracted from package.json at build time and injected into all observability tools",
         "Dependencies are kept at latest compatible versions; exact pins are avoided unless a known incompatibility exists",
         "Non-secret runtime config is exposed via a GET server function and inlined into the document as window.__ENV__ before client JS runs",
-        "Internal navigation uses a project-local Link wrapper that preserves search params by default",
+        "Internal navigation uses a project-local Link wrapper that preserves search params by default and renders using the chosen component library's elements",
         "Shared route gates and expensive reads are implemented on the parent layout route (beforeLoad + loader); child routes avoid duplicating the same work",
-        "TanStack Router, Start, Query, Table, and AI guidance follows the official docs surfaced via npx @tanstack/cli, not memorized APIs",
+        "TanStack Router, Start, Query, Table, and AI guidance follows the official docs. Always leverage the CLI via `npx @tanstack/cli --help` to check the current docs, rather than relying on memorized APIs.",
+        "Actively ask the skill user for clarifications when needed, especially when making choices about movable pieces or architectural decisions.",
         "Every enum-ish field exposes a distinct-values AI tool so the assistant grounds filter arguments in real data",
-        "Router configures defaultStaleTime, defaultPreload, defaultPreloadStaleTime, scrollRestoration, and a root notFoundComponent"
+        "Router configures defaultStaleTime, defaultPreload, defaultPreloadStaleTime, scrollRestoration, and a root notFoundComponent",
+        "Reduce the usage of \"use client\". Rely on Server Components by default. Only use \"use client\" when state, effects, or browser APIs are strictly necessary."
       ],
       "steps": [
         "Define schemas as source of truth and infer types",
@@ -130,10 +133,10 @@
           "output": "Implement repository interface and switch factory without app-level changes"
         }
       ],
-      "source": "skills/src/tanstack-fullstack-pattern.skill.yaml",
+      "source": "skills/src/tanstack-promptable-fullstack-app-template.skill.yaml",
       "outputsByFormat": {
-        "skill": ".agents/skills/tanstack-fullstack-pattern/SKILL.md",
-        "markdown": "skills/dist/tanstack-fullstack-pattern.md"
+        "skill": ".agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md",
+        "markdown": "skills/dist/tanstack-promptable-fullstack-app-template.md"
       }
     }
   ]

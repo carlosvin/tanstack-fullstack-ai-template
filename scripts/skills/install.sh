@@ -6,8 +6,8 @@
 
 set -e
 
-SKILL_NAME="tanstack-fullstack-pattern"
-SKILL_RAW_URL="https://raw.githubusercontent.com/carlosvin/tanstack-fullstack-ai-template/main/.agents/skills/tanstack-fullstack-pattern/SKILL.md"
+SKILL_NAME="tanstack-promptable-fullstack-app-template"
+SKILL_RAW_URL="https://raw.githubusercontent.com/carlosvin/tanstack-fullstack-ai-template/main/.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md"
 
 echo "Installing $SKILL_NAME skill..."
 
