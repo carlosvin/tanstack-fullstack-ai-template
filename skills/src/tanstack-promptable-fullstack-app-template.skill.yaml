@@ -11,7 +11,7 @@ projectName: TanStack AI-Promptable Full-Stack Template
 projectSummary: >-
   A production-ready TanStack Start template designed to make internal tools AI
   promptable by default.
-version: 1.16.0
+version: 1.17.0
 author:
   name: Carlos Martin-Sanchez
   url: https://github.com/carlosvin
@@ -46,7 +46,7 @@ tags:
 capabilities:
   - Interface-first boundaries with swappable implementations
   - Three schema layers with mandatory Schema.parse() at every boundary (tool→repo and repo→tool)
-  - Strong TypeScript inside the typed flow — inference preserved with satisfies unions exhaustive checks few casts
+  - Strong TypeScript in the typed flow — inference preserved via satisfies, unions, exhaustive switches; casts minimized
   - Loader-first routes and URL-driven state via validateSearch
   - Router config bundle (defaults + project Link wrapper preserving search params)
   - Full AI tool coverage mirroring repository surface + client navigate/invalidate tools
@@ -56,6 +56,7 @@ capabilities:
   - Parent layout routes deduplicating shared beforeLoad and loaders
   - Optional patterns — overlay repo, bulk edit, distinct-values tools, dynamic route introspection
   - TanStack Intent + CLI as doc-aligned guidance (not duplicated command manuals)
+  - Assistant chat renders Markdown (GFM) — lists, tables, code blocks; internal links stay navigable
 triggers:
   - fullstack template
   - TanStack Start project
@@ -79,7 +80,10 @@ constraints:
   - Domain wire shapes come from Zod/ArkType schemas and z.infer<>; repository interfaces use repository-layer types only
   - Tools-layer schemas shared by createServerFn and AI tools; repository interfaces use repository-layer types only; UI and AI never import repository schemas
   - Map inbound with RepoInputSchema.parse(fromTools(...)) and outbound with ToolsOutputSchema.parse(fromRepo(...)) so wire shapes never bypass validation
-  - After parsing keep inferred types end-to-end — avoid any widening to Record string unknown and avoid as except documented third-party boundaries prefer satisfies discriminated unions const tuples narrow guards exhaustive never
+  - >-
+    After Schema.parse, preserve inferred types end-to-end — avoid widening to any or Record<string, unknown>;
+    avoid as casts except at documented third-party boundaries; prefer satisfies, discriminated unions, const tuples,
+    type guards, and exhaustive handling
   - Fetch route data in loaders through server functions; keep route files thin; URL state in validateSearch with loaderDeps
   - "POST mutations chain `.middleware([requireAuthMiddleware, invalidateMiddleware])`; handlers throw HttpError; callers normalize via processResponse / safeToolHandler / createSafeServerTool"
   - Expose every repository method as a safe AI tool; distinct-values tools for enum-ish filters
@@ -90,14 +94,17 @@ constraints:
   - Auth middleware enriches ctx.context with a repository-built ticket (e.g. getReadRepository().getUserAccess(email)); WritableRepository writes accept a TraceabilityContext built from that ticket
   - "Promptable by default — root loader checks getAIAvailability(); chat input includes browserContext (timezone, locale, path); chat() uses agentLoopStrategy maxIterations(N)"
   - Verify TanStack Router/Start/AI APIs with npx @tanstack/cli against current docs; use TanStack Intent for package skills — do not add them as project deps unless the app needs them as tooling
-  - Operational detail — UI library, chat drawer, logging, Sentry, testing, env bridge — follows repo AGENTS.md
+  - Operational detail — UI library, chat Markdown rendering (implementation in AGENTS.md §8), logging, Sentry, testing, env bridge — follows repo AGENTS.md
 steps:
   - Define repository-layer and tools-layer schemas; implement repository interfaces (seed + production)
   - Map between layers with Schema.parse() at boundaries; carry z.infer types through handlers UI tools without erasing to any or untyped records
   - Add GET/POST server functions with shared tools-layer input validators
   - Register global middleware — auth (enrich ctx.context with a repository-built ticket), invalidation; optional pre-auth redirects
   - Configure router defaults bundle and project Link wrapper; add routes with validateSearch, loaderDeps, loaders; nest shared work on parent layouts
-  - Wire AI — toolDefinition for every server function, safe handlers, client navigate/invalidate tools, buildSystemPrompt fed by the auth ticket and the chat browserContext, agentLoopStrategy maxIterations(N) on chat()
+  - >-
+    Wire AI — toolDefinition for every server function, safe handlers, client navigate/invalidate tools,
+    buildSystemPrompt fed by the auth ticket and chat browserContext, agentLoopStrategy maxIterations(N) on chat();
+    ensure assistant messages render as Markdown per AGENTS.md §8
   - Gate chat UI on getAIAvailability() in the root loader; add distinct-values read paths for enum-ish filters when applicable
   - Validate changes per AGENTS.md; use TanStack CLI/Intent when changing Router/Start/AI behavior
 examples:
@@ -112,6 +119,23 @@ content: |
   **Purpose:** Capture the **interface-first, schema-layered, AI-promptable** contract for TanStack Start apps from this template. Day-to-day conventions (UI kit, chat wiring, logging, tests) live in the repo’s **AGENTS.md** — use this skill for **architecture**, AGENTS.md for **operations**.
 
   > **Companion handbook:** [AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) — structure, styling, auth snippets, Biome, testing/E2E, validation checklist, AI chat setup.
+
+  ## How to use this skill
+
+  1. Read **Core Contract** first — it is the non-negotiable architecture.
+  2. Run the **Architecture Checklist** before every non-trivial change.
+  3. Jump to **Schema Boundaries**, **Request Context**, or **Special Patterns** only when that concern applies.
+  4. Use **[AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md)** for operational how-to (UI kit, chat wiring, logging, tests, validation commands) — not for inventing alternate architecture.
+
+  ## Common failure modes (avoid these)
+
+  - **Route state in React state:** filters, tabs, or selections in `useState` instead of validated URL search params + `loaderDeps`.
+  - **Repository schemas at the wrong edge:** importing repository-layer schemas into UI, tools, or AI tool inputs — use tools-layer schemas only.
+  - **Server function without a tool:** adding `createServerFn` but skipping `toolDefinition` + `createSafeServerTool` for the same capability.
+  - **Parse only half the boundary:** validating inbound tools input but returning raw repo rows to UI/AI without tools-layer `Schema.parse` on the way out.
+  - **UI-only auth:** hiding buttons in components but skipping guards in server handlers.
+  - **Type escape hatches:** `any`, loose `Record<string, unknown>`, or `as` after `Schema.parse` — narrow, guard, or fix types instead.
+  - **Duplicated parent work:** copying a parent layout’s `beforeLoad`, loader, or expensive read into each child route.
 
   ## Core Contract
 
@@ -131,8 +155,6 @@ content: |
   14. **Metadata for AI and UI:** Use `.describe()` for all narrative explanations (JSON Schema `description`). Use `.meta({ ... })` only for **structured extras** — `unit`, `format`, optional `title`, app-specific hints — not as a substitute for `.describe()`. Prefer deriving prompts and UI copy from schemas + `z.toJSONSchema()` and router introspection over parallel hand-maintained maps.
   15. **Parent layouts:** Shared `beforeLoad`, redirects, and expensive reads belong on the **parent** layout route; children read parent loader data via `getRouteApi` / `useLoaderData({ from })` — do not duplicate parent work.
 
-  Day-to-day operational concerns (UI kit, chat drawer placement, markdown rendering, LLM provider choice, pino/Sentry, icons, RSC vs `"use client"`, full validation commands) follow **AGENTS.md** — see the handbook table below.
-
   ## Architecture Checklist
 
   Scan before changing code:
@@ -147,6 +169,10 @@ content: |
   - **AI stack is complete:** every repo method → server tool + safe handler; client **`navigate`** / **`invalidateRouter`**; root **`getAIAvailability()`**; chat payload includes **`browserContext`**; **`chat({ agentLoopStrategy: maxIterations(N) })`**.
   - **Routes:** **`validateSearch`** + **`loaderDeps`**; duplicate **`beforeLoad`** / shared loaders only on **parent** layouts.
   - **Metadata discipline:** `.describe()` for narrative copy; `.meta()` for structured extras; closed vocabularies = `as const` tuple + `z.enum` + `z.infer<>`.
+
+  ## Markdown assistant replies (UX contract)
+
+  Assistant messages in the chat UI must **render as Markdown** (including GFM): lists, **tables**, fenced and inline code blocks, and links. Internal paths like `[Tasks](/tasks)` should remain **client-navigable** where the app implements markdown links (do not flatten assistant output to plain text for display). Concrete stack (`react-markdown`, `remark-gfm`, styling, `MarkdownLink` behavior) lives in **AGENTS.md §8** — agents changing chat rendering must follow that section.
 
   ## Schema Boundaries
 
@@ -322,7 +348,7 @@ content: |
   |------|--------|
   | UI kit (default Mantine), styling | §3 |
   | Auth, middleware, guards | §5 |
-  | AI adapters, chat client, tools, prompts | §8 |
+  | AI adapters, chat client, tools, prompts, Markdown (GFM) rendering | §8 |
   | Observability (Sentry, pino, `__APP_VERSION__`) | §9 |
   | Vitest, Playwright, E2E fixtures | §10 |
   | Full validation checklist (format, lint, test, build) | §17 |

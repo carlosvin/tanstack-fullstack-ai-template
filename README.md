@@ -24,27 +24,51 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000). The app works immediately with seed data — no database, no API keys, no configuration needed.
 
-## Install The Skill (npx skills)
+## Use the Agent Skill
 
-You can install this repository's generated Agent Skill directly from GitHub:
+The **TanStack Promptable Fullstack** skill is an [Agent Skill](https://agentskills.io) that teaches coding assistants the template’s **architecture contract**: interface-first boundaries, three schema layers with `Schema.parse()` at each boundary, thin routes + loaders (no `useEffect` data fetching for route data), URL state via `validateSearch`, repository interfaces, AI tools aligned with server functions, auth + invalidation on mutations, and TypeScript discipline inside the typed flow. **[AGENTS.md](./AGENTS.md)** stays the **handbook** (UI, auth snippets, chat, tests, checklist); the skill is the **rules agents must not break**.
+
+**Why it helps:** fewer regressions when scaffolding features, migrating code, or refactoring routes — agents follow the same non-obvious invariants the template depends on.
+
+**When to use it:** starting from this template, adding entities or AI tools, adopting the pattern in another TanStack Start app, or fixing duplicated parent/child route work.
+
+### Super quick install
 
 ```bash
-# List skills available in this repository
-npx skills add carlosvin/tanstack-fullstack-ai-template --list
-
-# Install the TanStack fullstack pattern skill
 npx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-promptable-fullstack-app-template
-
-# Optional: install globally (available across projects)
-npx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-promptable-fullstack-app-template -g
-
-# Optional: verify installed skills
-npx skills list
 ```
 
-The skill is published in the standard location used by the CLI:
+Optional: `-g` installs globally; `npx skills add carlosvin/tanstack-fullstack-ai-template --list` lists skills from this repo; `npx skills list` verifies installed skills.
+
+The published skill document in this repository is:
 
 - `.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md`
+
+### Other ways to install
+
+- **Shell installer** (Cursor / Windsurf / Claude Code global dirs):  
+  `curl -sL https://raw.githubusercontent.com/carlosvin/tanstack-fullstack-ai-template/main/scripts/skills/install.sh | bash -s -- --force`
+- **Manual copy:** copy `.agents/skills/tanstack-promptable-fullstack-app-template/` to `~/.cursor/skills/`, `~/.claude/skills/`, or your editor’s documented skills path.
+- **Using this repo as-is:** Windsurf and compatible tools can read `.agents/skills/` directly — no extra step.
+
+More user-focused detail: **[skills/README.md](./skills/README.md)** · Editing/regenerating the skill (YAML, CI): **[skills/AUTHORING.md](./skills/AUTHORING.md)**.
+
+### Try it
+
+Ask your agent:
+
+- "What are the core contract items in the TanStack fullstack skill I must not violate?"
+- "Add a new domain entity following this template’s schema layers, repository, server functions, routes, and AI tools."
+- "Should any of my nested routes move shared `beforeLoad` or loader work to a parent layout?"
+
+### What the skill enforces (outcomes)
+
+- **One tools-layer schema** for both server functions and AI tools; **parse both ways** (tools ↔ repo) at mapper boundaries.
+- **Thin routes**; **loaders** fetch data; **URL search params** hold filters/tabs/selections with `loaderDeps` for cache keys.
+- **POST mutations** use auth + invalidation middleware; callers normalize errors consistently for UI and AI.
+- **AI:** expose repository capabilities as tools; client **navigate** / **invalidateRouter**; gate chat on availability; bounded agent loop in `chat()`.
+- **Parent layouts** own shared guards and expensive reads; children read parent loader data instead of duplicating work.
+- **TypeScript** after parsing: preserve inference — prefer `satisfies`, exhaustive handling, and guards over `any` and loose `as` casts.
 
 ## Architecture
 
@@ -328,70 +352,9 @@ Then follow the end-to-end workflow:
 6. Create file-based routes under `src/routes/` (data in loaders, state in URL search params)
 7. When ready for real data, implement `mongoRepository.ts` and set `MONGODB_URI`
 
-### Option B: AI-Assisted via Generated Skill (New or Existing Project)
+### Option B: AI-assisted (skill)
 
-The skill is defined once in a canonical YAML source and generated into the [agentskills.io](https://agentskills.io) standard at `.agents/skills/tanstack-promptable-fullstack-app-template/`. Windsurf and other compatible tools read this path directly.
-
-The generated outputs are committed intentionally so you can copy the skill into another project or tool without running the build pipeline first. The machine-readable metadata lives in `skills/registry.json`, and the portable markdown copy lives in `skills/dist/`.
-
-**Use the skill in this repo:** clone the template — the skill is at `.agents/skills/tanstack-promptable-fullstack-app-template/`.
-
-**Install the skill globally** (available in all your projects):
-
-Run this one-liner in your terminal to automatically download and install the skill into the global directories for Cursor, Windsurf, and Claude Code:
-
-```bash
-curl -sL https://raw.githubusercontent.com/carlosvin/tanstack-fullstack-ai-template/main/scripts/skills/install.sh | bash -s -- --force
-```
-
-To manually install instead:
-
-```bash
-# Windsurf (reads .agents/skills/ when in repo; for global copy)
-cp -r .agents/skills/tanstack-promptable-fullstack-app-template ~/.codeium/windsurf/skills/
-
-# Cursor (copy from shared standard)
-cp -r .agents/skills/tanstack-promptable-fullstack-app-template ~/.cursor/skills/
-
-# Claude Code (copy from shared standard)
-cp -r .agents/skills/tanstack-promptable-fullstack-app-template ~/.claude/skills/
-```
-
-To regenerate after editing the canonical source:
-
-```bash
-pnpm skills:build
-```
-
-To verify the generated outputs are current:
-
-```bash
-pnpm skills:check
-pnpm test:skills
-```
-
-To verify that your editor actually loaded the skill, ask the agent a direct pattern question such as:
-
-- *"What are the rigid rules in the TanStack fullstack pattern?"*
-- *"How should this project structure repository and observability services?"*
-
-If the skill loaded correctly, the response should mention the interface-first boundaries, loaders-first data fetching, URL-as-state, and mutation invalidation conventions.
-
-Once active, ask the agent to apply the pattern:
-
-- *"Set up this project using the TanStack fullstack pattern"*
-- *"Add the repository pattern to this existing app"*
-- *"Migrate this project to use interface-first architecture"*
-
-The skill covers:
-
-- The 6 architectural layers and their boundaries
-- All 4 interface contracts (`ReadRepository`/`WritableRepository`, `AIAdapterService`, `ObservabilityService`, `AuthContext`)
-- Rigid rules (loaders-first, URL-as-state, schema-first types, invalidation middleware)
-- Implementation choices (swap any layer: database, AI, UI, observability, schema library)
-- A validation checklist to verify the pattern is correctly applied
-
-Tool support note: the canonical metadata now tracks support targets and install mode per tool. The current target tools are Windsurf (`native`) plus Cursor and Claude Code (`copy`). Use `skills/registry.json` as the source of truth for current support status.
+See **[Use the Agent Skill](#use-the-agent-skill)** above for install commands, quick prompts, and what the skill enforces. Contributor workflow (edit YAML, regenerate): **[skills/AUTHORING.md](./skills/AUTHORING.md)**.
 
 ### Option C: Adopt Incrementally (Existing Project)
 
