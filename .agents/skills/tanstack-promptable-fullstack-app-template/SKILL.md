@@ -18,6 +18,23 @@ description: 'Use when scaffolding a new TanStack Start project, adding domain
 
 > **Companion handbook:** [AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) — structure, styling, auth snippets, Biome, testing/E2E, validation checklist, AI chat setup.
 
+## How to use this skill
+
+1. Read **Core Contract** first — it is the non-negotiable architecture.
+2. Run the **Architecture Checklist** before every non-trivial change.
+3. Jump to **Schema Boundaries**, **Request Context**, or **Special Patterns** only when that concern applies.
+4. Use **[AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md)** for operational how-to (UI kit, chat wiring, logging, tests, validation commands) — not for inventing alternate architecture.
+
+## Common failure modes (avoid these)
+
+- **Route state in React state:** filters, tabs, or selections in `useState` instead of validated URL search params + `loaderDeps`.
+- **Repository schemas at the wrong edge:** importing repository-layer schemas into UI, tools, or AI tool inputs — use tools-layer schemas only.
+- **Server function without a tool:** adding `createServerFn` but skipping `toolDefinition` + `createSafeServerTool` for the same capability.
+- **Parse only half the boundary:** validating inbound tools input but returning raw repo rows to UI/AI without tools-layer `Schema.parse` on the way out.
+- **UI-only auth:** hiding buttons in components but skipping guards in server handlers.
+- **Type escape hatches:** `any`, loose `Record<string, unknown>`, or `as` after `Schema.parse` — narrow, guard, or fix types instead.
+- **Duplicated parent work:** copying a parent layout’s `beforeLoad`, loader, or expensive read into each child route.
+
 ## Core Contract
 
 1. **Interfaces:** Database, AI, observability (and other externals) sit behind interfaces; implementations are swappable.
@@ -36,8 +53,6 @@ description: 'Use when scaffolding a new TanStack Start project, adding domain
 14. **Metadata for AI and UI:** Use `.describe()` for all narrative explanations (JSON Schema `description`). Use `.meta({ ... })` only for **structured extras** — `unit`, `format`, optional `title`, app-specific hints — not as a substitute for `.describe()`. Prefer deriving prompts and UI copy from schemas + `z.toJSONSchema()` and router introspection over parallel hand-maintained maps.
 15. **Parent layouts:** Shared `beforeLoad`, redirects, and expensive reads belong on the **parent** layout route; children read parent loader data via `getRouteApi` / `useLoaderData({ from })` — do not duplicate parent work.
 
-Day-to-day operational concerns (UI kit, chat drawer placement, markdown rendering, LLM provider choice, pino/Sentry, icons, RSC vs `"use client"`, full validation commands) follow **AGENTS.md** — see the handbook table below.
-
 ## Architecture Checklist
 
 Scan before changing code:
@@ -52,6 +67,10 @@ Scan before changing code:
 - **AI stack is complete:** every repo method → server tool + safe handler; client **`navigate`** / **`invalidateRouter`**; root **`getAIAvailability()`**; chat payload includes **`browserContext`**; **`chat({ agentLoopStrategy: maxIterations(N) })`**.
 - **Routes:** **`validateSearch`** + **`loaderDeps`**; duplicate **`beforeLoad`** / shared loaders only on **parent** layouts.
 - **Metadata discipline:** `.describe()` for narrative copy; `.meta()` for structured extras; closed vocabularies = `as const` tuple + `z.enum` + `z.infer<>`.
+
+## Markdown assistant replies (UX contract)
+
+Assistant messages in the chat UI must **render as Markdown** (including GFM): lists, **tables**, fenced and inline code blocks, and links. Internal paths like `[Tasks](/tasks)` should remain **client-navigable** where the app implements markdown links (do not flatten assistant output to plain text for display). Concrete stack (`react-markdown`, `remark-gfm`, styling, `MarkdownLink` behavior) lives in **AGENTS.md §8** — agents changing chat rendering must follow that section.
 
 ## Schema Boundaries
 
@@ -227,7 +246,7 @@ interface WritableRepository {
 |------|--------|
 | UI kit (default Mantine), styling | §3 |
 | Auth, middleware, guards | §5 |
-| AI adapters, chat client, tools, prompts | §8 |
+| AI adapters, chat client, tools, prompts, Markdown (GFM) rendering | §8 |
 | Observability (Sentry, pino, `__APP_VERSION__`) | §9 |
 | Vitest, Playwright, E2E fixtures | §10 |
 | Full validation checklist (format, lint, test, build) | §17 |

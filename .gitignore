@@ -16,4 +16,3 @@ test-results/
 # Local skill plugin config (machine-specific)
 skills/plugin.local.json
 skills/dist
-skills/dist/tanstack-promptable-fullstack-app-template.md
