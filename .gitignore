@@ -15,4 +15,3 @@ test-results/
 .netlify
 # Local skill plugin config (machine-specific)
 skills/plugin.local.json
-skills/dist
