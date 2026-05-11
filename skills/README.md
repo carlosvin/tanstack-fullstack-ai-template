@@ -1,43 +1,51 @@
-# Skills Authoring Guide
+# TanStack Promptable Fullstack skill
 
-This project stores skills in a vendor-agnostic canonical format and generates platform-specific outputs.
+This repo ships an **[Agent Skill](https://agentskills.io)** that teaches coding agents the **architecture contract** for this template: interface-first services, three schema layers with explicit parsing at boundaries, loader-first routes, URL-as-state, AI tool coverage, and strong TypeScript inside the typed flow. Operational detail (UI kit, auth snippets, chat wiring, tests) stays in the repo's **[AGENTS.md](../AGENTS.md)** — the skill focuses on **what to enforce**, not every implementation recipe.
 
-## Canonical Source
+**Use it when** you scaffold or extend a TanStack Start app from this pattern, migrate an existing app, or need agents to follow current TanStack docs instead of guessing.
 
-- Canonical schema: `skills/spec/skill.schema.json`
-- Canonical skill files: `skills/src/*.skill.yaml`
+## Super quick install
 
-Each canonical file contains:
-
-- Portable metadata (`id`, `title`, `summary`, `version`, `tags`, `triggers`)
-- Publication metadata (`author`, `license`, `homepage`, `repository`, `documentationUrl`, `status`, `supportedTools`)
-- Structured execution hints (`inputs`, `outputs`, `constraints`, `steps`, `examples`)
-- Canonical markdown body in `content`
-
-## Generated Outputs
-
-Generated files are derived from canonical source and should not be edited manually.
-
-| Path | Purpose |
-| --- | --- |
-| `.agents/skills/<id>/SKILL.md` | [agentskills.io](https://agentskills.io) standard — read natively by Windsurf and any compatible tool |
-| `skills/dist/<id>.md` | Portable docs (GitHub, wikis, copy-paste) |
-| `skills/registry.json` | Machine-readable manifest for discovery |
-
-Generated outputs are committed on purpose so other projects can consume the skill without running the build pipeline first.
-
-Tools that don't yet read `.agents/skills/` (e.g. Cursor, Claude Code) can use the same `SKILL.md` by copying the skill folder into their tool's directory (e.g. `~/.cursor/skills/` or `.claude/skills/`).
-
-## Commands
+From any machine with Node/npm:
 
 ```bash
-pnpm skills:build   # Validate + generate all outputs
-pnpm skills:check   # Validate + fail if generated files drift
+npx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-promptable-fullstack-app-template
 ```
 
-## Workflow
+Optional: install **globally** so the skill is available in every project:
 
-1. Edit or add a canonical file under `skills/src/`.
-2. Run `pnpm skills:build`.
-3. Commit both canonical and generated outputs.
-4. CI/lint should run `pnpm skills:check` to prevent drift.
+```bash
+npx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-promptable-fullstack-app-template -g
+```
+
+List what this repo publishes, then confirm:
+
+```bash
+npx skills add carlosvin/tanstack-fullstack-ai-template --list
+npx skills list
+```
+
+## Skill files in this repository
+
+After clone, the generated skill lives here (committed on purpose):
+
+- `.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md` — standard skill document agents load
+- `skills/dist/tanstack-promptable-fullstack-app-template.md` — portable copy for docs or paste
+- `skills/registry.json` — machine-readable manifest
+
+## Other install options
+
+- **One-shot installer** (Cursor, Windsurf, Claude Code global dirs): see the root [README.md](../README.md#use-the-agent-skill).
+- **Manual copy**: copy the folder `.agents/skills/tanstack-promptable-fullstack-app-template/` into your tool's skills directory (for example `~/.cursor/skills/`).
+
+## Try it
+
+Paste one of these into your agent after install:
+
+- "Follow this repo's TanStack fullstack skill: what are the core contract items I must not violate?"
+- "Add a new domain entity using the template's schema layers, repository, server functions, routes, and AI tools."
+- "Review my nested routes: shared `beforeLoad` / loaders should live on the parent layout — what should move?"
+
+## Contributors
+
+To edit or regenerate the skill from YAML, see **[AUTHORING.md](./AUTHORING.md)**.

@@ -76,7 +76,9 @@ describe('buildSkills', () => {
 		const parsedRegistry = JSON.parse(registry)
 		expect(parsedRegistry.skills[0].author.name).toBe('Carlos Martin-Sanchez')
 		expect(parsedRegistry.skills[0].supportedTools[0].id).toBe('windsurf')
-		expect(parsedRegistry.skills[0].outputsByFormat.skill).toBe('.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md')
+		expect(parsedRegistry.skills[0].outputsByFormat.skill).toBe(
+			'.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md',
+		)
 
 		const agentSkill = await readFile(
 			path.join(rootDir, '.agents', 'skills', 'tanstack-promptable-fullstack-app-template', 'SKILL.md'),
