@@ -431,12 +431,39 @@ The chat endpoint is a TanStack Start file-based route at `/api/chat` with two s
 
 ## 9. Observability
 
+### ObservabilityService interface
+
 - **Interface**: `src/services/observability/types.ts` defines the `ObservabilityService` interface.
-- **Implementations**: Sentry (`sentry.ts`) and no-op (`noop.ts`). Factory in `index.ts`.
-- **Server Init**: `instrument.server.mjs` conditionally initializes the server-side SDK.
+- **Implementations**: Sentry (`sentry.ts`) and no-op (`noop.ts`). Factory in `index.ts` selects based on `webPublicEnv.SENTRY_DSN`.
 - **Client Init**: `src/router.tsx` conditionally initializes client-side tracing.
 - **Usage**: Wrap server function internals with `getObservability().startSpan('name', fn)`.
 - **To swap providers**: Implement `ObservabilityService`, update the factory, and replace `instrument.server.mjs`.
+
+### Sentry bootstrap (three-file pattern)
+
+Server-side Sentry is initialized via the `--import` hook before any TypeScript loads:
+
+| File | Responsibility |
+|------|---------------|
+| `instrument.env.mjs` | Plain JS — `resolveSentryBootstrapEnv()` reads `process.env.ENV` + `SENTRY_DSN` once |
+| `instrument.shared.mjs` | `initSentry({ serverName, dsn, environment, release })` — no `process.env` inside |
+| `instrument.server.mjs` | 9-line entry: resolve + init |
+
+**Key invariant**: `instrument.shared.mjs` never reads `process.env`. All values are pre-resolved by the caller.
+
+### pino structured logging
+
+Application modules use the pino factory from `src/utils/logger.ts`:
+
+```typescript
+import { createServerLogger } from '../utils/serverLogger'
+const log = createServerLogger('myModule')   // binds webServerEnv.ENV + LOG_LEVEL
+```
+
+- `createModuleLogger(name, { environment?, logLevel? })` — core factory; no `process.env` access inside.
+- `createServerLogger(name)` — bound factory for server modules; closes over `webServerEnv.ENV` and `webServerEnv.LOG_LEVEL`.
+- Root pino instance is lazily created once per process; all module loggers are `child()` instances.
+- TTY pretty-printing is auto-enabled for interactive Node terminals outside of production.
 
 ### App Version
 
@@ -565,53 +592,61 @@ This project uses [Biome](https://biomejs.dev/) as the default linter and format
 
 ## 13. Public Runtime Config
 
-Some config values differ per deployment (Sentry DSN, environment name, feature flags) but are **not secrets** and the client needs them immediately. Do not bake them into the Vite bundle via `import.meta.env` — that ties the built artifact to one environment. Instead, expose them through a GET server function and inline the result into the HTML document as `window.__ENV__` so the client can read them synchronously before any module runs.
+Config values that differ per deployment (Sentry DSN, environment name, feature flags) and are safe for the browser **must not** be baked into the Vite bundle via `import.meta.env` — that ties the built artifact to one environment. They also **must not** be injected via `window.__ENV__` — that is insecure and fragile.
 
-### Server function
+Instead, expose them through the validated `WebPublicEnvSchema` slice and deliver them to the browser exclusively through the **root loader**.
+
+### Environment schemas (`src/env/`)
+
+`process.env` is read **only once**, at module import time:
+
+| File | Purpose |
+|------|---------|
+| `src/env/runtimeEnvSchema.ts` | Shared `DeploymentEnvSchema`, `LogLevelSchema`, and optional preprocessors |
+| `src/env/webEnv.ts` | `WebServerEnvSchema` (full, including secrets) + `WebPublicEnvSchema` (browser-safe slice); singletons `webServerEnv` + `webPublicEnv` |
+
+**Invariant**: after `src/env/webEnv.ts` is parsed, all downstream code receives typed values from the singletons — never raw `process.env` strings.
+
+### Public env via the root loader
+
+Expose `webPublicEnv` through the root loader so React components can read `ENV`, `LOG_LEVEL`, and `SENTRY_DSN`:
 
 ```tsx
-// src/services/api/serverFns.ts
-export const getPublicEnv = createServerFn({ method: 'GET' }).handler(async () => {
-  return {
-    sentryDsn: process.env.VITE_SENTRY_DSN ?? null,
-    environment: process.env.ENV ?? 'development',
-    featureFlags: {
-      /* flags that are safe to expose */
-    },
-  }
+// src/routes/__root.tsx
+import { webPublicEnv } from '../env/webEnv'
+
+export const Route = createRootRoute({
+  loader: async () => ({
+    publicEnv: webPublicEnv,
+    // ...other root loader data
+  }),
+  // ...
 })
 ```
 
-### Inline into the document
+React components and client-side SDK init read `publicEnv` from `useLoaderData({ from: '__root__' })`.
 
-Call `getPublicEnv()` in the root loader and inject the result via a `<script>` tag in `RootDocument` (`src/routes/__root.tsx`). Use `JSON.stringify(...).replace(/</g, '\\u003c')` so the payload cannot break out of the `<script>` tag:
+### `webEnvMiddleware`
 
-```tsx
-const envJson = JSON.stringify(publicEnv).replace(/</g, '\\u003c')
-// In RootDocument <head>:
-<script
-  // biome-ignore lint/security/noDangerouslySetInnerHtml: seeds window.__ENV__ before client JS runs
-  dangerouslySetInnerHTML={{ __html: `window.__ENV__ = ${envJson};` }}
-/>
+`src/middleware/webEnv.ts` injects `ctx.context.publicEnv` for server functions:
+
+```typescript
+import { webEnvMiddleware } from './middleware/webEnv'
+// Register in src/start.ts alongside authMiddleware:
+// requestMiddleware: [authMiddleware, webEnvMiddleware]
 ```
 
-### Declare the global type
+Server functions access `ctx.context.publicEnv.SENTRY_DSN` etc. without importing `webEnv.ts` directly.
 
-```ts
-// src/vite-env.d.ts
-declare global {
-  interface Window {
-    __ENV__: {
-      sentryDsn: string | null
-      environment: string
-      featureFlags: Record<string, boolean>
-    }
-  }
-}
-export {}
-```
+### Environment variables reference
 
-Client-side SDK initialization (Sentry, analytics, etc.) reads `window.__ENV__` at the top of its init module. Because the script tag is emitted before client JS, reads are always synchronous and well-typed.
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `ENV` | Deployment name: `development`, `staging`, `production` | No (defaults to undefined) |
+| `LOG_LEVEL` | Minimum pino log level | No (defaults to `info`) |
+| `SENTRY_DSN` | Sentry DSN for both server and browser | No (observability disabled when absent) |
+| `VITE_SENTRY_DSN` | Legacy alias for `SENTRY_DSN` — accepted for backwards compatibility | No |
+| `AUTH_HEADER_NAME` | HTTP header name for the JWT | No (defaults to `Authorization`) |
 
 ## 14. Bulk Edit Pattern
 
