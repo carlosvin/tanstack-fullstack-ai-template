@@ -9,9 +9,9 @@
 - Documentation: https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md
 - Status: stable
 - Supported tools: Windsurf [native, tested], Cursor [copy, tested], Claude Code [copy, tested]
-- Capabilities: Centralized Zod env schemas with server/public split (src/env/), process.env read only once at module-level parse — no scattered env access, createModuleLogger(name, options) pino factory — no process.env inside, createServerLogger(name) bound factory — eliminates repeated env boilerplate, instrument.env.mjs for plain-JS bootstrap env resolution (before TS loads), instrument.shared.mjs for reusable initSentry — callers pre-resolve all values, instrument.server.mjs simplified to 6 lines using the shared helpers, Public env (ENV, LOG_LEVEL, SENTRY_DSN) reaches the browser via root loader only, No window.__ENV__ global
+- Capabilities: Centralized Zod env schemas with server/public split (src/env/), process.env read only once at module-level parse — no scattered env access, createModuleLogger(name, options) pino factory — no process.env inside, createServerLogger(name) bound factory — eliminates repeated env boilerplate, instrument.env.shared.mjs for a shared plain-ESM deployment env schema usable before TS loads, instrument.env.mjs for strict bootstrap env validation using the shared deployment env schema, instrument.shared.mjs for reusable initSentry — callers pre-resolve all values, instrument.server.mjs simplified to 6 lines using the shared helpers, Public env (ENV, LOG_LEVEL, SENTRY_DSN) reaches the browser via root loader only, No window.__ENV__ global
 - ID: `observability-and-env`
-- Version: `1.0.0`
+- Version: `1.0.2`
 - Tags: observability, logging, sentry, pino, environment, configuration, tanstack-start
 
 ## Summary
@@ -47,7 +47,8 @@ arguments.
 
 ## Key invariants (do not violate)
 
-1. `process.env` is read **only** in `src/env/*.ts` (schema parse) and
+1. `process.env` is read **only** in `src/env/*.ts` (schema parse) and in a
+   single `BootstrapEnvSchema.parse(process.env)` call inside
    `instrument.env.mjs` (Sentry bootstrap — before TS loads).
 2. Logger options (`logLevel`, `environment`) are **passed as arguments** to
    `createModuleLogger` — the factory never reads `process.env`.
@@ -70,7 +71,8 @@ src/utils/
 src/middleware/
   webEnv.ts             # webEnvMiddleware: injects ctx.context.publicEnv
 
-instrument.env.mjs      # resolveSentryBootstrapEnv() — plain JS, no Zod
+instrument.env.shared.mjs # shared DeploymentEnvSchema for bootstrap + TS callers
+instrument.env.mjs      # resolveSentryBootstrapEnv() — plain ESM bootstrap resolver
 instrument.shared.mjs   # initSentry({ dsn, environment, serverName, release })
 instrument.server.mjs   # 6-line entry: resolve + init
 ```
@@ -81,6 +83,7 @@ Shared Zod enums and preprocessors used by web env (and any future pipeline env)
 
 ```typescript
 import { z } from 'zod'
+import { DEPLOYMENT_ENV_VALUES, DeploymentEnvSchema } from '../../instrument.env.shared.mjs'
 
 /** Empty / whitespace-only strings → undefined (Node process.env values are strings). */
 export function envStringToUndefined(val: unknown): unknown {
@@ -89,9 +92,8 @@ export function envStringToUndefined(val: unknown): unknown {
   return s === '' ? undefined : s
 }
 
-export const DEPLOYMENT_ENV_VALUES = ['development', 'staging', 'production'] as const
-export const DeploymentEnvSchema = z.enum(DEPLOYMENT_ENV_VALUES)
-export type DeploymentEnv = z.infer<typeof DeploymentEnvSchema>
+export { DEPLOYMENT_ENV_VALUES, DeploymentEnvSchema }
+export type DeploymentEnv = (typeof DEPLOYMENT_ENV_VALUES)[number]
 
 export const LOG_LEVEL_VALUES = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const
 export const LogLevelSchema = z.enum(LOG_LEVEL_VALUES)
@@ -123,8 +125,6 @@ export const WebPublicEnvSchema = z.object({
 export type WebPublicEnv = z.infer<typeof WebPublicEnvSchema>
 
 export const WebServerEnvSchema = WebPublicEnvSchema.extend({
-  // Accepted for backwards compatibility; use SENTRY_DSN in new config.
-  VITE_SENTRY_DSN: OptionalTrimmedStringSchema,
   // ... app-specific required/optional vars
   AUTH_HEADER_NAME: z.string().optional(),
 })
@@ -134,8 +134,6 @@ export const webServerEnv: WebServerEnv = WebServerEnvSchema.parse(process.env)
 
 export const webPublicEnv: WebPublicEnv = WebPublicEnvSchema.parse({
   ...webServerEnv,
-  // Normalise VITE_ alias → canonical SENTRY_DSN
-  SENTRY_DSN: webServerEnv.VITE_SENTRY_DSN || webServerEnv.SENTRY_DSN,
 })
 ```
 
@@ -201,19 +199,28 @@ const log = createServerLogger('myServerFn')
 
 ## instrument.env.mjs
 
-Plain JS — no Zod, no TS — so it loads from the `--import` hook before any
-transpilation. `VALID_ENVS` mirrors `DEPLOYMENT_ENV_VALUES` from
-`runtimeEnvSchema.ts`; keep them in sync.
+Plain ESM — no TS — so it loads from the `--import` hook before any
+transpilation. Bootstrap env is still validated in one place instead of
+branching on raw `process.env` values, but the deployment enum itself is
+imported from `instrument.env.shared.mjs` so bootstrap and TypeScript callers
+share the same allowed values. Keep this strict: invalid `NODE_ENV` values
+should fail at `BootstrapEnvSchema.parse(process.env)`, and Sentry should be
+configured only through `SENTRY_DSN`.
 
 ```javascript
-// VALID_ENVS mirrors DEPLOYMENT_ENV_VALUES in src/env/runtimeEnvSchema.ts
-const VALID_ENVS = ['development', 'staging', 'production']
+import { z } from 'zod'
+import { DeploymentEnvSchema } from './instrument.env.shared.mjs'
+
+const BootstrapEnvSchema = z.object({
+  NODE_ENV: DeploymentEnvSchema.optional(),
+  SENTRY_DSN: z.string().optional(),
+})
 
 export function resolveSentryBootstrapEnv() {
-  const rawEnv = process.env.ENV?.trim()
+  const env = BootstrapEnvSchema.parse(process.env)
   return {
-    dsn: process.env.VITE_SENTRY_DSN || process.env.SENTRY_DSN,
-    environment: VALID_ENVS.includes(rawEnv) ? rawEnv : 'development',
+    dsn: env.SENTRY_DSN,
+    environment: env.NODE_ENV ?? 'development',
   }
 }
 ```
@@ -295,7 +302,7 @@ loader: async () => {
 
 ## Updating call sites
 
-**observability/index.ts** — replace `process.env.VITE_SENTRY_DSN` with the
+**observability/index.ts** — replace `process.env.SENTRY_DSN` with the
 validated value from `webPublicEnv`:
 
 ```typescript
@@ -321,7 +328,7 @@ const AUTH_HEADER_NAME = webServerEnv.AUTH_HEADER_NAME ?? 'Authorization'
 
 ## Checklist
 
-- [ ] `process.env` appears only in `src/env/*.ts` and `instrument.env.mjs`
+- [ ] `process.env` appears only in `src/env/*.ts` and one bootstrap schema parse in `instrument.env.mjs`
 - [ ] `createModuleLogger` / `createServerLogger` never call `process.env`
 - [ ] `instrument.server.mjs` uses `resolveSentryBootstrapEnv()` + `initSentry()`
 - [ ] `build` script copies `instrument.*.mjs` (not just `instrument.server.mjs`)

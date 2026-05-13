@@ -439,17 +439,18 @@ The chat endpoint is a TanStack Start file-based route at `/api/chat` with two s
 - **Usage**: Wrap server function internals with `getObservability().startSpan('name', fn)`.
 - **To swap providers**: Implement `ObservabilityService`, update the factory, and replace `instrument.server.mjs`.
 
-### Sentry bootstrap (three-file pattern)
+### Sentry bootstrap
 
 Server-side Sentry is initialized via the `--import` hook before any TypeScript loads:
 
 | File | Responsibility |
 |------|---------------|
-| `instrument.env.mjs` | Plain JS — `resolveSentryBootstrapEnv()` reads `process.env.ENV` + `SENTRY_DSN` once |
+| `instrument.env.shared.mjs` | Plain ESM shared deployment env schema used by bootstrap and TypeScript callers |
+| `instrument.env.mjs` | Plain ESM — defines the bootstrap resolver and parses `process.env` once before calling `resolveSentryBootstrapEnv()`; invalid `NODE_ENV` values fail schema validation |
 | `instrument.shared.mjs` | `initSentry({ serverName, dsn, environment, release })` — no `process.env` inside |
 | `instrument.server.mjs` | 9-line entry: resolve + init |
 
-**Key invariant**: `instrument.shared.mjs` never reads `process.env`. All values are pre-resolved by the caller.
+**Key invariant**: `instrument.shared.mjs` never reads `process.env`. All values are pre-resolved by the caller, bootstrap `NODE_ENV` is strictly schema-validated in `instrument.env.mjs`, and Sentry is configured only through `SENTRY_DSN`.
 
 ### pino structured logging
 
@@ -520,7 +521,7 @@ export const logger = pino({
 
 This project uses [`pino`](https://getpino.io/) as the default server-side structured logger. Do **not** use `console.log` / `console.error` / `console.warn` in server code — use the logger instead.
 
-**Setup**: The logger singleton lives in `src/services/logger.ts`. It conditionally adds the [`@sentry/pino-transport`](https://docs.sentry.io/platforms/javascript/guides/node/configuration/integrations/pino/) so that error-level logs (`logger.error(...)`) are automatically captured by Sentry when `VITE_SENTRY_DSN` is set. When no DSN is configured, pino logs to stdout with pretty-printing in development.
+**Setup**: The logger singleton lives in `src/services/logger.ts`. It conditionally adds the [`@sentry/pino-transport`](https://docs.sentry.io/platforms/javascript/guides/node/configuration/integrations/pino/) so that error-level logs (`logger.error(...)`) are automatically captured by Sentry when `SENTRY_DSN` is set. When no DSN is configured, pino logs to stdout with pretty-printing in development.
 
 ```tsx
 import { logger } from '../services/logger'
@@ -542,7 +543,7 @@ pnpm add @sentry/pino-transport  # optional: forward errors to Sentry
 ```typescript
 import pino from 'pino'
 
-const transport = process.env.VITE_SENTRY_DSN
+const transport = process.env.SENTRY_DSN
   ? pino.transport({
       targets: [
         { target: '@sentry/pino-transport', level: 'error' },
@@ -559,7 +560,7 @@ const transport = process.env.VITE_SENTRY_DSN
 export const logger = pino({ level: 'info' }, transport)
 ```
 
-When `VITE_SENTRY_DSN` is set, the Sentry transport receives error-level logs alongside the regular output target. When Sentry is not configured, the logger simply writes to stdout (pretty in dev, JSON in production). No code changes are needed when toggling Sentry on or off.
+When `SENTRY_DSN` is set, the Sentry transport receives error-level logs alongside the regular output target. When Sentry is not configured, the logger simply writes to stdout (pretty in dev, JSON in production). No code changes are needed when toggling Sentry on or off.
 
 ## 10. Testing
 
@@ -645,7 +646,6 @@ Server functions access `ctx.context.publicEnv.SENTRY_DSN` etc. without importin
 | `ENV` | Deployment name: `development`, `staging`, `production` | No (defaults to undefined) |
 | `LOG_LEVEL` | Minimum pino log level | No (defaults to `info`) |
 | `SENTRY_DSN` | Sentry DSN for both server and browser | No (observability disabled when absent) |
-| `VITE_SENTRY_DSN` | Legacy alias for `SENTRY_DSN` — accepted for backwards compatibility | No |
 | `AUTH_HEADER_NAME` | HTTP header name for the JWT | No (defaults to `Authorization`) |
 
 ## 14. Bulk Edit Pattern

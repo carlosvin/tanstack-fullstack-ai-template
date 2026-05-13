@@ -17,13 +17,8 @@ export type WebPublicEnv = z.infer<typeof WebPublicEnvSchema>
 /**
  * Full validated `process.env` for the TanStack web server and SSR runtime.
  * Parsed once when this module is first imported.
- * Accepts both `SENTRY_DSN` and `VITE_SENTRY_DSN` from the environment for
- * backwards compatibility; the public slice normalizes to a single `SENTRY_DSN`.
  */
 export const WebServerEnvSchema = WebPublicEnvSchema.extend({
-	VITE_SENTRY_DSN: OptionalTrimmedStringSchema.describe(
-		'Accepted for backwards compatibility; use SENTRY_DSN in new config.',
-	),
 	AUTH_HEADER_NAME: z.string().optional().describe('HTTP header name for the JWT. Default: Authorization.'),
 	MONGODB_URI: OptionalTrimmedStringSchema.describe('MongoDB connection string. Absent → in-memory seed repository.'),
 	MONGODB_DB_NAME: z.string().optional().describe('MongoDB database name. Default: app-db.'),
@@ -45,5 +40,4 @@ export const webServerEnv: WebServerEnv = WebServerEnvSchema.parse(process.env)
 
 export const webPublicEnv: WebPublicEnv = WebPublicEnvSchema.parse({
 	...webServerEnv,
-	SENTRY_DSN: webServerEnv.VITE_SENTRY_DSN || webServerEnv.SENTRY_DSN,
 })

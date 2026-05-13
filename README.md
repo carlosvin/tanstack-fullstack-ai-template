@@ -239,7 +239,7 @@ See [`.env.example`](.env.example) for the full list with documentation.
 | `AZURE_OPENAI_API_KEY` | No | — | OpenAI API key. AI chat is disabled without it. |
 | `AZURE_OPENAI_ENDPOINT` | No | — | OpenAI base URL (e.g., `https://host/openai/v1`). |
 | `AZURE_OPENAI_DEPLOYMENT` | No | `gpt-4o` | Model deployment name. |
-| `VITE_SENTRY_DSN` | No | — | Sentry DSN. Observability disabled without it. |
+| `SENTRY_DSN` | No | — | Sentry DSN for server and browser observability. Observability disabled without it. |
 | `AUTH_HEADER_NAME` | No | `Authorization` | HTTP header containing the JWT. |
 
 ## Extending the Template
