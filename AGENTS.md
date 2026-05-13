@@ -448,7 +448,7 @@ Server-side Sentry is initialized via the `--import` hook before any TypeScript 
 | `instrument.env.shared.mjs` | Plain ESM shared deployment env schema used by bootstrap and TypeScript callers |
 | `instrument.env.mjs` | Plain ESM — defines the bootstrap resolver and parses `process.env` once before calling `resolveSentryBootstrapEnv()`; invalid `NODE_ENV` values fail schema validation |
 | `instrument.shared.mjs` | `initSentry({ serverName, dsn, environment, release })` — no `process.env` inside |
-| `instrument.server.mjs` | 9-line entry: resolve + init |
+| `instrument.server.mjs` | Short entry: resolve bootstrap env + init |
 
 **Key invariant**: `instrument.shared.mjs` never reads `process.env`. All values are pre-resolved by the caller, bootstrap `NODE_ENV` is strictly schema-validated in `instrument.env.mjs`, and Sentry is configured only through `SENTRY_DSN`.
 

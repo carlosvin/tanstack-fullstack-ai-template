@@ -57,7 +57,7 @@
         "instrument.env.shared.mjs for a shared plain-ESM deployment env schema usable before TS loads",
         "instrument.env.mjs for strict bootstrap env validation using the shared deployment env schema",
         "instrument.shared.mjs for reusable initSentry — callers pre-resolve all values",
-        "instrument.server.mjs simplified to 6 lines using the shared helpers",
+        "instrument.server.mjs simplified to a short resolve + init entry using the shared helpers",
         "Public env (ENV, LOG_LEVEL, SENTRY_DSN) reaches the browser via root loader only",
         "No window.__ENV__ global"
       ],
@@ -89,7 +89,7 @@
         "instrument.env.shared.mjs with the shared DeploymentEnvSchema for bootstrap + TS callers",
         "instrument.env.mjs with resolveSentryBootstrapEnv helper",
         "instrument.shared.mjs with initSentry (all values pre-resolved by caller)",
-        "Simplified instrument.server.mjs (6 lines)"
+        "Simplified instrument.server.mjs (short entry)"
       ],
       "constraints": [
         "process.env is read only in src/env/*.ts (schema parse) and in a single BootstrapEnvSchema.parse(process.env) call inside instrument.env.mjs — never in application code",
@@ -127,7 +127,7 @@
         },
         {
           "input": "Set up Sentry for the server",
-          "output": "Create instrument.env.mjs + instrument.shared.mjs; simplify instrument.server.mjs to 6 lines using those helpers"
+          "output": "Create instrument.env.mjs + instrument.shared.mjs; simplify instrument.server.mjs to a short entry using those helpers"
         },
         {
           "input": "Read environment variables safely in application code",

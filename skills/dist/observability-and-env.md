@@ -9,7 +9,7 @@
 - Documentation: https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md
 - Status: stable
 - Supported tools: Windsurf [native, tested], Cursor [copy, tested], Claude Code [copy, tested]
-- Capabilities: Centralized Zod env schemas with server/public split (src/env/), process.env read only once at module-level parse — no scattered env access, createModuleLogger(name, options) pino factory — no process.env inside, createServerLogger(name) bound factory — eliminates repeated env boilerplate, instrument.env.shared.mjs for a shared plain-ESM deployment env schema usable before TS loads, instrument.env.mjs for strict bootstrap env validation using the shared deployment env schema, instrument.shared.mjs for reusable initSentry — callers pre-resolve all values, instrument.server.mjs simplified to 6 lines using the shared helpers, Public env (ENV, LOG_LEVEL, SENTRY_DSN) reaches the browser via root loader only, No window.__ENV__ global
+- Capabilities: Centralized Zod env schemas with server/public split (src/env/), process.env read only once at module-level parse — no scattered env access, createModuleLogger(name, options) pino factory — no process.env inside, createServerLogger(name) bound factory — eliminates repeated env boilerplate, instrument.env.shared.mjs for a shared plain-ESM deployment env schema usable before TS loads, instrument.env.mjs for strict bootstrap env validation using the shared deployment env schema, instrument.shared.mjs for reusable initSentry — callers pre-resolve all values, instrument.server.mjs simplified to a short resolve + init entry using the shared helpers, Public env (ENV, LOG_LEVEL, SENTRY_DSN) reaches the browser via root loader only, No window.__ENV__ global
 - ID: `observability-and-env`
 - Version: `1.0.2`
 - Tags: observability, logging, sentry, pino, environment, configuration, tanstack-start
@@ -74,7 +74,7 @@ src/middleware/
 instrument.env.shared.mjs # shared DeploymentEnvSchema for bootstrap + TS callers
 instrument.env.mjs      # resolveSentryBootstrapEnv() — plain ESM bootstrap resolver
 instrument.shared.mjs   # initSentry({ dsn, environment, serverName, release })
-instrument.server.mjs   # 6-line entry: resolve + init
+instrument.server.mjs   # short entry: resolve + init
 ```
 
 ## src/env/runtimeEnvSchema.ts
@@ -254,7 +254,7 @@ export function initSentry({ serverName, dsn, environment, release }) {
 }
 ```
 
-## instrument.server.mjs (simplified — 6 lines)
+## instrument.server.mjs (simplified entry)
 
 ```javascript
 import { resolveSentryBootstrapEnv } from './instrument.env.mjs'

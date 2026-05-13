@@ -19,7 +19,9 @@ export type WebPublicEnv = z.infer<typeof WebPublicEnvSchema>
  * Parsed once when this module is first imported.
  */
 export const WebServerEnvSchema = WebPublicEnvSchema.extend({
-	AUTH_HEADER_NAME: z.string().optional().describe('HTTP header name for the JWT. Default: Authorization.'),
+	AUTH_HEADER_NAME: OptionalTrimmedStringSchema.describe(
+		'HTTP header name for the JWT. Default: Authorization when unset or blank.',
+	),
 	MONGODB_URI: OptionalTrimmedStringSchema.describe('MongoDB connection string. Absent → in-memory seed repository.'),
 	MONGODB_DB_NAME: z.string().optional().describe('MongoDB database name. Default: app-db.'),
 	REPOSITORY_TYPE: z

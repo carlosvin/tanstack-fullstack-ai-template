@@ -25,7 +25,12 @@ import * as Sentry from '@sentry/tanstackstart-react'
  * @returns {void}
  */
 export function initSentry({ serverName, dsn, environment, release }) {
-	if (!dsn) return
+	if (!dsn) {
+		if (environment !== 'development') {
+			console.warn(`[observability] SENTRY_DSN is not set — server-side Sentry is disabled (${environment}).`)
+		}
+		return
+	}
 
 	Sentry.init({
 		dsn,

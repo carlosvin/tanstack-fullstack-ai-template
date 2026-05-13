@@ -51,7 +51,7 @@ src/middleware/
 instrument.env.shared.mjs # shared DeploymentEnvSchema for bootstrap + TS callers
 instrument.env.mjs      # resolveSentryBootstrapEnv() — plain ESM bootstrap resolver
 instrument.shared.mjs   # initSentry({ dsn, environment, serverName, release })
-instrument.server.mjs   # 6-line entry: resolve + init
+instrument.server.mjs   # short entry: resolve + init
 ```
 
 ## src/env/runtimeEnvSchema.ts
@@ -231,7 +231,7 @@ export function initSentry({ serverName, dsn, environment, release }) {
 }
 ```
 
-## instrument.server.mjs (simplified — 6 lines)
+## instrument.server.mjs (simplified entry)
 
 ```javascript
 import { resolveSentryBootstrapEnv } from './instrument.env.mjs'

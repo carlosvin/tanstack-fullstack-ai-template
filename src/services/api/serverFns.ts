@@ -1,4 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
+import { webPublicEnv } from '../../env/webEnv'
 import { authMiddleware } from '../../middleware/auth'
 import { invalidateMiddleware } from '../../middleware/invalidate'
 import { requireAuthMiddleware } from '../../middleware/requireAuth'
@@ -57,6 +58,9 @@ export const getCurrentUser = createServerFn({ method: 'GET' })
 		const profile = context.userProfile ?? null
 		return { identity, profile }
 	})
+
+/** Browser-safe public env for the root loader (validated on the server only). */
+export const getWebPublicEnv = createServerFn({ method: 'GET' }).handler(async () => webPublicEnv)
 
 // ============================================================================
 // Mutations (POST) — called from event handlers and AI tools.
