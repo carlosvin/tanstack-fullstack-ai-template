@@ -5,4 +5,3 @@ allowBuilds:
   esbuild: true
   protobufjs: true
   sharp: true
-storeDir: /Users/carlos.martin-sanchez/Library/pnpm/store/v11
