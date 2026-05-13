@@ -58,7 +58,7 @@
         "instrument.env.mjs for strict bootstrap env validation using the shared deployment env schema",
         "instrument.shared.mjs for reusable initSentry — callers pre-resolve all values",
         "instrument.server.mjs simplified to a short resolve + init entry using the shared helpers",
-        "Public env (ENV, LOG_LEVEL, SENTRY_DSN) reaches the browser via root loader only",
+        "Public env for the browser: route loaders call a GET server fn that returns webPublicEnv (never import webEnv in client-shared modules)",
         "No window.__ENV__ global"
       ],
       "triggers": [
@@ -94,7 +94,7 @@
       "constraints": [
         "process.env is read only in src/env/*.ts (schema parse) and in a single BootstrapEnvSchema.parse(process.env) call inside instrument.env.mjs — never in application code",
         "Logger options (logLevel, environment) are passed as arguments to createModuleLogger — never resolved inside the factory",
-        "Public env (ENV, LOG_LEVEL, SENTRY_DSN) reaches the browser exclusively via the root loader; webEnvMiddleware injects ctx.context.publicEnv for server functions",
+        "Public env (ENV, LOG_LEVEL, SENTRY_DSN) reaches the browser via route loaders + GET server fn; webEnvMiddleware injects ctx.context.publicEnv for server functions",
         "No window.__ENV__ global — public env is always loader-sourced",
         "instrument.env.shared.mjs and instrument.env.mjs stay plain ESM (no TypeScript) for the --import hook",
         "instrument.env.mjs validates bootstrap env in one place, but imports the shared DeploymentEnvSchema instead of redefining it locally",
@@ -118,7 +118,7 @@
         "Update getObservability() to read webPublicEnv.SENTRY_DSN instead of process.env",
         "Update middleware/auth.ts to read AUTH_HEADER_NAME from webServerEnv",
         "Add webEnvMiddleware that injects ctx.context.publicEnv for server functions",
-        "Expose publicEnv through root loader so browser has access to ENV/LOG_LEVEL/SENTRY_DSN"
+        "Add a GET `createServerFn` that returns `webPublicEnv` when a route needs public env in React"
       ],
       "examples": [
         {

@@ -7,7 +7,7 @@ import type { ObservabilityService } from './types'
 export type { ObservabilityService } from './types'
 
 export type GetObservabilityOptions = {
-	/** Browser: pass `publicEnv` from the root route loader (server-sourced). Do not import `webEnv` in client bundles. */
+	/** Optional public env slice (e.g. from a route loader that called a GET server fn). Do not import `webEnv` in client bundles. */
 	publicEnv?: WebPublicEnv
 }
 
@@ -22,7 +22,7 @@ function resolveSentryDsn(options?: GetObservabilityOptions): string | undefined
 /**
  * Returns the singleton observability service.
  * Server: uses validated `webPublicEnv` when no `publicEnv` is passed.
- * Client: pass `{ publicEnv }` from the root loader; otherwise Sentry stays disabled (no-op).
+ * Client: pass `{ publicEnv }` when you have loader-sourced data; otherwise Sentry stays disabled (no-op).
  */
 export function getObservability(options?: GetObservabilityOptions): ObservabilityService {
 	const dsn = resolveSentryDsn(options)

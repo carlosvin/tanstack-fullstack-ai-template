@@ -53,7 +53,7 @@ capabilities:
   - instrument.env.mjs for strict bootstrap env validation using the shared deployment env schema
   - instrument.shared.mjs for reusable initSentry — callers pre-resolve all values
   - instrument.server.mjs simplified to a short resolve + init entry using the shared helpers
-  - Public env (ENV, LOG_LEVEL, SENTRY_DSN) reaches the browser via root loader only
+  - 'Public env for the browser: route loaders call a GET server fn that returns webPublicEnv (never import webEnv in client-shared modules)'
   - No window.__ENV__ global
 triggers:
   - add logging
@@ -85,7 +85,7 @@ outputs:
 constraints:
   - process.env is read only in src/env/*.ts (schema parse) and in a single BootstrapEnvSchema.parse(process.env) call inside instrument.env.mjs — never in application code
   - Logger options (logLevel, environment) are passed as arguments to createModuleLogger — never resolved inside the factory
-  - Public env (ENV, LOG_LEVEL, SENTRY_DSN) reaches the browser exclusively via the root loader; webEnvMiddleware injects ctx.context.publicEnv for server functions
+  - Public env (ENV, LOG_LEVEL, SENTRY_DSN) reaches the browser via route loaders + GET server fn; webEnvMiddleware injects ctx.context.publicEnv for server functions
   - No window.__ENV__ global — public env is always loader-sourced
   - instrument.env.shared.mjs and instrument.env.mjs stay plain ESM (no TypeScript) for the --import hook
   - instrument.env.mjs validates bootstrap env in one place, but imports the shared DeploymentEnvSchema instead of redefining it locally
@@ -108,7 +108,7 @@ steps:
   - Update getObservability() to read webPublicEnv.SENTRY_DSN instead of process.env
   - Update middleware/auth.ts to read AUTH_HEADER_NAME from webServerEnv
   - Add webEnvMiddleware that injects ctx.context.publicEnv for server functions
-  - Expose publicEnv through root loader so browser has access to ENV/LOG_LEVEL/SENTRY_DSN
+  - Add a GET `createServerFn` that returns `webPublicEnv` when a route needs public env in React
 examples:
   - input: Add structured logging to a server function
     output: Import createServerLogger and call createServerLogger('myModule') — env and
@@ -135,8 +135,7 @@ content: |
      `instrument.env.mjs` (Sentry bootstrap — before TS loads).
   2. Logger options (`logLevel`, `environment`) are **passed as arguments** to
      `createModuleLogger` — the factory never reads `process.env`.
-  3. Public env reaches the browser via the **root loader only** — no
-     `window.__ENV__` global.
+  3. **Browser public env** — no `window.__ENV__`; use a route `loader` that calls a GET server function returning `webPublicEnv`. Do not import `webEnv` from client-shared route files.
   4. The root pino logger is created **once** per process (lazy singleton); all
      module loggers are `child()` instances of it.
 
@@ -355,9 +354,9 @@ content: |
 
   ## webEnvMiddleware
 
-  Injects `ctx.context.publicEnv` for server functions; the root loader exposes
-  it so React components can read `ENV`/`LOG_LEVEL`/`SENTRY_DSN` without a
-  `window.__ENV__` global.
+  Injects `ctx.context.publicEnv` for server functions. For React, fetch public
+  env in a route loader via a GET server function (do not import `webEnv` in
+  client bundles).
 
   ```typescript
   // src/middleware/webEnv.ts
@@ -375,12 +374,13 @@ content: |
   // add to requestMiddleware array
   ```
 
-  In the root loader, expose it to the client:
+  Example server fn + loader pattern when a client component needs the slice:
   ```typescript
-  loader: async () => {
-    // ...existing loader data...
-    return { publicEnv: webPublicEnv }
-  }
+  // serverFns.ts
+  export const getWebPublicEnv = createServerFn({ method: 'GET' }).handler(async () => webPublicEnv)
+
+  // route loader
+  loader: async () => ({ publicEnv: await getWebPublicEnv() })
   ```
 
   ## Updating call sites
@@ -415,5 +415,5 @@ content: |
   - [ ] `createModuleLogger` / `createServerLogger` never call `process.env`
   - [ ] `instrument.server.mjs` uses `resolveSentryBootstrapEnv()` + `initSentry()`
   - [ ] `build` script copies `instrument.*.mjs` (not just `instrument.server.mjs`)
-  - [ ] Public env exposed through root loader (not `window.__ENV__`)
+  - [ ] Public env for the browser uses a GET server fn from route loaders (not `window.__ENV__`)
   - [ ] `SENTRY_DSN` / `LOG_LEVEL` / `ENV` documented in `.env.example`

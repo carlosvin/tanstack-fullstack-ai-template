@@ -608,24 +608,11 @@ Instead, expose them through the validated `WebPublicEnvSchema` slice and delive
 
 **Invariant**: after `src/env/webEnv.ts` is parsed, all downstream code receives typed values from the singletons — never raw `process.env` strings.
 
-### Public env via the root loader
+### Public env for React
 
-Expose `webPublicEnv` through the root loader so React components can read `ENV`, `LOG_LEVEL`, and `SENTRY_DSN`:
+Do **not** import `webEnv` from client-shared route modules — `WebServerEnvSchema.parse(process.env)` does not work in the browser.
 
-```tsx
-// src/routes/__root.tsx
-import { webPublicEnv } from '../env/webEnv'
-
-export const Route = createRootRoute({
-  loader: async () => ({
-    publicEnv: webPublicEnv,
-    // ...other root loader data
-  }),
-  // ...
-})
-```
-
-React components and client-side SDK init read `publicEnv` from `useLoaderData({ from: '__root__' })`.
+When a client component needs `ENV`, `LOG_LEVEL`, or `SENTRY_DSN`, add a GET server function that returns `webPublicEnv` and call it from a route `loader`, then read the result from `useLoaderData()`.
 
 ### `webEnvMiddleware`
 
