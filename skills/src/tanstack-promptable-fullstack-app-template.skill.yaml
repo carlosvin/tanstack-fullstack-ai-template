@@ -119,6 +119,8 @@ content: |
   **Purpose:** Capture the **interface-first, schema-layered, AI-promptable** contract for TanStack Start apps from this template. Day-to-day conventions (UI kit, chat wiring, logging, tests) live in the repo’s **AGENTS.md** — use this skill for **architecture**, AGENTS.md for **operations**.
 
   > **Companion handbook:** [AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) — structure, styling, auth snippets, Biome, testing/E2E, validation checklist, AI chat setup.
+  >
+  > **Companion skill:** `observability-and-env` — use it when changing logging, Sentry, environment schemas, or runtime config plumbing. Keep this skill focused on the architecture contract rather than the observability setup recipe.
 
   ## How to use this skill
 
