@@ -2,15 +2,15 @@
 name: observability-and-env
 description: 'Use when adding structured logging (pino), centralized environment
   validation (Zod), or Sentry initialization to a TanStack Start app. Teaches
-  the three-file bootstrap pattern (instrument.env.mjs → instrument.shared.mjs →
-  instrument.server.mjs), the src/env/ schema split (server vs public), and the
-  createModuleLogger / createServerLogger factory pattern that eliminates
-  scattered process.env access from application code. Project: TanStack
-  AI-Promptable Full-Stack Template. Triggers on "add logging", "set up pino",
-  "pino logger", "sentry init", "instrument server", "instrument.server.mjs",
-  "env schema", "environment validation", "centralize observability",
-  "createModuleLogger", "createServerLogger", "webEnv", "webServerEnv",
-  "LOG_LEVEL", "SENTRY_DSN".'
+  the three-file bootstrap pattern (instrument.env.mts → instrument.shared.mts →
+  instrument.server.mts; emitted as .mjs for production), the src/env/ schema
+  split (server vs public), and the createModuleLogger / createServerLogger
+  factory pattern that eliminates scattered process.env access from application
+  code. Project: TanStack AI-Promptable Full-Stack Template. Triggers on "add
+  logging", "set up pino", "pino logger", "sentry init", "instrument server",
+  "instrument.server.mts", "instrument.server.mjs", "env schema", "environment
+  validation", "centralize observability", "createModuleLogger",
+  "createServerLogger", "webEnv", "webServerEnv", "LOG_LEVEL", "SENTRY_DSN".'
 ---
 
 > This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.
@@ -26,7 +26,7 @@ arguments.
 
 1. `process.env` is read **only** in `src/env/*.ts` (schema parse) and in a
    single `BootstrapEnvSchema.parse(process.env)` call inside
-   `instrument.env.mjs` (Sentry bootstrap — before TS loads).
+   `instrument.env.mts` (Sentry bootstrap — runs before the app entry).
 2. Logger options (`logLevel`, `environment`) are **passed as arguments** to
    `createModuleLogger` — the factory never reads `process.env`.
 3. **Browser public env** — no `window.__ENV__`; use a route `loader` that calls a GET server function returning `webPublicEnv`. Do not import `webEnv` from client-shared route files.
@@ -47,10 +47,11 @@ src/utils/
 src/middleware/
   webEnv.ts             # webEnvMiddleware: injects ctx.context.publicEnv
 
-instrument.env.shared.mjs # shared DeploymentEnvSchema for bootstrap + TS callers
-instrument.env.mjs      # resolveSentryBootstrapEnv() — plain ESM bootstrap resolver
-instrument.shared.mjs   # initSentry({ dsn, environment, serverName, release })
-instrument.server.mjs   # short entry: resolve + init
+instrument.env.shared.mts # shared DeploymentEnvSchema for bootstrap + TS callers
+instrument.env.mts      # resolveSentryBootstrapEnv()
+instrument.shared.mts   # initSentry({ dsn, environment, serverName, release })
+instrument.server.mts   # short entry: resolve + init (dev); emitted .mjs in .output/server for prod
+tsconfig.instrument.json
 ```
 
 ## src/env/runtimeEnvSchema.ts
@@ -59,7 +60,7 @@ Shared Zod enums and preprocessors used by web env (and any future pipeline env)
 
 ```typescript
 import { z } from 'zod'
-import { DEPLOYMENT_ENV_VALUES, DeploymentEnvSchema } from '../../instrument.env.shared.mjs'
+import { DEPLOYMENT_ENV_VALUES, type DeploymentEnv, DeploymentEnvSchema } from '../../instrument.env.shared.mjs'
 
 /** Empty / whitespace-only strings → undefined (Node process.env values are strings). */
 export function envStringToUndefined(val: unknown): unknown {
@@ -68,8 +69,8 @@ export function envStringToUndefined(val: unknown): unknown {
   return s === '' ? undefined : s
 }
 
+export type { DeploymentEnv }
 export { DEPLOYMENT_ENV_VALUES, DeploymentEnvSchema }
-export type DeploymentEnv = (typeof DEPLOYMENT_ENV_VALUES)[number]
 
 export const LOG_LEVEL_VALUES = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const
 export const LogLevelSchema = z.enum(LOG_LEVEL_VALUES)
@@ -173,17 +174,17 @@ import { createServerLogger } from '../utils/serverLogger'
 const log = createServerLogger('myServerFn')
 ```
 
-## instrument.env.mjs
+## instrument.env.mts
 
-Plain ESM — no TS — so it loads from the `--import` hook before any
-transpilation. Bootstrap env is still validated in one place instead of
-branching on raw `process.env` values, but the deployment enum itself is
-imported from `instrument.env.shared.mjs` so bootstrap and TypeScript callers
-share the same allowed values. Keep this strict: invalid `NODE_ENV` values
-should fail at `BootstrapEnvSchema.parse(process.env)`, and Sentry should be
-configured only through `SENTRY_DSN`.
+TypeScript bootstrap module compiled to ESM for production. In dev, preload
+`tsx` and import `instrument.server.mts` directly. Use `.mjs` extensions on
+**relative imports between instrument files** so `moduleResolution: NodeNext`
+maps to the emitted `.mjs` output. Bootstrap env stays validated in one place;
+deployment enum is imported from `./instrument.env.shared.mjs` (source is
+`.mts`). Keep strict: invalid `NODE_ENV` values fail at
+`BootstrapEnvSchema.parse(process.env)`, and Sentry uses only `SENTRY_DSN`.
 
-```javascript
+```typescript
 import { z } from 'zod'
 import { DeploymentEnvSchema } from './instrument.env.shared.mjs'
 
@@ -201,23 +202,21 @@ export function resolveSentryBootstrapEnv() {
 }
 ```
 
-## instrument.shared.mjs
+## instrument.shared.mts
 
 Receives all values pre-resolved — no `process.env` reads inside.
 
-```javascript
+```typescript
 import * as Sentry from '@sentry/tanstackstart-react'
 
-/**
- * @typedef {object} InitSentryOptions
- * @property {string}           serverName  - Human-readable server name.
- * @property {string|undefined} dsn         - Sentry DSN. No-op when falsy.
- * @property {'development'|'staging'|'production'} environment
- * @property {string}           [release]   - Optional release identifier.
- */
+export type InitSentryOptions = {
+  serverName: string
+  dsn: string | undefined
+  environment: 'development' | 'staging' | 'production'
+  release?: string
+}
 
-/** Initialize Sentry. No-op when no DSN is set. */
-export function initSentry({ serverName, dsn, environment, release }) {
+export function initSentry({ serverName, dsn, environment, release }: InitSentryOptions): void {
   if (!dsn) return
   Sentry.init({
     dsn,
@@ -230,9 +229,9 @@ export function initSentry({ serverName, dsn, environment, release }) {
 }
 ```
 
-## instrument.server.mjs (simplified entry)
+## instrument.server.mts (simplified entry)
 
-```javascript
+```typescript
 import { resolveSentryBootstrapEnv } from './instrument.env.mjs'
 import { initSentry } from './instrument.shared.mjs'
 import pkg from './package.json' with { type: 'json' }
@@ -241,9 +240,13 @@ const { dsn, environment } = resolveSentryBootstrapEnv()
 initSentry({ serverName: 'my-app', release: pkg.version, dsn, environment })
 ```
 
-Update the `build` script to copy all instrument files:
+**Dev** — preload `tsx` then this file, e.g. `NODE_OPTIONS='--import tsx --import ./instrument.server.mts'`.
+
+**Production** — `tsc -p tsconfig.instrument.json` emits `.mjs` beside the Vite server bundle; copy `package.json` into `.output/server` so the import above resolves.
+
+Update the `build` script:
 ```json
-"build": "vite build && cp instrument.*.mjs .output/server"
+"build": "vite build && tsc -p tsconfig.instrument.json && cp package.json .output/server/package.json"
 ```
 
 ## webEnvMiddleware
@@ -305,9 +308,9 @@ const AUTH_HEADER_NAME = webServerEnv.AUTH_HEADER_NAME ?? 'Authorization'
 
 ## Checklist
 
-- [ ] `process.env` appears only in `src/env/*.ts` and one bootstrap schema parse in `instrument.env.mjs`
+- [ ] `process.env` appears only in `src/env/*.ts` and one bootstrap schema parse in `instrument.env.mts`
 - [ ] `createModuleLogger` / `createServerLogger` never call `process.env`
-- [ ] `instrument.server.mjs` uses `resolveSentryBootstrapEnv()` + `initSentry()`
-- [ ] `build` script copies `instrument.*.mjs` (not just `instrument.server.mjs`)
+- [ ] `instrument.server.mts` uses `resolveSentryBootstrapEnv()` + `initSentry()`, and `pnpm build` emits `.output/server/instrument.*.mjs`
+- [ ] `package.json` is copied next to the emitted instrument bundle so version import works
 - [ ] Public env for the browser uses a GET server fn from route loaders (not `window.__ENV__`)
 - [ ] `SENTRY_DSN` / `LOG_LEVEL` / `ENV` documented in `.env.example`

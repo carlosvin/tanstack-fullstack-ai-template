@@ -4,8 +4,8 @@
 	"type": "module",
 	"version": "0.1.0",
 	"scripts": {
-		"dev": "NODE_OPTIONS='--import ./instrument.server.mjs' vite dev --port 3000",
-		"build": "vite build && cp instrument.*.mjs .output/server",
+		"dev": "NODE_OPTIONS='--import tsx --import ./instrument.server.mts' vite dev --port 3000",
+		"build": "vite build && tsc -p tsconfig.instrument.json && cp package.json .output/server/package.json",
 		"start": "node --import ./.output/server/instrument.server.mjs .output/server/index.mjs",
 		"preview": "vite preview",
 		"test": "vitest run",
@@ -57,6 +57,7 @@
 		"@vitejs/plugin-react-swc": "^4.3.0",
 		"ajv": "^8.18.0",
 		"jsdom": "^29.0.2",
+		"tsx": "^4.21.0",
 		"typescript": "^6.0.2",
 		"vite": "^8.0.8",
 		"vitest": "^4.1.4",

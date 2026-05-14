@@ -437,20 +437,24 @@ The chat endpoint is a TanStack Start file-based route at `/api/chat` with two s
 - **Implementations**: Sentry (`sentry.ts`) and no-op (`noop.ts`). Factory in `index.ts` selects based on `webPublicEnv.SENTRY_DSN`.
 - **Client Init**: `src/router.tsx` conditionally initializes client-side tracing.
 - **Usage**: Wrap server function internals with `getObservability().startSpan('name', fn)`.
-- **To swap providers**: Implement `ObservabilityService`, update the factory, and replace `instrument.server.mjs`.
+- **To swap providers**: Implement `ObservabilityService`, update the factory, and replace `instrument.server.mts` (and the emitted `instrument.server.mjs` in `.output/server`).
 
 ### Sentry bootstrap
 
-Server-side Sentry is initialized via the `--import` hook before any TypeScript loads:
+Server-side Sentry is initialized via the `--import` hook before the app entry loads:
 
-| File | Responsibility |
+| File (source) | Responsibility |
 |------|---------------|
-| `instrument.env.shared.mjs` | Plain ESM shared deployment env schema used by bootstrap and TypeScript callers |
-| `instrument.env.mjs` | Plain ESM — defines the bootstrap resolver and parses `process.env` once before calling `resolveSentryBootstrapEnv()`; invalid `NODE_ENV` values fail schema validation |
-| `instrument.shared.mjs` | `initSentry({ serverName, dsn, environment, release })` — no `process.env` inside |
-| `instrument.server.mjs` | Short entry: resolve bootstrap env + init |
+| `instrument.env.shared.mts` | Shared deployment env schema used by bootstrap and TypeScript callers (`runtimeEnvSchema.ts` re-exports it) |
+| `instrument.env.mts` | Bootstrap resolver — parses `process.env` once; invalid `NODE_ENV` values fail schema validation |
+| `instrument.shared.mts` | `initSentry({ serverName, dsn, environment, release })` — no `process.env` inside |
+| `instrument.server.mts` | Short entry: resolve bootstrap env + init |
 
-**Key invariant**: `instrument.shared.mjs` never reads `process.env`. All values are pre-resolved by the caller, bootstrap `NODE_ENV` is strictly schema-validated in `instrument.env.mjs`, and Sentry is configured only through `SENTRY_DSN`.
+**Build**: `pnpm build` runs `tsc -p tsconfig.instrument.json`, which emits `instrument.*.mjs` into `.output/server/` (alongside `cp package.json` so `instrument.server` can read the app version). **Production start** uses `node --import ./.output/server/instrument.server.mjs`. **Dev** preloads `tsx` then `./instrument.server.mts` via `NODE_OPTIONS`.
+
+From `src/**/*.ts`, import the shared schema module as `../../instrument.env.shared.mjs` (extension matches the compiled bootstrap output); with `moduleResolution: bundler`, TypeScript resolves it to the `instrument.env.shared.mts` source. The `instrument.*.mts` entrypoints import each other with `.mts` extensions so `tsx` can preload them in dev; `tsc -p tsconfig.instrument.json` emits `.mjs` and rewrites those specifiers via `rewriteRelativeImportExtensions`.
+
+**Key invariant**: `instrument.shared.mts` never reads `process.env`. All values are pre-resolved by the caller, bootstrap `NODE_ENV` is strictly schema-validated in `instrument.env.mts`, and Sentry is configured only through `SENTRY_DSN`.
 
 ### pino structured logging
 
@@ -490,15 +494,7 @@ export default defineConfig({
 declare const __APP_VERSION__: string
 ```
 
-**Sentry** — pass as `release` in `instrument.server.mjs` and in client init so errors are grouped by version:
-
-```javascript
-Sentry.init({
-  dsn: sentryDsn,
-  release: process.env.npm_package_version ?? 'unknown',
-  // ...existing config
-})
-```
+**Sentry** — pass as `release` in `instrument.server.mts` (from `package.json`) and in client init so errors are grouped by version.
 
 For the client-side Sentry init, use the Vite-injected constant:
 
@@ -616,12 +612,12 @@ When a client component needs `ENV`, `LOG_LEVEL`, or `SENTRY_DSN`, add a GET ser
 
 ### `webEnvMiddleware`
 
-`src/middleware/webEnv.ts` injects `ctx.context.publicEnv` for server functions:
+`src/middleware/webEnv.ts` chains `authMiddleware` then injects `ctx.context.publicEnv` for server functions:
 
 ```typescript
 import { webEnvMiddleware } from './middleware/webEnv'
-// Register in src/start.ts alongside authMiddleware:
-// requestMiddleware: [authMiddleware, webEnvMiddleware]
+// Register in src/start.ts (do not list authMiddleware separately):
+// requestMiddleware: [webEnvMiddleware]
 ```
 
 Server functions access `ctx.context.publicEnv.SENTRY_DSN` etc. without importing `webEnv.ts` directly.

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { DEPLOYMENT_ENV_VALUES, DeploymentEnvSchema } from '../../instrument.env.shared.mjs'
+import { DEPLOYMENT_ENV_VALUES, type DeploymentEnv, DeploymentEnvSchema } from '../../instrument.env.shared.mjs'
 
 /** Empty / whitespace-only strings → undefined (Node `process.env` values are strings). */
 export function envStringToUndefined(val: unknown): unknown {
@@ -8,8 +8,8 @@ export function envStringToUndefined(val: unknown): unknown {
 	return s === '' ? undefined : s
 }
 
+export type { DeploymentEnv }
 export { DEPLOYMENT_ENV_VALUES, DeploymentEnvSchema }
-export type DeploymentEnv = (typeof DEPLOYMENT_ENV_VALUES)[number]
 
 export const LOG_LEVEL_VALUES = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const
 export const LogLevelSchema = z.enum(LOG_LEVEL_VALUES)

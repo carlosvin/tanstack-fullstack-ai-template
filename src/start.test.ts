@@ -4,9 +4,10 @@ import { webEnvMiddleware } from './middleware/webEnv'
 import { startInstance } from './start'
 
 describe('startInstance', () => {
-	it('registers auth and public env middleware globally', async () => {
+	it('registers a single global middleware that chains auth then public env', async () => {
 		const options = await startInstance.getOptions()
 
-		expect(options.requestMiddleware).toEqual(expect.arrayContaining([authMiddleware, webEnvMiddleware]))
+		expect(options.requestMiddleware).toEqual([webEnvMiddleware])
+		expect(webEnvMiddleware.options.middleware).toEqual([authMiddleware])
 	})
 })
