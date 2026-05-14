@@ -41,7 +41,7 @@ src/env/
   webEnv.ts             # WebServerEnvSchema + WebPublicEnvSchema; parsed once
 
 src/utils/
-  logger.ts             # createModuleLogger(name, { environment?, logLevel? })
+  logger.ts             # createModuleLogger(name, { environment, logLevel? })
   serverLogger.ts       # createServerLogger(name) — binds webServerEnv
 
 src/middleware/
@@ -109,9 +109,11 @@ export type WebServerEnv = z.infer<typeof WebServerEnvSchema>
 
 export const webServerEnv: WebServerEnv = WebServerEnvSchema.parse(process.env)
 
-export const webPublicEnv: WebPublicEnv = WebPublicEnvSchema.parse({
-  ...webServerEnv,
-})
+export const webPublicEnv: WebPublicEnv = {
+  ENV: webServerEnv.ENV,
+  LOG_LEVEL: webServerEnv.LOG_LEVEL,
+  SENTRY_DSN: webServerEnv.SENTRY_DSN,
+}
 ```
 
 **Add required secrets** (API keys, DB URIs) to `WebServerEnvSchema` only —
@@ -126,15 +128,15 @@ import pino, { type Logger } from 'pino'
 import type { DeploymentEnv, LogLevel } from '../env/runtimeEnvSchema'
 
 export type ModuleLoggerOptions = {
-  environment?: DeploymentEnv  // validated by caller's env schema
+  environment: DeploymentEnv   // validated by caller's env schema
   logLevel?: LogLevel          // validated by caller's env schema
 }
 
 let rootLogger: Logger | null = null
 
-function getRootLogger(environment?: DeploymentEnv): Logger {
+function getRootLogger(environment: DeploymentEnv): Logger {
   if (rootLogger) return rootLogger
-  // Safe for browser bundles: process.stdout may be undefined
+  // Server-only — not safe for client bundles.
   const isNodeTty = typeof process !== 'undefined' && process.stdout != null && Boolean(process.stdout.isTTY)
   const useTtyPretty = isNodeTty && environment !== 'production'
   // Root at 'trace' so child level overrides are never filtered out
@@ -149,8 +151,7 @@ function getRootLogger(environment?: DeploymentEnv): Logger {
 
 export function createModuleLogger(name: string, options: ModuleLoggerOptions): Logger {
   const { environment } = options
-  const bindings = environment ? { name, environment } : { name }
-  return getRootLogger(environment).child(bindings, { level: options.logLevel ?? 'info' })
+  return getRootLogger(environment).child({ name, environment }, { level: options.logLevel ?? 'info' })
 }
 ```
 
@@ -165,7 +166,7 @@ import { createModuleLogger } from './logger'
 
 /** Server-side logger factory pre-bound to webServerEnv options. */
 export const createServerLogger = (name: string) =>
-  createModuleLogger(name, { environment: webServerEnv.ENV, logLevel: webServerEnv.LOG_LEVEL })
+  createModuleLogger(name, { environment: webServerEnv.ENV ?? 'development', logLevel: webServerEnv.LOG_LEVEL })
 ```
 
 Usage in any server module:

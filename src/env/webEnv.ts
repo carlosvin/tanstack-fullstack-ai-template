@@ -41,6 +41,8 @@ export type WebServerEnv = z.infer<typeof WebServerEnvSchema>
 
 export const webServerEnv: WebServerEnv = WebServerEnvSchema.parse(process.env)
 
-export const webPublicEnv: WebPublicEnv = WebPublicEnvSchema.parse({
-	...webServerEnv,
-})
+export const webPublicEnv: WebPublicEnv = {
+	ENV: webServerEnv.ENV,
+	LOG_LEVEL: webServerEnv.LOG_LEVEL,
+	SENTRY_DSN: webServerEnv.SENTRY_DSN,
+}

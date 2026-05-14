@@ -31,7 +31,5 @@ export function initSentry({ serverName, dsn, environment, release }: InitSentry
 		...(release ? { release } : {}),
 		sendDefaultPii: true,
 		tracesSampleRate: environment === 'production' ? 0.1 : 1.0,
-		replaysSessionSampleRate: environment === 'production' ? 0.1 : 1.0,
-		replaysOnErrorSampleRate: 1.0,
 	})
 }

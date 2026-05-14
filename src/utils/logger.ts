@@ -32,10 +32,8 @@ let rootLogger: Logger | null = null
 function getRootLogger(environment: DeploymentEnv): Logger {
 	if (rootLogger) return rootLogger
 
-	// `createModuleLogger` is also imported by client React components, so this
-	// must stay safe in a browser bundle where `process.stdout` is undefined.
-	// Pretty transport is only enabled in an interactive Node TTY outside of
-	// production.
+	// Server-only — not safe for client bundles. Pretty transport is only
+	// enabled in an interactive Node TTY outside of production.
 	const isNodeTty = typeof process !== 'undefined' && process.stdout != null && Boolean(process.stdout.isTTY)
 	const useTtyPretty = isNodeTty && environment !== 'production'
 

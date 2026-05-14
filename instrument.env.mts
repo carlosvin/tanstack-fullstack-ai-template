@@ -15,7 +15,7 @@ const BootstrapEnvSchema = z.object({
 	SENTRY_DSN: z.string().optional(),
 })
 
-export type SentryBootstrapEnv = z.infer<typeof BootstrapEnvSchema>
+type SentryBootstrapEnv = z.infer<typeof BootstrapEnvSchema>
 
 export interface ResolveSentryBootstrapEnvResult {
 	dsn: string | undefined

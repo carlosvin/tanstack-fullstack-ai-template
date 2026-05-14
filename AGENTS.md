@@ -456,6 +456,8 @@ From `src/**/*.ts`, import the shared schema module as `../../instrument.env.sha
 
 **Key invariant**: `instrument.shared.mts` never reads `process.env`. All values are pre-resolved by the caller, bootstrap `NODE_ENV` is strictly schema-validated in `instrument.env.mts`, and Sentry is configured only through `SENTRY_DSN`.
 
+**NODE_ENV vs ENV**: Two separate variables control deployment identity. `NODE_ENV` drives Sentry's environment tag (set by the bootstrap in `instrument.env.mts`). `ENV` drives application behavior — logger sampling, pretty-printing, and log routing. A mismatch (e.g. `NODE_ENV=production` + `ENV=staging`) will silently tag all Sentry events as "production" while the app behaves as staging. Keep them consistent across deployments.
+
 ### pino structured logging
 
 Application modules use the pino factory from `src/utils/logger.ts`:
@@ -465,7 +467,7 @@ import { createServerLogger } from '../utils/serverLogger'
 const log = createServerLogger('myModule')   // binds webServerEnv.ENV + LOG_LEVEL
 ```
 
-- `createModuleLogger(name, { environment?, logLevel? })` — core factory; no `process.env` access inside.
+- `createModuleLogger(name, { environment, logLevel? })` — core factory; no `process.env` access inside.
 - `createServerLogger(name)` — bound factory for server modules; closes over `webServerEnv.ENV` and `webServerEnv.LOG_LEVEL`.
 - Root pino instance is lazily created once per process; all module loggers are `child()` instances.
 - TTY pretty-printing is auto-enabled for interactive Node terminals outside of production.
@@ -513,51 +515,6 @@ export const logger = pino({
 
 **Other tools** — any new observability integration should read `__APP_VERSION__` for the same purpose. The pattern ensures a single source of truth (`package.json`) with no manual version strings.
 
-### Logging
-
-This project uses [`pino`](https://getpino.io/) as the default server-side structured logger. Do **not** use `console.log` / `console.error` / `console.warn` in server code — use the logger instead.
-
-**Setup**: The logger singleton lives in `src/services/logger.ts`. It conditionally adds the [`@sentry/pino-transport`](https://docs.sentry.io/platforms/javascript/guides/node/configuration/integrations/pino/) so that error-level logs (`logger.error(...)`) are automatically captured by Sentry when `SENTRY_DSN` is set. When no DSN is configured, pino logs to stdout with pretty-printing in development.
-
-```tsx
-import { logger } from '../services/logger'
-
-logger.info({ repo: type }, 'Using repository')
-logger.error({ err, taskId }, 'Failed to update task')
-```
-
-**Installation**:
-
-```bash
-pnpm add pino
-pnpm add -D pino-pretty          # pretty-print in development
-pnpm add @sentry/pino-transport  # optional: forward errors to Sentry
-```
-
-**Configuration pattern** (`src/services/logger.ts`):
-
-```typescript
-import pino from 'pino'
-
-const transport = process.env.SENTRY_DSN
-  ? pino.transport({
-      targets: [
-        { target: '@sentry/pino-transport', level: 'error' },
-        {
-          target: process.env.NODE_ENV === 'production' ? 'pino/file' : 'pino-pretty',
-          level: 'info',
-        },
-      ],
-    })
-  : process.env.NODE_ENV === 'production'
-    ? undefined
-    : pino.transport({ target: 'pino-pretty' })
-
-export const logger = pino({ level: 'info' }, transport)
-```
-
-When `SENTRY_DSN` is set, the Sentry transport receives error-level logs alongside the regular output target. When Sentry is not configured, the logger simply writes to stdout (pretty in dev, JSON in production). No code changes are needed when toggling Sentry on or off.
-
 ## 10. Testing
 
 ### Unit Tests (Vitest)
@@ -575,6 +532,7 @@ When `SENTRY_DSN` is set, the Sentry transport receives error-level logs alongsi
 - **Auth fixture**: `e2e/auth.ts` provides `authedPage` / `authedContext` fixtures using unsigned JWTs sent via `extraHTTPHeaders`.
 - **Convention**: Spec files in `e2e/` as `*.spec.ts`.
 - **Running**: `pnpm test:e2e` (reuses existing dev server or starts one with seed data).
+- **NODE_ENV**: The Playwright `webServer` config forces `NODE_ENV=development`. `instrument.env.mts` rejects values outside `development | staging | production`, so never start the dev server with `NODE_ENV=test`.
 
 ## 11. Linting and Formatting
 
