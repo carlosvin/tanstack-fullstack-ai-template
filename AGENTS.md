@@ -436,7 +436,7 @@ The chat endpoint is a TanStack Start file-based route at `/api/chat` with two s
 - **Interface**: `src/services/observability/types.ts` defines the `ObservabilityService` interface.
 - **Implementations**: Sentry (`sentry.ts`) and no-op (`noop.ts`). Factory in `index.ts` selects based on `webPublicEnv.SENTRY_DSN`.
 - **Client Init**: `src/router.tsx` conditionally initializes client-side tracing.
-- **Usage**: Wrap server function internals with `getObservability().startSpan('name', fn)`.
+- **Usage**: Wrap server function internals with `getObservability({}).startSpan('name', fn)`.
 - **To swap providers**: Implement `ObservabilityService`, update the factory, and replace `instrument.server.mts` (and the emitted `instrument.server.mjs` in `.output/server`).
 
 ### Sentry bootstrap
@@ -448,7 +448,7 @@ Server-side Sentry is initialized via the `--import` hook before the app entry l
 | `instrument.env.shared.mts` | Shared deployment env schema used by bootstrap and TypeScript callers (`runtimeEnvSchema.ts` re-exports it) |
 | `instrument.env.mts` | Bootstrap resolver — parses `process.env` once; invalid `NODE_ENV` values fail schema validation |
 | `instrument.shared.mts` | `initSentry({ serverName, dsn, environment, release })` — no `process.env` inside |
-| `instrument.server.mts` | Short entry: resolve bootstrap env + init |
+| `instrument.server.mts` | Bootstrap entry: resolve bootstrap env + init |
 
 **Build**: `pnpm build` runs `tsc -p tsconfig.instrument.json`, which emits `instrument.*.mjs` into `.output/server/` (alongside `cp package.json` so `instrument.server` can read the app version). **Production start** uses `node --import ./.output/server/instrument.server.mjs`. **Dev** preloads `tsx` then `./instrument.server.mts` via `NODE_OPTIONS`.
 
@@ -591,7 +591,7 @@ This project uses [Biome](https://biomejs.dev/) as the default linter and format
 
 Config values that differ per deployment (Sentry DSN, environment name, feature flags) and are safe for the browser **must not** be baked into the Vite bundle via `import.meta.env` — that ties the built artifact to one environment. They also **must not** be injected via `window.__ENV__` — that is insecure and fragile.
 
-Instead, expose them through the validated `WebPublicEnvSchema` slice and deliver them to the browser exclusively through the **root loader**.
+Instead, expose them through the validated `WebPublicEnvSchema` slice and deliver them to the browser from a route `loader` that calls a GET server function when React actually needs that data.
 
 ### Environment schemas (`src/env/`)
 

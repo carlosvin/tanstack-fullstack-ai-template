@@ -5,11 +5,40 @@ function publicEnvSlice(sentryDsn: string | undefined) {
 	return WebPublicEnvSchema.parse({ SENTRY_DSN: sentryDsn })
 }
 
+async function _assertGetObservabilityRequiresOptionsObject() {
+	const { getObservability } = await import('./index')
+
+	// @ts-expect-error getObservability now requires an explicit options object.
+	getObservability()
+
+	getObservability({})
+}
+
 afterEach(() => {
 	vi.resetModules()
+	vi.doUnmock('../../env/webEnv')
+	vi.unstubAllGlobals()
 })
 
 describe('getObservability', () => {
+	it('uses the server public env when callers pass an empty options object', async () => {
+		vi.stubGlobal('window', undefined)
+
+		vi.doMock('../../env/webEnv', async () => {
+			const actual = await vi.importActual<typeof import('../../env/webEnv')>('../../env/webEnv')
+
+			return {
+				...actual,
+				webPublicEnv: publicEnvSlice('https://examplePublicKey@o0.ingest.sentry.io/0'),
+			}
+		})
+
+		const { getObservability } = await import('./index')
+		const { SentryObservability } = await import('./sentry')
+
+		expect(getObservability({})).toBeInstanceOf(SentryObservability)
+	})
+
 	it('rebuilds the singleton when loader-sourced DSN changes from unset to set', async () => {
 		const { getObservability } = await import('./index')
 		const { NoopObservability } = await import('./noop')

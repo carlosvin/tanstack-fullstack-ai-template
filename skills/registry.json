@@ -90,7 +90,7 @@
         "instrument.env.shared.mts with the shared DeploymentEnvSchema for bootstrap + TS callers",
         "instrument.env.mts with resolveSentryBootstrapEnv helper",
         "instrument.shared.mts with initSentry (all values pre-resolved by caller)",
-        "Simplified instrument.server.mts (short entry) and tsconfig.instrument.json emitting .mjs to .output/server"
+        "instrument.server.mts bootstrap entry and tsconfig.instrument.json emitting .mjs to .output/server"
       ],
       "constraints": [
         "process.env is read only in src/env/*.ts (schema parse) and in a single BootstrapEnvSchema.parse(process.env) call inside instrument.env.mts — never in application code",
@@ -114,7 +114,7 @@
         "Create src/utils/serverLogger.ts binding webServerEnv.ENV and LOG_LEVEL",
         "Create instrument.env.mts with resolveSentryBootstrapEnv() using the shared DeploymentEnvSchema",
         "Create instrument.shared.mts with initSentry (receives pre-resolved dsn + environment)",
-        "Simplify instrument.server.mts to call resolveSentryBootstrapEnv() + initSentry()",
+        "Keep instrument.server.mts as a bootstrap entry that calls resolveSentryBootstrapEnv() + initSentry()",
         "Add tsconfig.instrument.json and extend build script with tsc -p tsconfig.instrument.json && cp package.json .output/server",
         "Update getObservability() to read webPublicEnv.SENTRY_DSN instead of process.env",
         "Update middleware/auth.ts to read AUTH_HEADER_NAME from webServerEnv",
@@ -128,7 +128,7 @@
         },
         {
           "input": "Set up Sentry for the server",
-          "output": "Create instrument.env.mts + instrument.shared.mts; simplify instrument.server.mts to a short entry; emit .mjs via tsc for production"
+          "output": "Create instrument.env.mts + instrument.shared.mts; keep instrument.server.mts as a bootstrap entry; emit .mjs via tsc for production"
         },
         {
           "input": "Read environment variables safely in application code",

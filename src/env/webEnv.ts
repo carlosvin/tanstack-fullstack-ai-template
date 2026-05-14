@@ -3,8 +3,9 @@ import { z } from 'zod'
 import { OptionalDeploymentEnvSchema, OptionalLogLevelSchema, OptionalTrimmedStringSchema } from './runtimeEnvSchema'
 
 /**
- * Non-secret fields safe for the browser. Populated from the root route loader
- * (and request middleware on the server); not read from `window`.
+ * Non-secret fields safe for the browser. Expose them to React only from a
+ * route loader that calls a GET server function; request middleware can also
+ * place the same slice on the server request context. Never read from `window`.
  */
 export const WebPublicEnvSchema = z.object({
 	ENV: OptionalDeploymentEnvSchema.describe('Deployment name: development, staging, or production.'),

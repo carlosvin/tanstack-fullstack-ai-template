@@ -17,7 +17,7 @@ import type { DeploymentEnv, LogLevel } from '../env/runtimeEnvSchema'
 
 export type ModuleLoggerOptions = {
 	/** Deployment label validated by the caller's env schema. */
-	environment?: DeploymentEnv
+	environment: DeploymentEnv
 	/** Log level validated by the caller's env schema. */
 	logLevel?: LogLevel
 }
@@ -29,7 +29,7 @@ export type ModuleLoggerOptions = {
  */
 let rootLogger: Logger | null = null
 
-function getRootLogger(environment?: DeploymentEnv): Logger {
+function getRootLogger(environment: DeploymentEnv): Logger {
 	if (rootLogger) return rootLogger
 
 	// `createModuleLogger` is also imported by client React components, so this
@@ -54,9 +54,8 @@ function getRootLogger(environment?: DeploymentEnv): Logger {
 	return rootLogger
 }
 
-/** Create a pino logger tagged with the given module name and optional deployment `environment` binding. */
+/** Create a pino logger tagged with the given module name and deployment `environment` binding. */
 export function createModuleLogger(name: string, options: ModuleLoggerOptions): Logger {
 	const { environment } = options
-	const bindings = environment ? { name, environment } : { name }
-	return getRootLogger(environment).child(bindings, { level: options.logLevel ?? 'info' })
+	return getRootLogger(environment).child({ name, environment }, { level: options.logLevel ?? 'info' })
 }

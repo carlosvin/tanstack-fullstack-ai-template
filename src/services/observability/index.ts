@@ -21,8 +21,8 @@ function normalizeSentryDsn(value: string | undefined): string | undefined {
 	return t === '' ? undefined : t
 }
 
-function resolveSentryDsn(options?: GetObservabilityOptions): string | undefined {
-	if (options?.publicEnv) return normalizeSentryDsn(options.publicEnv.SENTRY_DSN)
+function resolveSentryDsn(options: GetObservabilityOptions): string | undefined {
+	if (options.publicEnv) return normalizeSentryDsn(options.publicEnv.SENTRY_DSN)
 	if (typeof window === 'undefined') return normalizeSentryDsn(webPublicEnv.SENTRY_DSN)
 	return undefined
 }
@@ -35,7 +35,7 @@ function resolveSentryDsn(options?: GetObservabilityOptions): string | undefined
  * If the resolved DSN changes (e.g. client first hydrates without loader data, then receives `publicEnv`),
  * the implementation is recreated to match.
  */
-export function getObservability(options?: GetObservabilityOptions): ObservabilityService {
+export function getObservability(options: GetObservabilityOptions): ObservabilityService {
 	const dsn = resolveSentryDsn(options)
 	if (!instance || instanceKey !== dsn) {
 		instance = dsn ? new SentryObservability() : new NoopObservability()

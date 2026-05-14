@@ -83,7 +83,7 @@ outputs:
   - instrument.env.shared.mts with the shared DeploymentEnvSchema for bootstrap + TS callers
   - instrument.env.mts with resolveSentryBootstrapEnv helper
   - instrument.shared.mts with initSentry (all values pre-resolved by caller)
-  - Simplified instrument.server.mts (short entry) and tsconfig.instrument.json emitting .mjs to .output/server
+  - instrument.server.mts bootstrap entry and tsconfig.instrument.json emitting .mjs to .output/server
 constraints:
   - process.env is read only in src/env/*.ts (schema parse) and in a single BootstrapEnvSchema.parse(process.env) call inside instrument.env.mts — never in application code
   - Logger options (logLevel, environment) are passed as arguments to createModuleLogger — never resolved inside the factory
@@ -105,7 +105,7 @@ steps:
   - Create src/utils/serverLogger.ts binding webServerEnv.ENV and LOG_LEVEL
   - Create instrument.env.mts with resolveSentryBootstrapEnv() using the shared DeploymentEnvSchema
   - Create instrument.shared.mts with initSentry (receives pre-resolved dsn + environment)
-  - Simplify instrument.server.mts to call resolveSentryBootstrapEnv() + initSentry()
+  - Keep instrument.server.mts as a bootstrap entry that calls resolveSentryBootstrapEnv() + initSentry()
   - Add tsconfig.instrument.json and extend build script with tsc -p tsconfig.instrument.json && cp package.json .output/server
   - Update getObservability() to read webPublicEnv.SENTRY_DSN instead of process.env
   - Update middleware/auth.ts to read AUTH_HEADER_NAME from webServerEnv
@@ -116,8 +116,8 @@ examples:
     output: Import createServerLogger and call createServerLogger('myModule') — env and
       logLevel come from webServerEnv automatically
   - input: Set up Sentry for the server
-    output: Create instrument.env.mts + instrument.shared.mts; simplify
-      instrument.server.mts to a short entry; emit .mjs via tsc for production
+    output: Create instrument.env.mts + instrument.shared.mts; keep
+      instrument.server.mts as a bootstrap entry; emit .mjs via tsc for production
   - input: Read environment variables safely in application code
     output: Import webServerEnv from src/env/webEnv.ts (already validated), never
       read process.env directly in app code
@@ -158,7 +158,7 @@ content: |
   instrument.env.shared.mts # shared DeploymentEnvSchema for bootstrap + TS callers
   instrument.env.mts      # resolveSentryBootstrapEnv()
   instrument.shared.mts   # initSentry({ dsn, environment, serverName, release })
-  instrument.server.mts   # short entry: resolve + init (dev); emitted .mjs in .output/server for prod
+  instrument.server.mts   # bootstrap entry: resolve + init (dev); emitted .mjs in .output/server for prod
   tsconfig.instrument.json
   ```
 
@@ -337,7 +337,7 @@ content: |
   }
   ```
 
-  ## instrument.server.mts (simplified entry)
+  ## instrument.server.mts (bootstrap entry)
 
   ```typescript
   import { resolveSentryBootstrapEnv } from './instrument.env.mjs'
@@ -396,11 +396,11 @@ content: |
   ```typescript
   import { webPublicEnv } from '../../env/webEnv'
 
-  export function getObservability(): ObservabilityService {
-    if (!instance) {
-      instance = webPublicEnv.SENTRY_DSN
-        ? new SentryObservability()
-        : new NoopObservability()
+  export function getObservability(options: GetObservabilityOptions): ObservabilityService {
+    const dsn = options.publicEnv?.SENTRY_DSN ?? webPublicEnv.SENTRY_DSN
+    if (!instance || instanceKey !== dsn) {
+      instance = dsn ? new SentryObservability() : new NoopObservability()
+      instanceKey = dsn
     }
     return instance
   }

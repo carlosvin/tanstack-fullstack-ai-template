@@ -23,26 +23,26 @@ export const getTasks = createServerFn({ method: 'GET' })
 	.inputValidator(TaskFilterSchema.optional())
 	.handler(async ({ data: filter }) => {
 		const repoFilter = filter ? TaskRepoFilterSchema.parse(filter) : undefined
-		return getObservability().startSpan('getTasks', () => getReadRepository().getTasks(repoFilter))
+		return getObservability({}).startSpan('getTasks', () => getReadRepository().getTasks(repoFilter))
 	})
 
 /** Fetch a single task by ID. */
 export const getTask = createServerFn({ method: 'GET' })
 	.inputValidator(TaskIdInputSchema)
 	.handler(async ({ data }) => {
-		return getObservability().startSpan('getTask', () => getReadRepository().getTask(data.taskId))
+		return getObservability({}).startSpan('getTask', () => getReadRepository().getTask(data.taskId))
 	})
 
 /** Fetch all distinct assignee emails. */
 export const getAssignees = createServerFn({ method: 'GET' }).handler(async () => {
-	return getObservability().startSpan('getAssignees', () => getReadRepository().getAssignees())
+	return getObservability({}).startSpan('getAssignees', () => getReadRepository().getAssignees())
 })
 
 /** Fetch a user profile by email. */
 export const getUserProfile = createServerFn({ method: 'GET' })
 	.inputValidator(UserProfileByEmailSchema)
 	.handler(async ({ data }) => {
-		return getObservability().startSpan('getUserProfile', () => getReadRepository().getUserProfile(data.email))
+		return getObservability({}).startSpan('getUserProfile', () => getReadRepository().getUserProfile(data.email))
 	})
 
 // ============================================================================
@@ -70,7 +70,7 @@ export const createTask = createServerFn({ method: 'POST' })
 	.inputValidator(TaskInputSchema)
 	.handler(async ({ data, context }) => {
 		const repoInput = TaskRepoInputSchema.parse(data)
-		return getObservability().startSpan('createTask', () =>
+		return getObservability({}).startSpan('createTask', () =>
 			getWritableRepository().createTask(repoInput, context.user.email),
 		)
 	})
@@ -86,7 +86,7 @@ export const updateTask = createServerFn({ method: 'POST' })
 			throw new HttpError(403, 'Only the task creator can edit this task')
 		}
 		const repoUpdates = TaskRepoInputSchema.partial().parse(data.updates)
-		return getObservability().startSpan('updateTask', () =>
+		return getObservability({}).startSpan('updateTask', () =>
 			getWritableRepository().updateTask(data.taskId, repoUpdates),
 		)
 	})
@@ -101,5 +101,5 @@ export const deleteTask = createServerFn({ method: 'POST' })
 		if (task.createdBy && task.createdBy !== context.user.email) {
 			throw new HttpError(403, 'Only the task creator can delete this task')
 		}
-		return getObservability().startSpan('deleteTask', () => getWritableRepository().deleteTask(data.taskId))
+		return getObservability({}).startSpan('deleteTask', () => getWritableRepository().deleteTask(data.taskId))
 	})

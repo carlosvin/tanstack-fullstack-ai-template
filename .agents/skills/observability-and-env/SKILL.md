@@ -50,7 +50,7 @@ src/middleware/
 instrument.env.shared.mts # shared DeploymentEnvSchema for bootstrap + TS callers
 instrument.env.mts      # resolveSentryBootstrapEnv()
 instrument.shared.mts   # initSentry({ dsn, environment, serverName, release })
-instrument.server.mts   # short entry: resolve + init (dev); emitted .mjs in .output/server for prod
+instrument.server.mts   # bootstrap entry: resolve + init (dev); emitted .mjs in .output/server for prod
 tsconfig.instrument.json
 ```
 
@@ -229,7 +229,7 @@ export function initSentry({ serverName, dsn, environment, release }: InitSentry
 }
 ```
 
-## instrument.server.mts (simplified entry)
+## instrument.server.mts (bootstrap entry)
 
 ```typescript
 import { resolveSentryBootstrapEnv } from './instrument.env.mjs'
@@ -288,11 +288,11 @@ validated value from `webPublicEnv`:
 ```typescript
 import { webPublicEnv } from '../../env/webEnv'
 
-export function getObservability(): ObservabilityService {
-  if (!instance) {
-    instance = webPublicEnv.SENTRY_DSN
-      ? new SentryObservability()
-      : new NoopObservability()
+export function getObservability(options: GetObservabilityOptions): ObservabilityService {
+  const dsn = options.publicEnv?.SENTRY_DSN ?? webPublicEnv.SENTRY_DSN
+  if (!instance || instanceKey !== dsn) {
+    instance = dsn ? new SentryObservability() : new NoopObservability()
+    instanceKey = dsn
   }
   return instance
 }

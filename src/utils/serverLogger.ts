@@ -10,4 +10,7 @@ import { webServerEnv } from '../env/webEnv'
 import { createModuleLogger } from './logger'
 
 export const createServerLogger = (name: string) =>
-	createModuleLogger(name, { environment: webServerEnv.ENV, logLevel: webServerEnv.LOG_LEVEL })
+	createModuleLogger(name, {
+		environment: webServerEnv.ENV ?? 'development',
+		logLevel: webServerEnv.LOG_LEVEL,
+	})
