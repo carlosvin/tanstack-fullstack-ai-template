@@ -4,7 +4,7 @@ import { invalidateMiddleware } from '../../middleware/invalidate'
 import { requireAuthMiddleware } from '../../middleware/requireAuth'
 import { HttpError } from '../../utils/httpError'
 import { getObservability } from '../observability'
-import { getReadRepository, getWritableRepository } from '../repository/getRepository'
+import { getReadRepository, getWritableRepository } from '../repository/getRepository.server'
 import { TaskRepoFilterSchema, TaskRepoInputSchema } from '../schemas/repository'
 import {
 	TaskFilterSchema,

@@ -9,14 +9,14 @@
 - Documentation: https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/skills/README.md
 - Status: stable
 - Supported tools: Windsurf [native, tested], Cursor [copy, tested], Claude Code [copy, tested]
-- Capabilities: Interface-first boundaries with swappable implementations, Three schema layers with mandatory Schema.parse() at every boundary (tool→repo and repo→tool), Strong TypeScript in the typed flow — inference preserved via satisfies, unions, exhaustive switches; casts minimized, Loader-first routes and URL-driven state via validateSearch, Router config bundle (defaults + project Link wrapper preserving search params), Full AI tool coverage mirroring repository surface + client navigate/invalidate tools, Schema-first AI/UI metadata (.describe + optional .meta for unit/format/title), Promptable by default — getAIAvailability gating + browserContext + bounded agent loop, Auth ticket built in middleware via repository + TraceabilityContext on writes, Parent layout routes deduplicating shared beforeLoad and loaders, Optional patterns — overlay repo, bulk edit, distinct-values tools, dynamic route introspection, TanStack Intent + CLI as doc-aligned guidance (not duplicated command manuals), Assistant chat renders Markdown (GFM) — lists, tables, code blocks; internal links stay navigable
+- Capabilities: Interface-first boundaries with swappable implementations, Three schema layers with mandatory Schema.parse() at every boundary (tool→repo and repo→tool), Strong TypeScript in the typed flow — inference preserved via satisfies, unions, exhaustive switches; casts minimized, Loader-first routes and URL-driven state via validateSearch, Router config bundle (defaults + project Link wrapper preserving search params), Full AI tool coverage mirroring repository surface + client navigate/invalidate tools, Schema-first AI/UI metadata (.describe + optional .meta for unit/format/title), Promptable by default — getAIAvailability gating + browserContext + bounded agent loop, Auth ticket built in middleware via repository + TraceabilityContext on writes, Parent layout routes deduplicating shared beforeLoad and loaders, Optional patterns — overlay repo, bulk edit, distinct-values tools, dynamic route introspection, TanStack Intent + CLI as doc-aligned guidance (not duplicated command manuals), Assistant chat renders Markdown (GFM) — lists, tables, code blocks; internal links stay navigable, Server/client execution boundaries — isomorphic loaders, *.server.ts, createServerOnlyFn, import protection
 - ID: `tanstack-promptable-fullstack-app-template`
-- Version: `1.17.0`
+- Version: `1.18.0`
 - Tags: tanstack-start, fullstack, architecture, interface-first, repository-pattern, ai-promptable
 
 ## Summary
 
-Use when scaffolding a new TanStack Start project, adding domain entities to the fullstack template, or implementing the interface-first repository pattern with AI-promptable tools, or nested layout routes duplicate beforeLoad checks or loaders that should live on a parent route, or TanStack Router, Start, or AI behavior must be verified against current documentation instead of training data.
+Use when scaffolding a new TanStack Start project, adding domain entities to the fullstack template, or implementing the interface-first repository pattern with AI-promptable tools, or nested layout routes duplicate beforeLoad checks or loaders that should live on a parent route, or TanStack Router, Start, or AI behavior must be verified against current documentation instead of training data, or route loaders may import databases or secrets, or server-only code may leak into the client bundle, or isomorphic loader boundaries are unclear.
 
 ## Triggers
 
@@ -31,6 +31,11 @@ Use when scaffolding a new TanStack Start project, adding domain entities to the
 - tanstack cli
 - tanstack intent
 - package skills
+- client bundle leak
+- server-only
+- isomorphic loader
+- process.env in loader
+- import protection
 
 ## Canonical Content
 # TanStack Fullstack Pattern
@@ -43,7 +48,7 @@ Use when scaffolding a new TanStack Start project, adding domain entities to the
 
 1. Read **Core Contract** first — it is the non-negotiable architecture.
 2. Run the **Architecture Checklist** before every non-trivial change.
-3. Jump to **Schema Boundaries**, **Request Context**, or **Special Patterns** only when that concern applies.
+3. Jump to **Server execution boundaries**, **Schema Boundaries**, **Request Context**, or **Special Patterns** only when that concern applies.
 4. Use **[AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md)** for operational how-to (UI kit, chat wiring, logging, tests, validation commands) — not for inventing alternate architecture.
 
 ## Common failure modes (avoid these)
@@ -55,6 +60,9 @@ Use when scaffolding a new TanStack Start project, adding domain entities to the
 - **UI-only auth:** hiding buttons in components but skipping guards in server handlers.
 - **Type escape hatches:** `any`, loose `Record<string, unknown>`, or `as` after `Schema.parse` — narrow, guard, or fix types instead.
 - **Duplicated parent work:** copying a parent layout’s `beforeLoad`, loader, or expensive read into each child route.
+- **Server logic in loaders:** `process.env` secrets, DB drivers, or repository imports inside a route `loader` or route file top-level imports.
+- **Wrong server primitive:** `createServerFn` for internal singletons that must never be RPC-callable — use `createServerOnlyFn` instead.
+- **Leaky module graph:** server modules without `*.server.ts` or `import '@tanstack/react-start/server-only'` pulled into files consumed by UI.
 
 ## Core Contract
 
@@ -73,6 +81,7 @@ Use when scaffolding a new TanStack Start project, adding domain entities to the
 13. **Bound the agent loop:** every `chat()` call sets `agentLoopStrategy: maxIterations(N)` explicitly (default `N=10`); tune after measuring — do not rely on the framework default.
 14. **Metadata for AI and UI:** Use `.describe()` for all narrative explanations (JSON Schema `description`). Use `.meta({ ... })` only for **structured extras** — `unit`, `format`, optional `title`, app-specific hints — not as a substitute for `.describe()`. Prefer deriving prompts and UI copy from schemas + `z.toJSONSchema()` and router introspection over parallel hand-maintained maps.
 15. **Parent layouts:** Shared `beforeLoad`, redirects, and expensive reads belong on the **parent** layout route; children read parent loader data via `getRouteApi` / `useLoaderData({ from })` — do not duplicate parent work.
+16. **Server execution boundaries:** Route loaders are **isomorphic** — they run on the server during SSR and on the client during SPA navigations. Loaders only **call** exported `createServerFn` from `serverFns.ts` (e.g. `getTasks({ data: deps })`). DB access, secrets, and Node-only SDKs live in `*.server.ts` or behind `createServerOnlyFn`; extend `tanstackStart({ importProtection })` when adding node packages.
 
 ## Architecture Checklist
 
@@ -88,6 +97,92 @@ Scan before changing code:
 - **AI stack is complete:** every repo method → server tool + safe handler; client **`navigate`** / **`invalidateRouter`**; root **`getAIAvailability()`**; chat payload includes **`browserContext`**; **`chat({ agentLoopStrategy: maxIterations(N) })`**.
 - **Routes:** **`validateSearch`** + **`loaderDeps`**; duplicate **`beforeLoad`** / shared loaders only on **parent** layouts.
 - **Metadata discipline:** `.describe()` for narrative copy; `.meta()` for structured extras; closed vocabularies = `as const` tuple + `z.enum` + `z.infer<>`.
+- **Server boundaries:** loaders call `serverFns` only — no `process.env` secrets, DB drivers, or repo imports in route files; `*.server.ts` for Mongo/Node SDKs; `createServerOnlyFn` for non-RPC infra; `importProtection` updated for new node packages.
+
+## Server execution boundaries
+
+TanStack route **loaders are isomorphic** — they run during SSR **and** on client-side navigations. Treat every route module as potentially shipping to the browser.
+
+### Forbidden in route files
+
+- Top-level imports of `getDb`, repositories, `mongodb`, `fs`, or other Node-only modules.
+- `process.env` for secrets inside `loader` bodies.
+- Inline DB queries or repository calls inside `loader`.
+
+### Required pattern
+
+Define reads/writes in [`src/services/api/serverFns.ts`](src/services/api/serverFns.ts). Route loaders only invoke them:
+
+```typescript
+// src/routes/tasks/index.tsx — thin route
+export const Route = createFileRoute('/tasks/')({
+  validateSearch: TasksSearchSchema,
+  loaderDeps: ({ search }) => search,
+  loader: ({ deps }) => getTasks({ data: deps }),
+})
+```
+
+```typescript
+// src/services/api/serverFns.ts — server-only handler body
+export const getTasks = createServerFn({ method: 'GET' })
+  .inputValidator(TaskFilterSchema.optional())
+  .handler(async ({ data: filter }) => {
+    const repoFilter = filter ? TaskRepoFilterSchema.parse(filter) : undefined
+    return getReadRepository().getTasks(repoFilter)
+  })
+```
+
+### File naming and tripwires
+
+- **`*.server.ts` / `*.server.tsx`:** DB clients, repositories with drivers, private API keys, Node-only SDKs (e.g. `mongoClient.server.ts`, `getRepository.server.ts`).
+- **When rename is awkward:** first line `import '@tanstack/react-start/server-only'`.
+
+### `createServerFn` vs `createServerOnlyFn`
+
+| Primitive | Use when |
+|-----------|----------|
+| `createServerFn` | Loaders, mutations, and AI tools need to trigger server work over RPC (`GET` / `POST`). |
+| `createServerOnlyFn` | Internal singletons (DB client factory) that must **never** be client-callable. |
+
+```typescript
+import { createServerOnlyFn } from '@tanstack/react-start'
+import { getDb } from '../db/mongoClient.server'
+
+export const getDbConnection = createServerOnlyFn(async () => getDb())
+```
+
+Do **not** define new `createServerFn` inline in route files — keep RPC entry points centralized in `serverFns.ts`.
+
+### Import protection (Vite)
+
+When adding node-only packages, extend [`vite.config.ts`](vite.config.ts):
+
+```typescript
+tanstackStart({
+  importProtection: {
+    behavior: 'error',
+    client: {
+      specifiers: ['mongodb', 'jose'],
+      files: ['**/services/db/**', '**/repository/*.server.ts'],
+    },
+  },
+})
+```
+
+Add `jose` (or other auth/crypto libs) when they are not isolated in `*.server.ts`. Set `ignoreImporters: ['**/*.test.ts']` if unit tests import server modules in jsdom. Verify with `pnpm build`. Docs: `npx @tanstack/cli search-docs "import protection" --library start`.
+
+### If the user asks for DB/secrets in a component or route config
+
+1. **Stop** — explain the isomorphic loader / client-bundle risk.
+2. **Refactor** — move logic to `serverFns.ts`, `*.server.ts`, or `createServerOnlyFn`.
+
+### Rationalizations (reject these)
+
+| Excuse | Reality |
+|--------|---------|
+| “Loader ran on SSR so it’s server-only” | Loaders re-run on client navigations. |
+| “Dynamic import in the loader is enough” | Route module static imports still enter the client graph. |
+| “One-line `process.env` read won’t matter” | Isomorphic code can expose env reads to the client bundle. |
 
 ## Markdown assistant replies (UX contract)
 
