@@ -211,7 +211,7 @@ src/
 │   │   ├── sentry.ts           # Sentry implementation
 │   │   ├── noop.ts             # No-op implementation
 │   │   └── index.ts            # Factory
-│   └── db/mongoClient.ts       # MongoDB singleton
+│   └── db/mongoClient.server.ts # MongoDB singleton (server-only)
 ├── utils/
 │   ├── auth.ts                 # requireAuth(), requireGroup()
 │   ├── httpError.ts            # HttpError class
@@ -247,7 +247,7 @@ See [`.env.example`](.env.example) for the full list with documentation.
 ### Adding a New Entity (End-to-End)
 
 1. **Schema**: Add Zod schemas in `src/services/schemas/schemas.ts` with `.describe()` on every field.
-2. **Repository**: Add methods to the `ReadRepository` and/or `WritableRepository` interfaces in `types.ts`. Implement in both `seedRepository.ts` and `mongoRepository.ts`.
+2. **Repository**: Add methods to the `ReadRepository` and/or `WritableRepository` interfaces in `types.ts`. Implement in both `seedRepository.ts` and `mongoRepository.server.ts`.
 3. **Server Functions**: Add `createServerFn` wrappers in `src/services/api/serverFns.ts`. Chain `.middleware([invalidateMiddleware])` on mutations.
 4. **AI Tools**: Expose methods as tools in `src/services/ai/tools.ts` that call your server functions through `createSafeServerTool()`. Update the system prompt.
    - Keep `src/services/ai/navigationManifest.ts` aligned with routes (including dynamic segments like `/tasks/$taskId`).
@@ -257,7 +257,7 @@ See [`.env.example`](.env.example) for the full list with documentation.
 
 ### Swapping the Database
 
-Replace `mongoRepository.ts` with your implementation of the `Repository` interface. Update the factory in `getRepository.ts`.
+Replace `mongoRepository.server.ts` with your implementation of the `Repository` interface. Update the factory in `getRepository.server.ts`.
 
 ### Swapping the AI Provider
 
@@ -346,7 +346,7 @@ Then follow the end-to-end workflow:
 4. Add server functions in `src/services/api/serverFns.ts` (GET for loaders, POST with `invalidateMiddleware` for mutations)
 5. Expose methods as AI tools in `src/services/ai/tools.ts` that call your server functions through `createSafeServerTool()`
 6. Create file-based routes under `src/routes/` (data in loaders, state in URL search params)
-7. When ready for real data, implement `mongoRepository.ts` and set `MONGODB_URI`
+7. When ready for real data, implement `mongoRepository.server.ts` and set `MONGODB_URI`
 
 ### Option B: AI-assisted (skill)
 

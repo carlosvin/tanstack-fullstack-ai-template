@@ -31,7 +31,20 @@ export default defineConfig(({ command }) => ({
 		devtools(),
 		nitro(),
 		viteTsConfigPaths({ projects: ['./tsconfig.json'] }),
-		tanstackStart(),
+		tanstackStart({
+			importProtection: {
+				behavior: 'error',
+				ignoreImporters: ['**/*.test.ts', '**/*.spec.ts'],
+				client: {
+					specifiers: ['mongodb'],
+					files: [
+						'**/services/db/**',
+						'**/repository/mongoRepository.server.ts',
+						'**/repository/getRepository.server.ts',
+					],
+				},
+			},
+		}),
 		viteReact(),
 		...(command === 'build' ? [netlify()] : []),
 	],

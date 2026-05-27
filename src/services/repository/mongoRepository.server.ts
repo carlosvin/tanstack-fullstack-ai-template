@@ -1,5 +1,5 @@
 import type { Collection, Db, Filter } from 'mongodb'
-import { getDb } from '../db/mongoClient'
+import { getDb } from '../db/mongoClient.server'
 import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserProfileRepo } from '../schemas/repository'
 import type { Repository } from './types'
 
@@ -8,7 +8,7 @@ const USERS_COLLECTION = 'users'
 
 /**
  * MongoDB-backed repository implementation.
- * Uses the singleton database connection from db/mongoClient.ts.
+ * Uses the singleton database connection from db/mongoClient.server.ts.
  */
 export class MongoRepository implements Repository {
 	private dbPromise: Promise<Db> | null = null
