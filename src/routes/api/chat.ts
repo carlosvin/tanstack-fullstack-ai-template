@@ -1,6 +1,5 @@
 import { chat, convertMessagesToModelMessages, maxIterations, toServerSentEventsResponse } from '@tanstack/ai'
 import { createFileRoute } from '@tanstack/react-router'
-import type { AuthContext } from '../../middleware/auth'
 import { getAIAdapterService } from '../../services/ai/adapter'
 import { getNavigationPromptSection } from '../../services/ai/navigationManifest'
 import {
@@ -139,7 +138,7 @@ export const Route = createFileRoute('/api/chat')({
 
 				const body = await request.json()
 
-				const { user, userProfile } = context as AuthContext
+				const { user, userProfile } = context
 
 				const browserContextResult = BrowserContextSchema.safeParse(body.browserContext)
 				const browserContext: BrowserContext | null = browserContextResult.success ? browserContextResult.data : null
