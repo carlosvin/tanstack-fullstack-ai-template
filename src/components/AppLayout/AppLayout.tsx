@@ -1,13 +1,13 @@
 import { AppShell } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
-import type { BrowserShellSession } from '../../env/browserShellSession'
+import type { ShellSession } from '../../env/webEnv'
 import type { UserIdentity, UserProfile } from '../../types'
 import { ChatDrawer } from '../ChatDrawer/ChatDrawer'
 import { Header } from '../Header/Header'
 
 interface AppLayoutProps {
 	currentUser?: { identity: UserIdentity; profile: UserProfile | null }
-	shellSession: BrowserShellSession
+	shellSession: ShellSession
 	aiAvailable?: boolean
 	children: React.ReactNode
 }

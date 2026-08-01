@@ -35,9 +35,9 @@ function DashboardPage() {
 						<Text size="sm" c="dimmed">
 							{shellSession.app.name} v{shellSession.app.version}
 						</Text>
-						{shellSession.publicEnv.ENV ? (
+						{shellSession.ENV ? (
 							<Badge size="sm" variant="light" color="gray">
-								{shellSession.publicEnv.ENV}
+								{shellSession.ENV}
 							</Badge>
 						) : null}
 					</Group>

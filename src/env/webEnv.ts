@@ -1,12 +1,16 @@
 import { z } from 'zod'
+import pkg from '../../package.json' with { type: 'json' }
 
 import { OptionalDeploymentEnvSchema, OptionalLogLevelSchema, OptionalTrimmedStringSchema } from './runtimeEnvSchema'
 
-/**
- * Non-secret fields safe for the browser. Expose them to React only from a
- * route loader that calls a GET server function; request middleware can also
- * place the same slice on the server request context. Never read from `window`.
- */
+export const AppMetaSchema = z.object({
+	name: z.string().min(1).describe('Application name from package.json'),
+	version: z.string().min(1).describe('Application version from package.json'),
+})
+
+export type AppMeta = z.infer<typeof AppMetaSchema>
+
+/** Non-secret deployment fields safe for the browser. */
 export const WebPublicEnvSchema = z.object({
 	ENV: OptionalDeploymentEnvSchema.describe('Deployment name: development, staging, or production.'),
 	LOG_LEVEL: OptionalLogLevelSchema.describe('Minimum pino log level.'),
@@ -14,6 +18,13 @@ export const WebPublicEnvSchema = z.object({
 })
 
 export type WebPublicEnv = z.infer<typeof WebPublicEnvSchema>
+
+/** Browser-safe startup config: public env fields + app identity. */
+export const ShellSessionSchema = WebPublicEnvSchema.extend({
+	app: AppMetaSchema.describe('Application name and version from package.json.'),
+})
+
+export type ShellSession = z.infer<typeof ShellSessionSchema>
 
 /**
  * Full validated `process.env` for the TanStack web server and SSR runtime.
@@ -41,8 +52,10 @@ export type WebServerEnv = z.infer<typeof WebServerEnvSchema>
 
 export const webServerEnv: WebServerEnv = WebServerEnvSchema.parse(process.env)
 
-export const webPublicEnv: WebPublicEnv = {
+/** Parsed once at startup — project to the client via `getBrowserShellSession` + root loader. */
+export const shellSession: ShellSession = ShellSessionSchema.parse({
 	ENV: webServerEnv.ENV,
 	LOG_LEVEL: webServerEnv.LOG_LEVEL,
 	SENTRY_DSN: webServerEnv.SENTRY_DSN,
-}
+	app: { name: pkg.name, version: pkg.version },
+})

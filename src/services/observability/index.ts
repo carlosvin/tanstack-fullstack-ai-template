@@ -1,5 +1,5 @@
-import type { WebPublicEnv } from '../../env/webEnv'
-import { webPublicEnv } from '../../env/webEnv'
+import type { ShellSession } from '../../env/webEnv'
+import { shellSession } from '../../env/webEnv'
 import { NoopObservability } from './noop'
 import { SentryObservability } from './sentry'
 import type { ObservabilityService } from './types'
@@ -7,8 +7,8 @@ import type { ObservabilityService } from './types'
 export type { ObservabilityService } from './types'
 
 export type GetObservabilityOptions = {
-	/** Optional public env slice (e.g. from a route loader that called a GET server fn). Do not import `webEnv` in client bundles. */
-	publicEnv?: WebPublicEnv
+	/** Optional shell session slice (e.g. from a route loader). Server defaults to startup `shellSession`. */
+	shellSession?: Pick<ShellSession, 'SENTRY_DSN'>
 }
 
 let instance: ObservabilityService | null = null
@@ -22,18 +22,14 @@ function normalizeSentryDsn(value: string | undefined): string | undefined {
 }
 
 function resolveSentryDsn(options: GetObservabilityOptions): string | undefined {
-	if (options.publicEnv) return normalizeSentryDsn(options.publicEnv.SENTRY_DSN)
-	if (typeof window === 'undefined') return normalizeSentryDsn(webPublicEnv.SENTRY_DSN)
+	if (options.shellSession) return normalizeSentryDsn(options.shellSession.SENTRY_DSN)
+	if (typeof window === 'undefined') return normalizeSentryDsn(shellSession.SENTRY_DSN)
 	return undefined
 }
 
 /**
  * Returns the singleton observability service for the effective DSN.
- * Server: uses validated `webPublicEnv` when no `publicEnv` is passed.
- * Client: pass `{ publicEnv }` when you have loader-sourced data; otherwise Sentry stays disabled (no-op).
- *
- * If the resolved DSN changes (e.g. client first hydrates without loader data, then receives `publicEnv`),
- * the implementation is recreated to match.
+ * Server: uses validated `shellSession` when no override is passed.
  */
 export function getObservability(options: GetObservabilityOptions): ObservabilityService {
 	const dsn = resolveSentryDsn(options)
