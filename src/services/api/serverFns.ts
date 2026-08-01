@@ -1,8 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
-import { webPublicEnv } from '../../env/webEnv'
 import { authMiddleware } from '../../middleware/auth'
 import { invalidateMiddleware } from '../../middleware/invalidate'
 import { requireAuthMiddleware } from '../../middleware/requireAuth'
+import { webEnvMiddleware } from '../../middleware/webEnv'
 import { HttpError } from '../../utils/httpError'
 import { getAIAdapterService } from '../ai/adapter'
 import { getObservability } from '../observability'
@@ -53,13 +53,17 @@ export const getUserProfile = createServerFn({ method: 'GET' })
 		return row ? toToolUserProfile(row) : null
 	})
 
-/** Browser-safe public env for the root loader (validated on the server only). */
-export const getWebPublicEnv = createServerFn({ method: 'GET' }).handler(async () => webPublicEnv)
+/** Browser-safe shell session for the root loader. */
+export const getBrowserShellSession = createServerFn({ method: 'GET' })
+	.middleware([webEnvMiddleware])
+	.handler(async ({ context }) => context.shellSession)
 
 /** Whether the AI chat adapter is configured (root loader gates chat UI). */
-export const getAIAvailability = createServerFn({ method: 'GET' }).handler(async () => ({
-	available: getAIAdapterService().isConfigured(),
-}))
+export const getAIAvailability = createServerFn({ method: 'GET' })
+	.middleware([webEnvMiddleware])
+	.handler(async () => ({
+		available: getAIAdapterService().isConfigured(),
+	}))
 
 // ============================================================================
 // Current user — identity + profile from middleware context

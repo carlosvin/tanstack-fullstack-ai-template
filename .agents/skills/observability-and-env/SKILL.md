@@ -10,7 +10,8 @@ description: 'Use when adding structured logging (pino), centralized environment
   logging", "set up pino", "pino logger", "sentry init", "instrument server",
   "instrument.server.mts", "instrument.server.mjs", "env schema", "environment
   validation", "centralize observability", "createModuleLogger",
-  "createServerLogger", "webEnv", "webServerEnv", "LOG_LEVEL", "SENTRY_DSN".'
+  "createServerLogger", "webEnv", "webServerEnv", "shellSession",
+  "getBrowserShellSession", "LOG_LEVEL", "SENTRY_DSN".'
 ---
 
 > This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.
@@ -27,25 +28,32 @@ arguments.
 1. `process.env` is read **only** in `src/env/*.ts` (schema parse) and in a
    single `BootstrapEnvSchema.parse(process.env)` call inside
    `instrument.env.mts` (Sentry bootstrap — runs before the app entry).
+   Parsed values are module singletons — **once per process at startup**.
 2. Logger options (`logLevel`, `environment`) are **passed as arguments** to
    `createModuleLogger` — the factory never reads `process.env`.
-3. **Browser public env** — no `window.__ENV__`; use a route `loader` that calls a GET server function returning `webPublicEnv`. Do not import `webEnv` from client-shared route files.
-4. The root pino logger is created **once** per process (lazy singleton); all
+3. **Typed server context** — middleware attaches `serverEnv` and `shellSession`
+   via `next({ context })`. Chain that middleware on server fns that need those
+   fields; Start infers `context.*` types from the chain.
+4. **Browser shell session** — no `window.__ENV__`; root loader calls
+   `getBrowserShellSession()` returning the allowlisted `shellSession`
+   (public env fields + `app`). Never return `serverEnv` to the client.
+   Do not import `webEnv` from client-shared route files.
+5. The root pino logger is created **once** per process (lazy singleton); all
    module loggers are `child()` instances of it.
 
 ## File layout
 
 ```
 src/env/
-  runtimeEnvSchema.ts   # DeploymentEnv, LogLevel, shared preprocessors
-  webEnv.ts             # WebServerEnvSchema + WebPublicEnvSchema; parsed once
+  runtimeEnvSchema.ts      # DeploymentEnv, LogLevel, shared preprocessors
+  webEnv.ts                # webServerEnv + shellSession; parsed once
 
 src/utils/
   logger.ts             # createModuleLogger(name, { environment, logLevel? })
   serverLogger.ts       # createServerLogger(name) — binds webServerEnv
 
 src/middleware/
-  webEnv.ts             # webEnvMiddleware: injects ctx.context.publicEnv
+  webEnv.ts             # webEnvMiddleware: injects serverEnv, shellSession
 
 instrument.env.shared.mts # shared DeploymentEnvSchema for bootstrap + TS callers
 instrument.env.mts      # resolveSentryBootstrapEnv()
@@ -83,41 +91,44 @@ export const OptionalTrimmedStringSchema = z.preprocess(envStringToUndefined, z.
 
 ## src/env/webEnv.ts
 
-Parsed once when first imported. `WebPublicEnvSchema` is the browser-safe
-slice — only non-secret fields. `WebServerEnvSchema` adds secrets.
+Parsed once when first imported. `ShellSessionSchema` is the browser-safe
+projection (public env + app). `WebServerEnvSchema` adds secrets.
 
 ```typescript
 import { z } from 'zod'
-import {
-  OptionalDeploymentEnvSchema,
-  OptionalLogLevelSchema,
-  OptionalTrimmedStringSchema,
-} from './runtimeEnvSchema'
+import pkg from '../../package.json' with { type: 'json' }
+import { OptionalDeploymentEnvSchema, OptionalLogLevelSchema, OptionalTrimmedStringSchema } from './runtimeEnvSchema'
+
+export const AppMetaSchema = z.object({
+  name: z.string().min(1),
+  version: z.string().min(1),
+})
 
 export const WebPublicEnvSchema = z.object({
-  ENV: OptionalDeploymentEnvSchema.describe('Deployment name: development, staging, or production.'),
-  LOG_LEVEL: OptionalLogLevelSchema.describe('Minimum pino log level.'),
-  SENTRY_DSN: OptionalTrimmedStringSchema.describe('Sentry DSN for both server and browser.'),
+  ENV: OptionalDeploymentEnvSchema,
+  LOG_LEVEL: OptionalLogLevelSchema,
+  SENTRY_DSN: OptionalTrimmedStringSchema,
 })
-export type WebPublicEnv = z.infer<typeof WebPublicEnvSchema>
+
+export const ShellSessionSchema = WebPublicEnvSchema.extend({ app: AppMetaSchema })
+export type ShellSession = z.infer<typeof ShellSessionSchema>
 
 export const WebServerEnvSchema = WebPublicEnvSchema.extend({
-  // ... app-specific required/optional vars
   AUTH_HEADER_NAME: z.string().optional(),
+  // ... secrets
 })
-export type WebServerEnv = z.infer<typeof WebServerEnvSchema>
 
-export const webServerEnv: WebServerEnv = WebServerEnvSchema.parse(process.env)
+export const webServerEnv = WebServerEnvSchema.parse(process.env)
 
-export const webPublicEnv: WebPublicEnv = {
+export const shellSession = ShellSessionSchema.parse({
   ENV: webServerEnv.ENV,
   LOG_LEVEL: webServerEnv.LOG_LEVEL,
   SENTRY_DSN: webServerEnv.SENTRY_DSN,
-}
+  app: { name: pkg.name, version: pkg.version },
+})
 ```
 
-**Add required secrets** (API keys, DB URIs) to `WebServerEnvSchema` only —
-they must never appear in `WebPublicEnvSchema`.
+**Add required secrets** to `WebServerEnvSchema` only — they must never appear in `ShellSessionSchema`.
 
 ## src/utils/logger.ts
 
@@ -250,52 +261,68 @@ Update the `build` script:
 "build": "vite build && tsc -p tsconfig.instrument.json && cp package.json .output/server/package.json"
 ```
 
-## webEnvMiddleware
+## webEnvMiddleware (typed context via chaining)
 
-Injects `ctx.context.publicEnv` for server functions. For React, fetch public
-env in a route loader via a GET server function (do not import `webEnv` in
-client bundles).
+Injects startup-validated `serverEnv` and `shellSession`. Types come from
+`next({ context })` + `.middleware([webEnvMiddleware])` on consumers.
 
 ```typescript
 // src/middleware/webEnv.ts
 import { createMiddleware } from '@tanstack/react-start'
-import { webPublicEnv } from '../env/webEnv'
+import { shellSession, webServerEnv } from '../env/webEnv'
+import { authMiddleware } from './auth'
 
-export const webEnvMiddleware = createMiddleware().server(({ next }) =>
-  next({ context: { publicEnv: webPublicEnv } })
-)
+export const webEnvMiddleware = createMiddleware()
+  .middleware([authMiddleware])
+  .server(({ next }) =>
+    next({
+      context: {
+        serverEnv: webServerEnv,
+        shellSession,
+      },
+    }),
+  )
 ```
 
-Register in `src/start.ts`:
 ```typescript
-import { webEnvMiddleware } from './middleware/webEnv'
-// add to requestMiddleware array
+// src/start.ts — sole global entry
+export const startInstance = createStart(() => ({
+  requestMiddleware: [webEnvMiddleware],
+}))
 ```
 
-Example server fn + loader pattern when a client component needs the slice:
-```typescript
-// serverFns.ts
-export const getWebPublicEnv = createServerFn({ method: 'GET' }).handler(async () => webPublicEnv)
+Handlers that need env on `context` chain the middleware:
 
-// route loader
-loader: async () => ({ publicEnv: await getWebPublicEnv() })
+```typescript
+export const getBrowserShellSession = createServerFn({ method: 'GET' })
+  .middleware([webEnvMiddleware])
+  .handler(async ({ context }) => context.shellSession)
+
+export const getAIAvailability = createServerFn({ method: 'GET' })
+  .middleware([webEnvMiddleware])
+  .handler(async ({ context }) => ({
+    available: Boolean(context.serverEnv.GEMINI_API_KEY),
+  }))
+```
+
+Root loader:
+
+```typescript
+loader: async () => ({
+  shellSession: await getBrowserShellSession(),
+})
 ```
 
 ## Updating call sites
 
-**observability/index.ts** — replace `process.env.SENTRY_DSN` with the
-validated value from `webPublicEnv`:
+**observability/index.ts** — replace `process.env.SENTRY_DSN` with `shellSession`:
 
 ```typescript
-import { webPublicEnv } from '../../env/webEnv'
+import { shellSession } from '../../env/webEnv'
 
 export function getObservability(options: GetObservabilityOptions): ObservabilityService {
-  const dsn = options.publicEnv?.SENTRY_DSN ?? webPublicEnv.SENTRY_DSN
-  if (!instance || instanceKey !== dsn) {
-    instance = dsn ? new SentryObservability() : new NoopObservability()
-    instanceKey = dsn
-  }
-  return instance
+  const dsn = options.shellSession?.SENTRY_DSN ?? shellSession.SENTRY_DSN
+  // ...
 }
 ```
 
@@ -313,5 +340,7 @@ const AUTH_HEADER_NAME = webServerEnv.AUTH_HEADER_NAME ?? 'Authorization'
 - [ ] `createModuleLogger` / `createServerLogger` never call `process.env`
 - [ ] `instrument.server.mts` uses `resolveSentryBootstrapEnv()` + `initSentry()`, and `pnpm build` emits `.output/server/instrument.*.mjs`
 - [ ] `package.json` is copied next to the emitted instrument bundle so version import works
-- [ ] Public env for the browser uses a GET server fn from route loaders (not `window.__ENV__`)
+- [ ] `shellSession` is parsed once in `webEnv.ts` (public env + app from package.json)
+- [ ] Middleware injects `serverEnv` and `shellSession`; consumers chain middleware for inferred `context.*` types
+- [ ] Browser config uses `getBrowserShellSession` from route loaders (not `window.__ENV__`, not raw `serverEnv`)
 - [ ] `SENTRY_DSN` / `LOG_LEVEL` / `ENV` documented in `.env.example`

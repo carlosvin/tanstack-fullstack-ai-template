@@ -1,5 +1,5 @@
 import { Badge, Card, Container, Group, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useLoaderData } from '@tanstack/react-router'
 import { CheckCircle, Circle, Clock, ListTodo } from 'lucide-react'
 import { Link } from '../components/Link/Link'
 import { getTasks } from '../services/api/serverFns'
@@ -16,6 +16,7 @@ function statusCount(tasks: Task[], status: string) {
 
 function DashboardPage() {
 	const tasks = Route.useLoaderData()
+	const { shellSession } = useLoaderData({ from: '__root__' })
 
 	const stats = [
 		{ label: 'Total', value: tasks.length, icon: ListTodo, color: 'blue' },
@@ -29,9 +30,17 @@ function DashboardPage() {
 			<Stack gap="xl">
 				<div>
 					<Title order={2}>Dashboard</Title>
-					<Text c="dimmed" mt={4}>
-						Overview of your task management workspace.
-					</Text>
+					<Group gap="xs" mt={4}>
+						<Text c="dimmed">Overview of your task management workspace.</Text>
+						<Text size="sm" c="dimmed">
+							{shellSession.app.name} v{shellSession.app.version}
+						</Text>
+						{shellSession.ENV ? (
+							<Badge size="sm" variant="light" color="gray">
+								{shellSession.ENV}
+							</Badge>
+						) : null}
+					</Group>
 				</div>
 
 				<SimpleGrid cols={{ base: 2, sm: 4 }}>

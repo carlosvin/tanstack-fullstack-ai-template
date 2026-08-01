@@ -1,4 +1,5 @@
 import { type Db, MongoClient } from 'mongodb'
+import { webServerEnv } from '../../env/webEnv'
 
 let client: MongoClient | null = null
 let db: Db | null = null
@@ -10,12 +11,12 @@ let db: Db | null = null
 export async function getDb(): Promise<Db> {
 	if (db) return db
 
-	const uri = process.env.MONGODB_URI
+	const uri = webServerEnv.MONGODB_URI
 	if (!uri) {
 		throw new Error('MONGODB_URI environment variable is required for MongoDB repository.')
 	}
 
-	const dbName = process.env.MONGODB_DB_NAME ?? 'app-db'
+	const dbName = webServerEnv.MONGODB_DB_NAME ?? 'app-db'
 
 	client = new MongoClient(uri)
 	await client.connect()

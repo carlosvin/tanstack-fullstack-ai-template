@@ -7,14 +7,14 @@ description: 'Use when scaffolding a new TanStack Start project, adding domain
   Router, Start, or AI behavior must be verified against current documentation
   instead of training data, or route loaders may import databases or secrets, or
   server-only code may leak into the client bundle, or isomorphic loader
-  boundaries are unclear, or TanStack Start request context, Register typing, or
-  serverEnv leakage to the client must be handled correctly. Project: TanStack
-  AI-Promptable Full-Stack Template. Triggers on "fullstack template", "TanStack
-  Start project", "repository pattern", "interface-first", "new app scaffold",
-  "nested routes", "layout route", "beforeLoad", "tanstack cli", "tanstack
-  intent", "package skills", "client bundle leak", "server-only", "isomorphic
-  loader", "process.env in loader", "import protection", "request context",
-  "Register interface".'
+  boundaries are unclear, or TanStack Start request context
+  (middleware-inferred), or serverEnv leakage to the client must be handled
+  correctly. Project: TanStack AI-Promptable Full-Stack Template. Triggers on
+  "fullstack template", "TanStack Start project", "repository pattern",
+  "interface-first", "new app scaffold", "nested routes", "layout route",
+  "beforeLoad", "tanstack cli", "tanstack intent", "package skills", "client
+  bundle leak", "server-only", "isomorphic loader", "process.env in loader",
+  "import protection", "request context", "middleware context".'
 ---
 
 > This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.
@@ -45,9 +45,9 @@ description: 'Use when scaffolding a new TanStack Start project, adding domain
 - **Server logic in loaders:** `process.env` secrets, DB drivers, or repository imports inside a route `loader` or route file top-level imports.
 - **Wrong server primitive:** `createServerFn` for internal singletons that must never be RPC-callable — use `createServerOnlyFn` instead.
 - **Leaky module graph:** server modules without `*.server.ts` or `import '@tanstack/react-start/server-only'` pulled into files consumed by UI.
-- **Runtime context guards:** `getShellAuthContext`, `getAccessTicket`, `accessTicketFrom`, or property-presence checks on middleware-assembled `context` — use direct `ctx.context` access and `Register` typing instead.
+- **Runtime context guards:** `getShellAuthContext`, `getAccessTicket`, `accessTicketFrom`, or property-presence checks on middleware-assembled `context` — chain the middleware and read `ctx.context` directly (Start infers types).
 - **Context type bypasses:** `context as AuthContext`, `as unknown`, or `as any` on request context — chain middleware so TypeScript infers context.
-- **Secrets in the browser:** returning `serverEnv` or raw env to loaders/components — project through `toBrowserShellSession` only.
+- **Secrets in the browser:** returning `serverEnv` or raw env to loaders/components — project through `shellSession` only.
 
 ## Core Contract
 
@@ -67,6 +67,7 @@ description: 'Use when scaffolding a new TanStack Start project, adding domain
 14. **Metadata for AI and UI:** Use `.describe()` for all narrative explanations (JSON Schema `description`). Use `.meta({ ... })` only for **structured extras** — `unit`, `format`, optional `title`, app-specific hints — not as a substitute for `.describe()`. Prefer deriving prompts and UI copy from schemas + `z.toJSONSchema()` and router introspection over parallel hand-maintained maps.
 15. **Parent layouts:** Shared `beforeLoad`, redirects, and expensive reads belong on the **parent** layout route; children read parent loader data via `getRouteApi` / `useLoaderData({ from })` — do not duplicate parent work.
 16. **Server execution boundaries:** Route loaders are **isomorphic** — they run on the server during SSR and on the client during SPA navigations. Loaders only **call** exported `createServerFn` from `serverFns.ts` (e.g. `getTasks({ data: deps })`). DB access, secrets, and Node-only SDKs live in `*.server.ts` or behind `createServerOnlyFn`; extend `tanstackStart({ importProtection })` when adding node packages.
+17. **Startup-validated env + typed context + browser shell:** Parse env (and app meta from `package.json`) **once** at server startup into `webServerEnv` and `shellSession`. Inject both via `next({ context })` in global middleware; consumers **chain that middleware** so Start infers `context.*` types. Expose browser-safe config only through `getBrowserShellSession` / `shellSession` in the root loader — never `serverEnv` or `window.__ENV__`.
 
 ## Architecture Checklist
 
@@ -83,7 +84,8 @@ Scan before changing code:
 - **Routes:** **`validateSearch`** + **`loaderDeps`**; duplicate **`beforeLoad`** / shared loaders only on **parent** layouts.
 - **Metadata discipline:** `.describe()` for narrative copy; `.meta()` for structured extras; closed vocabularies = `as const` tuple + `z.enum` + `z.infer<>`.
 - **Server boundaries:** loaders call `serverFns` only — no `process.env` secrets, DB drivers, or repo imports in route files; `*.server.ts` for Mongo/Node SDKs; `createServerOnlyFn` for non-RPC infra; `importProtection` updated for new node packages.
-- **Request context:** middleware validates once; handlers use **direct** `context.*` access per **`Register`** — no runtime context helpers, no context casts; browser sees only **`toBrowserShellSession`** output.
+- **Request context:** middleware validates once; handlers **chain middleware** and read `context.*` directly — no runtime context helpers, no context casts, no Register; browser sees only **`getBrowserShellSession`** output.
+- **Env once + shell session:** `process.env` / `package.json` parsed once into `webServerEnv` and `shellSession`; context carries both; client loads `getBrowserShellSession()` only.
 
 ## Server execution boundaries
 
@@ -281,17 +283,36 @@ function labelForStatus(status: TaskStatus): string {
 ### Context and philosophy — parse, don't validate
 
 - **Validate at the edge:** use Zod (or another runtime validator) in Start **middleware** when assembling request context — JWT parsing, `process.env` / `serverEnv`, external headers, repository enrichment.
-- **TypeScript inside handlers:** once middleware calls `next({ context })`, treat `ctx.context` as **fully typed** via the Start **`Register`** interface (module augmentation on `@tanstack/react-start`). That is the centralized compile-time contract.
-- **Do not re-validate context in handlers:** no shallow "is this field present?" guards on middleware output. Parse at true **external** boundaries only; let `Register` + middleware chaining carry types downstream.
+- **TypeScript inside handlers:** once middleware calls `next({ context })`, Start **infers** `ctx.context` from the middleware chain on that server fn / route. Chain the middleware that provides the fields you need (e.g. `.middleware([webEnvMiddleware])` or `.middleware([requireAuthMiddleware])`).
+- **Do not re-validate context in handlers:** no shallow "is this field present?" guards on middleware output. Parse at true **external** boundaries only; let middleware chaining carry types downstream. No `Register` / module-augmentation for middleware context.
 
-Field names are app-specific (`accessTicket`, `identity`, `serverEnv`, …). This stock template registers **`user`** and **`userProfile`** via auth middleware; richer apps add repository-built tickets and `serverEnv` on the same pattern.
+Field names are app-specific (`accessTicket`, `identity`, `serverEnv`, …). This stock template middleware attaches auth (`user`, `userProfile`) plus startup-validated **`serverEnv`** and **`shellSession`**.
+
+### Startup env → context → browser (required shape)
+
+```typescript
+export const webServerEnv = WebServerEnvSchema.parse(process.env)
+export const shellSession = ShellSessionSchema.parse({
+  ENV: webServerEnv.ENV,
+  LOG_LEVEL: webServerEnv.LOG_LEVEL,
+  SENTRY_DSN: webServerEnv.SENTRY_DSN,
+  app: { name: pkg.name, version: pkg.version },
+})
+
+next({ context: { serverEnv: webServerEnv, shellSession } })
+
+export const getBrowserShellSession = createServerFn({ method: 'GET' })
+  .middleware([webEnvMiddleware])
+  .handler(async ({ context }) => context.shellSession)
+```
 
 ### Core rules for agents
 
-1. **Direct context access** — in `createServerFn` handlers, server routes, and loaders, read `ctx.context` fields directly (e.g. `ctx.context.accessTicket`, `ctx.context.identity`, `ctx.context.serverEnv`, or this template's `context.user` / `context.userProfile`).
+1. **Direct context access** — read `ctx.context` fields directly (e.g. `context.user`, `context.serverEnv`, `context.shellSession`).
 2. **No runtime context guards** — never add or call wrappers such as `getShellAuthContext(ctx.context)`, `getAccessTicket(ctx.context)`, or `accessTicketFrom(context)`. Middleware guarantees shape; missing fields are a middleware bug, not something handlers paper over.
-3. **No type bypasses** — never cast context with `as unknown`, `as any`, or `context as SomeContext`. Chain middleware (e.g. `requireAuthMiddleware` after `authMiddleware`) so `context` is inferred.
+3. **No type bypasses** — never cast context with `as unknown`, `as any`, or `context as SomeContext`. Chain middleware (e.g. `requireAuthMiddleware` after `authMiddleware`, or `webEnvMiddleware` for env fields) so `context` is inferred.
 4. **Maintain boundary validation** — keep Zod (or equivalent) on **external** inputs: env, JWT claims before enrichment, request bodies, third-party payloads, **browser session serialization**. Do not duplicate validation on context already built by trusted middleware.
+5. **Env is a startup singleton** — parse with the chosen schema library once; put the result on context; do not call `process.env` or re-parse in handlers.
 
 Enforce authorization in **server handlers** for every mutation and sensitive read. UI may hide controls; handlers are authoritative.
 
@@ -307,7 +328,7 @@ export const updateTask = createServerFn({ method: 'POST' })
   })
 ```
 
-Stock template equivalent — same rules, registered fields:
+Stock template equivalent — same rules; `requireAuthMiddleware` chains auth so `context.user` is inferred:
 
 ```typescript
 .handler(async ({ data, context }) => {
@@ -322,7 +343,7 @@ Stock template equivalent — same rules, registered fields:
 ### Security boundaries
 
 - **Never leak `serverEnv` to the browser** — secrets and server-only config stay on the server; handlers must not return them from server functions or route loaders consumed by client bundles.
-- **Browser-safe projections only** — anything the client may hydrate or serialize must pass through **`BrowserShellSessionSchema`** and **`toBrowserShellSession`** (or the app's equivalent allowlisted projection). Do not hand-pick fields from `serverEnv` in UI code.
+- **Browser-safe projections only** — client code receives **`shellSession`** via `getBrowserShellSession` + root loader (public env fields + `app`). Do not hand-pick fields from `serverEnv`.
 
 ## Interface Contracts
 

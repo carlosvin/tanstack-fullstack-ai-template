@@ -47,6 +47,9 @@ importers:
       '@tanstack/react-start':
         specifier: ^1.167.32
         version: 1.167.32(crossws@0.4.5(srvx@0.11.15))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))
+      dotenv:
+        specifier: ^17.4.2
+        version: 17.4.2
       jose:
         specifier: ^6.2.2
         version: 6.2.2
@@ -58,7 +61,7 @@ importers:
         version: 7.1.1
       nitro:
         specifier: npm:nitro-nightly@3.0.1-20260410-164248-8ab58a4b
-        version: nitro-nightly@3.0.1-20260410-164248-8ab58a4b(@electric-sql/pglite@0.3.16)(@netlify/blobs@10.7.4)(@netlify/runtime@4.1.20)(chokidar@5.0.0)(dotenv@16.6.1)(jiti@2.6.1)(lru-cache@11.3.3)(mongodb@7.1.1)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))
+        version: nitro-nightly@3.0.1-20260410-164248-8ab58a4b(@electric-sql/pglite@0.3.16)(@netlify/blobs@10.7.4)(@netlify/runtime@4.1.20)(chokidar@5.0.0)(dotenv@17.4.2)(jiti@2.6.1)(lru-cache@11.3.3)(mongodb@7.1.1)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))
       pino:
         specifier: ^10.3.1
         version: 10.3.1
@@ -2984,6 +2987,10 @@ packages:
 
   dotenv@16.6.1:
     resolution: {integrity: sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==}
+    engines: {node: '>=12'}
+
+  dotenv@17.4.2:
+    resolution: {integrity: sha512-nI4U3TottKAcAD9LLud4Cb7b2QztQMUEfHbvhTH09bqXTxnSie8WnjPALV/WMCrJZ6UV/qHJ6L03OqO3LcdYZw==}
     engines: {node: '>=12'}
 
   dunder-proto@1.0.1:
@@ -8776,6 +8783,8 @@ snapshots:
 
   dotenv@16.6.1: {}
 
+  dotenv@17.4.2: {}
+
   dunder-proto@1.0.1:
     dependencies:
       call-bind-apply-helpers: 1.0.2
@@ -10276,7 +10285,7 @@ snapshots:
 
   nf3@0.3.16: {}
 
-  nitro-nightly@3.0.1-20260410-164248-8ab58a4b(@electric-sql/pglite@0.3.16)(@netlify/blobs@10.7.4)(@netlify/runtime@4.1.20)(chokidar@5.0.0)(dotenv@16.6.1)(jiti@2.6.1)(lru-cache@11.3.3)(mongodb@7.1.1)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)):
+  nitro-nightly@3.0.1-20260410-164248-8ab58a4b(@electric-sql/pglite@0.3.16)(@netlify/blobs@10.7.4)(@netlify/runtime@4.1.20)(chokidar@5.0.0)(dotenv@17.4.2)(jiti@2.6.1)(lru-cache@11.3.3)(mongodb@7.1.1)(vite@8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)):
     dependencies:
       consola: 3.4.2
       crossws: 0.4.5(srvx@0.11.15)
@@ -10293,7 +10302,7 @@ snapshots:
       unenv: 2.0.0-rc.24
       unstorage: 2.0.0-alpha.7(@netlify/blobs@10.7.4)(chokidar@5.0.0)(db0@0.3.4(@electric-sql/pglite@0.3.16))(lru-cache@11.3.3)(mongodb@7.1.1)(ofetch@2.0.0-alpha.3)
     optionalDependencies:
-      dotenv: 16.6.1
+      dotenv: 17.4.2
       jiti: 2.6.1
       vite: 8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)
     transitivePeerDependencies:

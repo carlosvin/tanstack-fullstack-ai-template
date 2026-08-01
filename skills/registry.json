@@ -7,7 +7,7 @@
       "summary": "Use when adding structured logging (pino), centralized environment validation (Zod), or Sentry initialization to a TanStack Start app. Teaches the three-file bootstrap pattern (instrument.env.mts → instrument.shared.mts → instrument.server.mts; emitted as .mjs for production), the src/env/ schema split (server vs public), and the createModuleLogger / createServerLogger factory pattern that eliminates scattered process.env access from application code.",
       "projectName": "TanStack AI-Promptable Full-Stack Template",
       "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
-      "version": "1.0.3",
+      "version": "1.2.0",
       "author": {
         "name": "Carlos Martin-Sanchez",
         "url": "https://github.com/carlosvin"
@@ -58,7 +58,8 @@
         "instrument.env.mts for strict bootstrap env validation using the shared deployment env schema",
         "instrument.shared.mts for reusable initSentry — callers pre-resolve all values",
         "instrument.server.mts as the dev --import entry; tsc emits instrument.*.mjs to .output/server for production",
-        "Public env for the browser: route loaders call a GET server fn that returns webPublicEnv (never import webEnv in client-shared modules)",
+        "Browser config via shellSession: route loaders call getBrowserShellSession — never import webEnv in client-shared modules",
+        "Typed request context via middleware chaining: webEnvMiddleware injects serverEnv and shellSession through next({ context })",
         "No window.__ENV__ global"
       ],
       "triggers": [
@@ -76,6 +77,8 @@
         "createServerLogger",
         "webEnv",
         "webServerEnv",
+        "shellSession",
+        "getBrowserShellSession",
         "LOG_LEVEL",
         "SENTRY_DSN"
       ],
@@ -84,7 +87,7 @@
       ],
       "outputs": [
         "src/env/runtimeEnvSchema.ts with DeploymentEnv and LogLevel enums",
-        "src/env/webEnv.ts with WebServerEnvSchema and WebPublicEnvSchema singletons",
+        "src/env/webEnv.ts with webServerEnv + shellSession singletons (parsed once at startup)",
         "src/utils/logger.ts with createModuleLogger factory",
         "src/utils/serverLogger.ts with createServerLogger bound factory",
         "instrument.env.shared.mts with the shared DeploymentEnvSchema for bootstrap + TS callers",
@@ -94,9 +97,11 @@
       ],
       "constraints": [
         "process.env is read only in src/env/*.ts (schema parse) and in a single BootstrapEnvSchema.parse(process.env) call inside instrument.env.mts — never in application code",
+        "Env and app meta are parsed once at module load (server startup) — never re-read process.env or package.json in handlers",
         "Logger options (logLevel, environment) are passed as arguments to createModuleLogger — never resolved inside the factory",
-        "Public env (ENV, LOG_LEVEL, SENTRY_DSN) reaches the browser via route loaders + GET server fn; webEnvMiddleware injects ctx.context.publicEnv for server functions",
-        "No window.__ENV__ global — public env is always loader-sourced",
+        "webEnvMiddleware injects ctx.context.serverEnv and shellSession via next({ context }); chain on server fns that need those fields",
+        "Browser sees only getBrowserShellSession / shellSession via root loader — never serverEnv or window.__ENV__",
+        "Module-scope Zod parse is for Node/Netlify process lifetime; on edge SSR (e.g. Cloudflare Workers) read process.env inside handlers/middleware per TanStack Start env docs",
         "Dev runs Node with tsx preloaded then instrument.server.mts; production uses node --import on emitted .output/server/instrument.server.mjs",
         "instrument.env.mts validates bootstrap env in one place, importing the shared DeploymentEnvSchema (relative imports use .mjs extension for NodeNext emit mapping)",
         "Bootstrap NODE_ENV uses DeploymentEnvSchema.optional(); unsupported values fail fast instead of being trimmed, ignored, or coerced",
@@ -109,17 +114,17 @@
         "Add pino and pino-pretty to dependencies",
         "Create instrument.env.shared.mts with DeploymentEnvSchema",
         "Create src/env/runtimeEnvSchema.ts with DeploymentEnv, LogLevel, and optional preprocessors",
-        "Create src/env/webEnv.ts parsing process.env once; derive webPublicEnv (browser-safe slice)",
+        "Create src/env/webEnv.ts — parse process.env once into webServerEnv; derive shellSession (public env + app from package.json)",
         "Create src/utils/logger.ts with createModuleLogger and lazy root logger",
         "Create src/utils/serverLogger.ts binding webServerEnv.ENV and LOG_LEVEL",
         "Create instrument.env.mts with resolveSentryBootstrapEnv() using the shared DeploymentEnvSchema",
         "Create instrument.shared.mts with initSentry (receives pre-resolved dsn + environment)",
         "Keep instrument.server.mts as a bootstrap entry that calls resolveSentryBootstrapEnv() + initSentry()",
         "Add tsconfig.instrument.json and extend build script with tsc -p tsconfig.instrument.json && cp package.json .output/server",
-        "Update getObservability() to read webPublicEnv.SENTRY_DSN instead of process.env",
+        "Update getObservability() to read shellSession.SENTRY_DSN instead of process.env",
         "Update middleware/auth.ts to read AUTH_HEADER_NAME from webServerEnv",
-        "Add webEnvMiddleware that injects ctx.context.publicEnv for server functions",
-        "Add a GET `createServerFn` that returns `webPublicEnv` when a route needs public env in React"
+        "Add webEnvMiddleware that injects serverEnv and shellSession (chains auth)",
+        "Add GET getBrowserShellSession that chains webEnvMiddleware and returns context.shellSession; load in root loader"
       ],
       "examples": [
         {
@@ -132,7 +137,11 @@
         },
         {
           "input": "Read environment variables safely in application code",
-          "output": "Import webServerEnv from src/env/webEnv.ts (already validated), never read process.env directly in app code"
+          "output": "Import webServerEnv from src/env/webEnv.ts (already validated), or read context.serverEnv in handlers — never read process.env directly in app code"
+        },
+        {
+          "input": "Expose app name/version and public env to the client",
+          "output": "Root loader calls getBrowserShellSession(); UI reads shellSession from loader data — never import webEnv or package.json in client components"
         }
       ],
       "source": "skills/src/observability-and-env.skill.yaml",
@@ -144,10 +153,10 @@
     {
       "id": "tanstack-promptable-fullstack-app-template",
       "title": "TanStack Promptable Fullstack App Template",
-      "summary": "Use when scaffolding a new TanStack Start project, adding domain entities to the fullstack template, or implementing the interface-first repository pattern with AI-promptable tools, or nested layout routes duplicate beforeLoad checks or loaders that should live on a parent route, or TanStack Router, Start, or AI behavior must be verified against current documentation instead of training data, or route loaders may import databases or secrets, or server-only code may leak into the client bundle, or isomorphic loader boundaries are unclear, or TanStack Start request context, Register typing, or serverEnv leakage to the client must be handled correctly.",
+      "summary": "Use when scaffolding a new TanStack Start project, adding domain entities to the fullstack template, or implementing the interface-first repository pattern with AI-promptable tools, or nested layout routes duplicate beforeLoad checks or loaders that should live on a parent route, or TanStack Router, Start, or AI behavior must be verified against current documentation instead of training data, or route loaders may import databases or secrets, or server-only code may leak into the client bundle, or isomorphic loader boundaries are unclear, or TanStack Start request context (middleware-inferred), or serverEnv leakage to the client must be handled correctly.",
       "projectName": "TanStack AI-Promptable Full-Stack Template",
       "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
-      "version": "1.19.0",
+      "version": "1.20.0",
       "author": {
         "name": "Carlos Martin-Sanchez",
         "url": "https://github.com/carlosvin"
@@ -203,7 +212,7 @@
         "TanStack Intent + CLI as doc-aligned guidance (not duplicated command manuals)",
         "Assistant chat renders Markdown (GFM) — lists, tables, code blocks; internal links stay navigable",
         "Server/client execution boundaries — isomorphic loaders, *.server.ts, createServerOnlyFn, import protection",
-        "Request context — Register-typed ctx.context, parse-don't-validate inside handlers, browser-safe session projection"
+        "Request context — middleware-inferred ctx.context, parse-don't-validate inside handlers, browser-safe session projection"
       ],
       "triggers": [
         "fullstack template",
@@ -223,7 +232,7 @@
         "process.env in loader",
         "import protection",
         "request context",
-        "Register interface"
+        "middleware context"
       ],
       "inputs": [
         "Existing or new TanStack Start codebase",
@@ -251,7 +260,7 @@
         "Promptable by default — root loader checks getAIAvailability(); chat input includes browserContext (timezone, locale, path); chat() uses agentLoopStrategy maxIterations(N)",
         "Verify TanStack Router/Start/AI APIs with npx @tanstack/cli against current docs; use TanStack Intent for package skills — do not add them as project deps unless the app needs them as tooling",
         "Operational detail — UI library, chat Markdown rendering (implementation in AGENTS.md §8), logging, Sentry, testing, env bridge — follows repo AGENTS.md",
-        "Request context — validate at middleware edges; access ctx.context fields directly in handlers; never runtime context guard helpers or context as unknown/as any; never leak serverEnv to the client (browser session only via BrowserShellSessionSchema / toBrowserShellSession)"
+        "Request context — parse env once at startup into webServerEnv + shellSession; inject via next({ context }); type by chaining middleware on consumers; never leak serverEnv to the client (browser config only via getBrowserShellSession / shellSession)"
       ],
       "steps": [
         "Define repository-layer and tools-layer schemas; implement repository interfaces (seed + production)",
