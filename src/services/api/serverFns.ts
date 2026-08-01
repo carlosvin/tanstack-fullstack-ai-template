@@ -53,9 +53,7 @@ export const getUserProfile = createServerFn({ method: 'GET' })
 export const getCurrentUser = createServerFn({ method: 'GET' })
 	.middleware([authMiddleware])
 	.handler(async ({ context }) => {
-		const identity = context.user ?? { email: '', name: 'Anonymous', groups: [] }
-		const profile = context.userProfile ?? null
-		return { identity, profile }
+		return { identity: context.user, profile: context.userProfile }
 	})
 
 // ============================================================================

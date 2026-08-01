@@ -1,4 +1,5 @@
 import { createStart } from '@tanstack/react-start'
+import './register-auth-context'
 import { authMiddleware } from './middleware/auth'
 
 /**

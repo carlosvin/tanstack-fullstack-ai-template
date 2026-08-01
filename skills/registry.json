@@ -4,10 +4,10 @@
     {
       "id": "tanstack-promptable-fullstack-app-template",
       "title": "TanStack Promptable Fullstack App Template",
-      "summary": "Use when scaffolding a new TanStack Start project, adding domain entities to the fullstack template, or implementing the interface-first repository pattern with AI-promptable tools, or nested layout routes duplicate beforeLoad checks or loaders that should live on a parent route, or TanStack Router, Start, or AI behavior must be verified against current documentation instead of training data, or route loaders may import databases or secrets, or server-only code may leak into the client bundle, or isomorphic loader boundaries are unclear.",
+      "summary": "Use when scaffolding a new TanStack Start project, adding domain entities to the fullstack template, or implementing the interface-first repository pattern with AI-promptable tools, or nested layout routes duplicate beforeLoad checks or loaders that should live on a parent route, or TanStack Router, Start, or AI behavior must be verified against current documentation instead of training data, or route loaders may import databases or secrets, or server-only code may leak into the client bundle, or isomorphic loader boundaries are unclear, or TanStack Start request context, Register typing, or serverEnv leakage to the client must be handled correctly.",
       "projectName": "TanStack AI-Promptable Full-Stack Template",
       "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
-      "version": "1.18.0",
+      "version": "1.19.0",
       "author": {
         "name": "Carlos Martin-Sanchez",
         "url": "https://github.com/carlosvin"
@@ -62,7 +62,8 @@
         "Optional patterns — overlay repo, bulk edit, distinct-values tools, dynamic route introspection",
         "TanStack Intent + CLI as doc-aligned guidance (not duplicated command manuals)",
         "Assistant chat renders Markdown (GFM) — lists, tables, code blocks; internal links stay navigable",
-        "Server/client execution boundaries — isomorphic loaders, *.server.ts, createServerOnlyFn, import protection"
+        "Server/client execution boundaries — isomorphic loaders, *.server.ts, createServerOnlyFn, import protection",
+        "Request context — Register-typed ctx.context, parse-don't-validate inside handlers, browser-safe session projection"
       ],
       "triggers": [
         "fullstack template",
@@ -80,7 +81,9 @@
         "server-only",
         "isomorphic loader",
         "process.env in loader",
-        "import protection"
+        "import protection",
+        "request context",
+        "Register interface"
       ],
       "inputs": [
         "Existing or new TanStack Start codebase",
@@ -107,7 +110,8 @@
         "Auth middleware enriches ctx.context with a repository-built ticket (e.g. getReadRepository().getUserAccess(email)); WritableRepository writes accept a TraceabilityContext built from that ticket",
         "Promptable by default — root loader checks getAIAvailability(); chat input includes browserContext (timezone, locale, path); chat() uses agentLoopStrategy maxIterations(N)",
         "Verify TanStack Router/Start/AI APIs with npx @tanstack/cli against current docs; use TanStack Intent for package skills — do not add them as project deps unless the app needs them as tooling",
-        "Operational detail — UI library, chat Markdown rendering (implementation in AGENTS.md §8), logging, Sentry, testing, env bridge — follows repo AGENTS.md"
+        "Operational detail — UI library, chat Markdown rendering (implementation in AGENTS.md §8), logging, Sentry, testing, env bridge — follows repo AGENTS.md",
+        "Request context — validate at middleware edges; access ctx.context fields directly in handlers; never runtime context guard helpers or context as unknown/as any; never leak serverEnv to the client (browser session only via BrowserShellSessionSchema / toBrowserShellSession)"
       ],
       "steps": [
         "Define repository-layer and tools-layer schemas; implement repository interfaces (seed + production)",
