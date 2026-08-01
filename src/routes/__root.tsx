@@ -7,11 +7,9 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import { createRootRoute, HeadContent, Scripts, useRouter } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { Home } from 'lucide-react'
-import { useEffect } from 'react'
 import { AppLayout } from '../components/AppLayout/AppLayout'
 import { ErrorDisplay } from '../components/ErrorDisplay/ErrorDisplay'
 import { getAIAvailability, getBrowserShellSession, getCurrentUser } from '../services/api/serverFns'
-import { getObservability } from '../services/observability'
 
 export const Route = createRootRoute({
 	loader: async () => {
@@ -76,10 +74,6 @@ function NotFoundPage() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
 	const { currentUser, shellSession, aiAvailable } = Route.useLoaderData()
-
-	useEffect(() => {
-		getObservability({ publicEnv: shellSession.publicEnv })
-	}, [shellSession.publicEnv])
 
 	return (
 		<html lang="en" suppressHydrationWarning>
