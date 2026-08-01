@@ -669,3 +669,13 @@ When creating a new project from this template or migrating an existing one, con
 2. `pnpm format && pnpm lint` passes with zero errors.
 3. At least one unit test exists and `pnpm test` passes.
 4. `pnpm build` succeeds with zero errors.
+
+## Cursor Cloud specific instructions
+
+Package manager is **pnpm**; the standard commands live in `package.json` and section 17 above (`pnpm dev`, `pnpm lint`, `pnpm test`, `pnpm build`, `pnpm test:e2e`). Node 22 works fine even though the `Dockerfile` pins Node 24 (there is no `engines` field). The app runs on **port 3000**.
+
+- **No external services required.** With no `MONGODB_URI`, the app uses the in-memory **seed** repository, so `pnpm dev` is fully functional on its own. MongoDB, an AI provider (Gemini/Azure OpenAI), and Sentry are all optional — the app degrades gracefully when their env vars are unset.
+- **Auth is header-only.** The auth middleware reads a JWT from the `Authorization` header (`src/middleware/auth.ts`); there is no cookie/session login. A plain browser is therefore anonymous and cannot mutate (the "Add task" button and edit/delete icons are hidden). E2E tests inject an unsigned JWT via `extraHTTPHeaders` (`e2e/auth.ts`). To manually exercise authenticated flows in a real browser, put a small reverse proxy in front of `:3000` that adds an `Authorization: Bearer <unsigned-jwt>` header (unsigned `alg:none` tokens are accepted — signatures are not verified).
+- **E2E gotcha — `networkidle` hangs in dev mode.** `pnpm test:e2e` defaults to starting `pnpm dev` (see `playwright.config.ts`, `reuseExistingServer: true`). The `@tanstack/devtools-vite` plugin holds an open background connection in dev, so the `task-crud` specs that use `page.goto(..., { waitUntil: 'networkidle' })` never settle and time out. To get a clean run, start a **production** server first and let Playwright reuse it: `pnpm build` then `REPOSITORY_TYPE=seed PORT=3000 pnpm start`, then `pnpm test:e2e` in another shell.
+- **Pre-existing E2E selector drift (not an environment issue).** `e2e/task-crud.spec.ts` "creates a new task" targets Priority via `getByRole('textbox', { name: 'Priority' })`, but Mantine v9 renders that Select as a `combobox`, so this one test fails regardless of setup. Expect ~17/22 E2E specs green; unit tests (`pnpm test`), lint, and build are all fully green.
+- **Harmless noise:** `pnpm install` prints an "Ignored build scripts" warning (esbuild/swc/etc.) — build/dev/test all work anyway. `pnpm test` (Vitest) prints a "close timed out" / "module is not defined" message during teardown after all tests pass.
