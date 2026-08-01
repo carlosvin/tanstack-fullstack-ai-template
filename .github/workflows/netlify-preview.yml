@@ -1,0 +1,48 @@
+name: Netlify Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  deploy-preview:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+        env:
+          REPOSITORY_TYPE: seed
+
+      - name: Deploy preview to Netlify
+        id: deploy
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: ./.output/public
+          production-branch: main
+          alias: deploy-preview-${{ github.event.pull_request.number }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: 'Deploy preview for PR #${{ github.event.pull_request.number }}'
+          enable-pull-request-comment: true
+          enable-commit-comment: false
+          overwrites-pull-request-comment: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        timeout-minutes: 15
