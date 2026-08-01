@@ -30,9 +30,43 @@ export async function readSkillFiles(sourceDir) {
 		.sort()
 }
 
+const SKILLS_REPO = 'carlosvin/tanstack-fullstack-ai-template'
+
+export function formatCompanionInstallCommand(skillId, { global = false } = {}) {
+	const globalFlag = global ? ' -g' : ''
+	return `npx skills add ${SKILLS_REPO} --skill ${skillId}${globalFlag}`
+}
+
+export function renderCompanionSkillsBlock(skill) {
+	if (!skill.companionSkills?.length) return ''
+
+	const lines = [
+		'## Companion skills (install if missing)',
+		'',
+		'This template publishes **multiple** skills. If only **this** skill is installed, add companions **before** related work:',
+		'',
+	]
+
+	for (const companion of skill.companionSkills) {
+		lines.push(`- **\`${companion.id}\`** (${companion.relationship}) — ${companion.summary}`)
+		lines.push('  ```bash')
+		lines.push(`  ${formatCompanionInstallCommand(companion.id)}`)
+		lines.push('  ```')
+		lines.push('')
+	}
+
+	lines.push(`Discover all skills: \`npx skills add ${SKILLS_REPO} --list\``)
+	lines.push('')
+	lines.push('')
+	return lines.join('\n')
+}
+
 export function toSkillDescription(skill) {
+	const companionText = skill.companionSkills?.length
+		? ` Companion skills: ${skill.companionSkills.map((companion) => `${companion.id} (${companion.relationship})`).join(', ')}. Install missing companions with npx skills add ${SKILLS_REPO} --skill <id>.`
+		: ''
 	const triggerText = skill.triggers.map((trigger) => `"${trigger}"`).join(', ')
-	return `${skill.summary} Project: ${skill.projectName}. Triggers on ${triggerText}.`
+	return `${skill.summary}${companionText} Project: ${skill.projectName}. Triggers on ${triggerText}.`
 }
 
 // Produces the agentskills.io standard SKILL.md format for .agents/skills/.
@@ -48,6 +82,7 @@ export function renderAgentSkill(skill) {
 		'',
 		'> This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.',
 		'',
+		renderCompanionSkillsBlock(skill),
 	].join('\n')
 	return `${frontmatter}${skill.content.trimEnd()}\n`
 }
@@ -110,6 +145,7 @@ export function createRegistry(skills) {
 			constraints: skill.constraints,
 			steps: skill.steps,
 			examples: skill.examples,
+			...(skill.companionSkills ? { companionSkills: skill.companionSkills } : {}),
 			source: `skills/src/${skill.id}.skill.yaml`,
 			outputsByFormat: {
 				skill: `.agents/skills/${skill.id}/SKILL.md`,
@@ -117,6 +153,31 @@ export function createRegistry(skills) {
 			},
 		})),
 	}
+}
+
+export function findMissingCompanionReciprocity(skills) {
+	const byId = new Map(skills.map((skill) => [skill.id, skill]))
+	const missing = []
+
+	for (const skill of skills) {
+		for (const companion of skill.companionSkills ?? []) {
+			const other = byId.get(companion.id)
+			if (!other) {
+				missing.push({ skillId: skill.id, companionId: companion.id, reason: 'companion skill not found in registry' })
+				continue
+			}
+			const reciprocal = (other.companionSkills ?? []).some((entry) => entry.id === skill.id)
+			if (!reciprocal) {
+				missing.push({
+					skillId: skill.id,
+					companionId: companion.id,
+					reason: `${companion.id} does not list ${skill.id} as a companion`,
+				})
+			}
+		}
+	}
+
+	return missing
 }
 
 export function findDuplicateSkillIds(skills) {
@@ -185,6 +246,14 @@ export async function loadSkills({ sourceDir, schemaPath, rootDir = defaultRootD
 	const duplicateSkillIds = findDuplicateSkillIds(skills)
 	if (duplicateSkillIds.length > 0) {
 		throw new Error(`Duplicate skill IDs found: ${duplicateSkillIds.join(', ')}`)
+	}
+
+	const missingCompanions = findMissingCompanionReciprocity(skills)
+	if (missingCompanions.length > 0) {
+		const details = missingCompanions
+			.map((entry) => `${entry.skillId} → ${entry.companionId}: ${entry.reason}`)
+			.join('; ')
+		throw new Error(`Companion skill reciprocity failed: ${details}`)
 	}
 
 	return skills

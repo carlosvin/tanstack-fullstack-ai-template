@@ -7,7 +7,9 @@ description: 'Use when scaffolding a new TanStack Start project, adding domain
   or enforcing server/client execution boundaries (isomorphic loaders, import
   protection, middleware-inferred request context). For logging, Sentry, env
   schemas, or shellSession setup, load companion skill observability-and-env
-  instead. Project: TanStack AI-Promptable Full-Stack Template. Triggers on
+  instead. Companion skills: observability-and-env (companion). Install missing
+  companions with npx skills add carlosvin/tanstack-fullstack-ai-template
+  --skill <id>. Project: TanStack AI-Promptable Full-Stack Template. Triggers on
   "fullstack template", "TanStack Start project", "repository pattern",
   "interface-first", "new app scaffold", "nested routes", "layout route",
   "beforeLoad", "tanstack cli", "tanstack intent", "package skills", "client
@@ -16,6 +18,18 @@ description: 'Use when scaffolding a new TanStack Start project, adding domain
 ---
 
 > This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.
+
+## Companion skills (install if missing)
+
+This template publishes **multiple** skills. If only **this** skill is installed, add companions **before** related work:
+
+- **`observability-and-env`** (companion) — Logging, Sentry bootstrap, env schemas, webEnvMiddleware, and shellSession setup. Install when work touches observability, process.env, or browser runtime config.
+  ```bash
+  npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env
+  ```
+
+Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --list`
+
 # TanStack Fullstack Pattern
 
 **Purpose:** Capture the **interface-first, schema-layered, AI-promptable** contract for TanStack Start apps from this template. Day-to-day conventions (UI kit, chat wiring, logging, tests) live in the repo’s **AGENTS.md** — use this skill for **architecture**, AGENTS.md for **operations**.

@@ -12,9 +12,10 @@ Built with [TanStack Start](https://tanstack.com/start) — with every external 
 
 ```bash
 npx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-promptable-fullstack-app-template
+npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env
 ```
 
-Optional: `-g` installs globally; `npx skills add carlosvin/tanstack-fullstack-ai-template --list` lists skills from this repo; `npx skills list` verifies installed skills.
+Optional: `-g` installs globally; `npx skills add carlosvin/tanstack-fullstack-ai-template --list` lists skills from this repo; `npx skills list` verifies installed skills. If you only installed one skill, each `SKILL.md` includes a **Companion skills (install if missing)** section with the install command for the other.
 
 The **TanStack Promptable Fullstack** skill is an [Agent Skill](https://agentskills.io) that teaches coding assistants the template’s **architecture contract**: interface-first boundaries, three schema layers with `Schema.parse()` at each boundary, thin routes + loaders (no `useEffect` data fetching for route data), URL state via `validateSearch`, repository interfaces, AI tools aligned with server functions, auth + invalidation on mutations, and TypeScript discipline inside the typed flow. **[AGENTS.md](./AGENTS.md)** stays the **handbook** (UI, auth snippets, chat, tests, checklist); the skill is the **rules agents must not break**.
 

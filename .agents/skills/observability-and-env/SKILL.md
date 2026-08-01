@@ -7,17 +7,32 @@ description: 'Companion to tanstack-promptable-fullstack-app-template. Use when
   instrument.shared.mts → instrument.server.mts; emitted as .mjs for
   production), the src/env/ schema split (server vs public), and
   createModuleLogger / createServerLogger factories that eliminate scattered
-  process.env access. Project: TanStack AI-Promptable Full-Stack Template.
-  Triggers on "add logging", "set up pino", "pino logger", "sentry init",
-  "instrument server", "instrument.server.mts", "instrument.server.mjs", "env
-  schema", "environment validation", "centralize observability",
-  "createModuleLogger", "createServerLogger", "webEnv", "webServerEnv",
-  "shellSession", "getBrowserShellSession", "webEnvMiddleware", "LOG_LEVEL",
-  "SENTRY_DSN", "serverEnv leak", "window.__ENV__", "process.env in handler",
-  "process.env in application code".'
+  process.env access. Companion skills:
+  tanstack-promptable-fullstack-app-template (parent). Install missing
+  companions with npx skills add carlosvin/tanstack-fullstack-ai-template
+  --skill <id>. Project: TanStack AI-Promptable Full-Stack Template. Triggers on
+  "add logging", "set up pino", "pino logger", "sentry init", "instrument
+  server", "instrument.server.mts", "instrument.server.mjs", "env schema",
+  "environment validation", "centralize observability", "createModuleLogger",
+  "createServerLogger", "webEnv", "webServerEnv", "shellSession",
+  "getBrowserShellSession", "webEnvMiddleware", "LOG_LEVEL", "SENTRY_DSN",
+  "serverEnv leak", "window.__ENV__", "process.env in handler", "process.env in
+  application code".'
 ---
 
 > This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.
+
+## Companion skills (install if missing)
+
+This template publishes **multiple** skills. If only **this** skill is installed, add companions **before** related work:
+
+- **`tanstack-promptable-fullstack-app-template`** (parent) — Architecture contract for this template — schema layers, server boundaries, AI tools, and middleware-inferred request context. Install for all non-observability TanStack work.
+  ```bash
+  npx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-promptable-fullstack-app-template
+  ```
+
+Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --list`
+
 # Observability and Environment Setup
 
 **Purpose:** Establish a clean observability stack — validated env schemas,

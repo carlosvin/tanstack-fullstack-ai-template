@@ -26,22 +26,30 @@ Keep them **separate** (industry norm: core + focused sub-skill). The parent ski
 
 ## Super quick install
 
-From any machine with Node/npm:
+**Recommended:** install **both** skills (architecture + observability companion):
+
+```bash
+npx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-promptable-fullstack-app-template
+npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env
+```
+
+Or install individually:
 
 ```bash
 npx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-promptable-fullstack-app-template
 ```
 
-Install the observability companion skill:
-
 ```bash
 npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env
 ```
 
-Optional: install **globally** so the skill is available in every project:
+Each generated `SKILL.md` includes a **Companion skills (install if missing)** section with install commands if you only added one skill initially.
+
+Optional: install **globally** so the skills are available in every project:
 
 ```bash
 npx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-promptable-fullstack-app-template -g
+npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env -g
 ```
 
 List what this repo publishes, then confirm:

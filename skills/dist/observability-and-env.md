@@ -11,7 +11,7 @@
 - Supported tools: Windsurf [native, tested], Cursor [copy, tested], Claude Code [copy, tested]
 - Capabilities: Centralized Zod env schemas with server/public split (src/env/), process.env read only once at module-level parse — no scattered env access, createModuleLogger(name, options) pino factory — no process.env inside, createServerLogger(name) bound factory — eliminates repeated env boilerplate, instrument.env.shared.mts for a shared deployment env schema (bootstrap + TS callers), instrument.env.mts for strict bootstrap env validation using the shared deployment env schema, instrument.shared.mts for reusable initSentry — callers pre-resolve all values, instrument.server.mts as the dev --import entry; tsc emits instrument.*.mjs to .output/server for production, Browser config via shellSession: route loaders call getBrowserShellSession — never import webEnv in client-shared modules, Typed request context via middleware chaining: webEnvMiddleware injects serverEnv and shellSession through next({ context }), No window.__ENV__ global
 - ID: `observability-and-env`
-- Version: `1.3.0`
+- Version: `1.4.0`
 - Tags: observability, logging, sentry, pino, environment, configuration, tanstack-start
 
 ## Summary

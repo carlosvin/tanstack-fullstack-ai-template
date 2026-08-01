@@ -192,6 +192,29 @@
 				}
 			}
 		},
+		"companionSkills": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["id", "relationship", "summary"],
+				"properties": {
+					"id": {
+						"type": "string",
+						"pattern": "^[a-z0-9-]+$",
+						"minLength": 3
+					},
+					"relationship": {
+						"type": "string",
+						"enum": ["companion", "parent", "child"]
+					},
+					"summary": {
+						"type": "string",
+						"minLength": 10
+					}
+				}
+			}
+		},
 		"content": {
 			"type": "string",
 			"minLength": 20

@@ -12,7 +12,7 @@ projectName: TanStack AI-Promptable Full-Stack Template
 projectSummary: >-
   A production-ready TanStack Start template designed to make internal tools AI
   promptable by default.
-version: 1.21.0
+version: 1.22.0
 author:
   name: Carlos Martin-Sanchez
   url: https://github.com/carlosvin
@@ -79,6 +79,12 @@ triggers:
   - import protection
   - request context
   - middleware context
+companionSkills:
+  - id: observability-and-env
+    relationship: companion
+    summary: >-
+      Logging, Sentry bootstrap, env schemas, webEnvMiddleware, and shellSession setup.
+      Install when work touches observability, process.env, or browser runtime config.
 inputs:
   - Existing or new TanStack Start codebase
   - Domain requirements for data model and auth

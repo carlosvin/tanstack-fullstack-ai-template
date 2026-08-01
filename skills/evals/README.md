@@ -33,7 +33,7 @@ pnpm test:skill-evals -- --skill tanstack-promptable-fullstack-app-template
 - AI chat gated on `getAIAvailability`
 - Bounded agent loop in `chat.ts`
 - `importProtection` in `vite.config.ts`
-- Generated skills include **Skill routing** tables
+- Generated skills include **Skill routing** tables and **Companion skills (install if missing)** sections
 
 ## Manual pressure scenarios
 

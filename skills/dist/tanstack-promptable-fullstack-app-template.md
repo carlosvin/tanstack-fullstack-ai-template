@@ -11,7 +11,7 @@
 - Supported tools: Windsurf [native, tested], Cursor [copy, tested], Claude Code [copy, tested]
 - Capabilities: Interface-first boundaries with swappable implementations, Three schema layers with mandatory Schema.parse() at every boundary (tool→repo and repo→tool), Strong TypeScript in the typed flow — inference preserved via satisfies, unions, exhaustive switches; casts minimized, Loader-first routes and URL-driven state via validateSearch, Router config bundle (defaults + project Link wrapper preserving search params), Full AI tool coverage mirroring repository surface + client navigate/invalidate tools, Schema-first AI/UI metadata (.describe + optional .meta for unit/format/title), Promptable by default — getAIAvailability gating + browserContext + bounded agent loop, Auth ticket built in middleware via repository + TraceabilityContext on writes, Parent layout routes deduplicating shared beforeLoad and loaders, Optional patterns — overlay repo, bulk edit, distinct-values tools, dynamic route introspection, TanStack Intent + CLI as doc-aligned guidance (not duplicated command manuals), Assistant chat renders Markdown (GFM) — lists, tables, code blocks; internal links stay navigable, Server/client execution boundaries — isomorphic loaders, *.server.ts, createServerOnlyFn, import protection, Request context — middleware-inferred ctx.context, parse-don't-validate inside handlers; env/shellSession invariants (setup in observability-and-env)
 - ID: `tanstack-promptable-fullstack-app-template`
-- Version: `1.21.0`
+- Version: `1.22.0`
 - Tags: tanstack-start, fullstack, architecture, interface-first, repository-pattern, ai-promptable
 
 ## Summary

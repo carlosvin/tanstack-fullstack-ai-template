@@ -290,6 +290,50 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 			},
 		},
 		{
+			id: 'skills-companion-discovery',
+			skill: 'tanstack-promptable-fullstack-app-template',
+			description: 'registry.json lists bidirectional companionSkills; generated SKILL.md includes install commands',
+			async run() {
+				const registryPath = path.join(rootDir, 'skills', 'registry.json')
+				try {
+					await fs.access(registryPath)
+				} catch {
+					return pass()
+				}
+
+				const registry = JSON.parse(await readText(registryPath))
+				const skills = registry.skills ?? []
+				const byId = new Map(skills.map((skill) => [skill.id, skill]))
+
+				for (const skill of skills) {
+					for (const companion of skill.companionSkills ?? []) {
+						const other = byId.get(companion.id)
+						if (!other) {
+							return fail(`registry missing companion ${companion.id} for ${skill.id}`)
+						}
+						const reciprocal = (other.companionSkills ?? []).some((entry) => entry.id === skill.id)
+						if (!reciprocal) {
+							return fail(`${companion.id} does not reciprocate companion link to ${skill.id}`)
+						}
+					}
+				}
+
+				for (const skill of skills) {
+					const skillMd = await readText(path.join(rootDir, '.agents', 'skills', skill.id, 'SKILL.md'))
+					if (!/## Companion skills \(install if missing\)/.test(skillMd)) {
+						return fail(`SKILL.md for ${skill.id} missing companion install section`)
+					}
+					for (const companion of skill.companionSkills ?? []) {
+						if (!skillMd.includes(`npx skills add carlosvin/tanstack-fullstack-ai-template --skill ${companion.id}`)) {
+							return fail(`SKILL.md for ${skill.id} missing install command for ${companion.id}`)
+						}
+					}
+				}
+
+				return pass()
+			},
+		},
+		{
 			id: 'skills-routing-tables',
 			skill: 'tanstack-promptable-fullstack-app-template',
 			description: 'Generated skills include Skill routing tables for agent load decisions',
