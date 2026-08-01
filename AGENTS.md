@@ -386,7 +386,7 @@ When creating a new project from this template or migrating an existing one, con
 
 ## Cursor Cloud specific instructions
 
-Package manager is **pnpm**; the standard commands live in `package.json` and section 17 above (`pnpm dev`, `pnpm lint`, `pnpm test`, `pnpm build`, `pnpm test:e2e`). Node 22 works fine even though the `Dockerfile` pins Node 24 (there is no `engines` field). The app runs on **port 3000**.
+Package manager is **pnpm**; the standard commands live in `package.json` and section 15 above (`pnpm dev`, `pnpm lint`, `pnpm test`, `pnpm build`, `pnpm test:e2e`). Node 22 works fine even though the `Dockerfile` pins Node 24 (there is no `engines` field). The app runs on **port 3000**.
 
 - **No external services required.** With no `MONGODB_URI`, the app uses the in-memory **seed** repository, so `pnpm dev` is fully functional on its own. MongoDB, an AI provider (Gemini/Azure OpenAI), and Sentry are all optional — the app degrades gracefully when their env vars are unset.
 - **Auth is header-only.** The auth middleware reads a JWT from the `Authorization` header (`src/middleware/auth.ts`); there is no cookie/session login. A plain browser is therefore anonymous and cannot mutate (the "Add task" button and edit/delete icons are hidden). E2E tests inject an unsigned JWT via `extraHTTPHeaders` (`e2e/auth.ts`). To manually exercise authenticated flows in a real browser, put a small reverse proxy in front of `:3000` that adds an `Authorization: Bearer <unsigned-jwt>` header (unsigned `alg:none` tokens are accepted — signatures are not verified).
