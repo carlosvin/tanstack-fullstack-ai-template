@@ -18,17 +18,20 @@ Before non-trivial changes: read the skill **Core Contract** and run the **Archi
 
 ## Skill alignment roadmap
 
-This template is the reference app for the skill. Track gaps and close them in order:
+This template is the reference app for the skill. **Already landed on `main`:** server-only boundaries ([#7](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/7)), `Register` request-context typing ([#8](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/8)), skill v1.19 Request Context rules.
 
-| Phase | Skill contract | Template files to change |
-|-------|----------------|--------------------------|
-| **1 — Boundaries** | Outbound `Schema.parse()` (repo → tools); full router defaults bundle; project `Link` with `search: true` | `serverFns.ts`, mappers in `schemas/`, `router.tsx`, new `src/components/Link/Link.tsx` |
-| **2 — Auth & writes** | Repository-backed auth ticket; `TraceabilityContext` on `WritableRepository` mutations | `auth.ts`, `repository/types.ts`, repos, `serverFns.ts` |
-| **3 — Data loading** | Parent loaders own shared reads; children use `useLoaderData({ from })`; root `getAIAvailability()` gates chat UI | `__root.tsx`, `Header.tsx`, `AppLayout.tsx`, task routes |
-| **4 — Hardening** | `createServerOnlyFn` for DB singleton; `PUBLIC_ROUTES` allowlist; optional router introspection for `navigationManifest` | `getRepository.server.ts`, `auth.ts`, `navigationManifest.ts` |
-| **5 — Deploy** | Ship aligned template to the public Netlify demo | Merge to `main` → CI green → production deploy at [leafy-manatee-16b96c.netlify.app](https://leafy-manatee-16b96c.netlify.app) |
+**Observability & env ([#6](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/6)):** companion skill `observability-and-env` — Zod env schemas (`src/env/`), pino (`createServerLogger`), `instrument.*.mts` bootstrap, `getWebPublicEnv` via loader (no `window.__ENV__`). Follow [observability-and-env skill](.agents/skills/observability-and-env/SKILL.md) for §9 / §13 operational detail once merged.
 
-**Phase 5 checklist:** `pnpm format && pnpm lint && pnpm test && pnpm build` → merge PR(s) → confirm Netlify build (`vite build` per `netlify.toml`, `@netlify/vite-plugin-tanstack-start`) → smoke-test demo (home, tasks CRUD, `/api/health`, AI chat when `OPENAI_API_KEY` is set in Netlify env).
+| Phase | Skill contract | Status / files |
+|-------|----------------|----------------|
+| **0 — Observability & env** | Centralized env parse; pino; Sentry bootstrap; public env via GET server fn + loader | **PR #6** — `src/env/`, `instrument.*.mts`, `webEnvMiddleware`, `getWebPublicEnv` |
+| **1 — Schema boundaries** | Outbound `Schema.parse()` (repo → tools); router defaults bundle; `Link` with `search: true` | **Open** — `serverFns.ts`, `schemas/`, `router.tsx`, `src/components/Link/Link.tsx` |
+| **2 — Auth & writes** | Auth ticket + `TraceabilityContext` (skill allows stock `user`/`userProfile` until enriched) | **Partial** — `register-auth-context.ts` done; ticket/traceability still open |
+| **3 — Data loading & AI** | Parent loader dedup; `getAIAvailability()` gates chat UI | **Open** — `__root.tsx`, task routes, `Header`, `AppLayout` |
+| **4 — Hardening** | `createServerOnlyFn`; `PUBLIC_ROUTES`; router introspection for nav manifest | **Partial** — `*.server.ts` + import protection done |
+| **5 — Deploy** | Ship to [leafy-manatee-16b96c.netlify.app](https://leafy-manatee-16b96c.netlify.app) | After phases 0–4 on `main` |
+
+**Phase 5 checklist:** `pnpm format && pnpm lint && pnpm test && pnpm build` → merge → Netlify auto-deploy from `main` (`vite build`, `@netlify/vite-plugin-tanstack-start`) → smoke-test demo. **Netlify env** (post-#6): `SENTRY_DSN`, `ENV`, `LOG_LEVEL`, `REPOSITORY_TYPE=seed`, `OPENAI_API_KEY` (or chosen provider) — not `VITE_SENTRY_DSN`.
 
 See the skill **Implementation Flow** for the per-entity file checklist when adding domain entities.
 
@@ -308,108 +311,20 @@ When modifying: add server tools to the `tools` array; add client tool defs and 
 
 ## 9. Observability
 
-- **Interface**: `src/services/observability/types.ts` — `ObservabilityService`
-- **Implementations**: `sentry.ts`, `noop.ts`; factory in `index.ts`
-- **Server init**: `instrument.server.mjs`
-- **Usage**: `getObservability().startSpan('name', fn)` in server function handlers (see `serverFns.ts`)
+**Architecture & setup:** [observability-and-env skill](.agents/skills/observability-and-env/SKILL.md) (landed via PR #6). **This section:** file map and usage in this repo.
 
-**Recommended additions** (not all wired in this template yet): client Sentry in `router.tsx`, `__APP_VERSION__` via Vite `define`, structured logging with `pino` in `src/services/logger.ts`. Patterns below are copy-paste recipes when you add them.
+| Piece | Path |
+|-------|------|
+| Interface | `src/services/observability/types.ts` |
+| Sentry / no-op | `sentry.ts`, `noop.ts`; factory `index.ts` |
+| Server bootstrap | `instrument.env.mts` → `instrument.shared.mts` → `instrument.server.mts` (emitted `.mjs` in `.output/server`) |
+| Env schemas | `src/env/runtimeEnvSchema.ts`, `src/env/webEnv.ts` |
+| Pino | `src/utils/logger.ts`, `src/utils/serverLogger.ts` |
+| Public env middleware | `src/middleware/webEnv.ts` |
+| Public env for client | `getWebPublicEnv` in `serverFns.ts` + root loader (not `window.__ENV__`) |
 
-### App Version
-
-The app follows [semver](https://semver.org/). The version in `package.json` is extracted at **build time** via Vite's `define` option and exposed as the global constant `__APP_VERSION__`. This constant is injected into every observability tool so that error reports, log lines, and traces are tagged with the exact deployed version.
-
-**Vite config** (`vite.config.ts`):
-
-```typescript
-import { readFileSync } from 'node:fs'
-const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'))
-
-export default defineConfig({
-  define: {
-    __APP_VERSION__: JSON.stringify(pkg.version),
-  },
-  // ...existing config
-})
-```
-
-**TypeScript declaration** (add to `src/vite-env.d.ts` or a global `.d.ts`):
-
-```typescript
-declare const __APP_VERSION__: string
-```
-
-**Sentry** — pass as `release` in `instrument.server.mjs` and in client init so errors are grouped by version:
-
-```javascript
-Sentry.init({
-  dsn: sentryDsn,
-  release: process.env.npm_package_version ?? 'unknown',
-  // ...existing config
-})
-```
-
-For the client-side Sentry init, use the Vite-injected constant:
-
-```typescript
-Sentry.init({ dsn, release: __APP_VERSION__ })
-```
-
-**Pino logger** — include `version` as a default binding so every log line carries it:
-
-```typescript
-export const logger = pino({
-  level: 'info',
-  base: { version: __APP_VERSION__ },
-}, transport)
-```
-
-**Other tools** — any new observability integration should read `__APP_VERSION__` for the same purpose. The pattern ensures a single source of truth (`package.json`) with no manual version strings.
-
-### Logging
-
-This project uses [`pino`](https://getpino.io/) as the default server-side structured logger. Do **not** use `console.log` / `console.error` / `console.warn` in server code — use the logger instead.
-
-**Setup**: The logger singleton lives in `src/services/logger.ts`. It conditionally adds the [`@sentry/pino-transport`](https://docs.sentry.io/platforms/javascript/guides/node/configuration/integrations/pino/) so that error-level logs (`logger.error(...)`) are automatically captured by Sentry when `VITE_SENTRY_DSN` is set. When no DSN is configured, pino logs to stdout with pretty-printing in development.
-
-```tsx
-import { logger } from '../services/logger'
-
-logger.info({ repo: type }, 'Using repository')
-logger.error({ err, taskId }, 'Failed to update task')
-```
-
-**Installation**:
-
-```bash
-pnpm add pino
-pnpm add -D pino-pretty          # pretty-print in development
-pnpm add @sentry/pino-transport  # optional: forward errors to Sentry
-```
-
-**Configuration pattern** (`src/services/logger.ts`):
-
-```typescript
-import pino from 'pino'
-
-const transport = process.env.VITE_SENTRY_DSN
-  ? pino.transport({
-      targets: [
-        { target: '@sentry/pino-transport', level: 'error' },
-        {
-          target: process.env.NODE_ENV === 'production' ? 'pino/file' : 'pino-pretty',
-          level: 'info',
-        },
-      ],
-    })
-  : process.env.NODE_ENV === 'production'
-    ? undefined
-    : pino.transport({ target: 'pino-pretty' })
-
-export const logger = pino({ level: 'info' }, transport)
-```
-
-When `VITE_SENTRY_DSN` is set, the Sentry transport receives error-level logs alongside the regular output target. When Sentry is not configured, the logger simply writes to stdout (pretty in dev, JSON in production). No code changes are needed when toggling Sentry on or off.
+- **Usage:** `getObservability().startSpan('name', fn)` in server handlers; `createServerLogger('module')` for structured logs.
+- **Env vars:** `SENTRY_DSN`, `ENV`, `LOG_LEVEL` — see `.env.example`. Keep `NODE_ENV` and `ENV` aligned in production so Sentry tags match runtime behavior.
 
 ## 10. Testing
 
@@ -442,9 +357,7 @@ This project uses [Biome](https://biomejs.dev/) as the default linter and format
 
 ## 13. Public Runtime Config
 
-*Recommended pattern — not yet implemented in this template.*
-
-Some non-secret config (Sentry DSN, environment name, feature flags) must be available to client SDKs before modules run. Expose via a GET server function and inline into `__root.tsx` as `window.__ENV__` (escape `<` in JSON). See skill handbook table — operational recipe when you add `getPublicEnv` to `serverFns.ts`.
+Handled by the [observability-and-env skill](.agents/skills/observability-and-env/SKILL.md) (PR #6): `webPublicEnv` slice exposed via `getWebPublicEnv` GET server function and root loader — **not** `window.__ENV__` or `import.meta.env` for deployment-specific values.
 
 ## 14. Special Patterns
 
