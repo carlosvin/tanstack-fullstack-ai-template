@@ -12,10 +12,15 @@ jobs:
   deploy-preview:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
       - uses: actions/setup-node@v4
         with:
@@ -32,17 +37,40 @@ jobs:
 
       - name: Deploy preview to Netlify
         id: deploy
-        uses: nwtgck/actions-netlify@v3.0
+        run: |
+          npx netlify deploy \
+            --alias "deploy-preview-${{ github.event.pull_request.number }}" \
+            --message "Deploy preview for PR #${{ github.event.pull_request.number }}" \
+            --json > deploy-output.json
+          echo "deploy_url=$(jq -r '.deploy_url' deploy-output.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Comment preview URL on PR
+        uses: actions/github-script@v7
         with:
-          publish-dir: ./.output/public
-          production-branch: main
-          alias: deploy-preview-${{ github.event.pull_request.number }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: 'Deploy preview for PR #${{ github.event.pull_request.number }}'
-          enable-pull-request-comment: true
-          enable-commit-comment: false
-          overwrites-pull-request-comment: true
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        timeout-minutes: 15
+          script: |
+            const deployUrl = '${{ steps.deploy.outputs.deploy_url }}';
+            const prNumber = context.payload.pull_request.number;
+            const body = `🚀 **Netlify preview deployed**\n\n**Preview:** ${deployUrl}\n\n_Re-deploys automatically on new commits._`;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+            const existing = comments.find((c) =>
+              c.user.type === 'Bot' && c.body.includes('Netlify preview deployed'),
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body,
+              });
+            }
