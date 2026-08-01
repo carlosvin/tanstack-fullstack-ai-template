@@ -1,7 +1,16 @@
+import { config } from 'dotenv'
 import { z } from 'zod'
 import pkg from '../../package.json' with { type: 'json' }
 
 import { OptionalDeploymentEnvSchema, OptionalLogLevelSchema, OptionalTrimmedStringSchema } from './runtimeEnvSchema'
+
+/** Load local `.env` files before the one-time Zod parse (Vite also loads them during dev/build). */
+function loadLocalEnvFiles(): void {
+	config({ path: '.env', quiet: true })
+	config({ path: '.env.local', quiet: true, override: true })
+}
+
+loadLocalEnvFiles()
 
 export const AppMetaSchema = z.object({
 	name: z.string().min(1).describe('Application name from package.json'),

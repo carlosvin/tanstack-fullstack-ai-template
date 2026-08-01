@@ -4,6 +4,7 @@ import { invalidateMiddleware } from '../../middleware/invalidate'
 import { requireAuthMiddleware } from '../../middleware/requireAuth'
 import { webEnvMiddleware } from '../../middleware/webEnv'
 import { HttpError } from '../../utils/httpError'
+import { getAIAdapterService } from '../ai/adapter'
 import { getObservability } from '../observability'
 import { getReadRepository, getWritableRepository } from '../repository/getRepository.server'
 import { TaskRepoFilterSchema, TaskRepoInputSchema } from '../schemas/repository'
@@ -60,12 +61,8 @@ export const getBrowserShellSession = createServerFn({ method: 'GET' })
 /** Whether the AI chat adapter is configured (root loader gates chat UI). */
 export const getAIAvailability = createServerFn({ method: 'GET' })
 	.middleware([webEnvMiddleware])
-	.handler(async ({ context }) => ({
-		available: Boolean(
-			context.serverEnv.GEMINI_API_KEY ||
-				context.serverEnv.GOOGLE_API_KEY ||
-				(context.serverEnv.AZURE_OPENAI_API_KEY && context.serverEnv.AZURE_OPENAI_ENDPOINT),
-		),
+	.handler(async () => ({
+		available: getAIAdapterService().isConfigured(),
 	}))
 
 // ============================================================================
