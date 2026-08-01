@@ -2,7 +2,7 @@ import type { ObservabilityService } from './types'
 
 /**
  * No-op observability implementation.
- * Used when no observability platform is configured (no VITE_SENTRY_DSN).
+ * Used when no observability platform is configured (no SENTRY_DSN).
  * All methods are safe to call and simply pass through.
  */
 export class NoopObservability implements ObservabilityService {

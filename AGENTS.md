@@ -18,18 +18,18 @@ Before non-trivial changes: read the skill **Core Contract** and run the **Archi
 
 ## Skill alignment roadmap
 
-This template is the reference app for the skill. **Already landed on `main`:** server-only boundaries ([#7](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/7)), `Register` request-context typing ([#8](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/8)), skill v1.19 Request Context rules.
+This template is the reference app for the skill. **Already landed on `main`:** server-only boundaries ([#7](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/7)), `Register` request-context typing ([#8](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/8)), skill v1.19 Request Context rules, handbook dedupe ([#9](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/9)), Cursor Cloud setup ([#10](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/10)).
 
-**Observability & env ([#6](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/6)):** companion skill `observability-and-env` — Zod env schemas (`src/env/`), pino (`createServerLogger`), `instrument.*.mts` bootstrap, `getWebPublicEnv` via loader (no `window.__ENV__`). Follow [observability-and-env skill](.agents/skills/observability-and-env/SKILL.md) for §9 / §13 operational detail once merged.
+**Observability & env ([#6](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/6)):** companion skill `observability-and-env` — Zod env schemas (`src/env/`), pino (`createServerLogger`), `instrument.*.mts` bootstrap, `getWebPublicEnv` via loader (no `window.__ENV__`). Follow [observability-and-env skill](.agents/skills/observability-and-env/SKILL.md) for §9 / §13 operational detail.
 
 | Phase | Skill contract | Status / files |
 |-------|----------------|----------------|
-| **0 — Observability & env** | Centralized env parse; pino; Sentry bootstrap; public env via GET server fn + loader | **PR #6** — `src/env/`, `instrument.*.mts`, `webEnvMiddleware`, `getWebPublicEnv` |
-| **1 — Schema boundaries** | Outbound `Schema.parse()` (repo → tools); router defaults bundle; `Link` with `search: true` | **Open** — `serverFns.ts`, `schemas/`, `router.tsx`, `src/components/Link/Link.tsx` |
-| **2 — Auth & writes** | Auth ticket + `TraceabilityContext` (skill allows stock `user`/`userProfile` until enriched) | **Partial** — `register-auth-context.ts` done; ticket/traceability still open |
-| **3 — Data loading & AI** | Parent loader dedup; `getAIAvailability()` gates chat UI | **Open** — `__root.tsx`, task routes, `Header`, `AppLayout` |
-| **4 — Hardening** | `createServerOnlyFn`; `PUBLIC_ROUTES`; router introspection for nav manifest | **Partial** — `*.server.ts` + import protection done |
-| **5 — Deploy** | Ship to [leafy-manatee-16b96c.netlify.app](https://leafy-manatee-16b96c.netlify.app) | After phases 0–4 on `main` |
+| **0 — Observability & env** | Centralized env parse; pino; Sentry bootstrap; public env via GET server fn + loader | **Done** — `src/env/`, `instrument.*.mts`, `webEnvMiddleware`, `getWebPublicEnv` |
+| **1 — Schema boundaries** | Outbound `Schema.parse()` (repo → tools); router defaults bundle; `Link` with `search: true` | **Done** — `serverFns.ts`, `taskMappers.ts`, `router.tsx`, `src/components/Link/Link.tsx` |
+| **2 — Auth & writes** | Auth ticket + `TraceabilityContext` (skill allows stock `user`/`userProfile` until enriched) | **Partial** — `TraceabilityContext` on writes; full auth ticket still open |
+| **3 — Data loading & AI** | Parent loader dedup; `getAIAvailability()` gates chat UI | **Done** — `__root.tsx`, task routes, `Header`, `AppLayout`, `ChatDrawer` |
+| **4 — Hardening** | `createServerOnlyFn`; `PUBLIC_ROUTES`; router introspection for nav manifest | **Partial** — `PUBLIC_ROUTES`, `*.server.ts` + import protection done; `createServerOnlyFn` deferred |
+| **5 — Deploy** | Ship to [leafy-manatee-16b96c.netlify.app](https://leafy-manatee-16b96c.netlify.app) | After merge to `main` |
 
 **Phase 5 checklist:** `pnpm format && pnpm lint && pnpm test && pnpm build` → merge → Netlify auto-deploy from `main` (`vite build`, `@netlify/vite-plugin-tanstack-start`) → smoke-test demo. **Netlify env** (post-#6): `SENTRY_DSN`, `ENV`, `LOG_LEVEL`, `REPOSITORY_TYPE=seed`, `OPENAI_API_KEY` (or chosen provider) — not `VITE_SENTRY_DSN`.
 
@@ -386,7 +386,7 @@ When creating a new project from this template or migrating an existing one, con
 
 ## Cursor Cloud specific instructions
 
-Package manager is **pnpm**; the standard commands live in `package.json` and section 17 above (`pnpm dev`, `pnpm lint`, `pnpm test`, `pnpm build`, `pnpm test:e2e`). Node 22 works fine even though the `Dockerfile` pins Node 24 (there is no `engines` field). The app runs on **port 3000**.
+Package manager is **pnpm**; the standard commands live in `package.json` and section 15 above (`pnpm dev`, `pnpm lint`, `pnpm test`, `pnpm build`, `pnpm test:e2e`). Node 22 works fine even though the `Dockerfile` pins Node 24 (there is no `engines` field). The app runs on **port 3000**.
 
 - **No external services required.** With no `MONGODB_URI`, the app uses the in-memory **seed** repository, so `pnpm dev` is fully functional on its own. MongoDB, an AI provider (Gemini/Azure OpenAI), and Sentry are all optional — the app degrades gracefully when their env vars are unset.
 - **Auth is header-only.** The auth middleware reads a JWT from the `Authorization` header (`src/middleware/auth.ts`); there is no cookie/session login. A plain browser is therefore anonymous and cannot mutate (the "Add task" button and edit/delete icons are hidden). E2E tests inject an unsigned JWT via `extraHTTPHeaders` (`e2e/auth.ts`). To manually exercise authenticated flows in a real browser, put a small reverse proxy in front of `:3000` that adds an `Authorization: Bearer <unsigned-jwt>` header (unsigned `alg:none` tokens are accepted — signatures are not verified).

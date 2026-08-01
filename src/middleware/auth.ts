@@ -1,10 +1,21 @@
 import { createMiddleware } from '@tanstack/react-start'
+import { webServerEnv } from '../env/webEnv'
 import { getReadRepository } from '../services/repository/getRepository.server'
 import type { UserIdentity, UserProfile } from '../types'
 import { extractIdentityFromJwt } from '../utils/jwt.server'
+import { createServerLogger } from '../utils/serverLogger'
 
-/** Header name to read the JWT from. Configurable via AUTH_HEADER_NAME env var. */
-const AUTH_HEADER_NAME = process.env.AUTH_HEADER_NAME ?? 'Authorization'
+const log = createServerLogger('auth')
+
+/** Header name to read the JWT from. Configured via AUTH_HEADER_NAME env var. */
+const AUTH_HEADER_NAME = webServerEnv.AUTH_HEADER_NAME ?? 'Authorization'
+
+/** Paths that skip repository profile lookup (health, static, public config). */
+const PUBLIC_ROUTE_PREFIXES = ['/api/health', '/.well-known', '/assets'] as const
+
+function isPublicRoute(pathname: string): boolean {
+	return PUBLIC_ROUTE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+}
 
 const ANONYMOUS_USER: UserIdentity = {
 	email: '',
@@ -31,15 +42,20 @@ export interface AuthContext {
  * - If no valid JWT is present, an anonymous user is returned with no profile.
  */
 export const authMiddleware = createMiddleware().server(async ({ next, request }) => {
+	const pathname = new URL(request.url).pathname
 	const authHeader = request.headers.get(AUTH_HEADER_NAME)
 	const identity = extractIdentityFromJwt(authHeader)
 
 	const user: UserIdentity = identity.email ? identity : ANONYMOUS_USER
 
 	let userProfile: UserProfile | null = null
-	if (user.email) {
+	if (user.email && !isPublicRoute(pathname)) {
 		const repo = getReadRepository()
 		userProfile = await repo.getUserProfile(user.email)
+	}
+
+	if (isPublicRoute(pathname)) {
+		log.debug({ pathname }, 'public route — skipped profile load')
 	}
 
 	return next({ context: { user, userProfile } })

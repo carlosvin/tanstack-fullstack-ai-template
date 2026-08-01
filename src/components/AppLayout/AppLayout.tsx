@@ -6,19 +6,20 @@ import { Header } from '../Header/Header'
 
 interface AppLayoutProps {
 	currentUser?: { identity: UserIdentity; profile: UserProfile | null }
+	aiAvailable?: boolean
 	children: React.ReactNode
 }
 
-export function AppLayout({ currentUser, children }: AppLayoutProps) {
+export function AppLayout({ currentUser, aiAvailable = false, children }: AppLayoutProps) {
 	const [chatOpened, { open: openChat, close: closeChat }] = useDisclosure(false)
 
 	return (
 		<AppShell header={{ height: 52 }} padding="md">
 			<AppShell.Header>
-				<Header currentUser={currentUser} onOpenChat={openChat} />
+				<Header currentUser={currentUser} aiAvailable={aiAvailable} onOpenChat={openChat} />
 			</AppShell.Header>
 			<AppShell.Main>{children}</AppShell.Main>
-			<ChatDrawer opened={chatOpened} onClose={closeChat} />
+			{aiAvailable ? <ChatDrawer opened={chatOpened} onClose={closeChat} /> : null}
 		</AppShell>
 	)
 }

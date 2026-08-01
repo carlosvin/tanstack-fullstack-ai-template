@@ -1,7 +1,7 @@
 import type { Collection, Db, Filter } from 'mongodb'
 import { getDb } from '../db/mongoClient.server'
 import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserProfileRepo } from '../schemas/repository'
-import type { Repository } from './types'
+import type { Repository, TraceabilityContext } from './types'
 
 const TASKS_COLLECTION = 'tasks'
 const USERS_COLLECTION = 'users'
@@ -59,7 +59,7 @@ export class MongoRepository implements Repository {
 		return col.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } }) as Promise<UserProfileRepo | null>
 	}
 
-	async createTask(input: TaskRepoInput, createdBy?: string): Promise<TaskRepo> {
+	async createTask(input: TaskRepoInput, trace?: TraceabilityContext): Promise<TaskRepo> {
 		const col = await this.collection()
 		const now = new Date().toISOString()
 		const task: TaskRepo = {
@@ -67,13 +67,17 @@ export class MongoRepository implements Repository {
 			id: crypto.randomUUID(),
 			createdAt: now,
 			updatedAt: now,
-			createdBy,
+			createdBy: trace?.createdBy,
 		}
 		await col.insertOne(task)
 		return task
 	}
 
-	async updateTask(taskId: string, input: Partial<TaskRepoInput>): Promise<TaskRepo | null> {
+	async updateTask(
+		taskId: string,
+		input: Partial<TaskRepoInput>,
+		_trace?: TraceabilityContext,
+	): Promise<TaskRepo | null> {
 		const col = await this.collection()
 		const result = await col.findOneAndUpdate(
 			{ id: taskId },

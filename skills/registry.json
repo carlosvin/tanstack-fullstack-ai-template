@@ -2,6 +2,146 @@
   "$schema": "./spec/skill.schema.json",
   "skills": [
     {
+      "id": "observability-and-env",
+      "title": "Observability and Environment Setup",
+      "summary": "Use when adding structured logging (pino), centralized environment validation (Zod), or Sentry initialization to a TanStack Start app. Teaches the three-file bootstrap pattern (instrument.env.mts → instrument.shared.mts → instrument.server.mts; emitted as .mjs for production), the src/env/ schema split (server vs public), and the createModuleLogger / createServerLogger factory pattern that eliminates scattered process.env access from application code.",
+      "projectName": "TanStack AI-Promptable Full-Stack Template",
+      "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
+      "version": "1.0.3",
+      "author": {
+        "name": "Carlos Martin-Sanchez",
+        "url": "https://github.com/carlosvin"
+      },
+      "license": "MIT",
+      "homepage": "https://github.com/carlosvin/tanstack-fullstack-ai-template",
+      "repository": "https://github.com/carlosvin/tanstack-fullstack-ai-template",
+      "documentationUrl": "https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md",
+      "status": "stable",
+      "supportedTools": [
+        {
+          "id": "windsurf",
+          "name": "Windsurf",
+          "installMode": "native",
+          "tested": true,
+          "notes": "Reads `.agents/skills/` directly when the skill lives in the project."
+        },
+        {
+          "id": "cursor",
+          "name": "Cursor",
+          "installMode": "copy",
+          "tested": true,
+          "notes": "Copy the generated skill folder into the global Cursor skills directory."
+        },
+        {
+          "id": "claude-code",
+          "name": "Claude Code",
+          "installMode": "copy",
+          "tested": true,
+          "notes": "Copy the generated skill folder into the Claude Code skills directory."
+        }
+      ],
+      "tags": [
+        "observability",
+        "logging",
+        "sentry",
+        "pino",
+        "environment",
+        "configuration",
+        "tanstack-start"
+      ],
+      "capabilities": [
+        "Centralized Zod env schemas with server/public split (src/env/)",
+        "process.env read only once at module-level parse — no scattered env access",
+        "createModuleLogger(name, options) pino factory — no process.env inside",
+        "createServerLogger(name) bound factory — eliminates repeated env boilerplate",
+        "instrument.env.shared.mts for a shared deployment env schema (bootstrap + TS callers)",
+        "instrument.env.mts for strict bootstrap env validation using the shared deployment env schema",
+        "instrument.shared.mts for reusable initSentry — callers pre-resolve all values",
+        "instrument.server.mts as the dev --import entry; tsc emits instrument.*.mjs to .output/server for production",
+        "Public env for the browser: route loaders call a GET server fn that returns webPublicEnv (never import webEnv in client-shared modules)",
+        "No window.__ENV__ global"
+      ],
+      "triggers": [
+        "add logging",
+        "set up pino",
+        "pino logger",
+        "sentry init",
+        "instrument server",
+        "instrument.server.mts",
+        "instrument.server.mjs",
+        "env schema",
+        "environment validation",
+        "centralize observability",
+        "createModuleLogger",
+        "createServerLogger",
+        "webEnv",
+        "webServerEnv",
+        "LOG_LEVEL",
+        "SENTRY_DSN"
+      ],
+      "inputs": [
+        "TanStack Start app (from this template or another)"
+      ],
+      "outputs": [
+        "src/env/runtimeEnvSchema.ts with DeploymentEnv and LogLevel enums",
+        "src/env/webEnv.ts with WebServerEnvSchema and WebPublicEnvSchema singletons",
+        "src/utils/logger.ts with createModuleLogger factory",
+        "src/utils/serverLogger.ts with createServerLogger bound factory",
+        "instrument.env.shared.mts with the shared DeploymentEnvSchema for bootstrap + TS callers",
+        "instrument.env.mts with resolveSentryBootstrapEnv helper",
+        "instrument.shared.mts with initSentry (all values pre-resolved by caller)",
+        "instrument.server.mts bootstrap entry and tsconfig.instrument.json emitting .mjs to .output/server"
+      ],
+      "constraints": [
+        "process.env is read only in src/env/*.ts (schema parse) and in a single BootstrapEnvSchema.parse(process.env) call inside instrument.env.mts — never in application code",
+        "Logger options (logLevel, environment) are passed as arguments to createModuleLogger — never resolved inside the factory",
+        "Public env (ENV, LOG_LEVEL, SENTRY_DSN) reaches the browser via route loaders + GET server fn; webEnvMiddleware injects ctx.context.publicEnv for server functions",
+        "No window.__ENV__ global — public env is always loader-sourced",
+        "Dev runs Node with tsx preloaded then instrument.server.mts; production uses node --import on emitted .output/server/instrument.server.mjs",
+        "instrument.env.mts validates bootstrap env in one place, importing the shared DeploymentEnvSchema (relative imports use .mjs extension for NodeNext emit mapping)",
+        "Bootstrap NODE_ENV uses DeploymentEnvSchema.optional(); unsupported values fail fast instead of being trimmed, ignored, or coerced",
+        "Bootstrap SENTRY_DSN is the only Sentry DSN env var, and DSN values are passed through exactly as provided",
+        "instrument.shared.mts receives dsn and environment as explicit pre-resolved arguments — no process.env inside",
+        "DeploymentEnvSchema is defined once in instrument.env.shared.mts and re-exported from runtimeEnvSchema.ts for TypeScript callers",
+        "Root logger (pino instance) is created lazily and only once per process — all module loggers are child() instances"
+      ],
+      "steps": [
+        "Add pino and pino-pretty to dependencies",
+        "Create instrument.env.shared.mts with DeploymentEnvSchema",
+        "Create src/env/runtimeEnvSchema.ts with DeploymentEnv, LogLevel, and optional preprocessors",
+        "Create src/env/webEnv.ts parsing process.env once; derive webPublicEnv (browser-safe slice)",
+        "Create src/utils/logger.ts with createModuleLogger and lazy root logger",
+        "Create src/utils/serverLogger.ts binding webServerEnv.ENV and LOG_LEVEL",
+        "Create instrument.env.mts with resolveSentryBootstrapEnv() using the shared DeploymentEnvSchema",
+        "Create instrument.shared.mts with initSentry (receives pre-resolved dsn + environment)",
+        "Keep instrument.server.mts as a bootstrap entry that calls resolveSentryBootstrapEnv() + initSentry()",
+        "Add tsconfig.instrument.json and extend build script with tsc -p tsconfig.instrument.json && cp package.json .output/server",
+        "Update getObservability() to read webPublicEnv.SENTRY_DSN instead of process.env",
+        "Update middleware/auth.ts to read AUTH_HEADER_NAME from webServerEnv",
+        "Add webEnvMiddleware that injects ctx.context.publicEnv for server functions",
+        "Add a GET `createServerFn` that returns `webPublicEnv` when a route needs public env in React"
+      ],
+      "examples": [
+        {
+          "input": "Add structured logging to a server function",
+          "output": "Import createServerLogger and call createServerLogger('myModule') — env and logLevel come from webServerEnv automatically"
+        },
+        {
+          "input": "Set up Sentry for the server",
+          "output": "Create instrument.env.mts + instrument.shared.mts; keep instrument.server.mts as a bootstrap entry; emit .mjs via tsc for production"
+        },
+        {
+          "input": "Read environment variables safely in application code",
+          "output": "Import webServerEnv from src/env/webEnv.ts (already validated), never read process.env directly in app code"
+        }
+      ],
+      "source": "skills/src/observability-and-env.skill.yaml",
+      "outputsByFormat": {
+        "skill": ".agents/skills/observability-and-env/SKILL.md",
+        "markdown": "skills/dist/observability-and-env.md"
+      }
+    },
+    {
       "id": "tanstack-promptable-fullstack-app-template",
       "title": "TanStack Promptable Fullstack App Template",
       "summary": "Use when scaffolding a new TanStack Start project, adding domain entities to the fullstack template, or implementing the interface-first repository pattern with AI-promptable tools, or nested layout routes duplicate beforeLoad checks or loaders that should live on a parent route, or TanStack Router, Start, or AI behavior must be verified against current documentation instead of training data, or route loaders may import databases or secrets, or server-only code may leak into the client bundle, or isomorphic loader boundaries are unclear, or TanStack Start request context, Register typing, or serverEnv leakage to the client must be handled correctly.",

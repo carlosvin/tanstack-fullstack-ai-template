@@ -1,22 +1,20 @@
 import { Modal, Stack, Text } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, getRouteApi, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { TaskForm } from '../../components/TaskForm/TaskForm'
 import { processResponse } from '../../services/api/processResponse'
-import { getTask, updateTask } from '../../services/api/serverFns'
+import { updateTask } from '../../services/api/serverFns'
 import type { TaskInput } from '../../types'
 
+const parentRoute = getRouteApi('/tasks/$taskId')
+
 export const Route = createFileRoute('/tasks/$taskId/edit')({
-	loader: async ({ params }) => {
-		const task = await getTask({ data: { taskId: params.taskId } })
-		return { task }
-	},
 	component: EditTaskRoute,
 })
 
 function EditTaskRoute() {
-	const { task } = Route.useLoaderData()
+	const { task } = parentRoute.useLoaderData()
 	const params = Route.useParams()
 	const navigate = useNavigate()
 	const [submitLoading, setSubmitLoading] = useState(false)

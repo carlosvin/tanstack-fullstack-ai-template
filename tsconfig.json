@@ -11,11 +11,20 @@
 		"resolveJsonModule": true,
 		"isolatedModules": true,
 		"noEmit": true,
+		"allowImportingTsExtensions": true,
 		"lib": ["ES2022", "DOM", "DOM.Iterable"],
 		"paths": {
 			"@/*": ["./src/*"]
 		}
 	},
-	"include": ["src/**/*", "vite.config.ts", "instrument.server.mjs"],
+	"include": [
+		"src/**/*",
+		"vite.config.ts",
+		"instrument.env.test.ts",
+		"instrument.env.shared.mts",
+		"instrument.env.mts",
+		"instrument.shared.mts",
+		"instrument.server.mts"
+	],
 	"exclude": ["node_modules", ".output"]
 }

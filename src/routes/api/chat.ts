@@ -17,6 +17,9 @@ import {
 import { getObservability } from '../../services/observability'
 import { BrowserContextSchema } from '../../services/schemas/schemas'
 import type { BrowserContext, UserIdentity, UserProfile } from '../../types'
+import { createServerLogger } from '../../utils/serverLogger'
+
+const log = createServerLogger('apiChat')
 
 const BASE_SYSTEM_PROMPT = `You are a helpful task management assistant. You have access to tools that let you query the task database, create/update/delete tasks, and navigate the app.
 
@@ -131,8 +134,8 @@ export const Route = createFileRoute('/api/chat')({
 
 				if (!adapter) {
 					const message = ai.getMissingConfigMessage() ?? 'AI chat is not configured'
-					console.error(`[ai] ${message}`)
-					getObservability().captureError(new Error(message))
+					log.error({ message }, 'AI chat is not configured')
+					getObservability({}).captureError(new Error(message))
 					return Response.json({ error: message }, { status: 503 })
 				}
 

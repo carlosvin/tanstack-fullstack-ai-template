@@ -34,7 +34,6 @@ ENV PORT=3000
 
 COPY --from=prod-deps --chown=appuser:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=appuser:nodejs /app/.output ./.output
-COPY --from=builder --chown=appuser:nodejs /app/.output/server/instrument.server.mjs ./.output/server/
 
 USER appuser
 EXPOSE 3000

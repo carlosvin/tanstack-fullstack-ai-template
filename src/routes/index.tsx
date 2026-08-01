@@ -1,6 +1,7 @@
 import { Badge, Card, Container, Group, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { CheckCircle, Circle, Clock, ListTodo } from 'lucide-react'
+import { Link } from '../components/Link/Link'
 import { getTasks } from '../services/api/serverFns'
 import type { Task } from '../types'
 

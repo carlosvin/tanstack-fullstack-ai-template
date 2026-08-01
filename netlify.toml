@@ -1,3 +1,13 @@
 [build]
-command = "vite build"
-publish = "dist"
+command = "pnpm build"
+publish = ".output/public"
+
+[build.environment]
+NODE_VERSION = "22"
+REPOSITORY_TYPE = "seed"
+
+[context.deploy-preview]
+command = "pnpm build"
+
+[context.deploy-preview.environment]
+REPOSITORY_TYPE = "seed"

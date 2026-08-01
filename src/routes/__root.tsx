@@ -9,12 +9,16 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { Home } from 'lucide-react'
 import { AppLayout } from '../components/AppLayout/AppLayout'
 import { ErrorDisplay } from '../components/ErrorDisplay/ErrorDisplay'
-import { getCurrentUser } from '../services/api/serverFns'
+import { getAIAvailability, getCurrentUser, getWebPublicEnv } from '../services/api/serverFns'
 
 export const Route = createRootRoute({
 	loader: async () => {
-		const currentUser = await getCurrentUser()
-		return { currentUser }
+		const [currentUser, publicEnv, aiAvailability] = await Promise.all([
+			getCurrentUser(),
+			getWebPublicEnv(),
+			getAIAvailability(),
+		])
+		return { currentUser, publicEnv, aiAvailable: aiAvailability.available }
 	},
 	head: () => ({
 		meta: [
@@ -66,6 +70,8 @@ function NotFoundPage() {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+	const { currentUser, aiAvailable } = Route.useLoaderData()
+
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<head>
@@ -75,7 +81,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			<body>
 				<MantineProvider defaultColorScheme="auto" theme={theme}>
 					<Notifications position="top-right" />
-					<AppLayout currentUser={Route.useLoaderData()?.currentUser}>{children}</AppLayout>
+					<AppLayout currentUser={currentUser} aiAvailable={aiAvailable}>
+						{children}
+					</AppLayout>
 				</MantineProvider>
 				<TanStackDevtools
 					config={{ position: 'bottom-right' }}

@@ -1,6 +1,5 @@
 import {
 	ActionIcon,
-	Alert,
 	Badge,
 	Drawer,
 	Group,
@@ -16,8 +15,8 @@ import {
 import { clientTools, createChatClientOptions } from '@tanstack/ai-client'
 import type { UIMessage } from '@tanstack/ai-react'
 import { fetchServerSentEvents, useChat } from '@tanstack/ai-react'
-import { Link, useRouter } from '@tanstack/react-router'
-import { AlertTriangle, Bot, Send, Square, Trash2 } from 'lucide-react'
+import { type LinkProps, Link as RouterLink, useRouter } from '@tanstack/react-router'
+import { Bot, Send, Square, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -57,10 +56,19 @@ function MarkdownLink({ href, children }: { href?: string; children?: React.Reac
 		)
 	}
 	const { to, search } = parseInternalHref(href)
+	if (!isUserFacingPath(to)) {
+		return <span>{children}</span>
+	}
+	// Internal markdown paths are validated by isUserFacingPath before render.
+	const internalTo = to as LinkProps['to']
+	const toWithQuery =
+		search && Object.keys(search).length > 0
+			? (`${to}?${new URLSearchParams(search).toString()}` as LinkProps['to'])
+			: internalTo
 	return (
-		<Link to={to} search={search} preload="intent" style={{ color: 'inherit', textDecoration: 'underline' }}>
+		<RouterLink to={toWithQuery} preload="intent" style={{ color: 'inherit', textDecoration: 'underline' }}>
 			{children}
-		</Link>
+		</RouterLink>
 	)
 }
 
@@ -145,17 +153,7 @@ function MessageBubble({ message }: { message: UIMessage }) {
 export function ChatDrawer({ opened, onClose }: ChatDrawerProps) {
 	const viewport = useRef<HTMLDivElement>(null)
 	const [input, setInput] = useState('')
-	const [aiAvailable, setAiAvailable] = useState<boolean | null>(null)
 	const router = useRouter()
-
-	useEffect(() => {
-		if (opened && aiAvailable === null) {
-			fetch('/api/chat')
-				.then((res) => res.json())
-				.then((data) => setAiAvailable(data.available === true))
-				.catch(() => setAiAvailable(false))
-		}
-	}, [opened, aiAvailable])
 
 	const navigateClient = navigateToolDef.client((args) => {
 		const navInput = NavigateInputSchema.parse(args)
@@ -201,10 +199,8 @@ export function ChatDrawer({ opened, onClose }: ChatDrawerProps) {
 		scrollToBottom()
 	}, [scrollToBottom])
 
-	const isDisabled = aiAvailable === false
-
 	const handleSubmit = () => {
-		if (!input.trim() || isLoading || isDisabled) return
+		if (!input.trim() || isLoading) return
 		sendMessage(input)
 		setInput('')
 	}
@@ -221,13 +217,7 @@ export function ChatDrawer({ opened, onClose }: ChatDrawerProps) {
 			<Stack h="calc(100vh - 120px)" justify="space-between">
 				<ScrollArea flex={1} viewportRef={viewport}>
 					<Stack gap="md" p="xs">
-						{isDisabled && (
-							<Alert icon={<AlertTriangle size={16} />} title="AI assistant unavailable" color="yellow" variant="light">
-								The AI assistant is not configured. Please set the required environment variables (AZURE_OPENAI_API_KEY,
-								AZURE_OPENAI_ENDPOINT) to enable this feature.
-							</Alert>
-						)}
-						{!isDisabled && messages.length === 0 && (
+						{messages.length === 0 && (
 							<Text c="dimmed" ta="center" size="sm" py="xl">
 								Ask me anything about your tasks!
 							</Text>
@@ -250,14 +240,13 @@ export function ChatDrawer({ opened, onClose }: ChatDrawerProps) {
 					<Group gap="xs">
 						<Textarea
 							flex={1}
-							placeholder={isDisabled ? 'AI assistant is not configured' : 'Type a message...'}
+							placeholder="Type a message..."
 							value={input}
 							onChange={(e) => setInput(e.currentTarget.value)}
 							onKeyDown={handleKeyDown}
 							autosize
 							minRows={1}
 							maxRows={4}
-							disabled={isDisabled}
 						/>
 						{isLoading ? (
 							<Tooltip label="Stop generating">
@@ -266,8 +255,8 @@ export function ChatDrawer({ opened, onClose }: ChatDrawerProps) {
 								</ActionIcon>
 							</Tooltip>
 						) : (
-							<Tooltip label={isDisabled ? 'AI not configured' : 'Send'}>
-								<ActionIcon variant="filled" onClick={handleSubmit} disabled={!input.trim() || isDisabled} size="lg">
+							<Tooltip label="Send">
+								<ActionIcon variant="filled" onClick={handleSubmit} disabled={!input.trim()} size="lg">
 									<Send size={18} />
 								</ActionIcon>
 							</Tooltip>

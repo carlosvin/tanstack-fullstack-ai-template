@@ -1,12 +1,14 @@
 import { ActionIcon, Badge, Button, Card, Container, Group, Select, Stack, Text, TextInput, Title } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import { createFileRoute, Link, Outlet, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Outlet, useLoaderData, useNavigate } from '@tanstack/react-router'
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { z } from 'zod'
+import { Link } from '../../components/Link/Link'
 import { TASK_PRIORITIES, TASK_STATUSES } from '../../constants/options'
 import { processResponse } from '../../services/api/processResponse'
-import { deleteTask, getCurrentUser, getTasks } from '../../services/api/serverFns'
+import { deleteTask, getTasks } from '../../services/api/serverFns'
 import type { Task } from '../../types'
+import { priorityColor, statusColor } from '../../utils/taskDisplay'
 
 const TasksSearchSchema = z.object({
 	status: z.enum(TASK_STATUSES).optional(),
@@ -18,14 +20,15 @@ export const Route = createFileRoute('/tasks/')({
 	validateSearch: TasksSearchSchema,
 	loaderDeps: ({ search }) => search,
 	loader: async ({ deps }) => {
-		const [tasks, currentUser] = await Promise.all([getTasks({ data: deps }), getCurrentUser()])
-		return { tasks, currentUser }
+		const tasks = await getTasks({ data: deps })
+		return { tasks }
 	},
 	component: TasksPage,
 })
 
 function TasksPage() {
-	const { tasks, currentUser } = Route.useLoaderData()
+	const { tasks } = Route.useLoaderData()
+	const { currentUser } = useLoaderData({ from: '__root__' })
 	const search = Route.useSearch()
 	const navigate = useNavigate()
 	const isAuth = Boolean(currentUser?.identity?.email)
@@ -169,24 +172,4 @@ function TasksPage() {
 			<Outlet />
 		</Container>
 	)
-}
-
-function statusColor(status: string): string {
-	const map: Record<string, string> = {
-		pending: 'yellow',
-		'in-progress': 'teal',
-		done: 'green',
-		cancelled: 'gray',
-	}
-	return map[status] ?? 'gray'
-}
-
-function priorityColor(priority: string): string {
-	const map: Record<string, string> = {
-		low: 'gray',
-		medium: 'blue',
-		high: 'orange',
-		critical: 'red',
-	}
-	return map[priority] ?? 'gray'
 }

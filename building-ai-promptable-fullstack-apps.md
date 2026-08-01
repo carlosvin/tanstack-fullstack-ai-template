@@ -138,7 +138,7 @@ export interface ObservabilityService {
 }
 ```
 
-Sentry is the default implementation. If `VITE_SENTRY_DSN` is not set, a no-op implementation is used — the app works perfectly fine without any observability configured. To switch to Datadog, New Relic, or anything else, implement the three methods.
+Sentry is the default implementation. If `SENTRY_DSN` is not set, a no-op implementation is used — the app works perfectly fine without any observability configured. To switch to Datadog, New Relic, or anything else, implement the three methods.
 
 ### Data Flow and Conventions
 
@@ -194,7 +194,7 @@ When you're ready to add real backends, set the relevant variables. The repo inc
 | -------- | ------ |
 | `MONGODB_URI` | Use a real database instead of in-memory seed data |
 | `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT` | Enable the AI chat assistant (OpenAI-compatible) |
-| `VITE_SENTRY_DSN` | Enable error and performance monitoring |
+| `SENTRY_DSN` | Enable error and performance monitoring |
 | `AUTH_HEADER_NAME` | HTTP header for the JWT (default: `Authorization`) |
 
 Each capability layers on independently. You can clone and replace the Task domain with your own, use the generated Cursor/Windsurf skill for AI-assisted setup, or adopt layers incrementally; the repo README has the details.
