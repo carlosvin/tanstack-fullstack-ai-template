@@ -26,6 +26,9 @@ This template is the reference app for the skill. Track gaps and close them in o
 | **2 — Auth & writes** | Repository-backed auth ticket; `TraceabilityContext` on `WritableRepository` mutations | `auth.ts`, `repository/types.ts`, repos, `serverFns.ts` |
 | **3 — Data loading** | Parent loaders own shared reads; children use `useLoaderData({ from })`; root `getAIAvailability()` gates chat UI | `__root.tsx`, `Header.tsx`, `AppLayout.tsx`, task routes |
 | **4 — Hardening** | `createServerOnlyFn` for DB singleton; `PUBLIC_ROUTES` allowlist; optional router introspection for `navigationManifest` | `getRepository.server.ts`, `auth.ts`, `navigationManifest.ts` |
+| **5 — Deploy** | Ship aligned template to the public Netlify demo | Merge to `main` → CI green → production deploy at [leafy-manatee-16b96c.netlify.app](https://leafy-manatee-16b96c.netlify.app) |
+
+**Phase 5 checklist:** `pnpm format && pnpm lint && pnpm test && pnpm build` → merge PR(s) → confirm Netlify build (`vite build` per `netlify.toml`, `@netlify/vite-plugin-tanstack-start`) → smoke-test demo (home, tasks CRUD, `/api/health`, AI chat when `OPENAI_API_KEY` is set in Netlify env).
 
 See the skill **Implementation Flow** for the per-entity file checklist when adding domain entities.
 
