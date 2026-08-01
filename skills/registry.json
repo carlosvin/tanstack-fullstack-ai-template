@@ -130,7 +130,7 @@
         "Update getObservability() to read webPublicEnv.SENTRY_DSN instead of process.env",
         "Update middleware/auth.ts to read AUTH_HEADER_NAME from webServerEnv",
         "Add webEnvMiddleware that injects ctx.context.serverEnv, publicEnv, and appMeta (chains auth); types flow from middleware chaining",
-        "Add GET getBrowserShellSession that returns the browserShellSession singleton; load it in the root loader"
+        "Add GET getBrowserShellSession that chains webEnvMiddleware and returns toBrowserShellSession from context; load it in the root loader"
       ],
       "examples": [
         {

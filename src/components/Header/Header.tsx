@@ -1,18 +1,21 @@
 import { ActionIcon, Button, Group, Text, Tooltip, useMantineColorScheme } from '@mantine/core'
 import { CheckSquare, Code, ListTodo, MessageCircle, Moon, Sun } from 'lucide-react'
+import type { AppMeta } from '../../env/appMeta'
 import type { UserIdentity, UserProfile } from '../../types'
 import { Link } from '../Link/Link'
 
 interface HeaderProps {
 	currentUser?: { identity: UserIdentity; profile: UserProfile | null }
+	appMeta: AppMeta
 	aiAvailable?: boolean
 	onOpenChat?: () => void
 }
 
 /** Application header with navigation, color scheme toggle, and AI chat trigger. */
-export function Header({ currentUser, aiAvailable = false, onOpenChat }: HeaderProps) {
+export function Header({ currentUser, appMeta, aiAvailable = false, onOpenChat }: HeaderProps) {
 	const { colorScheme, toggleColorScheme } = useMantineColorScheme()
 	const displayName = currentUser?.profile?.name || currentUser?.identity.name
+	const appTitle = appMeta.name
 
 	const handleOpenChat = (e: React.MouseEvent) => {
 		e.preventDefault()
@@ -24,12 +27,14 @@ export function Header({ currentUser, aiAvailable = false, onOpenChat }: HeaderP
 		<Group h="100%" px="md" justify="space-between">
 			<Group gap="md">
 				<Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-					<Group gap="xs">
-						<CheckSquare size={20} />
-						<Text fw={700} size="lg">
-							TaskHub
-						</Text>
-					</Group>
+					<Tooltip label={`${appTitle} v${appMeta.version}`}>
+						<Group gap="xs">
+							<CheckSquare size={20} />
+							<Text fw={700} size="lg">
+								{appTitle}
+							</Text>
+						</Group>
+					</Tooltip>
 				</Link>
 
 				<Link to="/tasks" style={{ textDecoration: 'none', color: 'inherit' }}>

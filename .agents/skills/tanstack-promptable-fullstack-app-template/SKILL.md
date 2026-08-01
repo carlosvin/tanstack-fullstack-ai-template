@@ -304,10 +304,12 @@ export const example = createServerFn({ method: 'GET' })
   .middleware([webEnvMiddleware])
   .handler(async ({ context }) => context.publicEnv.ENV)
 
-// Browser projection — allowlisted singleton via server fn + loader
-export const getBrowserShellSession = createServerFn({ method: 'GET' }).handler(
-  async () => browserShellSession,
-)
+// Browser projection — allowlisted via middleware context + loader
+export const getBrowserShellSession = createServerFn({ method: 'GET' })
+  .middleware([webEnvMiddleware])
+  .handler(async ({ context }) =>
+    toBrowserShellSession({ publicEnv: context.publicEnv, appMeta: context.appMeta }),
+  )
 ```
 
 ### Core rules for agents

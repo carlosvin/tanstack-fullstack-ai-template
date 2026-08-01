@@ -377,10 +377,15 @@ export const example = createServerFn({ method: 'GET' })
 Browser-safe loader pattern (TanStack Start: pass runtime config via server fn + loader):
 
 ```typescript
-// serverFns.ts — return the once-parsed allowlisted singleton
-export const getBrowserShellSession = createServerFn({ method: 'GET' }).handler(
-  async () => browserShellSession,
-)
+// serverFns.ts — chain middleware so context.* is inferred
+export const getBrowserShellSession = createServerFn({ method: 'GET' })
+  .middleware([webEnvMiddleware])
+  .handler(async ({ context }) =>
+    toBrowserShellSession({
+      publicEnv: context.publicEnv,
+      appMeta: context.appMeta,
+    }),
+  )
 
 // root route loader
 loader: async () => ({

@@ -1,10 +1,10 @@
 import { createServerFn } from '@tanstack/react-start'
-import { browserShellSession } from '../../env/browserShellSession'
+import { toBrowserShellSession } from '../../env/browserShellSession'
 import { authMiddleware } from '../../middleware/auth'
 import { invalidateMiddleware } from '../../middleware/invalidate'
 import { requireAuthMiddleware } from '../../middleware/requireAuth'
+import { webEnvMiddleware } from '../../middleware/webEnv'
 import { HttpError } from '../../utils/httpError'
-import { getAIAdapterService } from '../ai/adapter'
 import { getObservability } from '../observability'
 import { getReadRepository, getWritableRepository } from '../repository/getRepository.server'
 import { TaskRepoFilterSchema, TaskRepoInputSchema } from '../schemas/repository'
@@ -54,12 +54,25 @@ export const getUserProfile = createServerFn({ method: 'GET' })
 	})
 
 /** Browser-safe shell session (public env + app meta) for the root loader. */
-export const getBrowserShellSession = createServerFn({ method: 'GET' }).handler(async () => browserShellSession)
+export const getBrowserShellSession = createServerFn({ method: 'GET' })
+	.middleware([webEnvMiddleware])
+	.handler(async ({ context }) =>
+		toBrowserShellSession({
+			publicEnv: context.publicEnv,
+			appMeta: context.appMeta,
+		}),
+	)
 
 /** Whether the AI chat adapter is configured (root loader gates chat UI). */
-export const getAIAvailability = createServerFn({ method: 'GET' }).handler(async () => ({
-	available: getAIAdapterService().isConfigured(),
-}))
+export const getAIAvailability = createServerFn({ method: 'GET' })
+	.middleware([webEnvMiddleware])
+	.handler(async ({ context }) => ({
+		available: Boolean(
+			context.serverEnv.GEMINI_API_KEY ||
+				context.serverEnv.GOOGLE_API_KEY ||
+				(context.serverEnv.AZURE_OPENAI_API_KEY && context.serverEnv.AZURE_OPENAI_ENDPOINT),
+		),
+	}))
 
 // ============================================================================
 // Current user — identity + profile from middleware context

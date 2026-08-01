@@ -1,7 +1,7 @@
 /**
  * AI adapter implementations for Google Gemini and Azure OpenAI.
  *
- * The factory selects the adapter based on which env vars are set (first match wins):
+ * The factory selects the adapter based on validated `webServerEnv` (first match wins):
  *
  * 1. Google Gemini:
  *    - GEMINI_API_KEY        - API key (also accepts GOOGLE_API_KEY)
@@ -17,11 +17,12 @@ import type { GeminiTextModel } from '@tanstack/ai-gemini'
 import { createGeminiChat } from '@tanstack/ai-gemini'
 import type { OpenAIChatModel } from '@tanstack/ai-openai'
 import { createOpenaiChat } from '@tanstack/ai-openai'
+import { webServerEnv } from '../../env/webEnv'
 import type { AIAdapterService } from './types'
 
 class GeminiAdapterService implements AIAdapterService {
 	isConfigured(): boolean {
-		return Boolean(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY)
+		return Boolean(webServerEnv.GEMINI_API_KEY || webServerEnv.GOOGLE_API_KEY)
 	}
 
 	getMissingConfigMessage(): string | null {
@@ -30,33 +31,33 @@ class GeminiAdapterService implements AIAdapterService {
 	}
 
 	getAdapter() {
-		const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY
+		const apiKey = webServerEnv.GEMINI_API_KEY || webServerEnv.GOOGLE_API_KEY
 		if (!apiKey) return null
 
-		const model = (process.env.GEMINI_MODEL || 'gemini-2.5-flash') as GeminiTextModel
+		const model = (webServerEnv.GEMINI_MODEL || 'gemini-2.5-flash') as GeminiTextModel
 		return createGeminiChat(model, apiKey)
 	}
 }
 
 class AzureOpenAIAdapterService implements AIAdapterService {
 	isConfigured(): boolean {
-		return Boolean(process.env.AZURE_OPENAI_API_KEY && process.env.AZURE_OPENAI_ENDPOINT)
+		return Boolean(webServerEnv.AZURE_OPENAI_API_KEY && webServerEnv.AZURE_OPENAI_ENDPOINT)
 	}
 
 	getMissingConfigMessage(): string | null {
 		const missing: string[] = []
-		if (!process.env.AZURE_OPENAI_API_KEY) missing.push('AZURE_OPENAI_API_KEY')
-		if (!process.env.AZURE_OPENAI_ENDPOINT) missing.push('AZURE_OPENAI_ENDPOINT')
+		if (!webServerEnv.AZURE_OPENAI_API_KEY) missing.push('AZURE_OPENAI_API_KEY')
+		if (!webServerEnv.AZURE_OPENAI_ENDPOINT) missing.push('AZURE_OPENAI_ENDPOINT')
 		if (missing.length === 0) return null
 		return `Missing AI configuration: ${missing.join(', ')}`
 	}
 
 	getAdapter() {
-		const apiKey = process.env.AZURE_OPENAI_API_KEY
-		const baseURL = process.env.AZURE_OPENAI_ENDPOINT
+		const apiKey = webServerEnv.AZURE_OPENAI_API_KEY
+		const baseURL = webServerEnv.AZURE_OPENAI_ENDPOINT
 		if (!apiKey || !baseURL) return null
 
-		const model = (process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4o') as OpenAIChatModel
+		const model = (webServerEnv.AZURE_OPENAI_DEPLOYMENT || 'gpt-4o') as OpenAIChatModel
 		return createOpenaiChat(model, apiKey, { baseURL, defaultHeaders: { 'api-key': apiKey } })
 	}
 }
@@ -66,7 +67,7 @@ let instance: AIAdapterService | null = null
 /** Returns the singleton AI adapter service. Priority: Gemini > Azure. */
 export function getAIAdapterService(): AIAdapterService {
 	if (!instance) {
-		if (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY) {
+		if (webServerEnv.GEMINI_API_KEY || webServerEnv.GOOGLE_API_KEY) {
 			instance = new GeminiAdapterService()
 		} else {
 			instance = new AzureOpenAIAdapterService()

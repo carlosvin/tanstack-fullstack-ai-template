@@ -5,9 +5,7 @@ import { authMiddleware } from './auth'
 
 /**
  * Chains auth, then attaches startup-validated env/app meta via `next({ context })`.
- * Downstream server fns that `.middleware([webEnvMiddleware])` infer those fields —
- * no Register augmentation needed.
- *
+ * Server fns that `.middleware([webEnvMiddleware])` infer those fields from the chain.
  * Sole global entry in `src/start.ts`. Client config: `getBrowserShellSession` + loader.
  */
 export const webEnvMiddleware = createMiddleware()

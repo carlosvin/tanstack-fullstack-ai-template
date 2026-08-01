@@ -18,7 +18,7 @@ Before non-trivial changes: read the skill **Core Contract** and run the **Archi
 
 ## Skill alignment roadmap
 
-This template is the reference app for the skill. **Already landed on `main`:** server-only boundaries ([#7](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/7)), `Register` request-context typing ([#8](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/8)), skill v1.19 Request Context rules, handbook dedupe ([#9](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/9)), Cursor Cloud setup ([#10](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/10)).
+This template is the reference app for the skill. **Already landed on `main`:** server-only boundaries ([#7](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/7)), request-context via middleware `next({ context })` + chaining ([#8](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/8), refined in [#12](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/12)), skill v1.19 Request Context rules, handbook dedupe ([#9](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/9)), Cursor Cloud setup ([#10](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/10)).
 
 **Observability & env ([#6](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/6)):** companion skill `observability-and-env` — Zod env schemas (`src/env/`), pino (`createServerLogger`), `instrument.*.mts` bootstrap, middleware-injected context (`serverEnv` / `publicEnv` / `appMeta`), `getBrowserShellSession` via root loader (no `window.__ENV__`). Follow [observability-and-env skill](.agents/skills/observability-and-env/SKILL.md) for §9 / §13 operational detail.
 

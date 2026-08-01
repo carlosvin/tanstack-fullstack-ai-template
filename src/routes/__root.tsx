@@ -90,7 +90,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			<body>
 				<MantineProvider defaultColorScheme="auto" theme={theme}>
 					<Notifications position="top-right" />
-					<AppLayout currentUser={currentUser} aiAvailable={aiAvailable}>
+					<AppLayout currentUser={currentUser} shellSession={shellSession} aiAvailable={aiAvailable}>
 						{children}
 					</AppLayout>
 				</MantineProvider>
