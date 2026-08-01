@@ -181,6 +181,7 @@ Route Loader → Server Function (serverFns.ts) → Repository → Database / Se
 - **Input Validation**: Server functions pass Zod schemas to `.inputValidator(Schema)`.
 - **Repository Pattern**: All data access goes through the repository interface.
 - **Calling convention**: Callers pass `{ data: inputData }` to server functions (e.g. `getTasks({ data: filter })`).
+- **Server execution boundaries:** Route loaders are **isomorphic** (SSR and client navigations) — never import DB clients, repositories, or read secrets in route files. Loaders only call exported functions from `serverFns.ts`. DB and env wiring live in `*.server.ts` modules; see the skill’s **Server execution boundaries** section and `vite.config.ts` `importProtection`.
 
 ### 6.1. Data Fetching (Queries)
 

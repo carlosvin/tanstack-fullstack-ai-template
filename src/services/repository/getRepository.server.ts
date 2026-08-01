@@ -1,4 +1,4 @@
-import { MongoRepository } from './mongoRepository'
+import { MongoRepository } from './mongoRepository.server'
 import { SeedRepository } from './seedRepository'
 import type { ReadRepository, WritableRepository } from './types'
 

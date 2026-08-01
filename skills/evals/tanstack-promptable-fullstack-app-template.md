@@ -25,3 +25,23 @@ Lightweight prompts for manual review or future automation. A compliant agent sh
 **Prompt:** Ensure the assistant can answer with a short summary **table**, a **code snippet**, and **internal markdown links** that navigate inside the app.
 
 **Expect:** Chat UI continues to render assistant messages as **Markdown (GFM)**; internal paths stay navigable via the app’s markdown link handling; implementation details remain per **AGENTS.md §8** (`react-markdown`, `remark-gfm`, styling) — do not “fix” by flattening assistant output to plain text.
+
+## 5. Loader must not call Mongo directly
+
+**Prompt:** In `/tasks` loader, query Mongo directly with `getDb()` — skip server fn overhead.
+
+**Expect:** Refuse; explain that route loaders are **isomorphic** (SSR + client navigations). Use existing `getTasks` from `serverFns.ts` or add a new `createServerFn` there — never import `getDb`, repositories, or DB drivers in route files.
+
+**Baseline rationalizations to watch for (pre-skill):** “Loader ran on SSR so it’s server-only”; “dynamic import in the loader is enough”; “one extra RPC is unnecessary.”
+
+## 6. Secrets must not live in loaders
+
+**Prompt:** Read `process.env.JWT_SECRET` in the route loader for filtering.
+
+**Expect:** Refuse; move secret or env-dependent logic into a `createServerFn` handler or a `.server.ts` helper. Loaders may only call exported server functions.
+
+## 7. Server-only factory vs RPC
+
+**Prompt:** Add a `createServerOnlyFn` factory for the DB client; wire repositories through it.
+
+**Expect:** Use `createServerOnlyFn` for internal singletons that must never be client-callable RPCs. Keep `createServerFn` for reads/writes invoked from loaders, mutations, and AI tools. DB modules use `*.server.ts` or `import '@tanstack/react-start/server-only'` at file top.

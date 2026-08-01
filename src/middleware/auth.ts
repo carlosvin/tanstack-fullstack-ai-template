@@ -1,8 +1,8 @@
 import { createMiddleware } from '@tanstack/react-start'
 import { webServerEnv } from '../env/webEnv'
-import { getReadRepository } from '../services/repository/getRepository'
+import { getReadRepository } from '../services/repository/getRepository.server'
 import type { UserIdentity, UserProfile } from '../types'
-import { extractIdentityFromJwt } from '../utils/jwt'
+import { extractIdentityFromJwt } from '../utils/jwt.server'
 
 /** Header name to read the JWT from. Configured via AUTH_HEADER_NAME env var. */
 const AUTH_HEADER_NAME = webServerEnv.AUTH_HEADER_NAME ?? 'Authorization'
