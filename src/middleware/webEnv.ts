@@ -1,5 +1,5 @@
 import { createMiddleware } from '@tanstack/react-start'
-import { shellSession, webServerEnv } from '../env/webEnv'
+import { getShellSession, getWebServerEnv } from '../env/webEnv'
 import { authMiddleware } from './auth'
 
 /**
@@ -11,8 +11,8 @@ export const webEnvMiddleware = createMiddleware()
 	.server(({ next }) =>
 		next({
 			context: {
-				serverEnv: webServerEnv,
-				shellSession,
+				serverEnv: getWebServerEnv(),
+				shellSession: getShellSession(),
 			},
 		}),
 	)

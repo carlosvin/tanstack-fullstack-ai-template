@@ -1,19 +1,22 @@
 import { describe, expect, it } from 'vitest'
 import pkg from '../../package.json' with { type: 'json' }
-import { ShellSessionSchema, shellSession, webServerEnv } from './webEnv'
+import { getShellSession, getWebServerEnv, ShellSessionSchema } from './webEnv'
 
 describe('webEnv', () => {
 	it('builds shellSession from webServerEnv and package.json once', () => {
-		expect(shellSession.app).toEqual({ name: pkg.name, version: pkg.version })
-		expect(shellSession.ENV).toBe(webServerEnv.ENV)
-		expect(shellSession.LOG_LEVEL).toBe(webServerEnv.LOG_LEVEL)
-		expect(shellSession.SENTRY_DSN).toBe(webServerEnv.SENTRY_DSN)
-		expect(ShellSessionSchema.parse(shellSession)).toEqual(shellSession)
+		const env = getWebServerEnv()
+		const session = getShellSession()
+		expect(session.app).toEqual({ name: pkg.name, version: pkg.version })
+		expect(session.ENV).toBe(env.ENV)
+		expect(session.LOG_LEVEL).toBe(env.LOG_LEVEL)
+		expect(session.SENTRY_DSN).toBe(env.SENTRY_DSN)
+		expect(ShellSessionSchema.parse(session)).toEqual(session)
 	})
 
 	it('only allowlists browser-safe fields', () => {
-		expect(Object.keys(shellSession).sort()).toEqual(['ENV', 'LOG_LEVEL', 'SENTRY_DSN', 'app'])
-		expect(shellSession).not.toHaveProperty('serverEnv')
-		expect(shellSession).not.toHaveProperty('MONGODB_URI')
+		const session = getShellSession()
+		expect(Object.keys(session).sort()).toEqual(['ENV', 'LOG_LEVEL', 'SENTRY_DSN', 'app'])
+		expect(session).not.toHaveProperty('serverEnv')
+		expect(session).not.toHaveProperty('MONGODB_URI')
 	})
 })

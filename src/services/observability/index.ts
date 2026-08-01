@@ -1,5 +1,5 @@
 import type { ShellSession } from '../../env/webEnv'
-import { shellSession } from '../../env/webEnv'
+import { getShellSession } from '../../env/webEnv'
 import { NoopObservability } from './noop'
 import { SentryObservability } from './sentry'
 import type { ObservabilityService } from './types'
@@ -23,7 +23,7 @@ function normalizeSentryDsn(value: string | undefined): string | undefined {
 
 function resolveSentryDsn(options: GetObservabilityOptions): string | undefined {
 	if (options.shellSession) return normalizeSentryDsn(options.shellSession.SENTRY_DSN)
-	if (typeof window === 'undefined') return normalizeSentryDsn(shellSession.SENTRY_DSN)
+	if (typeof window === 'undefined') return normalizeSentryDsn(getShellSession().SENTRY_DSN)
 	return undefined
 }
 

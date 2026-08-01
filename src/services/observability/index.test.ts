@@ -26,13 +26,15 @@ describe('getObservability', () => {
 
 		vi.doMock('../../env/webEnv', async () => {
 			const actual = await vi.importActual<typeof import('../../env/webEnv')>('../../env/webEnv')
+			const shellSession = ShellSessionSchema.parse({
+				...actual.getShellSession(),
+				SENTRY_DSN: 'https://examplePublicKey@o0.ingest.sentry.io/0',
+			})
 
 			return {
 				...actual,
-				shellSession: ShellSessionSchema.parse({
-					...actual.shellSession,
-					SENTRY_DSN: 'https://examplePublicKey@o0.ingest.sentry.io/0',
-				}),
+				getShellSession: () => shellSession,
+				shellSession,
 			}
 		})
 

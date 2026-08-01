@@ -12,6 +12,20 @@ describe('getAIAdapterService', () => {
 		expect(getAIAdapterService().isConfigured()).toBe(true)
 	})
 
+	it('reports configured when OpenAI env vars are present', async () => {
+		vi.stubEnv('OPENAI_API_KEY', 'openai-key')
+		vi.stubEnv('OPENAI_BASE_URL', 'https://gateway.example.com')
+		const { getAIAdapterService } = await import('./adapter')
+		expect(getAIAdapterService().isConfigured()).toBe(true)
+	})
+
+	it('reports configured when Netlify AI Gateway env vars are present', async () => {
+		vi.stubEnv('NETLIFY_AI_GATEWAY_KEY', 'gateway-key')
+		vi.stubEnv('NETLIFY_AI_GATEWAY_BASE_URL', 'https://gateway.netlify.app')
+		const { getAIAdapterService } = await import('./adapter')
+		expect(getAIAdapterService().isConfigured()).toBe(true)
+	})
+
 	it('reports configured when Azure OpenAI env vars are present', async () => {
 		vi.stubEnv('AZURE_OPENAI_API_KEY', 'azure-key')
 		vi.stubEnv('AZURE_OPENAI_ENDPOINT', 'https://example.openai.azure.com')
