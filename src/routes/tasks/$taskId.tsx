@@ -1,20 +1,23 @@
 import { Badge, Button, Card, Container, Group, Stack, Text, Title } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import { createFileRoute, Link, Outlet, useRouter } from '@tanstack/react-router'
+import { createFileRoute, Outlet, useLoaderData, useRouter } from '@tanstack/react-router'
 import { ArrowLeft, Calendar, Pencil, Trash2, User } from 'lucide-react'
+import { Link } from '../../components/Link/Link'
 import { processResponse } from '../../services/api/processResponse'
-import { deleteTask, getCurrentUser, getTask } from '../../services/api/serverFns'
+import { deleteTask, getTask } from '../../services/api/serverFns'
+import { priorityColor, statusColor } from '../../utils/taskDisplay'
 
 export const Route = createFileRoute('/tasks/$taskId')({
 	loader: async ({ params }) => {
-		const [task, currentUser] = await Promise.all([getTask({ data: { taskId: params.taskId } }), getCurrentUser()])
-		return { task, currentUser }
+		const task = await getTask({ data: { taskId: params.taskId } })
+		return { task }
 	},
 	component: TaskDetailPage,
 })
 
 function TaskDetailPage() {
-	const { task, currentUser } = Route.useLoaderData()
+	const { task } = Route.useLoaderData()
+	const { currentUser } = useLoaderData({ from: '__root__' })
 	const router = useRouter()
 	const isCreator = Boolean(task && currentUser?.identity?.email && task.createdBy === currentUser.identity.email)
 
@@ -131,24 +134,4 @@ function TaskDetailPage() {
 			<Outlet />
 		</Container>
 	)
-}
-
-function statusColor(status: string): string {
-	const map: Record<string, string> = {
-		pending: 'yellow',
-		'in-progress': 'teal',
-		done: 'green',
-		cancelled: 'gray',
-	}
-	return map[status] ?? 'gray'
-}
-
-function priorityColor(priority: string): string {
-	const map: Record<string, string> = {
-		low: 'gray',
-		medium: 'blue',
-		high: 'orange',
-		critical: 'red',
-	}
-	return map[priority] ?? 'gray'
 }

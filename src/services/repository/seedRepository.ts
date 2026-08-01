@@ -1,5 +1,5 @@
 import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserProfileRepo } from '../schemas/repository'
-import type { Repository } from './types'
+import type { Repository, TraceabilityContext } from './types'
 
 /** Sample seed data for development without a database. */
 const SEED_TASKS: TaskRepo[] = [
@@ -126,20 +126,24 @@ export class SeedRepository implements Repository {
 		return this.users.find((u) => u.email.toLowerCase() === email.toLowerCase()) ?? null
 	}
 
-	async createTask(input: TaskRepoInput, createdBy?: string): Promise<TaskRepo> {
+	async createTask(input: TaskRepoInput, trace?: TraceabilityContext): Promise<TaskRepo> {
 		const now = new Date().toISOString()
 		const task: TaskRepo = {
 			...input,
 			id: `task-${++nextId}`,
 			createdAt: now,
 			updatedAt: now,
-			createdBy,
+			createdBy: trace?.createdBy,
 		}
 		this.tasks.push(task)
 		return task
 	}
 
-	async updateTask(taskId: string, input: Partial<TaskRepoInput>): Promise<TaskRepo | null> {
+	async updateTask(
+		taskId: string,
+		input: Partial<TaskRepoInput>,
+		_trace?: TraceabilityContext,
+	): Promise<TaskRepo | null> {
 		const index = this.tasks.findIndex((t) => t.id === taskId)
 		if (index === -1) return null
 

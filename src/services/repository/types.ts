@@ -1,5 +1,11 @@
 import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserProfileRepo } from '../schemas/repository'
 
+/** Audit fields attached to repository writes from the auth ticket. */
+export interface TraceabilityContext {
+	createdBy?: string
+	lastModifiedBy?: string
+}
+
 /**
  * Read-only repository interface.
  * All read methods are exposed as AI tools for the chat assistant.
@@ -24,10 +30,10 @@ export interface ReadRepository {
  */
 export interface WritableRepository {
 	/** Create a new task. Returns the created task with generated ID and timestamps. */
-	createTask(input: TaskRepoInput, createdBy?: string): Promise<TaskRepo>
+	createTask(input: TaskRepoInput, trace?: TraceabilityContext): Promise<TaskRepo>
 
 	/** Update an existing task. Returns the updated task or null if not found. */
-	updateTask(taskId: string, input: Partial<TaskRepoInput>): Promise<TaskRepo | null>
+	updateTask(taskId: string, input: Partial<TaskRepoInput>, trace?: TraceabilityContext): Promise<TaskRepo | null>
 
 	/** Delete a task by ID. Returns true if deleted, false if not found. */
 	deleteTask(taskId: string): Promise<boolean>

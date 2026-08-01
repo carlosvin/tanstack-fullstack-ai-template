@@ -12,7 +12,28 @@ Before substantial work:
 
 This document is the default agent and contributor guide for projects built from this template. It covers project structure, conventions, tooling, and operational detail.
 
-The **deep architectural contract** -- rigid rules, three schema layers, cross-layer mapping, interface contracts, migration workflow, and the TanStack CLI docs tip -- lives in the [TanStack Promptable Fullstack App Template skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) (generated from `skills/src/*.skill.yaml`; regenerate with `pnpm skills:build`).
+The **architectural contract** lives in the [TanStack Promptable Fullstack App Template skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) (generated from `skills/src/*.skill.yaml`; regenerate with `pnpm skills:build`). **This handbook** covers project layout, UI kit, auth wiring, AI adapter setup, observability recipes, and validation commands — not alternate architecture.
+
+Before non-trivial changes: read the skill **Core Contract** and run the **Architecture Checklist**.
+
+## Skill alignment roadmap
+
+This template is the reference app for the skill. **Already landed on `main`:** server-only boundaries ([#7](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/7)), `Register` request-context typing ([#8](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/8)), skill v1.19 Request Context rules.
+
+**Observability & env ([#6](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/6)):** companion skill `observability-and-env` — Zod env schemas (`src/env/`), pino (`createServerLogger`), `instrument.*.mts` bootstrap, `getWebPublicEnv` via loader (no `window.__ENV__`). Follow [observability-and-env skill](.agents/skills/observability-and-env/SKILL.md) for §9 / §13 operational detail.
+
+| Phase | Skill contract | Status / files |
+|-------|----------------|----------------|
+| **0 — Observability & env** | Centralized env parse; pino; Sentry bootstrap; public env via GET server fn + loader | **Done** — `src/env/`, `instrument.*.mts`, `webEnvMiddleware`, `getWebPublicEnv` |
+| **1 — Schema boundaries** | Outbound `Schema.parse()` (repo → tools); router defaults bundle; `Link` with `search: true` | **Done** — `serverFns.ts`, `taskMappers.ts`, `router.tsx`, `src/components/Link/Link.tsx` |
+| **2 — Auth & writes** | Auth ticket + `TraceabilityContext` (skill allows stock `user`/`userProfile` until enriched) | **Partial** — `TraceabilityContext` on writes; full auth ticket still open |
+| **3 — Data loading & AI** | Parent loader dedup; `getAIAvailability()` gates chat UI | **Done** — `__root.tsx`, task routes, `Header`, `AppLayout`, `ChatDrawer` |
+| **4 — Hardening** | `createServerOnlyFn`; `PUBLIC_ROUTES`; router introspection for nav manifest | **Partial** — `PUBLIC_ROUTES`, `*.server.ts` + import protection done; `createServerOnlyFn` deferred |
+| **5 — Deploy** | Ship to [leafy-manatee-16b96c.netlify.app](https://leafy-manatee-16b96c.netlify.app) | After merge to `main` |
+
+**Phase 5 checklist:** `pnpm format && pnpm lint && pnpm test && pnpm build` → merge → Netlify auto-deploy from `main` (`vite build`, `@netlify/vite-plugin-tanstack-start`) → smoke-test demo. **Netlify env** (post-#6): `SENTRY_DSN`, `ENV`, `LOG_LEVEL`, `REPOSITORY_TYPE=seed`, `OPENAI_API_KEY` (or chosen provider) — not `VITE_SENTRY_DSN`.
+
+See the skill **Implementation Flow** for the per-entity file checklist when adding domain entities.
 
 ## 1. General Principles
 
@@ -26,7 +47,7 @@ The **deep architectural contract** -- rigid rules, three schema layers, cross-l
 ## 2. File and Project Structure
 
 - `src/components`: React components. Each component in its own folder with `Component.tsx` and optional `Component.module.css` and `Component.test.tsx`. Page-level components (e.g. `DashboardPage`, `TasksPage`) also live here so they can be tested independently.
-- `src/routes`: TanStack Router file-based routes. Route files should be **thin** — only route config (`createFileRoute`, `validateSearch`, `loaderDeps`, `loader`) and a component reference that delegates to an extracted page component from `src/components/`. The route tree is auto-generated in `routeTree.gen.ts`.
+- `src/routes`: TanStack Router file-based routes — thin route config only; page UI in `src/components/`. See skill **Core Contract** #7. Route tree: `routeTree.gen.ts`.
 - `src/middleware`: TanStack Start middleware (auth, invalidation). Registered globally in `src/start.ts`.
 - `src/services/api`: Server functions (exported directly from `createServerFn`) and shared response utilities.
 - `src/services/repository`: Repository interface, implementations (MongoDB, seed), and the factory.
@@ -45,26 +66,7 @@ The **deep architectural contract** -- rigid rules, three schema layers, cross-l
 - Use `camelCase` for utility, service, and route files.
 - Test files are co-located with source as `*.test.ts` or `*.test.tsx`.
 
-### Thin Routes, Extracted Page Components
-
-Route files should contain only route configuration. Page UI lives in `src/components/PageName/PageName.tsx`:
-
-```tsx
-// src/routes/index.tsx — thin route
-import { createFileRoute } from '@tanstack/react-router'
-import { DashboardPage } from '../components/DashboardPage/DashboardPage'
-import { getTasks } from '../services/api/serverFns'
-
-export const Route = createFileRoute('/')({
-  loader: () => getTasks({}),
-  component: () => {
-    const tasks = Route.useLoaderData()
-    return <DashboardPage tasks={tasks} />
-  },
-})
-```
-
-The page component receives data as props and is framework-agnostic — it can be rendered in Vitest with `renderWithProviders()` without a running router. Shared display helpers (e.g. color mappers) belong in `src/utils/`.
+Page components receive loader data as props and render in Vitest with `renderWithProviders()` without a running router. Shared display helpers belong in `src/utils/`. Examples: `src/routes/index.tsx`, `src/routes/tasks/index.tsx`.
 
 ### Code Organization
 
@@ -100,130 +102,102 @@ If your team prefers [`@tabler/icons-react`](https://tabler.io/icons) (the Manti
 
 ## 4. TypeScript and React
 
-- **Server Components by Default**: TanStack Start supports React Server Components. Rely on Server Components by default. Reduce the usage of `"use client"` directives. Only use `"use client"` at the top of files when React hooks (`useState`, `useEffect`) or browser APIs are strictly necessary. Keep client components as small and leaf-level as possible.
+- **Server Components by Default**: Rely on Server Components; use `"use client"` only for hooks or browser APIs. Keep client components leaf-level.
 - **Functional Components**: Prefer functional components and hooks over class components.
-- **Type Safety**: Use TypeScript features like interfaces, types, and generics effectively.
-- **Zod-First Types**: All domain types are defined as Zod schemas and TypeScript types are inferred via `z.infer<>`. Tools-layer schemas live in `src/services/schemas/schemas.ts` (with `.describe()` on every field for AI JSON Schema); repository-layer schemas live in `repository.ts`. See the [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) for the three schema layers, `loaderDeps`, and cross-layer `Schema.parse()` mapping.
 - **Type Reuse**: Import types from `src/types`. Do not redefine existing types.
-- **URL-as-State**: Page state (filters, selections, active tabs, modal open/close) **must** live in URL search params, not `useState`. This makes state shareable via URL, survives refresh, and enables deep-linking. Use `validateSearch` on routes with Zod schemas to define and validate search params.
-  - **Correct**: `const { filter } = Route.useSearch()` — state comes from the URL.
-  - **Incorrect**: `const [filter, setFilter] = useState('all')` — state trapped in component.
-- **Internal Links**: Use TanStack Router's `Link` component for internal navigation.
-- **`satisfies` over `as`**: Do not use `as` to bypass type checking (`as never`, `as Record<string, unknown>`, `as SomeProps`). Prefer `as const satisfies SomeSchema` for literals, and prefer schema runtime parsing (`Schema.parse`/`safeParse`) at boundaries where data comes from outside our type-safe system. Once data is inside our typed flow, preserve and propagate types end-to-end instead of re-casting or widening. The **only** acceptable `as` casts are at clearly documented library boundaries where a third-party type is provably too strict, and each such cast must have an adjacent comment explaining why. For error inspection in `catch` blocks, use the `in` operator instead of casting `unknown` errors.
-  - **Good**: `if (typeof err === 'object' && err !== null && 'status' in err && typeof err.status === 'number') { … }`
-  - **Bad**: `const raw = err as Record<string, unknown>; const status = raw.status as number`
+- **Architecture** (schema layers, URL-as-state, `loaderDeps`, `satisfies` over `as`, boundary parsing): follow the [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) **Core Contract** #3–5, #7–8 and **Schema Boundaries**. Tools-layer schemas: `src/services/schemas/schemas.ts`; repository-layer: `src/services/schemas/repository.ts`.
 
 ## 5. Middleware and Auth
 
-### TanStack Start Middleware
+**Skill contract:** repository-backed auth ticket, server-enforced guards, `TraceabilityContext` on writes — see skill **Request Context** and **Interface Contracts**. **Current template** uses a simpler `AuthContext` (migration tracked in the alignment roadmap above).
 
-Authentication is handled via global request middleware registered in `src/start.ts`:
+### Files and env
 
-- `authMiddleware` in `src/middleware/auth.ts` extracts the JWT from the configured header and provides `context.user` and `context.userProfile` to all handlers.
-- The decoded identity and loaded profile are available as the typed `AuthContext` interface, exported from `src/middleware/auth.ts`.
-- Server functions access the user via `context` — no manual header extraction needed.
-- The JWT header name is configurable via `AUTH_HEADER_NAME` env var (default: `Authorization`).
-- **Mutations only**: POST server functions chain `requireAuthMiddleware` from `src/middleware/requireAuth.ts`, so auth is required only for server functions that mutate; GET (query) handlers remain unauthenticated.
+| Piece | Path |
+|-------|------|
+| Global middleware registration | `src/start.ts` |
+| JWT + profile load | `src/middleware/auth.ts` |
+| Mutation auth gate | `src/middleware/requireAuth.ts` |
+| Post-mutation invalidation | `src/middleware/invalidate.ts` |
+| Guard helpers | `src/utils/auth.ts` — `requireAuth`, `requireGroup` |
+| JWT parsing | `src/utils/jwt.server.ts` |
 
-### Auth Context
+- **JWT header:** `AUTH_HEADER_NAME` env var (default: `Authorization`).
+- **Mutations only:** POST server functions chain `requireAuthMiddleware`; GET queries are unauthenticated unless the handler adds auth middleware.
+- **Custom authorization:** Chain composable middleware off `authMiddleware` (see `requireAuth.ts`).
 
-The `AuthContext` interface is exported from `src/middleware/auth.ts`:
+### Auth Context (current)
 
 ```tsx
+// src/middleware/auth.ts
 interface AuthContext {
   user: UserIdentity
   userProfile: UserProfile | null
 }
 ```
 
-`requireAuthMiddleware` chains `authMiddleware`, so `context.user` and `context.userProfile` are typed automatically in downstream handlers — no casts needed.
+`requireAuthMiddleware` chains `authMiddleware` so `context.user` is typed in mutation handlers.
 
-### Auth Guard Helpers
+### Optional patterns (skill)
 
-Composable authorization guards are defined in `src/utils/auth.ts`:
-
-- `requireAuth(context)`: Throws `HttpError(401)` if user is anonymous. Returns the `UserIdentity`.
-- `requireGroup(context, group)`: Throws `HttpError(403)` if user is not in the specified group. Returns the `UserIdentity`.
-
-For mutations, use `requireAuthMiddleware` so the handler runs only when the user is authenticated; the handler can then read `context.user` directly (typed via middleware chaining):
-
-```tsx
-.middleware([requireAuthMiddleware, invalidateMiddleware])
-.handler(async ({ data, context }) => {
-  // context.user is typed — no cast needed
-  return getWritableRepository().doSomething(data, context.user.email)
-})
-```
-
-For one-off auth in other handlers, use `requireAuth(context)` or `requireGroup(context, group)`; they throw 401/403.
-
-### Adding Custom Authorization
-
-Create composable middleware that chains `authMiddleware` for context typing (see `src/middleware/requireAuth.ts` for the pattern). Chain it with `invalidateMiddleware` on POST server functions.
-
-### Public-Route Allowlist
-
-`authMiddleware` maintains a `PUBLIC_ROUTES` set (health checks, `.well-known`, static asset paths, public config endpoints) for which it returns a synthetic anonymous `AuthContext` instead of throwing `401`. Anonymous users have `user` and `userProfile` set to explicit `Anonymous` sentinels so the context shape is always uniform — downstream code, typings, and AI tools never need to branch on "maybe no user". Keep the allowlist small and specific; every other path requires authentication.
-
-### Pre-Auth Redirect Middleware (Legacy Path Compatibility)
-
-When a URL scheme changes (renaming a route segment, collapsing multiple paths into one, moving from hash-based to path-based routing), register a **pre-auth** middleware that short-circuits the request with a `308 Permanent Redirect` **before** `authMiddleware` runs. This avoids spurious `401` responses on old links shared in emails, bookmarks, or external systems. Implement the redirect via `new Response(null, { status: 308, headers: { Location: newPath } })` using a **relative** `Location` so it works across dev, staging, and production without hard-coded origins. Keep the allowlist of legacy paths small and retire entries once upstream consumers have migrated.
+- **Public-route allowlist** — synthetic anonymous context for health/static paths (not yet in this template).
+- **Pre-auth 308 redirects** — legacy URL compatibility before `authMiddleware` (skill **Implementation Flow** #5).
 
 ## 6. Server Functions and Data Access
 
-This is a full-stack TanStack Start application. There is no separate backend API. The [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) defines the rigid layering rules and the "every repo method gets a tool" policy.
+Full-stack TanStack Start — no separate backend API. Architecture (layering, isomorphic loaders, tool coverage, boundary parsing): [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) **Core Contract** #6, #16 and **Server execution boundaries**.
 
 ```
-Route Loader → Server Function (serverFns.ts) → Repository → Database / Seed Data
+Route Loader → serverFns.ts → Repository → Database / Seed Data
 ```
 
-- **Server Functions**: Defined with `createServerFn` from `@tanstack/react-start` in `src/services/api/serverFns.ts` and exported directly (no wrapper functions). All core logic (repository calls, authorization, observability spans) lives inside the `.handler()` callback.
-- **Input Validation**: Server functions pass Zod schemas to `.inputValidator(Schema)`.
-- **Repository Pattern**: All data access goes through the repository interface.
-- **Calling convention**: Callers pass `{ data: inputData }` to server functions (e.g. `getTasks({ data: filter })`).
-- **Server execution boundaries:** Route loaders are **isomorphic** (SSR and client navigations) — never import DB clients, repositories, or read secrets in route files. Loaders only call exported functions from `serverFns.ts`. DB and env wiring live in `*.server.ts` modules; see the skill’s **Server execution boundaries** section and `vite.config.ts` `importProtection`.
+| Concern | Where |
+|---------|--------|
+| RPC entry points | `src/services/api/serverFns.ts` — all `createServerFn` exports |
+| UI mutation errors | `src/services/api/processResponse.ts` |
+| AI tool errors | `src/services/ai/serverTool.ts` — `createSafeServerTool`, `safeToolHandler` |
+| Repository factory | `src/services/repository/getRepository.server.ts` |
+| Import protection | `vite.config.ts` → `tanstackStart({ importProtection })` |
 
-### 6.1. Data Fetching (Queries)
+**Calling convention:** `getTasks({ data: filter })` — pass `{ data: … }` to server functions.
 
-- **Loaders-first**: Always fetch data in route `loader` functions via server functions. Never use `useEffect` + `useState` for data that can be loaded in a loader. Loaders provide automatic caching, parallel fetching, SSR support, and `pendingComponent` / stale-while-revalidate.
-- **No useEffect for data**: The only valid use of `useEffect` for data fetching is when reacting to a non-URL event (e.g., WebSocket message).
-- **Nested route data**: If a parent route has already loaded data, child routes should access it using `useLoaderData({ from: '...' })` instead of re-fetching.
-- Use `createServerFn({ method: 'GET' })` for queries.
-- Loaders should throw on failure for centralized error handling.
-
-### 6.2. Data Writing (Mutations)
-
-- Use `createServerFn({ method: 'POST' })` for mutations.
-- **Invalidation middleware**: All POST server functions must chain `.middleware([requireAuthMiddleware, invalidateMiddleware])`. The middleware runs on the client after the mutation completes and calls `router.invalidate()`, which triggers loaders to re-fetch. Components do **not** call `router.invalidate()` manually.
-- Mutation server functions throw `HttpError` on auth/not-found failures. UI callers wrap with `processResponse()` to get `{ data, error }`. AI tools use `safeToolHandler()` for the same normalization.
-- Call mutations from event handlers. Provide toast feedback after mutations.
+**Mutations (template pattern):**
 
 ```tsx
 export const myMutation = createServerFn({ method: 'POST' })
   .middleware([requireAuthMiddleware, invalidateMiddleware])
   .inputValidator(MyInputSchema)
   .handler(async ({ data, context }) => {
-    // context.user is typed via requireAuthMiddleware
     return getWritableRepository().doSomething(data, context.user.email)
   })
 
-// In a route component:
 const result = await processResponse(() => myMutation({ data: input }))
 ```
 
+Call mutations from event handlers; show toast feedback on success/failure.
+
 ## 7. Routing (TanStack Router)
 
-- **File-Based Routing**: Routes are defined as files in `src/routes/`. The route tree is auto-generated.
-- **Nested Routes**: Use nested routes for modals and lazy-loaded UI.
-- **Loaders over useEffect**: Data fetching belongs in `loader`, not in component effects. See section 6.1.
-- **Preserve Search Params**: `navigate({ to: '/path', search: prev => ({ ...prev, newParam: 'value' }) })` — always use the functional form so the router diffs prior search params instead of requiring the caller to read them via `useSearch()` first. Reading `useSearch()` only to spread it into a `navigate` call re-subscribes the component to search changes and is the most common source of unnecessary re-renders.
-- **`loaderDeps` for cache keying**: When a loader's output depends on `validateSearch` params (filters, pagination, search text), use `loaderDeps: ({ search }) => search` and pull from `deps` inside the loader. Do not read `useSearch()` inside the loader — only `deps` participates in the router's cache key. Use `loaderDeps` to pick *only* the search fields that affect the fetch; unrelated fields (e.g. an "expanded" flag that affects UI only) should be excluded so they do not invalidate the cache.
-- **Link wrapper**: Prefer the project-local `Link` wrapper (see rule 32 in the skill) over raw `@tanstack/react-router` `Link` so internal navigation preserves search params by default.
-- **Child routes read from parent loaders**: Deep components access already-loaded parent data via `getRouteApi('/parent-path').useLoaderData()` or `useLoaderData({ from: '/parent-path' })` rather than re-fetching. Loader-derived values (permissions, feature flags, the active user) flow into client hooks as stable snapshots — no `useEffect` + `useState` for data the loader already has.
+Routes live in `src/routes/`; tree is auto-generated in `routeTree.gen.ts`. Router config: `src/router.tsx`.
+
+**Architecture** (`validateSearch`, `loaderDeps`, parent layout loaders, router defaults bundle, project `Link` wrapper): skill **Core Contract** #7–9, #15.
+
+**Operational tip:** preserve search params with the functional navigate form — `navigate({ to: '/path', search: prev => ({ ...prev, newParam: 'value' }) })` — to avoid unnecessary re-renders from reading `useSearch()` only to spread into `navigate`.
 
 ## 8. AI Chat and Tools
 
-Server and client tool coverage expectations, the AI chat pipeline, and client-tool wiring samples are in the [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md). This section covers adapter details, file paths, and the navigation manifest.
+**Architecture** (tool coverage, `browserContext`, bounded agent loop, prompt structure, virtual fields): [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) **Core Contract** #11–14 and **Implementation Flow** #4, #7. **This section:** adapter setup, file paths, chat UI wiring, navigation manifest maintenance.
+
+| File | Role |
+|------|------|
+| `src/services/ai/adapter.ts` | Provider implementation |
+| `src/services/ai/tools.ts` | Server + client tool definitions |
+| `src/services/ai/serverTool.ts` | `createSafeServerTool` / `safeToolHandler` |
+| `src/services/ai/navigationManifest.ts` | AI route manifest — update when routes/search params change |
+| `src/routes/api/chat.ts` | SSE endpoint, `BASE_SYSTEM_PROMPT`, `buildSystemPrompt` |
+| `src/components/ChatDrawer/ChatDrawer.tsx` | `useChat`, client tools, markdown rendering |
+
+**Promptable gating (skill #12):** root loader should call `getAIAvailability()` and mount chat UI only when configured. *Template gap:* `Header` / `ChatDrawer` currently always render; see alignment roadmap phase 3.
 
 ### AI Adapter Interface
 
@@ -257,32 +231,7 @@ The default implementation uses `@tanstack/ai-openai` with plain OpenAI. Set `OP
 
 ### Server Tools
 
-- `src/services/ai/tools.ts` defines server tools using `toolDefinition` from `@tanstack/ai`. Server tools call the same exported server functions that route loaders and event handlers use.
-- Tool handlers use the shared `createSafeServerTool()` / `safeToolHandler()` pattern to catch errors and return `{ error: string, code?: number }` so the AI can interpret 401/403/404 (e.g. "You need to log in", "Only the task creator can do that").
-- Tool args are typed via `Schema.parse(args)` since `@tanstack/ai`'s `.server()` types the handler arg as `unknown`.
-- When adding new repository methods (reads and writes), expose them as AI tools.
-- **getCurrentUserContext** returns who is logged in and a permissions summary. **createTask**, **updateTask**, **deleteTask** call the same server functions as the UI; auth and creator checks run inside the server function handlers.
-
-### Virtual-Field Explanation Registry
-
-Some fields the AI surfaces are **computed**, not stored (e.g. a `status` derived from dates, a `health` score computed from a mix of columns, a `priority` inferred from SLA distance). The AI should not be asked to invent the rule each time. Instead, keep a single `fieldMetadata.ts` module that maps each virtual field to a short, stable explanation string, and expose an `explainField(fieldName)` AI tool plus a JSDoc-visible `VIRTUAL_FIELDS` constant consumed by the system prompt. When you add or change a derivation in the repository / mapping layer, update the registry in the same commit. This prevents the AI from answering "why is this Pending?" with a plausible-sounding guess that drifts from the actual rule.
-
-### Fluent System Prompt Builder
-
-For apps whose `buildSystemPrompt()` starts composing many conditional blocks (permissions, feature flags, location, time, navigation manifest, entity summaries), extract a tiny fluent builder in `src/services/ai/promptBuilder.ts`:
-
-```tsx
-// Pseudocode — keep the API small
-const prompt = new SystemPromptBuilder()
-  .section('Capabilities', capabilitiesText)
-  .sectionIf(user.isAdmin, 'Admin-only tools', adminToolsText)
-  .section('Current User', renderCurrentUser(user))
-  .section('Browser Context', renderBrowserContext(ctx))
-  .section('Navigation', getNavigationPromptSection())
-  .build()
-```
-
-The builder's only responsibility is: ordered sections, conditional inclusion, consistent `## Heading` / blank-line framing, and a final `.build(): string`. It must not know domain details. Prefer this once a `buildSystemPrompt()` function exceeds ~5 appended strings.
+Definitions in `src/services/ai/tools.ts` — each calls the same `serverFns.ts` exports as routes. When adding repository methods, add matching `toolDefinition` + `createSafeServerTool` entries (skill **Core Contract** #11).
 
 ### Client Tools
 
@@ -320,38 +269,16 @@ const { messages, sendMessage, isLoading } = useChat(
 
 ### App navigation and links
 
-- **Navigation structure**: The app navigation structure for the AI is derived from [src/routeTree.gen.ts](src/routeTree.gen.ts) and exposed via [src/services/ai/navigationManifest.ts](src/services/ai/navigationManifest.ts). When you add or change routes or search params, update the manifest so the AI system prompt stays in sync.
-- The AI is instructed to use **markdown links** in replies (e.g. `[View task](/tasks/123)`, `[Tasks](/tasks)`) and to use **query params** in links where applicable (e.g. `/tasks?status=done`).
-- The AI can trigger client-side navigation by calling the **navigate** client tool with `to` and optional `search`; the browser executes it automatically via `@tanstack/ai-client`.
-- The chat UI ([ChatDrawer](src/components/ChatDrawer/ChatDrawer.tsx)) renders internal links in assistant messages as TanStack Router `Link` components so clicks do client-side navigation; external links open in a new tab.
+When routes or `validateSearch` schemas change, update `APP_NAVIGATION` in `src/services/ai/navigationManifest.ts` (descriptions should match schema `.describe()` text). Long-term: skill **Special Patterns** — derive from router introspection where possible.
+
+- Internal links in assistant messages: `ChatDrawer` `MarkdownLink` → TanStack Router `Link` with `preload="intent"`.
+- AI uses markdown links in replies; **navigate** client tool for programmatic navigation.
 
 ### AI System Prompt Context
 
-`buildSystemPrompt()` in `src/routes/api/chat.ts` assembles three context blocks so the AI knows **who** is asking, **where** they are in the world, and **what page** they are on. The client sends browser-only data (`browserContext` via `ChatDrawer`); the server adds server-only data (user identity from auth middleware). Both are merged into the system prompt.
+`buildSystemPrompt()` in `src/routes/api/chat.ts` merges `BASE_SYSTEM_PROMPT`, navigation manifest, and dynamic blocks (Current User, Browser Context, Current Location). Client sends `browserContext` from `ChatDrawer`; server validates with `BrowserContextSchema` in `schemas.ts`.
 
-1. **`ChatDrawer`** (client) captures the browser environment (timezone, locale, current time) and current location (pathname, search, href) into `browserContext` and sends it with every `/api/chat` request.
-2. **`BrowserContextSchema`** (`src/services/schemas/schemas.ts`) validates the payload on the server.
-3. **`## Current User`** (server) — `buildSystemPrompt()` reads the authenticated user from the auth middleware context and injects name, email, and role. No client data needed; this comes from the JWT. The AI uses this to personalize replies and understand permissions without a tool call.
-4. **`## Browser Context`** (server + client data) — same function injects timezone, locale, and the user's local date/time formatted using their locale and timezone from `browserContext`.
-5. **`## Current Location`** (server + client data) — same function injects the current path, full URL, and any resolved dynamic segments (e.g. matching `/tasks/$taskId` to extract the concrete task id so the AI can resolve "this task").
-6. **Navigation manifest** — `navigationManifest.ts` lists all user-facing routes and their search params (mirroring `src/routeTree.gen.ts`). This is injected into the system prompt so the AI knows which query params exist for each route and can form valid links and `navigate` tool calls.
-
-When adding or changing routes:
-
-- Update `APP_NAVIGATION` in `navigationManifest.ts` with the new route, description, and any `searchParams` (name + description). The manifest is the AI's view of the app structure.
-- If a new route has dynamic segments (e.g. `$projectId`), add pattern-matching logic in `buildSystemPrompt()` so the AI can resolve "this project" to the current id.
-- Search param names and descriptions in the manifest should match the Zod schemas in `validateSearch` on the corresponding route file.
-
-### Promptable by Default
-
-The app is AI-promptable out of the box when the required credentials are set. AI availability is checked at the **root loader level** via `getAIAvailability()` in `src/services/api/serverFns.ts`, which calls `getAIAdapterService().isConfigured()`. The result flows through the component tree:
-
-1. `__root.tsx` loader fetches `aiAvailable` alongside `currentUser`.
-2. `AppLayout` receives `aiAvailable` and conditionally mounts the chat trigger and drawer.
-3. `Header` shows the "Ask AI" button only when `aiAvailable` is true.
-4. `ChatDrawer` is only rendered when AI is configured — no disabled state or alert needed.
-
-This avoids a flash of disabled UI and keeps the chrome clean when no AI provider is configured.
+When adding dynamic route segments, add pattern-matching in `buildSystemPrompt()` so the AI can resolve "this task" to the current id.
 
 ### Chat Drawer Convention
 
@@ -368,41 +295,7 @@ Assistant messages are rendered with [`react-markdown`](https://github.com/remar
 
 ### System Prompt Generation
 
-When scaffolding a new project, **ask the user about their domain** — entities, what the AI should be able to do, and permissions — then generate a tailored `BASE_SYSTEM_PROMPT` in `src/routes/api/chat.ts`. Do not copy the template's task-management prompt; every section must reflect the app being built.
-
-`buildSystemPrompt()` composes `BASE_SYSTEM_PROMPT` + navigation manifest + dynamic context (Current User, Browser Context, Current Location) into a single string passed to `chat({ systemPrompts: [...] })`. The base prompt should follow this structure:
-
-```
-## Capabilities
-- What the AI can do in this app (query data, create/update/delete entities, navigate, etc.)
-- List every tool the AI has access to and when to use each one
-
-## Data Model
-- Each entity with its fields, types, and relationships
-- Use a flat list: field name, type, and description
-
-## Links and navigation
-- Instruct the AI to use markdown links in replies (e.g. `[View item](/items/123)`)
-- List available query params for filtering (e.g. `/items?status=active&priority=high`)
-- Reference the navigate tool for client-side navigation
-
-## Mutations and data refresh
-- After mutation tools (create, update, delete), always call invalidateRouter
-- List which tools are mutations
-
-## Permissions and errors
-- Map HTTP error codes to user-facing messages:
-  - 401 → "You need to log in"
-  - 403 → "You don't have permission"
-  - 404 → "Not found"
-- Reference getCurrentUserContext for checking permissions
-
-## Guidelines
-- Formatting conventions (markdown, concise, include status/priority when listing)
-- When to use which tool (e.g. filter tool for criteria, detail tool for specific items)
-```
-
-The dynamic context sections (Current User, Browser Context, Current Location) are appended automatically by `buildSystemPrompt()` — see the "AI System Prompt Context" subsection above.
+For new projects, ask the user about domain entities and permissions, then tailor `BASE_SYSTEM_PROMPT` in `src/routes/api/chat.ts` (do not copy the template task prompt verbatim). Section structure: skill **Implementation Flow** #7.
 
 ### Chat Endpoint (`src/routes/api/chat.ts`)
 
@@ -410,111 +303,28 @@ The chat endpoint is a TanStack Start file-based route at `/api/chat` with two s
 
 **File structure:** `BASE_SYSTEM_PROMPT` (domain-specific static prompt) → `buildSystemPrompt()` (composes base + manifest + dynamic context) → GET handler (`{ available }`) + POST handler (SSE stream).
 
-**GET handler** — returns `{ available: boolean }` via `getAIAdapterService().isConfigured()`. The root loader calls this to decide whether to render the chat UI.
+**GET handler** — `{ available: boolean }` from `getAIAdapterService().isConfigured()`.
 
-**POST handler** — the main chat flow:
+**POST handler flow:** check adapter → parse `{ messages, browserContext }` → `buildSystemPrompt` → assemble tools → `chat({ …, agentLoopStrategy: maxIterations(N) })` → SSE via `toServerSentEventsResponse`. Set `maxIterations` explicitly (skill **Core Contract** #13).
 
-1. **Check adapter** — get the adapter from `getAIAdapterService().getAdapter()`. If `null`, log the error, report to observability, and return `503`.
-2. **Parse request** — `request.json()` yields `{ messages, browserContext }`.
-3. **Extract auth** — `context as AuthContext` provides `user` and `userProfile` from the global auth middleware (no manual JWT extraction).
-4. **Validate browser context** — `BrowserContextSchema.safeParse(body.browserContext)` validates client-sent data; failures are treated as `null` (graceful degradation).
-5. **Build system prompt** — `buildSystemPrompt(user, userProfile, browserContext)` assembles the full prompt string.
-6. **Assemble tools** — array of all server tool implementations (`.server()`) and client tool definitions (definition-only, no `.server()`).
-7. **Stream** — `chat({ adapter, messages, systemPrompts, tools, agentLoopStrategy })` returns an async iterable; `toServerSentEventsResponse(stream)` converts it to an HTTP `Response` with SSE headers.
-
-**When modifying this file:**
-
-- Add new server tools to the `tools` array when you expose new repository methods.
-- Add new client tool definitions (e.g. `navigateToolDef`) to the same array — they are definition-only on the server and wired in the browser via `.client()`.
-- Update `BASE_SYSTEM_PROMPT` when the data model, routes, tools, or permission rules change.
-- Add pattern-matching in `buildSystemPrompt()` when new routes have dynamic segments (e.g. `$projectId`).
-- Update `getNavigationPromptSection()` in `navigationManifest.ts` when routes or search params change.
+When modifying: add server tools to the `tools` array; add client tool defs and wire `.client()` in `ChatDrawer`; update `BASE_SYSTEM_PROMPT` and `navigationManifest.ts` when domain or routes change.
 
 ## 9. Observability
 
-### ObservabilityService interface
+**Architecture & setup:** [observability-and-env skill](.agents/skills/observability-and-env/SKILL.md) (landed via PR #6). **This section:** file map and usage in this repo.
 
-- **Interface**: `src/services/observability/types.ts` defines the `ObservabilityService` interface.
-- **Implementations**: Sentry (`sentry.ts`) and no-op (`noop.ts`). Factory in `index.ts` selects based on `webPublicEnv.SENTRY_DSN`.
-- **Client Init**: `src/router.tsx` conditionally initializes client-side tracing.
-- **Usage**: Wrap server function internals with `getObservability({}).startSpan('name', fn)`.
-- **To swap providers**: Implement `ObservabilityService`, update the factory, and replace `instrument.server.mts` (and the emitted `instrument.server.mjs` in `.output/server`).
+| Piece | Path |
+|-------|------|
+| Interface | `src/services/observability/types.ts` |
+| Sentry / no-op | `sentry.ts`, `noop.ts`; factory `index.ts` |
+| Server bootstrap | `instrument.env.mts` → `instrument.shared.mts` → `instrument.server.mts` (emitted `.mjs` in `.output/server`) |
+| Env schemas | `src/env/runtimeEnvSchema.ts`, `src/env/webEnv.ts` |
+| Pino | `src/utils/logger.ts`, `src/utils/serverLogger.ts` |
+| Public env middleware | `src/middleware/webEnv.ts` |
+| Public env for client | `getWebPublicEnv` in `serverFns.ts` + root loader (not `window.__ENV__`) |
 
-### Sentry bootstrap
-
-Server-side Sentry is initialized via the `--import` hook before the app entry loads:
-
-| File (source) | Responsibility |
-|------|---------------|
-| `instrument.env.shared.mts` | Shared deployment env schema used by bootstrap and TypeScript callers (`runtimeEnvSchema.ts` re-exports it) |
-| `instrument.env.mts` | Bootstrap resolver — parses `process.env` once; invalid `NODE_ENV` values fail schema validation |
-| `instrument.shared.mts` | `initSentry({ serverName, dsn, environment, release })` — no `process.env` inside |
-| `instrument.server.mts` | Bootstrap entry: resolve bootstrap env + init |
-
-**Build**: `pnpm build` runs `tsc -p tsconfig.instrument.json`, which emits `instrument.*.mjs` into `.output/server/` (alongside `cp package.json` so `instrument.server` can read the app version). **Production start** uses `node --import ./.output/server/instrument.server.mjs`. **Dev** preloads `tsx` then `./instrument.server.mts` via `NODE_OPTIONS`.
-
-From `src/**/*.ts`, import the shared schema module as `../../instrument.env.shared.mjs` (extension matches the compiled bootstrap output); with `moduleResolution: bundler`, TypeScript resolves it to the `instrument.env.shared.mts` source. The `instrument.*.mts` entrypoints import each other with `.mts` extensions so `tsx` can preload them in dev; `tsc -p tsconfig.instrument.json` emits `.mjs` and rewrites those specifiers via `rewriteRelativeImportExtensions`.
-
-**Key invariant**: `instrument.shared.mts` never reads `process.env`. All values are pre-resolved by the caller, bootstrap `NODE_ENV` is strictly schema-validated in `instrument.env.mts`, and Sentry is configured only through `SENTRY_DSN`.
-
-**NODE_ENV vs ENV**: Two separate variables control deployment identity. `NODE_ENV` drives Sentry's environment tag (set by the bootstrap in `instrument.env.mts`). `ENV` drives application behavior — logger sampling, pretty-printing, and log routing. A mismatch (e.g. `NODE_ENV=production` + `ENV=staging`) will silently tag all Sentry events as "production" while the app behaves as staging. Keep them consistent across deployments.
-
-### pino structured logging
-
-Application modules use the pino factory from `src/utils/logger.ts`:
-
-```typescript
-import { createServerLogger } from '../utils/serverLogger'
-const log = createServerLogger('myModule')   // binds webServerEnv.ENV + LOG_LEVEL
-```
-
-- `createModuleLogger(name, { environment, logLevel? })` — core factory; no `process.env` access inside.
-- `createServerLogger(name)` — bound factory for server modules; closes over `webServerEnv.ENV` and `webServerEnv.LOG_LEVEL`.
-- Root pino instance is lazily created once per process; all module loggers are `child()` instances.
-- TTY pretty-printing is auto-enabled for interactive Node terminals outside of production.
-
-### App Version
-
-The app follows [semver](https://semver.org/). The version in `package.json` is extracted at **build time** via Vite's `define` option and exposed as the global constant `__APP_VERSION__`. This constant is injected into every observability tool so that error reports, log lines, and traces are tagged with the exact deployed version.
-
-**Vite config** (`vite.config.ts`):
-
-```typescript
-import { readFileSync } from 'node:fs'
-const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'))
-
-export default defineConfig({
-  define: {
-    __APP_VERSION__: JSON.stringify(pkg.version),
-  },
-  // ...existing config
-})
-```
-
-**TypeScript declaration** (add to `src/vite-env.d.ts` or a global `.d.ts`):
-
-```typescript
-declare const __APP_VERSION__: string
-```
-
-**Sentry** — pass as `release` in `instrument.server.mts` (from `package.json`) and in client init so errors are grouped by version.
-
-For the client-side Sentry init, use the Vite-injected constant:
-
-```typescript
-Sentry.init({ dsn, release: __APP_VERSION__ })
-```
-
-**Pino logger** — include `version` as a default binding so every log line carries it:
-
-```typescript
-export const logger = pino({
-  level: 'info',
-  base: { version: __APP_VERSION__ },
-}, transport)
-```
-
-**Other tools** — any new observability integration should read `__APP_VERSION__` for the same purpose. The pattern ensures a single source of truth (`package.json`) with no manual version strings.
+- **Usage:** `getObservability().startSpan('name', fn)` in server handlers; `createServerLogger('module')` for structured logs.
+- **Env vars:** `SENTRY_DSN`, `ENV`, `LOG_LEVEL` — see `.env.example`. Keep `NODE_ENV` and `ENV` aligned in production so Sentry tags match runtime behavior.
 
 ## 10. Testing
 
@@ -533,7 +343,6 @@ export const logger = pino({
 - **Auth fixture**: `e2e/auth.ts` provides `authedPage` / `authedContext` fixtures using unsigned JWTs sent via `extraHTTPHeaders`.
 - **Convention**: Spec files in `e2e/` as `*.spec.ts`.
 - **Running**: `pnpm test:e2e` (reuses existing dev server or starts one with seed data).
-- **NODE_ENV**: The Playwright `webServer` config forces `NODE_ENV=development`. `instrument.env.mts` rejects values outside `development | staging | production`, so never start the dev server with `NODE_ENV=test`.
 
 ## 11. Linting and Formatting
 
@@ -544,88 +353,17 @@ This project uses [Biome](https://biomejs.dev/) as the default linter and format
 - **Always use latest versions**: When adding dependencies, run `pnpm add <pkg>` without a version suffix so the package manager resolves the newest release. Never pin exact versions unless there is a known incompatibility.
 - **Keep dependencies up to date**: Run `pnpm outdated` to check for stale packages and `pnpm update` to align the lockfile with the latest compatible versions within current ranges.
 - **Major version upgrades are conscious decisions**: When `pnpm outdated` shows a major version bump, upgrade explicitly with `pnpm add <pkg>@latest`, then verify with `pnpm lint && pnpm test && pnpm build` before committing.
-- **After any dependency change**, run the full validation checklist (section 17) to catch regressions.
+- **After any dependency change**, run the full validation checklist (section 15) to catch regressions.
 
 ## 13. Public Runtime Config
 
-Config values that differ per deployment (Sentry DSN, environment name, feature flags) and are safe for the browser **must not** be baked into the Vite bundle via `import.meta.env` — that ties the built artifact to one environment. They also **must not** be injected via `window.__ENV__` — that is insecure and fragile.
+Handled by the [observability-and-env skill](.agents/skills/observability-and-env/SKILL.md) (PR #6): `webPublicEnv` slice exposed via `getWebPublicEnv` GET server function and root loader — **not** `window.__ENV__` or `import.meta.env` for deployment-specific values.
 
-Instead, expose them through the validated `WebPublicEnvSchema` slice and deliver them to the browser from a route `loader` that calls a GET server function when React actually needs that data.
+## 14. Special Patterns
 
-### Environment schemas (`src/env/`)
+Bulk edit (URL multi-select), overlay repository, distinct-values tools, help surface, controlled components: [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) **Special Patterns** and **Core Contract** #7–8.
 
-`process.env` is read **only once**, at module import time:
-
-| File | Purpose |
-|------|---------|
-| `src/env/runtimeEnvSchema.ts` | Shared `DeploymentEnvSchema`, `LogLevelSchema`, and optional preprocessors |
-| `src/env/webEnv.ts` | `WebServerEnvSchema` (full, including secrets) + `WebPublicEnvSchema` (browser-safe slice); singletons `webServerEnv` + `webPublicEnv` |
-
-**Invariant**: after `src/env/webEnv.ts` is parsed, all downstream code receives typed values from the singletons — never raw `process.env` strings.
-
-### Public env for React
-
-Do **not** import `webEnv` from client-shared route modules — `WebServerEnvSchema.parse(process.env)` does not work in the browser.
-
-When a client component needs `ENV`, `LOG_LEVEL`, or `SENTRY_DSN`, add a GET server function that returns `webPublicEnv` and call it from a route `loader`, then read the result from `useLoaderData()`.
-
-### `webEnvMiddleware`
-
-`src/middleware/webEnv.ts` chains `authMiddleware` then injects `ctx.context.publicEnv` for server functions:
-
-```typescript
-import { webEnvMiddleware } from './middleware/webEnv'
-// Register in src/start.ts (do not list authMiddleware separately):
-// requestMiddleware: [webEnvMiddleware]
-```
-
-Server functions access `ctx.context.publicEnv.SENTRY_DSN` etc. without importing `webEnv.ts` directly.
-
-### Environment variables reference
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `ENV` | Deployment name: `development`, `staging`, `production` | No (defaults to undefined) |
-| `LOG_LEVEL` | Minimum pino log level | No (defaults to `info`) |
-| `SENTRY_DSN` | Sentry DSN for both server and browser | No (observability disabled when absent) |
-| `AUTH_HEADER_NAME` | HTTP header name for the JWT | No (defaults to `Authorization`) |
-
-## 14. Bulk Edit Pattern
-
-For lists where users need to change many rows at once (multi-row updates of status, priority, ownership), use a dedicated `/entity/edit?selected=id1&selected=id2` route driven entirely by URL state:
-
-1. **Selection** lives in the parent list's URL search param as a repeated key (`selected=...`). A small `useMultiEditSelection()` hook reads it via `useSearch()` and provides `toggle`, `clear`, `isSelected`.
-2. **Edit route** validates `selected: z.array(z.string()).default([])` in `validateSearch` and fetches those rows in a single loader call.
-3. **Category tabs** group editable fields (e.g. "Base", "Ownership", "Details") via a Mantine `SegmentedControl` backed by another URL search param so switching categories never loses progress.
-4. **Dirty tracking** keeps a cross-tab `Map<rowId, Partial<Fields>>` so only changed cells are included in the save payload.
-5. **An "Apply all" row** lets the user set a single value for a column across every selected row; clicking it writes that value into every row's dirty map.
-6. **Batch server function** uses MongoDB `bulkWrite` (or the equivalent) for a single round-trip, validates permissions per row, and chains `invalidateMiddleware` so the list refetches on success.
-7. **Close/cancel** clears the `selected` search param on the parent list so stale selections don't leak across navigations.
-
-Keep the multi-edit form layout agnostic of entity specifics by defining column metadata (label, editor type, permission check, read-only flag) in a single table so new fields plug in without touching the form component.
-
-## 15. Override / Overlay Repository Pattern
-
-Some entities are sourced from upstream systems (a data warehouse export, a Google Sheet, a vendor API) but users need to annotate them with app-local fields (notes, custom categorization, manual corrections). The clean way to model this is an **overrides overlay**:
-
-- **Source collection** (read-only, refreshed by a pipeline) holds the upstream rows.
-- **Overrides collection** holds sparse per-entity documents with only the user-edited fields plus audit metadata (`lastModifiedBy`, `lastModifiedDate`).
-- **Read path**: repository loads source rows and overrides in parallel, then runs a **pure `applyOverrides(source, override)`** function that shallow-merges override values over source values, treating `null` as "revert to source". The merged view is what the UI and AI see.
-- **Write path**: mutations target the overrides collection with `$set` for provided fields and `$unset` for explicit `null`s, using `upsert: true` via `bulkWrite` so concurrent edits are resilient.
-- **UI affordance**: the form renders the current (merged) value and shows a subtle "Revert to source" affordance next to overridden fields. Clicking it sets the field to `null` on the next save, which `$unset`s it and restores the source value on next read.
-
-Keep the overlay function pure and unit-tested — it is the single place where "what does the user see" is defined.
-
-## 16. Prefer Controlled Components
-
-Prefer controlled components in general. Keep data and state orchestration at the route level, and keep UI components focused on rendering and events.
-
-- **Loaders fetch data, components receive props**: Route loaders own data fetching and pass data down to page/components. Avoid embedding read-fetch lifecycle logic in reusable UI components.
-- **State lives in route search params**: Filters, sorting, pagination, active tabs, and modal state belong in validated route search params so URLs remain shareable and restorable.
-- **Controlled inputs are easier to test**: Components that receive value/state via props and emit callbacks (`value` + `onChange`) are simpler to unit test, easier to reuse, and easier to reason about than components with hidden internal state.
-- **Use uncontrolled only with clear justification**: Keep uncontrolled state for isolated UX details that are intentionally local and not part of route/application state.
-
-## 17. Validate Changes
+## 15. Validate Changes
 
 Always verify changes with:
 

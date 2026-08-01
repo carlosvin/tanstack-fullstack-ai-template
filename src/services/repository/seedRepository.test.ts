@@ -59,7 +59,10 @@ describe('SeedRepository', () => {
 
 	describe('createTask', () => {
 		it('creates a task with generated ID and timestamps', async () => {
-			const task = await repo.createTask({ title: 'New task', status: 'pending', priority: 'low' }, 'test@example.com')
+			const task = await repo.createTask(
+				{ title: 'New task', status: 'pending', priority: 'low' },
+				{ createdBy: 'test@example.com' },
+			)
 			expect(task.id).toBeTruthy()
 			expect(task.title).toBe('New task')
 			expect(task.createdBy).toBe('test@example.com')

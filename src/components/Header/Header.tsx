@@ -1,15 +1,16 @@
 import { ActionIcon, Button, Group, Text, Tooltip, useMantineColorScheme } from '@mantine/core'
-import { Link } from '@tanstack/react-router'
 import { CheckSquare, Code, ListTodo, MessageCircle, Moon, Sun } from 'lucide-react'
 import type { UserIdentity, UserProfile } from '../../types'
+import { Link } from '../Link/Link'
 
 interface HeaderProps {
 	currentUser?: { identity: UserIdentity; profile: UserProfile | null }
+	aiAvailable?: boolean
 	onOpenChat?: () => void
 }
 
 /** Application header with navigation, color scheme toggle, and AI chat trigger. */
-export function Header({ currentUser, onOpenChat }: HeaderProps) {
+export function Header({ currentUser, aiAvailable = false, onOpenChat }: HeaderProps) {
 	const { colorScheme, toggleColorScheme } = useMantineColorScheme()
 	const displayName = currentUser?.profile?.name || currentUser?.identity.name
 
@@ -66,15 +67,17 @@ export function Header({ currentUser, onOpenChat }: HeaderProps) {
 					</ActionIcon>
 				</Tooltip>
 
-				<Button
-					variant="light"
-					size="compact-sm"
-					leftSection={<MessageCircle size={16} />}
-					onClick={handleOpenChat}
-					aria-label="Open AI chat"
-				>
-					Ask AI
-				</Button>
+				{aiAvailable ? (
+					<Button
+						variant="light"
+						size="compact-sm"
+						leftSection={<MessageCircle size={16} />}
+						onClick={handleOpenChat}
+						aria-label="Open AI chat"
+					>
+						Ask AI
+					</Button>
+				) : null}
 			</Group>
 		</Group>
 	)

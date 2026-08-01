@@ -1,8 +1,10 @@
 import { createServerFn } from '@tanstack/react-start'
+import { webPublicEnv } from '../../env/webEnv'
 import { authMiddleware } from '../../middleware/auth'
 import { invalidateMiddleware } from '../../middleware/invalidate'
 import { requireAuthMiddleware } from '../../middleware/requireAuth'
 import { HttpError } from '../../utils/httpError'
+import { getAIAdapterService } from '../ai/adapter'
 import { getObservability } from '../observability'
 import { getReadRepository, getWritableRepository } from '../repository/getRepository.server'
 import { TaskRepoFilterSchema, TaskRepoInputSchema } from '../schemas/repository'
@@ -13,6 +15,7 @@ import {
 	UpdateTaskInputSchema,
 	UserProfileByEmailSchema,
 } from '../schemas/schemas'
+import { toToolTask, toToolUserProfile } from '../schemas/taskMappers'
 
 // ============================================================================
 // Queries (GET) — accessed from route loaders and AI tools
@@ -23,14 +26,16 @@ export const getTasks = createServerFn({ method: 'GET' })
 	.inputValidator(TaskFilterSchema.optional())
 	.handler(async ({ data: filter }) => {
 		const repoFilter = filter ? TaskRepoFilterSchema.parse(filter) : undefined
-		return getObservability({}).startSpan('getTasks', () => getReadRepository().getTasks(repoFilter))
+		const rows = await getObservability({}).startSpan('getTasks', () => getReadRepository().getTasks(repoFilter))
+		return rows.map(toToolTask)
 	})
 
 /** Fetch a single task by ID. */
 export const getTask = createServerFn({ method: 'GET' })
 	.inputValidator(TaskIdInputSchema)
 	.handler(async ({ data }) => {
-		return getObservability({}).startSpan('getTask', () => getReadRepository().getTask(data.taskId))
+		const row = await getObservability({}).startSpan('getTask', () => getReadRepository().getTask(data.taskId))
+		return row ? toToolTask(row) : null
 	})
 
 /** Fetch all distinct assignee emails. */
@@ -42,8 +47,19 @@ export const getAssignees = createServerFn({ method: 'GET' }).handler(async () =
 export const getUserProfile = createServerFn({ method: 'GET' })
 	.inputValidator(UserProfileByEmailSchema)
 	.handler(async ({ data }) => {
-		return getObservability({}).startSpan('getUserProfile', () => getReadRepository().getUserProfile(data.email))
+		const row = await getObservability({}).startSpan('getUserProfile', () =>
+			getReadRepository().getUserProfile(data.email),
+		)
+		return row ? toToolUserProfile(row) : null
 	})
+
+/** Browser-safe public env for the root loader (validated on the server only). */
+export const getWebPublicEnv = createServerFn({ method: 'GET' }).handler(async () => webPublicEnv)
+
+/** Whether the AI chat adapter is configured (root loader gates chat UI). */
+export const getAIAvailability = createServerFn({ method: 'GET' }).handler(async () => ({
+	available: getAIAdapterService().isConfigured(),
+}))
 
 // ============================================================================
 // Current user — identity + profile from middleware context
@@ -68,9 +84,10 @@ export const createTask = createServerFn({ method: 'POST' })
 	.inputValidator(TaskInputSchema)
 	.handler(async ({ data, context }) => {
 		const repoInput = TaskRepoInputSchema.parse(data)
-		return getObservability({}).startSpan('createTask', () =>
-			getWritableRepository().createTask(repoInput, context.user.email),
+		const row = await getObservability({}).startSpan('createTask', () =>
+			getWritableRepository().createTask(repoInput, { createdBy: context.user.email }),
 		)
+		return toToolTask(row)
 	})
 
 /** Update an existing task. Only the creator may edit. */
@@ -84,9 +101,10 @@ export const updateTask = createServerFn({ method: 'POST' })
 			throw new HttpError(403, 'Only the task creator can edit this task')
 		}
 		const repoUpdates = TaskRepoInputSchema.partial().parse(data.updates)
-		return getObservability({}).startSpan('updateTask', () =>
-			getWritableRepository().updateTask(data.taskId, repoUpdates),
+		const row = await getObservability({}).startSpan('updateTask', () =>
+			getWritableRepository().updateTask(data.taskId, repoUpdates, { lastModifiedBy: context.user.email }),
 		)
+		return row ? toToolTask(row) : null
 	})
 
 /** Delete a task. Only the creator may delete. */

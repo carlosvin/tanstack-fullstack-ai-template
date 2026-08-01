@@ -1,26 +1,26 @@
+import { webServerEnv } from '../../env/webEnv'
+import { createServerLogger } from '../../utils/serverLogger'
 import { MongoRepository } from './mongoRepository.server'
 import { SeedRepository } from './seedRepository'
 import type { ReadRepository, WritableRepository } from './types'
+
+const log = createServerLogger('repository')
 
 type RepositoryType = 'seed' | 'mongo'
 
 let readInstance: ReadRepository | null = null
 let writableInstance: WritableRepository | null = null
 
-/**
- * Determines which repository implementation to use.
- * Controlled via REPOSITORY_TYPE env var, or auto-detected from MONGODB_URI.
- */
 function getRepositoryType(): RepositoryType {
-	const envType = process.env.REPOSITORY_TYPE as RepositoryType | undefined
+	const envType = webServerEnv.REPOSITORY_TYPE
 	if (envType === 'seed' || envType === 'mongo') return envType
-	if (process.env.MONGODB_URI) return 'mongo'
+	if (webServerEnv.MONGODB_URI) return 'mongo'
 	return 'seed'
 }
 
 function createRepositories(): { read: ReadRepository; writable: WritableRepository } {
 	const type = getRepositoryType()
-	console.info(`[repository] Using ${type} repository`)
+	log.info({ repo: type }, 'Using repository')
 
 	switch (type) {
 		case 'mongo': {
