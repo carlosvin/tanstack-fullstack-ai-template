@@ -2,10 +2,20 @@
 
 This repo ships **[Agent Skills](https://agentskills.io)** for the TanStack fullstack template:
 
-- **`tanstack-promptable-fullstack-app-template`** teaches the **architecture contract** for this template: interface-first services, three schema layers with explicit parsing at boundaries, loader-first routes, URL-as-state, AI tool coverage, and strong TypeScript inside the typed flow.
-- **`observability-and-env`** teaches the observability setup patterns: centralized env parsing, pino logger factories, Sentry bootstrap files, and public runtime config flow.
+- **`tanstack-promptable-fullstack-app-template`** — **architecture contract**: interface-first services, three schema layers, loader-first routes, URL-as-state, AI tool coverage, server/client boundaries, middleware-inferred request context.
+- **`observability-and-env`** — **companion recipe**: centralized env parsing, pino logger factories, Sentry bootstrap, `webEnvMiddleware`, and `getBrowserShellSession` (no `window.__ENV__`).
 
 Operational detail that should stay repo-local (UI kit, auth snippets, chat wiring, tests) still lives in **[AGENTS.md](../AGENTS.md)**.
+
+## Which skill to load
+
+| You're working on… | Load |
+|--------------------|------|
+| New entity, routes, schemas, AI tools, auth, import protection | `tanstack-promptable-fullstack-app-template` |
+| Pino, Sentry, `instrument.*.mts`, `src/env/`, env leaks, `shellSession` | `observability-and-env` |
+| Both (e.g. server fn that logs and reads `context.serverEnv`) | **Both** — architecture first, then observability |
+
+Keep them **separate** (industry norm: core + focused sub-skill). The parent skill states env **invariants**; the companion owns the **setup recipe**.
 
 **Use them when** you scaffold or extend a TanStack Start app from this pattern, migrate an existing app, or need agents to follow current TanStack docs instead of guessing.
 

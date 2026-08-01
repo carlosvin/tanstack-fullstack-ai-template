@@ -1,17 +1,20 @@
 ---
 name: observability-and-env
-description: 'Use when adding structured logging (pino), centralized environment
-  validation (Zod), or Sentry initialization to a TanStack Start app. Teaches
-  the three-file bootstrap pattern (instrument.env.mts → instrument.shared.mts →
-  instrument.server.mts; emitted as .mjs for production), the src/env/ schema
-  split (server vs public), and the createModuleLogger / createServerLogger
-  factory pattern that eliminates scattered process.env access from application
-  code. Project: TanStack AI-Promptable Full-Stack Template. Triggers on "add
-  logging", "set up pino", "pino logger", "sentry init", "instrument server",
-  "instrument.server.mts", "instrument.server.mjs", "env schema", "environment
-  validation", "centralize observability", "createModuleLogger",
-  "createServerLogger", "webEnv", "webServerEnv", "shellSession",
-  "getBrowserShellSession", "LOG_LEVEL", "SENTRY_DSN".'
+description: 'Companion to tanstack-promptable-fullstack-app-template. Use when
+  adding structured logging (pino), centralized environment validation (Zod),
+  Sentry initialization, or fixing env/shellSession leaks in a TanStack Start
+  app. Teaches the three-file bootstrap pattern (instrument.env.mts →
+  instrument.shared.mts → instrument.server.mts; emitted as .mjs for
+  production), the src/env/ schema split (server vs public), and
+  createModuleLogger / createServerLogger factories that eliminate scattered
+  process.env access. Project: TanStack AI-Promptable Full-Stack Template.
+  Triggers on "add logging", "set up pino", "pino logger", "sentry init",
+  "instrument server", "instrument.server.mts", "instrument.server.mjs", "env
+  schema", "environment validation", "centralize observability",
+  "createModuleLogger", "createServerLogger", "webEnv", "webServerEnv",
+  "shellSession", "getBrowserShellSession", "webEnvMiddleware", "LOG_LEVEL",
+  "SENTRY_DSN", "serverEnv leak", "window.__ENV__", "process.env in handler",
+  "process.env in application code".'
 ---
 
 > This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.
@@ -22,6 +25,21 @@ structured pino logging, and centralized Sentry bootstrap — following the
 patterns proven in production TanStack Start apps. Keeps `process.env` access
 confined to two files; application code receives typed, validated values as
 arguments.
+
+> **Parent skill:** `tanstack-promptable-fullstack-app-template` — architecture
+> contract (schema layers, server boundaries, middleware-inferred context).
+> Load **this skill additionally** when work touches logging, env schemas,
+> Sentry bootstrap, or `shellSession` / `getBrowserShellSession` plumbing.
+>
+> **Handbook:** [AGENTS.md §9](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) — file map and usage in this repo.
+
+## Skill routing
+
+| Task | Load |
+|------|------|
+| Pino, Sentry, `instrument.*.mts`, `src/env/`, env leaks, `shellSession` | **This skill** |
+| New routes, entities, AI tools, repository pattern, import protection | **`tanstack-promptable-fullstack-app-template`** |
+| Server fn that logs and uses `context.serverEnv` | **Both** |
 
 ## Key invariants (do not violate)
 
@@ -344,3 +362,4 @@ const AUTH_HEADER_NAME = webServerEnv.AUTH_HEADER_NAME ?? 'Authorization'
 - [ ] Middleware injects `serverEnv` and `shellSession`; consumers chain middleware for inferred `context.*` types
 - [ ] Browser config uses `getBrowserShellSession` from route loaders (not `window.__ENV__`, not raw `serverEnv`)
 - [ ] `SENTRY_DSN` / `LOG_LEVEL` / `ENV` documented in `.env.example`
+- [ ] Architecture invariants from parent skill still hold: never return `serverEnv` from handlers; chain `webEnvMiddleware` for typed `context.*`
