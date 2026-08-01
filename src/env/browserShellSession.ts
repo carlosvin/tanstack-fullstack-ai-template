@@ -1,11 +1,10 @@
 import { z } from 'zod'
-import { type AppMeta, AppMetaSchema } from './appMeta'
-import { type WebPublicEnv, WebPublicEnvSchema } from './webEnv'
+import { type AppMeta, AppMetaSchema, appMeta } from './appMeta'
+import { type WebPublicEnv, WebPublicEnvSchema, webPublicEnv } from './webEnv'
 
 /**
  * Allowlisted, browser-safe projection of server startup config.
- * Anything the client may hydrate must pass through this schema — never hand-pick
- * fields from `serverEnv` in UI code.
+ * Client code must receive this via a GET server fn + loader — never import `webEnv`.
  */
 export const BrowserShellSessionSchema = z.object({
 	publicEnv: WebPublicEnvSchema.describe('Non-secret deployment env safe for the browser.'),
@@ -14,10 +13,16 @@ export const BrowserShellSessionSchema = z.object({
 
 export type BrowserShellSession = z.infer<typeof BrowserShellSessionSchema>
 
-/** Project trusted server context into the browser shell session (parse at the boundary). */
+/** Build (and validate) a browser shell session from already-parsed server values. */
 export function toBrowserShellSession(input: { publicEnv: WebPublicEnv; appMeta: AppMeta }): BrowserShellSession {
 	return BrowserShellSessionSchema.parse({
 		publicEnv: input.publicEnv,
 		app: input.appMeta,
 	})
 }
+
+/** Parsed once with the env/app meta singletons — immutable for the process lifetime. */
+export const browserShellSession: BrowserShellSession = toBrowserShellSession({
+	publicEnv: webPublicEnv,
+	appMeta,
+})

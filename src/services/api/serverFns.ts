@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { toBrowserShellSession } from '../../env/browserShellSession'
+import { browserShellSession } from '../../env/browserShellSession'
 import { authMiddleware } from '../../middleware/auth'
 import { invalidateMiddleware } from '../../middleware/invalidate'
 import { requireAuthMiddleware } from '../../middleware/requireAuth'
@@ -53,16 +53,8 @@ export const getUserProfile = createServerFn({ method: 'GET' })
 		return row ? toToolUserProfile(row) : null
 	})
 
-/**
- * Browser-safe shell session for the root loader: public env + app meta.
- * Projected through {@link toBrowserShellSession} — never returns `serverEnv`.
- */
-export const getBrowserShellSession = createServerFn({ method: 'GET' }).handler(async ({ context }) =>
-	toBrowserShellSession({
-		publicEnv: context.publicEnv,
-		appMeta: context.appMeta,
-	}),
-)
+/** Browser-safe shell session (public env + app meta) for the root loader. */
+export const getBrowserShellSession = createServerFn({ method: 'GET' }).handler(async () => browserShellSession)
 
 /** Whether the AI chat adapter is configured (root loader gates chat UI). */
 export const getAIAvailability = createServerFn({ method: 'GET' }).handler(async () => ({
