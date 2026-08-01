@@ -10,9 +10,10 @@
 		"preview": "vite preview",
 		"test": "vitest run",
 		"test:skills": "vitest run scripts/skills/buildSkills.test.ts",
+		"test:skill-evals": "vitest run scripts/skills/runSkillEvals.test.ts && node ./scripts/skills/runSkillEvals.mjs",
 		"test:e2e": "playwright test",
 		"format": "biome check --write --unsafe",
-		"lint": "biome check && pnpm typecheck && pnpm skills:check",
+		"lint": "biome check && pnpm typecheck && pnpm skills:check && pnpm test:skill-evals",
 		"typecheck": "tsc --noEmit",
 		"skills:build": "node ./scripts/skills/buildSkills.mjs",
 		"skills:check": "node ./scripts/skills/buildSkills.mjs --check"

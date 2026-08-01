@@ -1,5 +1,6 @@
 import type { Collection, Db, Filter } from 'mongodb'
 import { getDb } from '../db/mongoClient.server'
+import { parseTaskRepo, parseTaskRepoOrNull, parseUserProfileRepoOrNull } from '../schemas/repoParsers'
 import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserProfileRepo } from '../schemas/repository'
 import type { Repository, TraceabilityContext } from './types'
 
@@ -39,12 +40,14 @@ export class MongoRepository implements Repository {
 			]
 		}
 
-		return col.find(query).sort({ updatedAt: -1 }).toArray() as Promise<TaskRepo[]>
+		const rows = await col.find(query).sort({ updatedAt: -1 }).toArray()
+		return rows.map((row) => parseTaskRepo(row))
 	}
 
 	async getTask(taskId: string): Promise<TaskRepo | null> {
 		const col = await this.collection()
-		return col.findOne({ id: taskId }) as Promise<TaskRepo | null>
+		const row = await col.findOne({ id: taskId })
+		return parseTaskRepoOrNull(row)
 	}
 
 	async getAssignees(): Promise<string[]> {
@@ -56,7 +59,8 @@ export class MongoRepository implements Repository {
 	async getUserProfile(email: string): Promise<UserProfileRepo | null> {
 		const db = await this.db()
 		const col = db.collection<UserProfileRepo>(USERS_COLLECTION)
-		return col.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } }) as Promise<UserProfileRepo | null>
+		const row = await col.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } })
+		return parseUserProfileRepoOrNull(row)
 	}
 
 	async createTask(input: TaskRepoInput, trace?: TraceabilityContext): Promise<TaskRepo> {
@@ -70,7 +74,7 @@ export class MongoRepository implements Repository {
 			createdBy: trace?.createdBy,
 		}
 		await col.insertOne(task)
-		return task
+		return parseTaskRepo(task)
 	}
 
 	async updateTask(
@@ -84,7 +88,7 @@ export class MongoRepository implements Repository {
 			{ $set: { ...input, updatedAt: new Date().toISOString() } },
 			{ returnDocument: 'after' },
 		)
-		return result as TaskRepo | null
+		return parseTaskRepoOrNull(result)
 	}
 
 	async deleteTask(taskId: string): Promise<boolean> {
