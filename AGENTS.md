@@ -20,11 +20,11 @@ Before non-trivial changes: read the skill **Core Contract** and run the **Archi
 
 This template is the reference app for the skill. **Already landed on `main`:** server-only boundaries ([#7](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/7)), `Register` request-context typing ([#8](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/8)), skill v1.19 Request Context rules, handbook dedupe ([#9](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/9)), Cursor Cloud setup ([#10](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/10)).
 
-**Observability & env ([#6](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/6)):** companion skill `observability-and-env` — Zod env schemas (`src/env/`), pino (`createServerLogger`), `instrument.*.mts` bootstrap, `getWebPublicEnv` via loader (no `window.__ENV__`). Follow [observability-and-env skill](.agents/skills/observability-and-env/SKILL.md) for §9 / §13 operational detail.
+**Observability & env ([#6](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/6)):** companion skill `observability-and-env` — Zod env schemas (`src/env/`), pino (`createServerLogger`), `instrument.*.mts` bootstrap, typed `Register` request context (`serverEnv` / `publicEnv` / `appMeta`), `getBrowserShellSession` via root loader (no `window.__ENV__`). Follow [observability-and-env skill](.agents/skills/observability-and-env/SKILL.md) for §9 / §13 operational detail.
 
 | Phase | Skill contract | Status / files |
 |-------|----------------|----------------|
-| **0 — Observability & env** | Centralized env parse; pino; Sentry bootstrap; public env via GET server fn + loader | **Done** — `src/env/`, `instrument.*.mts`, `webEnvMiddleware`, `getWebPublicEnv` |
+| **0 — Observability & env** | Centralized env parse once; pino; Sentry; typed context + browser shell session | **Done** — `src/env/`, `instrument.*.mts`, `webEnvMiddleware`, `Register`, `getBrowserShellSession` |
 | **1 — Schema boundaries** | Outbound `Schema.parse()` (repo → tools); router defaults bundle; `Link` with `search: true` | **Done** — `serverFns.ts`, `taskMappers.ts`, `router.tsx`, `src/components/Link/Link.tsx` |
 | **2 — Auth & writes** | Auth ticket + `TraceabilityContext` (skill allows stock `user`/`userProfile` until enriched) | **Partial** — `TraceabilityContext` on writes; full auth ticket still open |
 | **3 — Data loading & AI** | Parent loader dedup; `getAIAvailability()` gates chat UI | **Done** — `__root.tsx`, task routes, `Header`, `AppLayout`, `ChatDrawer` |
@@ -321,7 +321,8 @@ When modifying: add server tools to the `tools` array; add client tool defs and 
 | Env schemas | `src/env/runtimeEnvSchema.ts`, `src/env/webEnv.ts` |
 | Pino | `src/utils/logger.ts`, `src/utils/serverLogger.ts` |
 | Public env middleware | `src/middleware/webEnv.ts` |
-| Public env for client | `getWebPublicEnv` in `serverFns.ts` + root loader (not `window.__ENV__`) |
+| Public env + app meta for client | `getBrowserShellSession` in `serverFns.ts` + root loader (not `window.__ENV__`) |
+| Typed request context | `src/register-request-context.ts` — `serverEnv`, `publicEnv`, `appMeta`, auth |
 
 - **Usage:** `getObservability().startSpan('name', fn)` in server handlers; `createServerLogger('module')` for structured logs.
 - **Env vars:** `SENTRY_DSN`, `ENV`, `LOG_LEVEL` — see `.env.example`. Keep `NODE_ENV` and `ENV` aligned in production so Sentry tags match runtime behavior.
@@ -357,7 +358,7 @@ This project uses [Biome](https://biomejs.dev/) as the default linter and format
 
 ## 13. Public Runtime Config
 
-Handled by the [observability-and-env skill](.agents/skills/observability-and-env/SKILL.md) (PR #6): `webPublicEnv` slice exposed via `getWebPublicEnv` GET server function and root loader — **not** `window.__ENV__` or `import.meta.env` for deployment-specific values.
+Handled by the [observability-and-env skill](.agents/skills/observability-and-env/SKILL.md) (PR #6): startup-validated `webServerEnv` / `webPublicEnv` / `appMeta` on typed request context; browser-safe projection via `getBrowserShellSession` (`toBrowserShellSession`) in the root loader — **not** `window.__ENV__` or `import.meta.env` for deployment-specific values.
 
 ## 14. Special Patterns
 

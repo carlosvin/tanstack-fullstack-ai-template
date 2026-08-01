@@ -9,24 +9,28 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { Home } from 'lucide-react'
 import { AppLayout } from '../components/AppLayout/AppLayout'
 import { ErrorDisplay } from '../components/ErrorDisplay/ErrorDisplay'
-import { getAIAvailability, getCurrentUser, getWebPublicEnv } from '../services/api/serverFns'
+import { getAIAvailability, getBrowserShellSession, getCurrentUser } from '../services/api/serverFns'
+import { getObservability } from '../services/observability'
 
 export const Route = createRootRoute({
 	loader: async () => {
-		const [currentUser, publicEnv, aiAvailability] = await Promise.all([
+		const [currentUser, shellSession, aiAvailability] = await Promise.all([
 			getCurrentUser(),
-			getWebPublicEnv(),
+			getBrowserShellSession(),
 			getAIAvailability(),
 		])
-		return { currentUser, publicEnv, aiAvailable: aiAvailability.available }
+		return { currentUser, shellSession, aiAvailable: aiAvailability.available }
 	},
-	head: () => ({
-		meta: [
-			{ charSet: 'utf-8' },
-			{ name: 'viewport', content: 'width=device-width, initial-scale=1' },
-			{ title: 'TaskHub — Full-Stack Template' },
-		],
-	}),
+	head: ({ loaderData }) => {
+		const appName = loaderData?.shellSession.app.name ?? 'TaskHub'
+		return {
+			meta: [
+				{ charSet: 'utf-8' },
+				{ name: 'viewport', content: 'width=device-width, initial-scale=1' },
+				{ title: `${appName} — Full-Stack Template` },
+			],
+		}
+	},
 	shellComponent: RootDocument,
 	errorComponent: ErrorDisplay,
 	notFoundComponent: NotFoundPage,
@@ -70,7 +74,10 @@ function NotFoundPage() {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-	const { currentUser, aiAvailable } = Route.useLoaderData()
+	const { currentUser, shellSession, aiAvailable } = Route.useLoaderData()
+
+	// Wire loader-sourced public env into client observability (no window.__ENV__).
+	getObservability({ publicEnv: shellSession.publicEnv })
 
 	return (
 		<html lang="en" suppressHydrationWarning>
