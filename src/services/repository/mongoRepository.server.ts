@@ -2,6 +2,7 @@ import type { Collection, Db, Filter } from 'mongodb'
 import { getDb } from '../db/mongoClient.server'
 import { parseTaskRepo, parseTaskRepoOrNull, parseUserProfileRepoOrNull } from '../schemas/repoParsers'
 import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserProfileRepo } from '../schemas/repository'
+import { resolveCreateLastModifiedBy } from './traceability'
 import type { Repository, TraceabilityContext } from './types'
 
 const TASKS_COLLECTION = 'tasks'
@@ -72,7 +73,7 @@ export class MongoRepository implements Repository {
 			createdAt: now,
 			updatedAt: now,
 			createdBy: trace?.createdBy,
-			lastModifiedBy: trace?.createdBy,
+			lastModifiedBy: resolveCreateLastModifiedBy(trace),
 		}
 		await col.insertOne(task)
 		return parseTaskRepo(task)

@@ -1,4 +1,5 @@
 import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserProfileRepo } from '../schemas/repository'
+import { resolveCreateLastModifiedBy } from './traceability'
 import type { Repository, TraceabilityContext } from './types'
 
 /** Sample seed data for development without a database. */
@@ -134,7 +135,7 @@ export class SeedRepository implements Repository {
 			createdAt: now,
 			updatedAt: now,
 			createdBy: trace?.createdBy,
-			lastModifiedBy: trace?.createdBy,
+			lastModifiedBy: resolveCreateLastModifiedBy(trace),
 		}
 		this.tasks.push(task)
 		return task

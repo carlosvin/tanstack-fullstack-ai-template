@@ -69,6 +69,15 @@ describe('SeedRepository', () => {
 			expect(task.lastModifiedBy).toBe('test@example.com')
 			expect(task.createdAt).toBeTruthy()
 		})
+
+		it('prefers lastModifiedBy over createdBy on create when both are provided', async () => {
+			const task = await repo.createTask(
+				{ title: 'Attributed task', status: 'pending', priority: 'low' },
+				{ createdBy: 'creator@example.com', lastModifiedBy: 'editor@example.com' },
+			)
+			expect(task.createdBy).toBe('creator@example.com')
+			expect(task.lastModifiedBy).toBe('editor@example.com')
+		})
 	})
 
 	describe('updateTask', () => {

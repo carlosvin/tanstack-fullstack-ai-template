@@ -9,3 +9,8 @@ export function createWriteTrace(email: string): TraceabilityContext {
 export function updateWriteTrace(email: string): TraceabilityContext {
 	return { lastModifiedBy: email }
 }
+
+/** Resolve lastModifiedBy on create — prefer explicit lastModifiedBy, else createdBy. */
+export function resolveCreateLastModifiedBy(trace?: TraceabilityContext): string | undefined {
+	return trace?.lastModifiedBy ?? trace?.createdBy
+}
