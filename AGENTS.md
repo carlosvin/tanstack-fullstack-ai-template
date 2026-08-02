@@ -31,7 +31,7 @@ This template is the reference app for the skill. **Already landed on `main`:** 
 | **4 — Hardening** | `createServerOnlyFn`; `PUBLIC_ROUTES`; router introspection for nav manifest | **Partial** — `PUBLIC_ROUTES`, `*.server.ts` + import protection done; `createServerOnlyFn` deferred |
 | **5 — Deploy** | Ship to [leafy-manatee-16b96c.netlify.app](https://leafy-manatee-16b96c.netlify.app) | After merge to `main` |
 
-**CI/CD (Netlify-native):** GitHub Actions runs validation only (`.github/workflows/ci.yml`: lint, test, build). Netlify Git integration handles all deploys — **deploy previews** on pull requests and **production** on merge to `main` (`netlify.toml` → `pnpm build`, publish `.output/public`). No `NETLIFY_AUTH_TOKEN` secrets in GitHub. In Netlify: production branch `main`, deploy previews on, branch deploys off.
+**CI/CD (Netlify-native):** GitHub Actions runs validation only (`.github/workflows/ci.yml`: lint, test, build). Netlify Git integration handles all deploys — **deploy previews** on pull requests and **production** on merge to `main` (`netlify.toml` → `pnpm build`, publish `dist`). With `NETLIFY=true` (set automatically on Netlify), `@netlify/vite-plugin-tanstack-start` writes static assets to `dist/` and SSR to `.netlify/`; local non-Netlify builds still emit `.output/public`. No `NETLIFY_AUTH_TOKEN` secrets in GitHub. In Netlify: production branch `main`, deploy previews on, branch deploys off.
 
 **Phase 5 checklist:** `pnpm format && pnpm lint && pnpm test && pnpm build` → merge → Netlify auto-deploy from `main` → smoke-test demo. **Netlify env** (post-#6): `SENTRY_DSN`, `ENV`, `LOG_LEVEL`, `REPOSITORY_TYPE=seed`, `OPENAI_API_KEY` (or chosen provider) — not `VITE_SENTRY_DSN`.
 
