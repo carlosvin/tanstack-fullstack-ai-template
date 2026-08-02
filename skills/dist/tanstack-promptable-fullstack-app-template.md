@@ -9,7 +9,7 @@
 - Documentation: https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/skills/README.md
 - Status: stable
 - Supported tools: Windsurf [native, tested], Cursor [copy, tested], Claude Code [copy, tested]
-- Capabilities: Interface-first boundaries with swappable implementations, Three schema layers with mandatory Schema.parse() at every boundary (tool→repo and repo→tool), Strong TypeScript in the typed flow — inference preserved via satisfies, unions, exhaustive switches; casts minimized, Loader-first routes and URL-driven state via validateSearch, Router config bundle (defaults + project Link wrapper preserving search params), Full AI tool coverage mirroring repository surface + client navigate/invalidate tools, Schema-first AI/UI metadata (.describe + optional .meta for unit/format/title), Promptable by default — getAIAvailability gating + browserContext + bounded agent loop, Auth ticket built in middleware via repository + TraceabilityContext on writes, Parent layout routes deduplicating shared beforeLoad and loaders, Optional patterns — overlay repo, bulk edit, distinct-values tools, dynamic route introspection, TanStack Intent + CLI as doc-aligned guidance (not duplicated command manuals), Assistant chat renders Markdown (GFM) — lists, tables, code blocks; internal links stay navigable, Server/client execution boundaries — isomorphic loaders, *.server.ts, createServerOnlyFn, import protection, Request context — middleware-inferred ctx.context, parse-don't-validate inside handlers; env/shellSession invariants (setup in observability-and-env)
+- Capabilities: Interface-first boundaries with swappable implementations, Three schema layers with mandatory Schema.parse() at every boundary (tool→repo and repo→tool), Strong TypeScript in the typed flow — inference preserved via satisfies, unions, exhaustive switches; casts minimized, Loader-first routes and URL-driven state via validateSearch, Router config bundle (defaults + project Link wrapper preserving search params), Full AI tool coverage mirroring repository surface + client navigate/invalidate tools, Schema-first AI/UI metadata (.describe + optional .meta for unit/format/title), Promptable by default — getAIAvailability gating + browserContext + bounded agent loop, Auth ticket built in middleware via repository + TraceabilityContext on writes, Parent layout routes deduplicating shared beforeLoad and loaders, Optional patterns — overlay repo, bulk edit, distinct-values tools, dynamic route introspection, debounced free-text search, TanStack Intent + CLI as doc-aligned guidance (not duplicated command manuals), Assistant chat renders Markdown (GFM) — lists, tables, code blocks; internal links stay navigable, Server/client execution boundaries — isomorphic loaders, *.server.ts, createServerOnlyFn, import protection, Request context — middleware-inferred ctx.context, parse-don't-validate inside handlers; env/shellSession invariants (setup in observability-and-env)
 - ID: `tanstack-promptable-fullstack-app-template`
 - Version: `1.23.0`
 - Tags: tanstack-start, fullstack, architecture, interface-first, repository-pattern, ai-promptable
@@ -38,6 +38,8 @@ Use when scaffolding a new TanStack Start project, adding domain entities, imple
 - import protection
 - request context
 - middleware context
+- debounced search
+- search input
 
 ## Canonical Content
 # TanStack Fullstack Pattern
@@ -66,6 +68,7 @@ Use when scaffolding a new TanStack Start project, adding domain entities, imple
 ## Common failure modes (avoid these)
 
 - **Route state in React state:** filters, tabs, or selections in `useState` instead of validated URL search params + `loaderDeps`.
+- **Navigate on every search keystroke:** binding a free-text search input to URL search params with `navigate` on each `onChange` re-runs loaders and drops characters. Use uncontrolled input + `useDebouncedCallback` (see **Special Patterns**).
 - **Repository schemas at the wrong edge:** importing repository-layer schemas into UI, tools, or AI tool inputs — use tools-layer schemas only.
 - **Server function without a tool:** adding `createServerFn` but skipping `toolDefinition` + `createSafeServerTool` for the same capability.
 - **Parse only half the boundary:** validating inbound tools input but returning raw repo rows to UI/AI without tools-layer `Schema.parse` on the way out.
@@ -403,6 +406,29 @@ interface WritableRepository {
 
 - **Overlay repository:** read-only upstream source + sparse user overrides; pure `applyOverrides`; writes only to overrides.
 - **URL bulk edit:** selection and category tabs in search params; batched mutation; per-row auth.
+- **Debounced free-text search (URL-as-state):** Keep filters in validated search params + `loaderDeps`, but do **not** control free-text search from the URL on every keystroke. Use an uncontrolled input (`defaultValue` from the current search param) and Mantine `useDebouncedCallback` (already in the template via `@mantine/hooks`) to `navigate({ replace: true, search })` only after the user pauses. Discrete filters (`Select`, tabs) may navigate immediately. Call `navigate` from the debounce callback — do not watch a debounced value in `useEffect` just to navigate. Prefer this over adding `@tanstack/pacer` for a single search box.
+
+  ```typescript
+  const updateSearch = (updates: Partial<Search>, replace = false) => {
+    navigate({
+      to: '/tasks',
+      replace,
+      search: (prev) => ({ ...prev, ...updates }),
+    })
+  }
+
+  const debouncedSearch = useDebouncedCallback((value: string) => {
+    const next = value || undefined
+    if (next === search.search) return
+    updateSearch({ search: next }, true)
+  }, 300)
+
+  <TextInput
+    defaultValue={search.search ?? ''}
+    onChange={(e) => debouncedSearch(e.currentTarget.value)}
+  />
+  ```
+
 - **Help surface:** single `docs/help.md` can back `/help`, an AI tool, and suggested prompts (see AGENTS.md).
 - **Distinct values:** `getDistinctValues` → GET server fn → read-only AI tool so filters match real data.
 - **Dynamic AI navigation:** derive route/help context from `router.flatRoutes` + `validateSearch` introspection where possible.

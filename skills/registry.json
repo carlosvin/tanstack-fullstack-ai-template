@@ -220,7 +220,7 @@
         "Promptable by default — getAIAvailability gating + browserContext + bounded agent loop",
         "Auth ticket built in middleware via repository + TraceabilityContext on writes",
         "Parent layout routes deduplicating shared beforeLoad and loaders",
-        "Optional patterns — overlay repo, bulk edit, distinct-values tools, dynamic route introspection",
+        "Optional patterns — overlay repo, bulk edit, distinct-values tools, dynamic route introspection, debounced free-text search",
         "TanStack Intent + CLI as doc-aligned guidance (not duplicated command manuals)",
         "Assistant chat renders Markdown (GFM) — lists, tables, code blocks; internal links stay navigable",
         "Server/client execution boundaries — isomorphic loaders, *.server.ts, createServerOnlyFn, import protection",
@@ -244,7 +244,9 @@
         "process.env in loader",
         "import protection",
         "request context",
-        "middleware context"
+        "middleware context",
+        "debounced search",
+        "search input"
       ],
       "inputs": [
         "Existing or new TanStack Start codebase",
