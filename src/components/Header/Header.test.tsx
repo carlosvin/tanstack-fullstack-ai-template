@@ -22,4 +22,19 @@ describe('Header', () => {
 
 		expect(screen.queryByRole('button', { name: 'Open AI chat' })).toBeNull()
 	})
+
+	it('shows the display name for test users', () => {
+		renderWithProviders(
+			<Header
+				appMeta={appMeta}
+				currentUser={{
+					identity: { email: 'random1234@example.com', name: 'Test User 1234', groups: [] },
+					profile: null,
+					isTestUser: true,
+				}}
+			/>,
+		)
+
+		expect(screen.getByText('Test User 1234')).toBeTruthy()
+	})
 })

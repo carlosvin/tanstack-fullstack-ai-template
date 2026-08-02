@@ -70,6 +70,7 @@ function buildSystemPrompt(
 	user: UserIdentity,
 	profile: UserProfile | null,
 	browserContext: BrowserContext | null,
+	isTestUser: boolean,
 ): string {
 	const sections: string[] = [BASE_SYSTEM_PROMPT, getNavigationPromptSection()]
 
@@ -80,7 +81,8 @@ function buildSystemPrompt(
 ## Current User
 - Name: ${displayName}
 - Email: ${user.email || 'not authenticated'}
-- Role: ${role}`)
+- Role: ${role}
+- Test user: ${isTestUser ? 'yes (auto-generated demo identity)' : 'no'}`)
 
 	if (browserContext) {
 		const formattedDate = new Date(browserContext.currentTime).toLocaleString(browserContext.locale, {
@@ -144,12 +146,12 @@ export const Route = createFileRoute('/api/chat')({
 
 				const body = await request.json()
 
-				const { user, userProfile } = context
+				const { user, userProfile, isTestUser } = context
 
 				const browserContextResult = BrowserContextSchema.safeParse(body.browserContext)
 				const browserContext: BrowserContext | null = browserContextResult.success ? browserContextResult.data : null
 
-				const systemPrompt = buildSystemPrompt(user, userProfile, browserContext)
+				const systemPrompt = buildSystemPrompt(user, userProfile, browserContext, isTestUser)
 				const tools = [
 					getTasksTool,
 					getTaskTool,

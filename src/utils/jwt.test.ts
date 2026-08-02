@@ -1,11 +1,23 @@
 import { describe, expect, it } from 'vitest'
-import { extractIdentityFromJwt } from './jwt.server'
+import { createUnsignedJwt, extractIdentityFromJwt } from './jwt.server'
 
 function createTestJwt(payload: Record<string, unknown>): string {
 	const header = btoa(JSON.stringify({ alg: 'none', typ: 'JWT' }))
 	const body = btoa(JSON.stringify(payload))
 	return `${header}.${body}.`
 }
+
+describe('createUnsignedJwt', () => {
+	it('round-trips through extractIdentityFromJwt', () => {
+		const identity = {
+			email: 'random5678@example.com',
+			name: 'Test User 5678',
+			groups: ['demo'],
+		}
+
+		expect(extractIdentityFromJwt(createUnsignedJwt(identity))).toEqual(identity)
+	})
+})
 
 describe('extractIdentityFromJwt', () => {
 	it('returns empty identity for null header', () => {
