@@ -4,12 +4,28 @@ import { createUnsignedJwt, extractIdentityFromJwt } from './jwt.server'
 /** Cookie storing the unsigned JWT for auto-generated demo users. */
 export const TEST_AUTH_COOKIE_NAME = 'test-auth'
 
+const TEST_USER_EMAIL_PATTERN = /^random[a-f0-9]{8}@example\.com$/i
+
 /** Creates a random demo identity for visitors without an auth header. */
 export function createRandomTestIdentity(): UserIdentity {
 	const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8)
 	return {
 		email: `random${suffix}@example.com`,
 		name: `Test User ${suffix.slice(0, 4)}`,
+		groups: [],
+	}
+}
+
+function parseTestUserFromCookie(cookieToken: string | null | undefined): UserIdentity | null {
+	const identity = extractIdentityFromJwt(cookieToken ?? null)
+	if (!TEST_USER_EMAIL_PATTERN.test(identity.email)) {
+		return null
+	}
+
+	const suffix = identity.email.slice('random'.length, 'random'.length + 8)
+	return {
+		email: identity.email.toLowerCase(),
+		name: identity.name || `Test User ${suffix.slice(0, 4)}`,
 		groups: [],
 	}
 }
@@ -34,9 +50,9 @@ export function resolveAccessTicket(
 		return { user: headerIdentity, isTestUser: false }
 	}
 
-	const cookieIdentity = extractIdentityFromJwt(cookieToken ?? null)
-	if (cookieIdentity.email) {
-		return { user: cookieIdentity, isTestUser: true }
+	const cookieUser = parseTestUserFromCookie(cookieToken)
+	if (cookieUser) {
+		return { user: cookieUser, isTestUser: true }
 	}
 
 	const user = createRandomTestIdentity()

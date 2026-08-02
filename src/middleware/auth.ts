@@ -3,6 +3,7 @@ import { getCookie, setCookie } from '@tanstack/react-start/server'
 import { webServerEnv } from '../env/webEnv'
 import { getReadRepository } from '../services/repository/getRepository.server'
 import type { UserIdentity, UserProfile } from '../types'
+import { extractIdentityFromJwt } from '../utils/jwt.server'
 import { createServerLogger } from '../utils/serverLogger'
 import { resolveAccessTicket, TEST_AUTH_COOKIE_NAME } from '../utils/testAuth.server'
 
@@ -13,6 +14,12 @@ const AUTH_HEADER_NAME = webServerEnv.AUTH_HEADER_NAME ?? 'Authorization'
 
 /** Paths that skip repository profile lookup (health, static, public config). */
 const PUBLIC_ROUTE_PREFIXES = ['/api/health', '/.well-known', '/assets'] as const
+
+const ANONYMOUS_USER: UserIdentity = {
+	email: '',
+	name: 'Anonymous',
+	groups: [],
+}
 
 const TEST_AUTH_COOKIE_OPTIONS = {
 	path: '/',
@@ -47,23 +54,30 @@ export interface AuthContext {
 export const authMiddleware = createMiddleware().server(async ({ next, request }) => {
 	const pathname = new URL(request.url).pathname
 	const authHeader = request.headers.get(AUTH_HEADER_NAME)
+
+	if (isPublicRoute(pathname)) {
+		const headerIdentity = extractIdentityFromJwt(authHeader)
+		const user = headerIdentity.email ? headerIdentity : ANONYMOUS_USER
+		log.debug({ pathname }, 'public route — skipped profile load')
+		return next({ context: { user, userProfile: null, isTestUser: false } })
+	}
+
 	const ticket = resolveAccessTicket(authHeader, getCookie(TEST_AUTH_COOKIE_NAME))
 
 	if (ticket.newTestAuthToken) {
-		setCookie(TEST_AUTH_COOKIE_NAME, ticket.newTestAuthToken, TEST_AUTH_COOKIE_OPTIONS)
+		setCookie(TEST_AUTH_COOKIE_NAME, ticket.newTestAuthToken, {
+			...TEST_AUTH_COOKIE_OPTIONS,
+			secure: new URL(request.url).protocol === 'https:',
+		})
 	}
 
 	const { user, isTestUser } = ticket
 
 	let userProfile: UserProfile | null = null
 	// Test users are ephemeral and never stored in the repository — skip the lookup.
-	if (user.email && !isTestUser && !isPublicRoute(pathname)) {
+	if (user.email && !isTestUser) {
 		const repo = getReadRepository()
 		userProfile = await repo.getUserProfile(user.email)
-	}
-
-	if (isPublicRoute(pathname)) {
-		log.debug({ pathname }, 'public route — skipped profile load')
 	}
 
 	return next({ context: { user, userProfile, isTestUser } })

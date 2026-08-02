@@ -28,16 +28,42 @@ describe('resolveAccessTicket', () => {
 
 	it('reuses cookie identity when header is absent', () => {
 		const token = createUnsignedJwt({
-			email: 'random1234@example.com',
+			email: 'random1234abcd@example.com',
 			name: 'Test User 1234',
 			groups: [],
 		})
 
 		const ticket = resolveAccessTicket(null, token)
 
-		expect(ticket.user.email).toBe('random1234@example.com')
+		expect(ticket.user.email).toBe('random1234abcd@example.com')
 		expect(ticket.isTestUser).toBe(true)
 		expect(ticket.newTestAuthToken).toBeUndefined()
+	})
+
+	it('rejects tampered cookie identities and mints a new test user', () => {
+		const token = createUnsignedJwt({
+			email: 'alice@example.com',
+			name: 'Alice',
+			groups: ['admin'],
+		})
+
+		const ticket = resolveAccessTicket(null, token)
+
+		expect(ticket.user.email).toMatch(/^random[a-f0-9]{8}@example\.com$/)
+		expect(ticket.isTestUser).toBe(true)
+		expect(ticket.newTestAuthToken).toBeTruthy()
+	})
+
+	it('strips groups from a valid test cookie', () => {
+		const token = createUnsignedJwt({
+			email: 'random1234abcd@example.com',
+			name: 'Test User 1234',
+			groups: ['admin'],
+		})
+
+		const ticket = resolveAccessTicket(null, token)
+
+		expect(ticket.user.groups).toEqual([])
 	})
 
 	it('mints a new test user when header and cookie are absent', () => {
