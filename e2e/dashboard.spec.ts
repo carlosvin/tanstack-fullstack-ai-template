@@ -16,6 +16,25 @@ test.describe('Dashboard', () => {
 		await expect(page.getByText('Done').first()).toBeVisible()
 	})
 
+	test('stat tiles navigate to tasks with status filters', async ({ page }) => {
+		await page.goto('/')
+
+		await page.getByRole('link', { name: 'Filter tasks by pending status' }).click()
+		await expect(page).toHaveURL(/\/tasks\?status=pending/)
+
+		await page.goto('/')
+		await page.getByRole('link', { name: 'Filter tasks by in progress status' }).click()
+		await expect(page).toHaveURL(/\/tasks\?status=in-progress/)
+
+		await page.goto('/')
+		await page.getByRole('link', { name: 'Filter tasks by done status' }).click()
+		await expect(page).toHaveURL(/\/tasks\?status=done/)
+
+		await page.goto('/')
+		await page.getByRole('link', { name: 'View all tasks' }).click()
+		await expect(page).toHaveURL('/tasks')
+	})
+
 	test('shows recent tasks section', async ({ page }) => {
 		await page.goto('/')
 
