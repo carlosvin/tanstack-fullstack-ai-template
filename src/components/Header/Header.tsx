@@ -46,11 +46,23 @@ export function Header({ currentUser, appMeta, aiAvailable = false, onOpenChat }
 			</Group>
 
 			<Group gap="xs">
-				{displayName && (
-					<Text size="sm" c="dimmed">
-						{displayName}
-					</Text>
-				)}
+				{displayName ? (
+					currentUser?.isTestUser ? (
+						<Tooltip
+							label={`Demo test user (${currentUser.identity.email}). Actions are attributed to this identity. Provide a real JWT in the auth header to use your own account.`}
+							multiline
+							w={280}
+						>
+							<Text size="sm" c="dimmed" style={{ cursor: 'help' }}>
+								{displayName}
+							</Text>
+						</Tooltip>
+					) : (
+						<Text size="sm" c="dimmed">
+							{displayName}
+						</Text>
+					)
+				) : null}
 
 				<Tooltip label="View source on GitHub">
 					<ActionIcon

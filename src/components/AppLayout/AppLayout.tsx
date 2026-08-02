@@ -4,7 +4,6 @@ import type { ShellSession } from '../../env/webEnv'
 import type { CurrentUser } from '../../types'
 import { ChatDrawer } from '../ChatDrawer/ChatDrawer'
 import { Header } from '../Header/Header'
-import { TestUserBanner } from '../TestUserBanner/TestUserBanner'
 
 interface AppLayoutProps {
 	currentUser?: CurrentUser
@@ -21,10 +20,7 @@ export function AppLayout({ currentUser, shellSession, aiAvailable = false, chil
 			<AppShell.Header>
 				<Header currentUser={currentUser} appMeta={shellSession.app} aiAvailable={aiAvailable} onOpenChat={openChat} />
 			</AppShell.Header>
-			<AppShell.Main>
-				<TestUserBanner currentUser={currentUser} />
-				{children}
-			</AppShell.Main>
+			<AppShell.Main>{children}</AppShell.Main>
 			{aiAvailable ? <ChatDrawer opened={chatOpened} onClose={closeChat} /> : null}
 		</AppShell>
 	)
