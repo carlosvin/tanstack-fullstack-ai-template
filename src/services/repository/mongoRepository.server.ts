@@ -72,6 +72,7 @@ export class MongoRepository implements Repository {
 			createdAt: now,
 			updatedAt: now,
 			createdBy: trace?.createdBy,
+			lastModifiedBy: trace?.createdBy,
 		}
 		await col.insertOne(task)
 		return parseTaskRepo(task)
@@ -80,12 +81,18 @@ export class MongoRepository implements Repository {
 	async updateTask(
 		taskId: string,
 		input: Partial<TaskRepoInput>,
-		_trace?: TraceabilityContext,
+		trace?: TraceabilityContext,
 	): Promise<TaskRepo | null> {
 		const col = await this.collection()
 		const result = await col.findOneAndUpdate(
 			{ id: taskId },
-			{ $set: { ...input, updatedAt: new Date().toISOString() } },
+			{
+				$set: {
+					...input,
+					updatedAt: new Date().toISOString(),
+					...(trace?.lastModifiedBy ? { lastModifiedBy: trace.lastModifiedBy } : {}),
+				},
+			},
 			{ returnDocument: 'after' },
 		)
 		return parseTaskRepoOrNull(result)

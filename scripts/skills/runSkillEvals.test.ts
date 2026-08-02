@@ -19,9 +19,16 @@ async function createMinimalWorkspace(overrides = {}) {
 		'src/routes/__root.tsx': 'export const loader = () => getBrowserShellSession()\n',
 		'src/components/AppLayout/AppLayout.tsx': '{aiAvailable ? <ChatDrawer /> : null}',
 		'src/services/api/serverFns.ts':
-			'export const x = () => toToolTask(); export const y = () => toToolUserProfile()\n',
+			'export const x = () => toToolTask(); export const y = () => toToolUserProfile()\nconst trace = createWriteTrace(context.user.email)\nconst updateTrace = updateWriteTrace(context.user.email)\n',
 		'src/services/repository/mongoRepository.server.ts':
-			'import { parseTaskRepo, parseUserProfileRepoOrNull } from "../schemas/repoParsers"\nexport class MongoRepository { async getTasks() { return rows.map(parseTaskRepo) } }\n',
+			'import { parseTaskRepo, parseUserProfileRepoOrNull } from "../schemas/repoParsers"\nexport class MongoRepository { async getTasks() { return rows.map(parseTaskRepo) } async updateTask(_id, _input, trace) { return { lastModifiedBy: trace?.lastModifiedBy } } }\n',
+		'src/services/repository/seedRepository.ts':
+			'export class SeedRepository { async updateTask(_id, _input, trace) { return { lastModifiedBy: trace?.lastModifiedBy } } }\n',
+		'src/services/schemas/repository.ts': 'export const TaskRepoSchema = { lastModifiedBy: true }\n',
+		'src/services/schemas/schemas.ts': 'export const TaskSchema = { lastModifiedBy: true }\n',
+		'src/services/schemas/taskMappers.ts':
+			'export const toToolTask = (row) => ({ lastModifiedBy: row.lastModifiedBy })\n',
+		'AGENTS.md': '## Skill alignment roadmap\nPhase 3 chat gating is done.\n',
 		'src/routes/api/chat.ts': 'chat({ agentLoopStrategy: maxIterations(10) })\n',
 		'vite.config.ts': "tanstackStart({ importProtection: { behavior: 'error' } })\n",
 		'.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md': '## Skill routing\n',

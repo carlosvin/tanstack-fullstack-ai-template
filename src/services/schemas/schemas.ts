@@ -86,6 +86,7 @@ export const TaskSchema = TaskInputSchema.extend({
 	createdAt: z.string().describe('ISO 8601 timestamp when the task was created'),
 	updatedAt: z.string().describe('ISO 8601 timestamp when the task was last updated'),
 	createdBy: z.string().optional().describe('Email of the user who created the task'),
+	lastModifiedBy: z.string().optional().describe('Email of the user who last modified the task'),
 })
 
 export type Task = z.infer<typeof TaskSchema>

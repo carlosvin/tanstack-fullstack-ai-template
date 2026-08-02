@@ -42,6 +42,7 @@ Each task has:
 - assignee: email of the assigned person
 - createdAt / updatedAt: timestamps
 - createdBy: email of the creator
+- lastModifiedBy: email of the last editor
 
 ## Links and navigation
 - Use **markdown links** in your replies so the user can click to go to a page (e.g. \`[View task](/tasks/123)\`, \`[Tasks](/tasks)\`, \`[Filter by status](/tasks?status=done)\`).

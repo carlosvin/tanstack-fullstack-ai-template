@@ -48,6 +48,7 @@ export const TaskRepoSchema = TaskRepoInputSchema.extend({
 	createdAt: z.string(),
 	updatedAt: z.string(),
 	createdBy: z.string().optional(),
+	lastModifiedBy: z.string().optional(),
 })
 
 export type TaskRepo = z.infer<typeof TaskRepoSchema>

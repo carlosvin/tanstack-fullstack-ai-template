@@ -134,6 +134,7 @@ export class SeedRepository implements Repository {
 			createdAt: now,
 			updatedAt: now,
 			createdBy: trace?.createdBy,
+			lastModifiedBy: trace?.createdBy,
 		}
 		this.tasks.push(task)
 		return task
@@ -142,7 +143,7 @@ export class SeedRepository implements Repository {
 	async updateTask(
 		taskId: string,
 		input: Partial<TaskRepoInput>,
-		_trace?: TraceabilityContext,
+		trace?: TraceabilityContext,
 	): Promise<TaskRepo | null> {
 		const index = this.tasks.findIndex((t) => t.id === taskId)
 		if (index === -1) return null
@@ -151,6 +152,7 @@ export class SeedRepository implements Repository {
 			...this.tasks[index],
 			...input,
 			updatedAt: new Date().toISOString(),
+			...(trace?.lastModifiedBy ? { lastModifiedBy: trace.lastModifiedBy } : {}),
 		}
 		return this.tasks[index]
 	}

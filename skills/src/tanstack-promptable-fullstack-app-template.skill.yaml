@@ -12,7 +12,7 @@ projectName: TanStack AI-Promptable Full-Stack Template
 projectSummary: >-
   A production-ready TanStack Start template designed to make internal tools AI
   promptable by default.
-version: 1.22.0
+version: 1.23.0
 author:
   name: Carlos Martin-Sanchez
   url: https://github.com/carlosvin
@@ -203,7 +203,7 @@ content: |
   - **No type erasure:** after `Schema.parse`, carry **`z.infer`-derived types** through server functions, repos, tools, and components — do not widen back to `Record<string, unknown>` / `any`.
   - **Repository interfaces = repo-layer types only:** mapping lives beside schemas / mappers — not in React components.
   - **Auth ticket is repository-backed and server-enforced:** middleware builds the ticket (e.g. `getReadRepository().getUserAccess(email)`); guards run in **server handlers**, never UI-only.
-  - **Writes use `TraceabilityContext`:** pass audit fields from the ticket through a single context object on `WritableRepository` mutations — avoid sprinkling raw `email` arguments.
+  - **Writes use `TraceabilityContext`:** pass audit fields from the ticket (or stock `context.user.email`) through a single context object on `WritableRepository` mutations — avoid sprinkling raw `email` arguments. Repository implementations must **persist** `createdBy` / `lastModifiedBy` from that context onto the entity.
   - **Navigation is one decision:** ship the **router defaults bundle** and the **project `Link` wrapper** (`search: true`) together so URL state survives navigation.
   - **AI stack is complete:** every repo method → server tool + safe handler; client **`navigate`** / **`invalidateRouter`**; root **`getAIAvailability()`**; chat payload includes **`browserContext`**; **`chat({ agentLoopStrategy: maxIterations(N) })`**.
   - **Routes:** **`validateSearch`** + **`loaderDeps`**; duplicate **`beforeLoad`** / shared loaders only on **parent** layouts.
@@ -440,15 +440,13 @@ content: |
     })
   ```
 
-  Stock template equivalent — same rules; `requireAuthMiddleware` chains auth so `context.user` is inferred:
+  Stock template equivalent — same rules; `requireAuthMiddleware` chains auth so `context.user` is inferred. Build a `TraceabilityContext` (do not pass a bare email string as the mutation’s second argument):
 
   ```typescript
   .handler(async ({ data, context }) => {
-    const email = context.user.email
     const repoPatch = TaskRepoPatchSchema.parse(mapToolUpdateToRepo(data))
-    return getWritableRepository().updateTask(data.taskId, repoPatch, {
-      lastModifiedBy: email,
-    })
+    const trace = updateWriteTrace(context.user.email)
+    return getWritableRepository().updateTask(data.taskId, repoPatch, trace)
   })
   ```
 
@@ -459,7 +457,9 @@ content: |
 
   ## Interface Contracts
 
-  Repository interfaces reference **repository-layer types** only. **`WritableRepository`** mutations take an optional **`TraceabilityContext`** built from the auth ticket — not ad-hoc optional email parameters at each call site.
+  Repository interfaces reference **repository-layer types** only. **`WritableRepository`** mutations take an optional **`TraceabilityContext`** built from the auth ticket (stock template: helpers such as `createWriteTrace` / `updateWriteTrace` from `context.user.email`) — not ad-hoc optional email parameters at each call site.
+
+  Implementations must **persist** audit fields from the trace onto the entity (`createdBy` on create, `lastModifiedBy` on update). Ignoring the `trace` argument is a contract violation.
 
   ```typescript
   interface TraceabilityContext {

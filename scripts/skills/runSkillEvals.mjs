@@ -266,6 +266,54 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 			},
 		},
 		{
+			id: 'architecture-traceability-context',
+			skill: 'tanstack-promptable-fullstack-app-template',
+			description: 'Writes pass TraceabilityContext; repos persist createdBy/lastModifiedBy',
+			async run() {
+				const serverFns = await readText(path.join(rootDir, 'src/services/api/serverFns.ts'))
+				const seed = await readText(path.join(rootDir, 'src/services/repository/seedRepository.ts'))
+				const mongo = await readText(path.join(rootDir, 'src/services/repository/mongoRepository.server.ts'))
+				const repoSchema = await readText(path.join(rootDir, 'src/services/schemas/repository.ts'))
+				const toolsSchema = await readText(path.join(rootDir, 'src/services/schemas/schemas.ts'))
+				const mapper = await readText(path.join(rootDir, 'src/services/schemas/taskMappers.ts'))
+
+				if (!/createWriteTrace|updateWriteTrace/.test(serverFns)) {
+					return fail('serverFns.ts must build TraceabilityContext via createWriteTrace / updateWriteTrace')
+				}
+				if (/createTask\([^,]+,\s*context\.user\.email\)/.test(serverFns)) {
+					return fail('serverFns.ts must not pass a bare email as the createTask trace argument')
+				}
+				if (!/lastModifiedBy/.test(repoSchema) || !/lastModifiedBy/.test(toolsSchema)) {
+					return fail('repository and tools Task schemas must include lastModifiedBy')
+				}
+				if (!/lastModifiedBy:\s*row\.lastModifiedBy/.test(mapper)) {
+					return fail('toToolTask must map lastModifiedBy')
+				}
+				if (/_trace\??:\s*TraceabilityContext/.test(seed) || /_trace\??:\s*TraceabilityContext/.test(mongo)) {
+					return fail('repository updateTask must use (not ignore) TraceabilityContext')
+				}
+				if (!/trace\?\.lastModifiedBy/.test(seed)) {
+					return fail('seedRepository must persist lastModifiedBy from TraceabilityContext')
+				}
+				if (!/trace\?\.lastModifiedBy/.test(mongo)) {
+					return fail('mongoRepository must persist lastModifiedBy from TraceabilityContext')
+				}
+				return pass()
+			},
+		},
+		{
+			id: 'handbook-ai-gating-status',
+			skill: 'tanstack-promptable-fullstack-app-template',
+			description: 'AGENTS.md does not claim chat UI always renders (Phase 3 is done)',
+			async run() {
+				const agents = await readText(path.join(rootDir, 'AGENTS.md'))
+				if (/currently always render/.test(agents)) {
+					return fail('AGENTS.md still claims chat UI always renders; Phase 3 gating is done')
+				}
+				return pass()
+			},
+		},
+		{
 			id: 'architecture-bounded-agent-loop',
 			skill: 'tanstack-promptable-fullstack-app-template',
 			description: 'chat() sets agentLoopStrategy: maxIterations(N)',
