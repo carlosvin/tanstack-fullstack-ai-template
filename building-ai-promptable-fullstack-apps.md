@@ -9,7 +9,7 @@ Every time our team started a new full-stack web app, we faced the same problem:
 
 After building several applications this way, we extracted the common patterns into a template. This post explains the architecture and the reasoning behind each decision.
 
-> **[Live demo](https://leafy-manatee-16b96c.netlify.app)** | **[Source code](https://github.com/carlosvin/tanstack-fullstack-ai-template)**
+> **[Live demo](https://fullstack-promptable-app-example.netlify.app)** | **[Source code](https://github.com/carlosvin/tanstack-fullstack-ai-template)**
 
 ## The Problem
 
@@ -182,7 +182,7 @@ pnpm install
 pnpm dev
 ```
 
-You can also try the [live demo](https://leafy-manatee-16b96c.netlify.app) without cloning.
+You can also try the [live demo](https://fullstack-promptable-app-example.netlify.app) without cloning.
 
 For a new project you can run `rm -rf .git && git init` after cloning to start fresh history. Use `pnpm build`, `pnpm test`, and `pnpm lint` (and `pnpm format`) to validate your fork. To run in production via Docker: `docker build -t my-app .` then `docker run --rm -p 3000:3000 my-app`.
 
@@ -226,7 +226,7 @@ The goal is not a framework — it's a **starting point**. Fork the template, re
 
 All with zero configuration for local development.
 
-The template is open source at [github.com/carlosvin/tanstack-fullstack-ai-template](https://github.com/carlosvin/tanstack-fullstack-ai-template). You can try the [live demo](https://leafy-manatee-16b96c.netlify.app) to see it in action before cloning. We hope it saves you the same weeks of scaffolding it saved us.
+The template is open source at [github.com/carlosvin/tanstack-fullstack-ai-template](https://github.com/carlosvin/tanstack-fullstack-ai-template). You can try the [live demo](https://fullstack-promptable-app-example.netlify.app) to see it in action before cloning. We hope it saves you the same weeks of scaffolding it saved us.
 
 ---
 
