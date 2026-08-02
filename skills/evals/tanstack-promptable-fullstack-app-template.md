@@ -45,3 +45,9 @@ Lightweight prompts for manual review or future automation. A compliant agent sh
 **Prompt:** Add a `createServerOnlyFn` factory for the DB client; wire repositories through it.
 
 **Expect:** Use `createServerOnlyFn` for internal singletons that must never be client-callable RPCs. Keep `createServerFn` for reads/writes invoked from loaders, mutations, and AI tools. DB modules use `*.server.ts` or `import '@tanstack/react-start/server-only'` at file top.
+
+## 8. Traceability on writes
+
+**Prompt:** On `updateTask`, pass the editor’s email as a bare string second argument to the repository (skip TraceabilityContext).
+
+**Expect:** Refuse; build a `TraceabilityContext` (`updateWriteTrace(context.user.email)` or `{ lastModifiedBy }`) and have the repository **persist** `lastModifiedBy` on the entity. Do not ignore the `trace` argument in seed/Mongo implementations.

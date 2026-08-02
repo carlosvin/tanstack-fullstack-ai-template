@@ -41,3 +41,30 @@ pnpm skills:check   # Validate + fail if generated files drift
 2. Run `pnpm skills:build`.
 3. Commit both canonical and generated outputs.
 4. CI/lint should run `pnpm skills:check` to prevent drift.
+
+## Skill ↔ example app sync loop
+
+This repo is both the **skill contract** and the **reference app**. They must stay aligned.
+
+| Artifact | Role | Edit? |
+| --- | --- | --- |
+| `skills/src/*.skill.yaml` | Architectural contract (source of truth) | Yes |
+| `.agents/skills/*/SKILL.md`, `skills/dist/`, `skills/registry.json` | Generated from YAML | No — via `pnpm skills:build` |
+| `src/` | Reference implementation that must satisfy the contract | Yes |
+| `AGENTS.md` | Ops handbook + alignment roadmap (not alternate architecture) | Yes |
+| `scripts/skills/runSkillEvals.mjs` | Static app↔skill invariants enforced in CI | Yes when contract changes |
+
+When app and skill disagree, pick one:
+
+1. **Promote app → skill** — the learning is correct; update YAML + evals + bump skill `version`.
+2. **Align app → skill** — the contract is correct; fix `src/`.
+3. **Carve exception** — mark the pattern optional in the skill and track deferral in the AGENTS roadmap.
+
+### PR checklist (architecture changes)
+
+- [ ] Skill contract changed? → edit YAML, run `pnpm skills:build`, bump skill `version` if Core Contract / checklist changed
+- [ ] Example app updated to match (or roadmap exception documented)?
+- [ ] Skill eval added/updated for the new invariant?
+- [ ] `AGENTS.md` roadmap status still accurate?
+- [ ] Generated artifacts committed?
+- [ ] `pnpm lint && pnpm test && pnpm build` green (`lint` includes `skills:check` + skill evals)
