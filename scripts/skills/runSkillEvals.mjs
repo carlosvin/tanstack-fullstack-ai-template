@@ -386,12 +386,28 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 			skill: 'tanstack-promptable-fullstack-app-template',
 			description: 'Generated skills include Skill routing tables for agent load decisions',
 			async run() {
-				const templateSkill = await readText(
-					path.join(rootDir, '.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md'),
-				)
-				const observabilitySkill = await readText(path.join(rootDir, '.agents/skills/observability-and-env/SKILL.md'))
-				if (!/## Skill routing/.test(templateSkill) || !/## Skill routing/.test(observabilitySkill)) {
-					return fail('Both generated SKILL.md files must include a Skill routing section')
+				const registryPath = path.join(rootDir, 'skills', 'registry.json')
+				try {
+					await fs.access(registryPath)
+				} catch {
+					return fail('skills/registry.json missing')
+				}
+				const registry = JSON.parse(await readText(registryPath))
+				const skillIds = (registry.skills ?? []).map((skill) => skill.id)
+				if (skillIds.length === 0) {
+					return fail('registry.json has no skills')
+				}
+				for (const skillId of skillIds) {
+					const skillMdPath = path.join(rootDir, '.agents/skills', skillId, 'SKILL.md')
+					try {
+						await fs.access(skillMdPath)
+					} catch {
+						return fail(`Missing SKILL.md for ${skillId}`)
+					}
+					const skillMd = await readText(skillMdPath)
+					if (!/## Skill routing/.test(skillMd)) {
+						return fail(`SKILL.md for ${skillId} missing Skill routing section`)
+					}
 				}
 				return pass()
 			},

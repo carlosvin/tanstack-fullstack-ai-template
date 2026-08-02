@@ -36,7 +36,8 @@ pnpm test:skill-evals -- --skill tanstack-promptable-fullstack-app-template
 - Bounded agent loop in `chat.ts`
 - `importProtection` in `vite.config.ts`
 - Generated skills include **Skill routing** tables and **Companion skills (install if missing)** sections
-- Architecture skill (`tanstack-promptable-fullstack-app-template`) documents **Fixed vs swappable stack** and stays vendor-agnostic in prose (UI, observability, markdown renderer, lint/test tools)
+- Architecture skill documents **Fixed vs swappable stack** and stays vendor-agnostic in prose (UI, observability, markdown renderer, lint tools)
+- `reference-tech-stack` skill publishes the opinionated package map for this template
 
 ## Manual pressure scenarios
 

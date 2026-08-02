@@ -1,0 +1,114 @@
+# Reference Tech Stack (Opinionated Defaults)
+
+- Project: `TanStack AI-Promptable Full-Stack Template`
+- Project summary: A production-ready TanStack Start template designed to make internal tools AI promptable by default.
+- Author: Carlos Martin-Sanchez (https://github.com/carlosvin)
+- License: MIT
+- Homepage: https://github.com/carlosvin/tanstack-fullstack-ai-template
+- Repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
+- Documentation: https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md
+- Status: stable
+- Supported tools: Windsurf [native, tested], Cursor [copy, tested], Claude Code [copy, tested]
+- Capabilities: Opinionated vendor map for this template (UI, validation, DB, auth, AI, observability, tooling), Pointers to AGENTS.md sections for operational how-to, Clear separation from the architecture skill (patterns) and observability-and-env (env/logging recipes), Guidance for forking teams that want to swap a vendor without rewriting architecture
+- ID: `reference-tech-stack`
+- Version: `1.0.0`
+- Tags: reference-stack, opinionated, mantine, zod, mongodb, netlify, tanstack-start
+
+## Summary
+
+Companion to tanstack-promptable-fullstack-app-template. Documents this template's opinionated vendor choices — Zod, Mantine, lucide-react, MongoDB + seed, jose JWT auth, OpenAI adapter, pino + Sentry, react-markdown, Biome, Vitest, Playwright, Netlify — so agents implement against the reference app without baking those choices into the architecture skill.
+
+## Triggers
+
+- reference tech stack
+- opinionated stack
+- which UI library
+- use Mantine
+- use Zod
+- MongoDB repository
+- lucide icons
+- Biome lint
+- Netlify deploy
+- template defaults
+- stack choices
+
+## Canonical Content
+# Reference Tech Stack (Opinionated Defaults)
+
+**Purpose:** Name the **concrete packages** this template uses so agents can
+implement and extend the **reference app** without re-introducing vendor
+coupling into the architecture skill.
+
+> **Parent skill:** `tanstack-promptable-fullstack-app-template` — architecture
+> (vendor-agnostic). Load that for schemas, routes, AI tools, and boundaries.
+>
+> **Companion:** `observability-and-env` — env parse, pino factories, Sentry
+> bootstrap. This skill only records that we chose pino + Sentry.
+>
+> **Handbook:** [AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md)
+> — file layout, snippets, and validation commands.
+
+## Skill routing
+
+| Task | Load |
+|------|------|
+| "What does this template use for X?" / scaffold matching the demo app | **This skill** |
+| Architecture, schemas, routes, AI tools, server boundaries | **`tanstack-promptable-fullstack-app-template`** |
+| Env schemas, `shellSession`, logging/Sentry bootstrap | **`observability-and-env`** |
+| Day-to-day file paths and UI/auth/AI how-to | **AGENTS.md** |
+
+## Stack map (this repository)
+
+| Concern | Choice | Primary packages / notes | Handbook |
+|---------|--------|--------------------------|----------|
+| Runtime validation | **Zod** | `zod` — tools, repo, router search, env | Architecture skill samples; `src/services/schemas/`, `src/env/` |
+| UI kit | **Mantine** | `@mantine/core`, `@mantine/hooks`, `@mantine/notifications` | AGENTS.md §3 |
+| Icons | **lucide-react** | One icon library; do not mix Tabler | AGENTS.md §3 |
+| Database | **MongoDB + seed** | `mongodb`; in-memory seed when unset | AGENTS.md §6; `src/services/repository/` |
+| Auth | **JWT header** | `jose` (unsigned/`alg:none` accepted in template); `Authorization` header | AGENTS.md §5 |
+| AI adapter | **OpenAI** | `@tanstack/ai-openai`; `OPENAI_API_KEY` | AGENTS.md §8 |
+| Chat markdown | **react-markdown + remark-gfm** | GFM tables/links/code in `ChatDrawer` | AGENTS.md §8 |
+| Logging | **pino** (+ `pino-pretty` in TTY) | Via `createServerLogger` | **`observability-and-env`**; AGENTS.md §9 |
+| Error tracking | **Sentry** | `@sentry/tanstackstart-react`; `SENTRY_DSN` | **`observability-and-env`**; AGENTS.md §9 |
+| Lint / format | **Biome** | `@biomejs/biome` — not ESLint/Prettier | AGENTS.md §11 |
+| Unit tests | **Vitest** + Testing Library | jsdom; `renderWithProviders` | AGENTS.md §10 |
+| E2E | **Playwright** | Chromium; seed repo; auth via JWT headers | AGENTS.md §10 |
+| Deploy | **Netlify** | `@netlify/vite-plugin-tanstack-start`; Git deploy previews | AGENTS.md CI/CD; `netlify.toml` |
+| Package manager | **pnpm** | Lockfile committed | AGENTS.md §12 / §15 |
+
+**Fixed (not listed as choices):** TanStack **Start**, **Router**, **AI**, Intent, and CLI — owned by the architecture skill.
+
+## How to use these defaults
+
+1. **Prefer the table above** when adding features to *this* repo or cloning the template as-is.
+2. **Do not invent a second library** for the same concern (e.g. do not add Radix beside Mantine, or ArkType beside Zod) unless you are intentionally migrating.
+3. **Keep interfaces:** swap Mongo → Postgres by implementing `ReadRepository` / `WritableRepository`; swap OpenAI by implementing `AIAdapterService`; swap Sentry/pino behind `ObservabilityService` + logger factories.
+4. **After a fork swap:** update this skill's Stack map and AGENTS.md; leave the architecture skill vendor-agnostic.
+
+## Mantine / UI conventions (reference)
+
+- Prefer Mantine components and style props (`c`, `fw`, `size`, `variant`) before custom CSS.
+- CSS Modules only when Mantine props are insufficient; use `--mantine-color-*` variables.
+- Support light and dark color schemes.
+- Debounced free-text search: uncontrolled input + `@mantine/hooks` `useDebouncedCallback` (see architecture skill **Special Patterns** for URL/`loaderDeps` rules).
+
+## Zod conventions (reference)
+
+- One tools-layer schema shared by `createServerFn` `.inputValidator` and AI `toolDefinition`.
+- Boundary mapping ends in `.parse()` both directions.
+- `.describe()` for AI/UI narrative; `.meta()` for structured extras (`unit`, `format`, `title`).
+- Closed vocabularies: `as const` tuple + `z.enum` + `z.infer<>`.
+
+## Forking away from a default
+
+| If you want… | Keep | Change |
+|--------------|------|--------|
+| ArkType / Valibot | Three schema layers + `Schema.parse()` contract | All schema modules; this skill; AGENTS.md |
+| Another UI kit | Thin routes + page components in `src/components/` | Components, theme, this skill §UI |
+| Postgres / other DB | Repository interfaces + `*.server.ts` | Implementations + factory + importProtection |
+| Different AI provider | `AIAdapterService` + tool coverage | `adapter.ts`, env vars, AGENTS.md §8 |
+| OpenTelemetry instead of Sentry | `ObservabilityService` + env middleware | `observability-and-env` impl + this stack row |
+
+## Verification
+
+After stack-affecting changes in this template repo: `pnpm skills:build`, `pnpm skills:check`, and AGENTS.md §15 (`pnpm format && pnpm lint && pnpm test && pnpm build`).

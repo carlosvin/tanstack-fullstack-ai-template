@@ -11,7 +11,7 @@
 - Supported tools: Windsurf [native, tested], Cursor [copy, tested], Claude Code [copy, tested]
 - Capabilities: Interface-first observability — handlers depend on ObservabilityService, not a specific vendor, Centralized runtime-validated env schemas with server/public split (src/env/) — reference uses Zod, process.env read only once at module-level parse — no scattered env access, Structured logger factory pattern (reference: pino via createModuleLogger / createServerLogger), Error-tracking bootstrap pattern (reference: Sentry via instrument.*.mts), instrument.env.shared.mts for a shared deployment env schema (bootstrap + TS callers), instrument.env.mts for strict bootstrap env validation using the shared deployment env schema, instrument.shared.mts for reusable initSentry — callers pre-resolve all values, instrument.server.mts as the dev --import entry; tsc emits instrument.*.mjs to .output/server for production, Browser config via shellSession: route loaders call getBrowserShellSession — never import webEnv in client-shared modules, Typed request context via middleware chaining: webEnvMiddleware injects serverEnv and shellSession through next({ context }), No window.__ENV__ global
 - ID: `observability-and-env`
-- Version: `1.6.0`
+- Version: `1.7.0`
 - Tags: observability, logging, sentry, pino, environment, configuration, tanstack-start
 
 ## Summary
@@ -80,8 +80,9 @@ arguments and calls an **`ObservabilityService` interface**, not a specific SDK.
 | Task | Load |
 |------|------|
 | Logging, error tracking, `instrument.*.mts`, `src/env/`, env leaks, `shellSession` | **This skill** |
+| Concrete package choices for this template (Zod, Mantine, pino, …) | **`reference-tech-stack`** |
 | New routes, entities, AI tools, repository pattern, import protection | **`tanstack-promptable-fullstack-app-template`** |
-| Server fn that logs and uses `context.serverEnv` | **Both** |
+| Server fn that logs and uses `context.serverEnv` | **This skill** + architecture |
 
 ## Key invariants (do not violate)
 

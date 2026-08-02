@@ -7,7 +7,7 @@
       "summary": "Companion to tanstack-promptable-fullstack-app-template. Use when adding structured logging, centralized environment validation (runtime schemas), error-tracking bootstrap, or fixing env/shellSession leaks in a TanStack Start app. Teaches interface-first observability patterns: parse env once, inject via middleware, project a browser-safe shellSession, and keep process.env out of handlers. The reference app uses pino + Sentry behind ObservabilityService — swap vendors without changing middleware or handler contracts.",
       "projectName": "TanStack AI-Promptable Full-Stack Template",
       "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
-      "version": "1.6.0",
+      "version": "1.7.0",
       "author": {
         "name": "Carlos Martin-Sanchez",
         "url": "https://github.com/carlosvin"
@@ -161,6 +161,11 @@
           "id": "tanstack-promptable-fullstack-app-template",
           "relationship": "parent",
           "summary": "Architecture contract for this template — schema layers, server boundaries, AI tools, and middleware-inferred request context. Install for all non-observability TanStack work."
+        },
+        {
+          "id": "reference-tech-stack",
+          "relationship": "companion",
+          "summary": "Opinionated vendor map for this template's reference app. Install when matching the demo stack's concrete packages."
         }
       ],
       "source": "skills/src/observability-and-env.skill.yaml",
@@ -170,12 +175,131 @@
       }
     },
     {
-      "id": "tanstack-promptable-fullstack-app-template",
-      "title": "TanStack Promptable Fullstack App Template",
-      "summary": "Use when scaffolding a new TanStack Start project, adding domain entities, implementing the interface-first repository pattern with AI-promptable tools, fixing nested layout routes that duplicate parent beforeLoad/loaders, verifying TanStack Router/Start/AI against current docs, or enforcing server/client execution boundaries (isomorphic loaders, import protection, middleware-inferred request context). For logging, error tracking, env schemas, or shellSession setup, load companion skill observability-and-env instead.",
+      "id": "reference-tech-stack",
+      "title": "Reference Tech Stack (Opinionated Defaults)",
+      "summary": "Companion to tanstack-promptable-fullstack-app-template. Documents this template's opinionated vendor choices — Zod, Mantine, lucide-react, MongoDB + seed, jose JWT auth, OpenAI adapter, pino + Sentry, react-markdown, Biome, Vitest, Playwright, Netlify — so agents implement against the reference app without baking those choices into the architecture skill.",
       "projectName": "TanStack AI-Promptable Full-Stack Template",
       "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
-      "version": "1.25.0",
+      "version": "1.0.0",
+      "author": {
+        "name": "Carlos Martin-Sanchez",
+        "url": "https://github.com/carlosvin"
+      },
+      "license": "MIT",
+      "homepage": "https://github.com/carlosvin/tanstack-fullstack-ai-template",
+      "repository": "https://github.com/carlosvin/tanstack-fullstack-ai-template",
+      "documentationUrl": "https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md",
+      "status": "stable",
+      "supportedTools": [
+        {
+          "id": "windsurf",
+          "name": "Windsurf",
+          "installMode": "native",
+          "tested": true,
+          "notes": "Reads `.agents/skills/` directly when the skill lives in the project."
+        },
+        {
+          "id": "cursor",
+          "name": "Cursor",
+          "installMode": "copy",
+          "tested": true,
+          "notes": "Copy the generated skill folder into the global Cursor skills directory."
+        },
+        {
+          "id": "claude-code",
+          "name": "Claude Code",
+          "installMode": "copy",
+          "tested": true,
+          "notes": "Copy the generated skill folder into the Claude Code skills directory."
+        }
+      ],
+      "tags": [
+        "reference-stack",
+        "opinionated",
+        "mantine",
+        "zod",
+        "mongodb",
+        "netlify",
+        "tanstack-start"
+      ],
+      "capabilities": [
+        "Opinionated vendor map for this template (UI, validation, DB, auth, AI, observability, tooling)",
+        "Pointers to AGENTS.md sections for operational how-to",
+        "Clear separation from the architecture skill (patterns) and observability-and-env (env/logging recipes)",
+        "Guidance for forking teams that want to swap a vendor without rewriting architecture"
+      ],
+      "triggers": [
+        "reference tech stack",
+        "opinionated stack",
+        "which UI library",
+        "use Mantine",
+        "use Zod",
+        "MongoDB repository",
+        "lucide icons",
+        "Biome lint",
+        "Netlify deploy",
+        "template defaults",
+        "stack choices"
+      ],
+      "inputs": [
+        "TanStack Start app built from this template (or forking its stack)"
+      ],
+      "outputs": [
+        "Clear map of chosen packages and where they live in the repo",
+        "Pointers to AGENTS.md for UI, auth, AI, testing, and deploy detail"
+      ],
+      "constraints": [
+        "Do not treat this skill as architecture — patterns and invariants live in tanstack-promptable-fullstack-app-template",
+        "When swapping a vendor in a fork, update this skill (or drop it) and AGENTS.md; keep the architecture skill vendor-agnostic",
+        "Prefer one library per concern (one UI kit, one validator, one icon set)",
+        "Observability setup details stay in observability-and-env — this skill only names the chosen vendors"
+      ],
+      "steps": [
+        "Confirm you are working in this template (or intentionally adopting its defaults)",
+        "Use the Stack map below for package and file locations",
+        "Follow AGENTS.md sections linked for each concern",
+        "For env/logging/Sentry wiring, also load observability-and-env",
+        "If forking away from a default, replace the implementation behind the existing interface and update this skill"
+      ],
+      "examples": [
+        {
+          "input": "Which UI library should I use in this template?",
+          "output": "Mantine (@mantine/core, @mantine/hooks, @mantine/notifications) with lucide-react icons — see AGENTS.md §3 and Stack map in this skill."
+        },
+        {
+          "input": "Can I use ArkType instead of Zod?",
+          "output": "Architecture allows it; this reference stack uses Zod. To switch, pick one validator app-wide, update schemas, and revise this skill / AGENTS.md."
+        },
+        {
+          "input": "Where is MongoDB wired?",
+          "output": "Behind ReadRepository / WritableRepository — Mongo + seed implementations in src/services/repository/; factory in getRepository.server.ts."
+        }
+      ],
+      "companionSkills": [
+        {
+          "id": "tanstack-promptable-fullstack-app-template",
+          "relationship": "parent",
+          "summary": "Architecture contract — schema layers, server boundaries, AI tools, and middleware-inferred request context. Vendor-agnostic; install for all TanStack work."
+        },
+        {
+          "id": "observability-and-env",
+          "relationship": "companion",
+          "summary": "Env parse, logger factories, and error-tracking bootstrap. This stack skill names pino + Sentry; that companion owns the setup recipe."
+        }
+      ],
+      "source": "skills/src/reference-tech-stack.skill.yaml",
+      "outputsByFormat": {
+        "skill": ".agents/skills/reference-tech-stack/SKILL.md",
+        "markdown": "skills/dist/reference-tech-stack.md"
+      }
+    },
+    {
+      "id": "tanstack-promptable-fullstack-app-template",
+      "title": "TanStack Promptable Fullstack App Template",
+      "summary": "Use when scaffolding a new TanStack Start project, adding domain entities, implementing the interface-first repository pattern with AI-promptable tools, fixing nested layout routes that duplicate parent beforeLoad/loaders, verifying TanStack Router/Start/AI against current docs, or enforcing server/client execution boundaries (isomorphic loaders, import protection, middleware-inferred request context). For logging, error tracking, env schemas, or shellSession setup, load companion skill observability-and-env instead. For this template's concrete package defaults, load companion skill reference-tech-stack.",
+      "projectName": "TanStack AI-Promptable Full-Stack Template",
+      "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
+      "version": "1.26.0",
       "author": {
         "name": "Carlos Martin-Sanchez",
         "url": "https://github.com/carlosvin"
@@ -308,6 +432,11 @@
           "id": "observability-and-env",
           "relationship": "companion",
           "summary": "Logging, error-tracking bootstrap, env schemas, webEnvMiddleware, and shellSession setup. Install when work touches observability, process.env, or browser runtime config."
+        },
+        {
+          "id": "reference-tech-stack",
+          "relationship": "companion",
+          "summary": "Opinionated vendor map for this template's reference app. Install when implementing against the demo stack defaults (UI kit, validator, DB, deploy)."
         }
       ],
       "source": "skills/src/tanstack-promptable-fullstack-app-template.skill.yaml",

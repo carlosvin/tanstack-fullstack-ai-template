@@ -31,8 +31,37 @@ async function createMinimalWorkspace(overrides = {}) {
 		'AGENTS.md': '## Skill alignment roadmap\nPhase 3 chat gating is done.\n',
 		'src/routes/api/chat.ts': 'chat({ agentLoopStrategy: maxIterations(10) })\n',
 		'vite.config.ts': "tanstackStart({ importProtection: { behavior: 'error' } })\n",
-		'.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md': '## Skill routing\n',
-		'.agents/skills/observability-and-env/SKILL.md': '## Skill routing\n',
+		'.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md':
+			'## Skill routing\n## Companion skills (install if missing)\nnpx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env\nnpx skills add carlosvin/tanstack-fullstack-ai-template --skill reference-tech-stack\n',
+		'.agents/skills/observability-and-env/SKILL.md':
+			'## Skill routing\n## Companion skills (install if missing)\nnpx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-promptable-fullstack-app-template\nnpx skills add carlosvin/tanstack-fullstack-ai-template --skill reference-tech-stack\n',
+		'.agents/skills/reference-tech-stack/SKILL.md':
+			'## Skill routing\n## Companion skills (install if missing)\nnpx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-promptable-fullstack-app-template\nnpx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env\n',
+		'skills/registry.json': JSON.stringify({
+			skills: [
+				{
+					id: 'tanstack-promptable-fullstack-app-template',
+					companionSkills: [
+						{ id: 'observability-and-env' },
+						{ id: 'reference-tech-stack' },
+					],
+				},
+				{
+					id: 'observability-and-env',
+					companionSkills: [
+						{ id: 'tanstack-promptable-fullstack-app-template' },
+						{ id: 'reference-tech-stack' },
+					],
+				},
+				{
+					id: 'reference-tech-stack',
+					companionSkills: [
+						{ id: 'tanstack-promptable-fullstack-app-template' },
+						{ id: 'observability-and-env' },
+					],
+				},
+			],
+		}),
 		'instrument.env.shared.mts': 'export const DeploymentEnvSchema = {}\n',
 		'instrument.env.mts': 'export function resolveSentryBootstrapEnv() {}\n',
 		'instrument.shared.mts': 'export function initSentry() {}\n',

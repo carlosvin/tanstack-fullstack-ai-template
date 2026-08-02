@@ -12,7 +12,7 @@ projectName: TanStack AI-Promptable Full-Stack Template
 projectSummary: >-
   A production-ready TanStack Start template designed to make internal tools AI
   promptable by default.
-version: 1.6.0
+version: 1.7.0
 author:
   name: Carlos Martin-Sanchez
   url: https://github.com/carlosvin
@@ -91,6 +91,11 @@ companionSkills:
     summary: >-
       Architecture contract for this template — schema layers, server boundaries, AI tools,
       and middleware-inferred request context. Install for all non-observability TanStack work.
+  - id: reference-tech-stack
+    relationship: companion
+    summary: >-
+      Opinionated vendor map for this template's reference app. Install when
+      matching the demo stack's concrete packages.
 inputs:
   - TanStack Start app (from this template or another)
 outputs:
@@ -181,8 +186,9 @@ content: |
   | Task | Load |
   |------|------|
   | Logging, error tracking, `instrument.*.mts`, `src/env/`, env leaks, `shellSession` | **This skill** |
+  | Concrete package choices for this template (Zod, Mantine, pino, …) | **`reference-tech-stack`** |
   | New routes, entities, AI tools, repository pattern, import protection | **`tanstack-promptable-fullstack-app-template`** |
-  | Server fn that logs and uses `context.serverEnv` | **Both** |
+  | Server fn that logs and uses `context.serverEnv` | **This skill** + architecture |
 
   ## Key invariants (do not violate)
 

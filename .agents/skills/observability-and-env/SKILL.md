@@ -8,9 +8,9 @@ description: 'Companion to tanstack-promptable-fullstack-app-template. Use when
   process.env out of handlers. The reference app uses pino + Sentry behind
   ObservabilityService — swap vendors without changing middleware or handler
   contracts. Companion skills: tanstack-promptable-fullstack-app-template
-  (parent). Install missing companions with npx skills add
-  carlosvin/tanstack-fullstack-ai-template --skill <id>. Project: TanStack
-  AI-Promptable Full-Stack Template. Triggers on "add logging", "set up
+  (parent), reference-tech-stack (companion). Install missing companions with
+  npx skills add carlosvin/tanstack-fullstack-ai-template --skill <id>. Project:
+  TanStack AI-Promptable Full-Stack Template. Triggers on "add logging", "set up
   logging", "structured logging", "pino logger", "sentry init", "error
   tracking", "opentelemetry", "instrument server", "instrument.server.mts",
   "instrument.server.mjs", "env schema", "environment validation", "centralize
@@ -29,6 +29,11 @@ This template publishes **multiple** skills. If only **this** skill is installed
 - **`tanstack-promptable-fullstack-app-template`** (parent) — Architecture contract for this template — schema layers, server boundaries, AI tools, and middleware-inferred request context. Install for all non-observability TanStack work.
   ```bash
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-promptable-fullstack-app-template
+  ```
+
+- **`reference-tech-stack`** (companion) — Opinionated vendor map for this template's reference app. Install when matching the demo stack's concrete packages.
+  ```bash
+  npx skills add carlosvin/tanstack-fullstack-ai-template --skill reference-tech-stack
   ```
 
 Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --list`
@@ -65,8 +70,9 @@ arguments and calls an **`ObservabilityService` interface**, not a specific SDK.
 | Task | Load |
 |------|------|
 | Logging, error tracking, `instrument.*.mts`, `src/env/`, env leaks, `shellSession` | **This skill** |
+| Concrete package choices for this template (Zod, Mantine, pino, …) | **`reference-tech-stack`** |
 | New routes, entities, AI tools, repository pattern, import protection | **`tanstack-promptable-fullstack-app-template`** |
-| Server fn that logs and uses `context.serverEnv` | **Both** |
+| Server fn that logs and uses `context.serverEnv` | **This skill** + architecture |
 
 ## Key invariants (do not violate)
 
