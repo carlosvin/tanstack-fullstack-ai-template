@@ -3,7 +3,7 @@ import { useDebouncedCallback } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import { createFileRoute, Outlet, useLoaderData, useNavigate } from '@tanstack/react-router'
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useRef, useState } from 'react'
 import { z } from 'zod'
 import { Link } from '../../components/Link/Link'
 import { TASK_PRIORITIES, TASK_STATUSES } from '../../constants/options'
@@ -36,12 +36,19 @@ function TasksPage() {
 	const isAuth = Boolean(currentUser?.identity?.email)
 	const urlSearch = search.search ?? ''
 	const [searchInput, setSearchInput] = useState(urlSearch)
+	const [prevUrlSearch, setPrevUrlSearch] = useState(urlSearch)
+	const pendingSearchRef = useRef<string | null>(null)
 
-	useEffect(() => {
-		setSearchInput(urlSearch)
-	}, [urlSearch])
+	if (urlSearch !== prevUrlSearch) {
+		setPrevUrlSearch(urlSearch)
+		if (pendingSearchRef.current !== urlSearch) {
+			setSearchInput(urlSearch)
+		}
+		pendingSearchRef.current = null
+	}
 
 	const debouncedUpdateSearch = useDebouncedCallback((value: string) => {
+		pendingSearchRef.current = value
 		navigate({
 			to: '/tasks',
 			replace: true,
