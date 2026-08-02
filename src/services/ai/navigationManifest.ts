@@ -50,15 +50,32 @@ export const APP_NAVIGATION: AppRoute[] = [
  * Returns true if the given path is a valid user-facing route or matches a dynamic segment (e.g. /tasks/abc-123).
  */
 export function isUserFacingPath(path: string): boolean {
-	const normalized = path.startsWith('/') ? path : `/${path}`
+	return matchUserFacingRoute(path) !== null
+}
+
+export interface MatchedUserFacingRoute {
+	to: '/tasks/$taskId' | '/tasks/$taskId/edit' | '/' | '/tasks' | '/tasks/new'
+	params?: { taskId: string }
+}
+
+/**
+ * Maps a pathname to a typed TanStack Router destination.
+ * Returns null for unknown or non-user-facing paths.
+ */
+export function matchUserFacingRoute(pathname: string): MatchedUserFacingRoute | null {
+	const normalized = pathname.startsWith('/') ? pathname : `/${pathname}`
 	const segments = normalized.split('/').filter(Boolean)
 
-	if (normalized === '/') return true
-	if (normalized === '/tasks' || normalized === '/tasks/') return true
-	if (normalized === '/tasks/new') return true
-	if (segments.length === 2 && segments[0] === 'tasks' && segments[1] !== 'new') return true
-	if (segments.length === 3 && segments[0] === 'tasks' && segments[2] === 'edit' && segments[1] !== 'new') return true
-	return false
+	if (normalized === '/') return { to: '/' }
+	if (normalized === '/tasks' || normalized === '/tasks/') return { to: '/tasks' }
+	if (normalized === '/tasks/new') return { to: '/tasks/new' }
+	if (segments.length === 2 && segments[0] === 'tasks' && segments[1] !== 'new') {
+		return { to: '/tasks/$taskId', params: { taskId: segments[1] } }
+	}
+	if (segments.length === 3 && segments[0] === 'tasks' && segments[2] === 'edit' && segments[1] !== 'new') {
+		return { to: '/tasks/$taskId/edit', params: { taskId: segments[1] } }
+	}
+	return null
 }
 
 /**

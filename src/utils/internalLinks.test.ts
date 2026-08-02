@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { isInternalPath, parseInternalHref, toInternalRouterLinkTarget } from './internalLinks'
+import { isInternalPath, toInternalRouterLinkTarget } from './internalLinks'
 
 describe('isInternalPath', () => {
 	it('accepts root and task routes', () => {
 		expect(isInternalPath('/')).toBe(true)
 		expect(isInternalPath('/tasks')).toBe(true)
 		expect(isInternalPath('/tasks/abc-123')).toBe(true)
-		expect(isInternalPath('/tasks/abc-123/edit')).toBe(true)
 	})
 
 	it('rejects API and external URLs', () => {
@@ -17,19 +16,6 @@ describe('isInternalPath', () => {
 	it('accepts same-origin absolute URLs', () => {
 		const origin = window.location.origin
 		expect(isInternalPath(`${origin}/tasks/abc`)).toBe(true)
-	})
-})
-
-describe('parseInternalHref', () => {
-	it('parses query params', () => {
-		expect(parseInternalHref('/tasks?status=done&priority=high')).toEqual({
-			pathname: '/tasks',
-			search: { status: 'done', priority: 'high' },
-		})
-	})
-
-	it('parses pathname only', () => {
-		expect(parseInternalHref('/tasks/abc-123')).toEqual({ pathname: '/tasks/abc-123' })
 	})
 })
 

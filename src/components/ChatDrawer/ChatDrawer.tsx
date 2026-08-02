@@ -15,41 +15,15 @@ import {
 import { clientTools, createChatClientOptions } from '@tanstack/ai-client'
 import type { UIMessage } from '@tanstack/ai-react'
 import { fetchServerSentEvents, useChat } from '@tanstack/ai-react'
-import { Link as RouterLink, useRouter } from '@tanstack/react-router'
+import { useRouter } from '@tanstack/react-router'
 import { Bot, Send, Square, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { isUserFacingPath } from '../../services/ai/navigationManifest'
 import { invalidateRouterToolDef, NavigateInputSchema, navigateToolDef } from '../../services/ai/tools'
 import { toInternalRouterLinkTarget } from '../../utils/internalLinks'
 import styles from './ChatDrawer.module.css'
-
-/** Renders internal app links as Router Link, external as <a>. */
-function MarkdownLink({ href, children }: { href?: string; children?: React.ReactNode }) {
-	if (!href) return <span>{children}</span>
-
-	const linkTarget = toInternalRouterLinkTarget(href)
-	if (linkTarget) {
-		return (
-			<RouterLink
-				to={linkTarget.to}
-				{...(linkTarget.params ? { params: linkTarget.params } : {})}
-				{...(linkTarget.search ? { search: linkTarget.search } : {})}
-				preload="intent"
-				style={{ color: 'inherit', textDecoration: 'underline' }}
-			>
-				{children}
-			</RouterLink>
-		)
-	}
-
-	return (
-		<a href={href} target="_blank" rel="noopener noreferrer">
-			{children}
-		</a>
-	)
-}
+import { MarkdownLink } from './MarkdownLink'
 
 interface ChatDrawerProps {
 	opened: boolean
@@ -137,8 +111,21 @@ export function ChatDrawer({ opened, onClose }: ChatDrawerProps) {
 	const navigateClient = navigateToolDef.client((args) => {
 		const navInput = NavigateInputSchema.parse(args)
 		const path = navInput.to.startsWith('/') ? navInput.to : `/${navInput.to}`
-		if (!isUserFacingPath(path)) return { success: false }
-		router.navigate({ to: path, search: navInput.search ?? undefined })
+		const params = new URLSearchParams()
+		if (navInput.search) {
+			for (const [key, value] of Object.entries(navInput.search)) {
+				if (value !== undefined) params.set(key, value)
+			}
+		}
+		const query = params.toString()
+		const href = query ? `${path}?${query}` : path
+		const linkTarget = toInternalRouterLinkTarget(href)
+		if (!linkTarget) return { success: false }
+		router.navigate({
+			to: linkTarget.to,
+			...(linkTarget.params ? { params: linkTarget.params } : {}),
+			...(linkTarget.search ? { search: linkTarget.search } : {}),
+		})
 		return { success: true }
 	})
 

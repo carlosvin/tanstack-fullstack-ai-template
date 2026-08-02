@@ -1,7 +1,6 @@
 import type { LinkProps } from '@tanstack/react-router'
-import { isUserFacingPath } from '../services/ai/navigationManifest'
+import { matchUserFacingRoute } from '../services/ai/navigationManifest'
 
-/** True when href points at an in-app path (not /api/* or external). */
 export function isInternalPath(href: string): boolean {
 	if (href.startsWith('/')) {
 		return !href.startsWith('/api/')
@@ -19,30 +18,33 @@ export function isInternalPath(href: string): boolean {
 	}
 }
 
-/** Splits a path-only or same-origin href into pathname + query params. */
-export function parseInternalHref(href: string): { pathname: string; search?: Record<string, string> } {
-	const raw = href.startsWith('/')
-		? href
-		: (() => {
-				try {
-					return `${new URL(href).pathname}${new URL(href).search}`
-				} catch {
-					return href
-				}
-			})()
-
-	const [pathname, searchStr] = raw.split('?')
-	const normalizedPath = pathname ?? raw
-	if (!searchStr) return { pathname: normalizedPath }
-
-	const search: Record<string, string> = {}
-	for (const pair of searchStr.split('&')) {
-		const [key, value] = pair.split('=')
-		if (key && value !== undefined) {
-			search[decodeURIComponent(key)] = decodeURIComponent(value)
-		}
+function parseInternalHref(href: string): { pathname: string; search?: Record<string, string> } {
+	if (href.startsWith('/')) {
+		const [pathname, searchStr] = href.split('?')
+		const normalizedPath = pathname ?? href
+		if (!searchStr) return { pathname: normalizedPath }
+		return { pathname: normalizedPath, search: searchParamsToRecord(searchStr) }
 	}
-	return { pathname: normalizedPath, search }
+
+	try {
+		const url = new URL(href)
+		const search = searchParamsToRecord(url.search)
+		return {
+			pathname: url.pathname,
+			...(search ? { search } : {}),
+		}
+	} catch {
+		return { pathname: href }
+	}
+}
+
+function searchParamsToRecord(query: string): Record<string, string> | undefined {
+	const params = new URLSearchParams(query.startsWith('?') ? query.slice(1) : query)
+	const search: Record<string, string> = {}
+	for (const [key, value] of params.entries()) {
+		search[key] = value
+	}
+	return Object.keys(search).length > 0 ? search : undefined
 }
 
 export interface InternalRouterLinkTarget {
@@ -51,34 +53,16 @@ export interface InternalRouterLinkTarget {
 	search?: LinkProps['search']
 }
 
-/**
- * Maps a validated internal href to TanStack Router link props.
- * Dynamic task routes use typed `to` + `params` so navigation stays type-safe.
- */
 export function toInternalRouterLinkTarget(href: string): InternalRouterLinkTarget | null {
 	if (!isInternalPath(href)) return null
 
 	const { pathname, search } = parseInternalHref(href)
-	if (!isUserFacingPath(pathname)) return null
-
-	const editMatch = pathname.match(/^\/tasks\/([^/]+)\/edit$/)
-	if (editMatch?.[1] && editMatch[1] !== 'new') {
-		return {
-			to: '/tasks/$taskId/edit',
-			params: { taskId: editMatch[1] },
-		} satisfies InternalRouterLinkTarget
-	}
-
-	const taskMatch = pathname.match(/^\/tasks\/([^/]+)$/)
-	if (taskMatch?.[1] && taskMatch[1] !== 'new') {
-		return {
-			to: '/tasks/$taskId',
-			params: { taskId: taskMatch[1] },
-		} satisfies InternalRouterLinkTarget
-	}
+	const matched = matchUserFacingRoute(pathname)
+	if (!matched) return null
 
 	return {
-		to: pathname as LinkProps['to'],
-		...(search && Object.keys(search).length > 0 ? { search: search as LinkProps['search'] } : {}),
-	} satisfies InternalRouterLinkTarget
+		to: matched.to as LinkProps['to'],
+		...(matched.params ? { params: matched.params } : {}),
+		...(search ? { search: search as LinkProps['search'] } : {}),
+	}
 }
