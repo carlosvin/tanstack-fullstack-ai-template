@@ -1,9 +1,22 @@
 import { Badge, Card, Container, Group, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core'
 import { createFileRoute, useLoaderData } from '@tanstack/react-router'
-import { CheckCircle, Circle, Clock, ListTodo } from 'lucide-react'
+import { CheckCircle, Circle, Clock, ListTodo, type LucideIcon } from 'lucide-react'
+import { z } from 'zod'
 import { Link } from '../components/Link/Link'
+import { TASK_STATUSES } from '../constants/options'
 import { getTasks } from '../services/api/serverFns'
 import type { Task } from '../types'
+
+const DashboardStatSchema = z.object({
+	label: z.string(),
+	value: z.number(),
+	icon: z.custom<LucideIcon>(),
+	color: z.string(),
+	status: z.enum(TASK_STATUSES).optional(),
+	filterLabel: z.string(),
+})
+
+type DashboardStat = z.infer<typeof DashboardStatSchema>
 
 export const Route = createFileRoute('/')({
 	loader: () => getTasks({}),
@@ -18,11 +31,38 @@ function DashboardPage() {
 	const tasks = Route.useLoaderData()
 	const { shellSession } = useLoaderData({ from: '__root__' })
 
-	const stats = [
-		{ label: 'Total', value: tasks.length, icon: ListTodo, color: 'blue' },
-		{ label: 'Pending', value: statusCount(tasks, 'pending'), icon: Circle, color: 'yellow' },
-		{ label: 'In Progress', value: statusCount(tasks, 'in-progress'), icon: Clock, color: 'teal' },
-		{ label: 'Done', value: statusCount(tasks, 'done'), icon: CheckCircle, color: 'green' },
+	const stats: DashboardStat[] = [
+		{
+			label: 'Total',
+			value: tasks.length,
+			icon: ListTodo,
+			color: 'blue',
+			filterLabel: 'View all tasks',
+		},
+		{
+			label: 'Pending',
+			value: statusCount(tasks, 'pending'),
+			icon: Circle,
+			color: 'yellow',
+			status: 'pending',
+			filterLabel: 'Filter tasks by pending status',
+		},
+		{
+			label: 'In Progress',
+			value: statusCount(tasks, 'in-progress'),
+			icon: Clock,
+			color: 'teal',
+			status: 'in-progress',
+			filterLabel: 'Filter tasks by in progress status',
+		},
+		{
+			label: 'Done',
+			value: statusCount(tasks, 'done'),
+			icon: CheckCircle,
+			color: 'green',
+			status: 'done',
+			filterLabel: 'Filter tasks by done status',
+		},
 	]
 
 	return (
@@ -45,21 +85,42 @@ function DashboardPage() {
 
 				<SimpleGrid cols={{ base: 2, sm: 4 }}>
 					{stats.map((stat) => (
-						<Card key={stat.label} withBorder padding="lg">
-							<Group justify="space-between" align="flex-start">
-								<div>
-									<Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-										{stat.label}
-									</Text>
-									<Title order={2} mt={4}>
-										{stat.value}
-									</Title>
-								</div>
-								<ThemeIcon variant="light" color={stat.color} size="lg" radius="md">
-									<stat.icon size={20} />
-								</ThemeIcon>
-							</Group>
-						</Card>
+						<Link
+							key={stat.label}
+							to="/tasks"
+							search={stat.status ? { status: stat.status } : {}}
+							aria-label={stat.filterLabel}
+							style={{ textDecoration: 'none', color: 'inherit' }}
+						>
+							<Card
+								withBorder
+								padding="lg"
+								style={{ cursor: 'pointer' }}
+								styles={{
+									root: {
+										transition: 'border-color 150ms ease, box-shadow 150ms ease',
+										'&:hover': {
+											borderColor: 'var(--mantine-color-gray-4)',
+											boxShadow: 'var(--mantine-shadow-sm)',
+										},
+									},
+								}}
+							>
+								<Group justify="space-between" align="flex-start">
+									<div>
+										<Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+											{stat.label}
+										</Text>
+										<Title order={2} mt={4}>
+											{stat.value}
+										</Title>
+									</div>
+									<ThemeIcon variant="light" color={stat.color} size="lg" radius="md">
+										<stat.icon size={20} />
+									</ThemeIcon>
+								</Group>
+							</Card>
+						</Link>
 					))}
 				</SimpleGrid>
 
