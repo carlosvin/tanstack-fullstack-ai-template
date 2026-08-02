@@ -10,6 +10,7 @@ import { getReadRepository, getWritableRepository } from '../repository/getRepos
 import { createWriteTrace, updateWriteTrace } from '../repository/traceability'
 import { TaskRepoFilterSchema, TaskRepoInputSchema } from '../schemas/repository'
 import {
+	CurrentUserSchema,
 	TaskFilterSchema,
 	TaskIdInputSchema,
 	TaskInputSchema,
@@ -73,9 +74,13 @@ export const getAIAvailability = createServerFn({ method: 'GET' })
 /** Return the authenticated user's identity and profile. */
 export const getCurrentUser = createServerFn({ method: 'GET' })
 	.middleware([authMiddleware])
-	.handler(async ({ context }) => {
-		return { identity: context.user, profile: context.userProfile, isTestUser: context.isTestUser }
-	})
+	.handler(async ({ context }) =>
+		CurrentUserSchema.parse({
+			identity: context.user,
+			profile: context.userProfile,
+			isTestUser: context.isTestUser,
+		}),
+	)
 
 // ============================================================================
 // Mutations (POST) — called from event handlers and AI tools.

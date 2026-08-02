@@ -4,7 +4,7 @@ import { webServerEnv } from '../env/webEnv'
 import { getReadRepository } from '../services/repository/getRepository.server'
 import type { UserIdentity, UserProfile } from '../types'
 import { createServerLogger } from '../utils/serverLogger'
-import { createTestAuthToken, resolveAccessTicket, TEST_AUTH_COOKIE_NAME } from '../utils/testAuth.server'
+import { resolveAccessTicket, TEST_AUTH_COOKIE_NAME } from '../utils/testAuth.server'
 
 const log = createServerLogger('auth')
 
@@ -49,14 +49,15 @@ export const authMiddleware = createMiddleware().server(async ({ next, request }
 	const authHeader = request.headers.get(AUTH_HEADER_NAME)
 	const ticket = resolveAccessTicket(authHeader, getCookie(TEST_AUTH_COOKIE_NAME))
 
-	if (ticket.shouldSetTestAuthCookie) {
-		setCookie(TEST_AUTH_COOKIE_NAME, createTestAuthToken(ticket.user), TEST_AUTH_COOKIE_OPTIONS)
+	if (ticket.newTestAuthToken) {
+		setCookie(TEST_AUTH_COOKIE_NAME, ticket.newTestAuthToken, TEST_AUTH_COOKIE_OPTIONS)
 	}
 
 	const { user, isTestUser } = ticket
 
 	let userProfile: UserProfile | null = null
-	if (user.email && !isPublicRoute(pathname)) {
+	// Test users are ephemeral and never stored in the repository — skip the lookup.
+	if (user.email && !isTestUser && !isPublicRoute(pathname)) {
 		const repo = getReadRepository()
 		userProfile = await repo.getUserProfile(user.email)
 	}
