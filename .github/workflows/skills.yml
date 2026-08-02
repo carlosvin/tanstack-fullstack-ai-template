@@ -10,6 +10,9 @@ on:
             - "scripts/skills/**"
             - "skills/**"
             - ".agents/skills/**"
+            - "src/**"
+            - "vite.config.ts"
+            - "instrument*.mts"
     push:
         branches:
             - main
@@ -21,6 +24,9 @@ on:
             - "scripts/skills/**"
             - "skills/**"
             - ".agents/skills/**"
+            - "src/**"
+            - "vite.config.ts"
+            - "instrument*.mts"
 
 jobs:
     validate-skills:
@@ -49,3 +55,6 @@ jobs:
 
             - name: Run skill builder tests
               run: pnpm test:skills
+
+            - name: Run skill evals against example app
+              run: pnpm test:skill-evals

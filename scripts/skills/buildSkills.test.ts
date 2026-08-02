@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { buildSkills } from './buildSkills.mjs'
+import { buildSkills, renderCompanionSkillsBlock, toSkillDescription } from './buildSkills.mjs'
 
 const createdDirs: string[] = []
 
@@ -98,6 +98,28 @@ describe('buildSkills', () => {
 		await writeFile(path.join(rootDir, 'skills', 'src', 'duplicate.skill.yaml'), validSkill, 'utf8')
 
 		await expect(buildSkills({ rootDir })).rejects.toThrow(/Duplicate skill IDs found/)
+	})
+
+	it('renders companion install blocks and description hints', () => {
+		const skill = {
+			id: 'example-skill',
+			summary: 'Example summary for testing.',
+			projectName: 'Example Project',
+			triggers: ['example'],
+			companionSkills: [
+				{
+					id: 'other-skill',
+					relationship: 'companion',
+					summary: 'Companion skill for cross-cutting concerns.',
+				},
+			],
+		}
+
+		expect(toSkillDescription(skill)).toContain('other-skill (companion)')
+		expect(renderCompanionSkillsBlock(skill)).toContain('## Companion skills (install if missing)')
+		expect(renderCompanionSkillsBlock(skill)).toContain(
+			'npx skills add carlosvin/tanstack-fullstack-ai-template --skill other-skill',
+		)
 	})
 
 	it('detects drift in check mode', async () => {

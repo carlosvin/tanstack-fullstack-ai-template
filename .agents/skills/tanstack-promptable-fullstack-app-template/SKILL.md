@@ -1,15 +1,15 @@
 ---
 name: tanstack-promptable-fullstack-app-template
 description: 'Use when scaffolding a new TanStack Start project, adding domain
-  entities to the fullstack template, or implementing the interface-first
-  repository pattern with AI-promptable tools, or nested layout routes duplicate
-  beforeLoad checks or loaders that should live on a parent route, or TanStack
-  Router, Start, or AI behavior must be verified against current documentation
-  instead of training data, or route loaders may import databases or secrets, or
-  server-only code may leak into the client bundle, or isomorphic loader
-  boundaries are unclear, or TanStack Start request context
-  (middleware-inferred), or serverEnv leakage to the client must be handled
-  correctly. Project: TanStack AI-Promptable Full-Stack Template. Triggers on
+  entities, implementing the interface-first repository pattern with
+  AI-promptable tools, fixing nested layout routes that duplicate parent
+  beforeLoad/loaders, verifying TanStack Router/Start/AI against current docs,
+  or enforcing server/client execution boundaries (isomorphic loaders, import
+  protection, middleware-inferred request context). For logging, Sentry, env
+  schemas, or shellSession setup, load companion skill observability-and-env
+  instead. Companion skills: observability-and-env (companion). Install missing
+  companions with npx skills add carlosvin/tanstack-fullstack-ai-template
+  --skill <id>. Project: TanStack AI-Promptable Full-Stack Template. Triggers on
   "fullstack template", "TanStack Start project", "repository pattern",
   "interface-first", "new app scaffold", "nested routes", "layout route",
   "beforeLoad", "tanstack cli", "tanstack intent", "package skills", "client
@@ -18,13 +18,33 @@ description: 'Use when scaffolding a new TanStack Start project, adding domain
 ---
 
 > This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.
+
+## Companion skills (install if missing)
+
+This template publishes **multiple** skills. If only **this** skill is installed, add companions **before** related work:
+
+- **`observability-and-env`** (companion) — Logging, Sentry bootstrap, env schemas, webEnvMiddleware, and shellSession setup. Install when work touches observability, process.env, or browser runtime config.
+  ```bash
+  npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env
+  ```
+
+Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --list`
+
 # TanStack Fullstack Pattern
 
 **Purpose:** Capture the **interface-first, schema-layered, AI-promptable** contract for TanStack Start apps from this template. Day-to-day conventions (UI kit, chat wiring, logging, tests) live in the repo’s **AGENTS.md** — use this skill for **architecture**, AGENTS.md for **operations**.
 
 > **Companion handbook:** [AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) — structure, styling, auth snippets, Biome, testing/E2E, validation checklist, AI chat setup.
 >
-> **Companion skill:** `observability-and-env` — use it when changing logging, Sentry, environment schemas, or runtime config plumbing. Keep this skill focused on the architecture contract rather than the observability setup recipe.
+> **Companion skill:** `observability-and-env` — logging, Sentry bootstrap, env schemas, `webEnvMiddleware`, `getBrowserShellSession`. Load it for observability work; this skill keeps only the architecture invariants.
+
+## Skill routing
+
+| Task | Load |
+|------|------|
+| New entity, routes, schemas, AI tools, auth, server boundaries | **This skill** |
+| Pino, Sentry, `instrument.*.mts`, `src/env/`, `shellSession`, env leaks | **`observability-and-env`** |
+| Both (e.g. new server fn that logs + needs `context.serverEnv`) | **Both** — architecture first, then observability patterns |
 
 ## How to use this skill
 
@@ -67,7 +87,7 @@ description: 'Use when scaffolding a new TanStack Start project, adding domain
 14. **Metadata for AI and UI:** Use `.describe()` for all narrative explanations (JSON Schema `description`). Use `.meta({ ... })` only for **structured extras** — `unit`, `format`, optional `title`, app-specific hints — not as a substitute for `.describe()`. Prefer deriving prompts and UI copy from schemas + `z.toJSONSchema()` and router introspection over parallel hand-maintained maps.
 15. **Parent layouts:** Shared `beforeLoad`, redirects, and expensive reads belong on the **parent** layout route; children read parent loader data via `getRouteApi` / `useLoaderData({ from })` — do not duplicate parent work.
 16. **Server execution boundaries:** Route loaders are **isomorphic** — they run on the server during SSR and on the client during SPA navigations. Loaders only **call** exported `createServerFn` from `serverFns.ts` (e.g. `getTasks({ data: deps })`). DB access, secrets, and Node-only SDKs live in `*.server.ts` or behind `createServerOnlyFn`; extend `tanstackStart({ importProtection })` when adding node packages.
-17. **Startup-validated env + typed context + browser shell:** Parse env (and app meta from `package.json`) **once** at server startup into `webServerEnv` and `shellSession`. Inject both via `next({ context })` in global middleware; consumers **chain that middleware** so Start infers `context.*` types. Expose browser-safe config only through `getBrowserShellSession` / `shellSession` in the root loader — never `serverEnv` or `window.__ENV__`.
+17. **Startup-validated env + typed context + browser shell:** Parse env once at startup into `webServerEnv` and `shellSession`; inject via `next({ context })`; chain middleware for inferred types; expose browser-safe config only through `getBrowserShellSession` / `shellSession` — never `serverEnv` or `window.__ENV__`. **Setup recipe:** companion skill `observability-and-env`.
 
 ## Architecture Checklist
 
@@ -84,8 +104,7 @@ Scan before changing code:
 - **Routes:** **`validateSearch`** + **`loaderDeps`**; duplicate **`beforeLoad`** / shared loaders only on **parent** layouts.
 - **Metadata discipline:** `.describe()` for narrative copy; `.meta()` for structured extras; closed vocabularies = `as const` tuple + `z.enum` + `z.infer<>`.
 - **Server boundaries:** loaders call `serverFns` only — no `process.env` secrets, DB drivers, or repo imports in route files; `*.server.ts` for Mongo/Node SDKs; `createServerOnlyFn` for non-RPC infra; `importProtection` updated for new node packages.
-- **Request context:** middleware validates once; handlers **chain middleware** and read `context.*` directly — no runtime context helpers, no context casts, no Register; browser sees only **`getBrowserShellSession`** output.
-- **Env once + shell session:** `process.env` / `package.json` parsed once into `webServerEnv` and `shellSession`; context carries both; client loads `getBrowserShellSession()` only.
+- **Request context:** middleware validates once; handlers **chain middleware** and read `context.*` directly — no runtime context helpers, no context casts, no Register; browser sees only **`getBrowserShellSession`** output (env bootstrap: **`observability-and-env`**).
 
 ## Server execution boundaries
 
@@ -286,25 +305,13 @@ function labelForStatus(status: TaskStatus): string {
 - **TypeScript inside handlers:** once middleware calls `next({ context })`, Start **infers** `ctx.context` from the middleware chain on that server fn / route. Chain the middleware that provides the fields you need (e.g. `.middleware([webEnvMiddleware])` or `.middleware([requireAuthMiddleware])`).
 - **Do not re-validate context in handlers:** no shallow "is this field present?" guards on middleware output. Parse at true **external** boundaries only; let middleware chaining carry types downstream. No `Register` / module-augmentation for middleware context.
 
-Field names are app-specific (`accessTicket`, `identity`, `serverEnv`, …). This stock template middleware attaches auth (`user`, `userProfile`) plus startup-validated **`serverEnv`** and **`shellSession`**.
+Field names are app-specific (`accessTicket`, `identity`, `serverEnv`, …). This stock template middleware attaches auth (`user`, `userProfile`) plus startup-validated **`serverEnv`** and **`shellSession`** (see **`observability-and-env`** for how those are parsed and injected).
 
-### Startup env → context → browser (required shape)
+### Env and browser shell
 
-```typescript
-export const webServerEnv = WebServerEnvSchema.parse(process.env)
-export const shellSession = ShellSessionSchema.parse({
-  ENV: webServerEnv.ENV,
-  LOG_LEVEL: webServerEnv.LOG_LEVEL,
-  SENTRY_DSN: webServerEnv.SENTRY_DSN,
-  app: { name: pkg.name, version: pkg.version },
-})
+**Invariant (Core Contract #17):** parse env once → inject `serverEnv` + `shellSession` via middleware → project **`shellSession`** to the browser only via `getBrowserShellSession` in the root loader.
 
-next({ context: { serverEnv: webServerEnv, shellSession } })
-
-export const getBrowserShellSession = createServerFn({ method: 'GET' })
-  .middleware([webEnvMiddleware])
-  .handler(async ({ context }) => context.shellSession)
-```
+**Do not duplicate the setup recipe here.** File layout, Zod schemas, `instrument.*.mts`, pino factories, and `webEnvMiddleware` wiring are in companion skill **`observability-and-env`**.
 
 ### Core rules for agents
 
@@ -403,10 +410,10 @@ interface WritableRepository {
 | UI kit (default Mantine), styling | §3 |
 | Auth, middleware, guards | §5 |
 | AI adapters, chat client, tools, prompts, Markdown (GFM) rendering | §8 |
-| Observability (Sentry, pino, `__APP_VERSION__`) | §9 |
+| Observability (Sentry, pino, env bridge) | §9 + **`observability-and-env`** skill |
 | Vitest, Playwright, E2E fixtures | §10 |
 | Full validation checklist (format, lint, test, build) | §17 |
-| Public runtime `window.__ENV__` | §13 |
+| Public runtime config (`shellSession`, not `window.__ENV__`) | §13 + **`observability-and-env`** skill |
 
 ## Verification
 

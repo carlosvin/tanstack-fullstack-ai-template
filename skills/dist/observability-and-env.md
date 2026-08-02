@@ -11,12 +11,12 @@
 - Supported tools: Windsurf [native, tested], Cursor [copy, tested], Claude Code [copy, tested]
 - Capabilities: Centralized Zod env schemas with server/public split (src/env/), process.env read only once at module-level parse — no scattered env access, createModuleLogger(name, options) pino factory — no process.env inside, createServerLogger(name) bound factory — eliminates repeated env boilerplate, instrument.env.shared.mts for a shared deployment env schema (bootstrap + TS callers), instrument.env.mts for strict bootstrap env validation using the shared deployment env schema, instrument.shared.mts for reusable initSentry — callers pre-resolve all values, instrument.server.mts as the dev --import entry; tsc emits instrument.*.mjs to .output/server for production, Browser config via shellSession: route loaders call getBrowserShellSession — never import webEnv in client-shared modules, Typed request context via middleware chaining: webEnvMiddleware injects serverEnv and shellSession through next({ context }), No window.__ENV__ global
 - ID: `observability-and-env`
-- Version: `1.2.0`
+- Version: `1.4.0`
 - Tags: observability, logging, sentry, pino, environment, configuration, tanstack-start
 
 ## Summary
 
-Use when adding structured logging (pino), centralized environment validation (Zod), or Sentry initialization to a TanStack Start app. Teaches the three-file bootstrap pattern (instrument.env.mts → instrument.shared.mts → instrument.server.mts; emitted as .mjs for production), the src/env/ schema split (server vs public), and the createModuleLogger / createServerLogger factory pattern that eliminates scattered process.env access from application code.
+Companion to tanstack-promptable-fullstack-app-template. Use when adding structured logging (pino), centralized environment validation (Zod), Sentry initialization, or fixing env/shellSession leaks in a TanStack Start app. Teaches the three-file bootstrap pattern (instrument.env.mts → instrument.shared.mts → instrument.server.mts; emitted as .mjs for production), the src/env/ schema split (server vs public), and createModuleLogger / createServerLogger factories that eliminate scattered process.env access.
 
 ## Triggers
 
@@ -36,8 +36,13 @@ Use when adding structured logging (pino), centralized environment validation (Z
 - webServerEnv
 - shellSession
 - getBrowserShellSession
+- webEnvMiddleware
 - LOG_LEVEL
 - SENTRY_DSN
+- serverEnv leak
+- window.__ENV__
+- process.env in handler
+- process.env in application code
 
 ## Canonical Content
 # Observability and Environment Setup
@@ -47,6 +52,21 @@ structured pino logging, and centralized Sentry bootstrap — following the
 patterns proven in production TanStack Start apps. Keeps `process.env` access
 confined to two files; application code receives typed, validated values as
 arguments.
+
+> **Parent skill:** `tanstack-promptable-fullstack-app-template` — architecture
+> contract (schema layers, server boundaries, middleware-inferred context).
+> Load **this skill additionally** when work touches logging, env schemas,
+> Sentry bootstrap, or `shellSession` / `getBrowserShellSession` plumbing.
+>
+> **Handbook:** [AGENTS.md §9](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) — file map and usage in this repo.
+
+## Skill routing
+
+| Task | Load |
+|------|------|
+| Pino, Sentry, `instrument.*.mts`, `src/env/`, env leaks, `shellSession` | **This skill** |
+| New routes, entities, AI tools, repository pattern, import protection | **`tanstack-promptable-fullstack-app-template`** |
+| Server fn that logs and uses `context.serverEnv` | **Both** |
 
 ## Key invariants (do not violate)
 
@@ -369,3 +389,4 @@ const AUTH_HEADER_NAME = webServerEnv.AUTH_HEADER_NAME ?? 'Authorization'
 - [ ] Middleware injects `serverEnv` and `shellSession`; consumers chain middleware for inferred `context.*` types
 - [ ] Browser config uses `getBrowserShellSession` from route loaders (not `window.__ENV__`, not raw `serverEnv`)
 - [ ] `SENTRY_DSN` / `LOG_LEVEL` / `ENV` documented in `.env.example`
+- [ ] Architecture invariants from parent skill still hold: never return `serverEnv` from handlers; chain `webEnvMiddleware` for typed `context.*`

@@ -4,10 +4,10 @@
     {
       "id": "observability-and-env",
       "title": "Observability and Environment Setup",
-      "summary": "Use when adding structured logging (pino), centralized environment validation (Zod), or Sentry initialization to a TanStack Start app. Teaches the three-file bootstrap pattern (instrument.env.mts → instrument.shared.mts → instrument.server.mts; emitted as .mjs for production), the src/env/ schema split (server vs public), and the createModuleLogger / createServerLogger factory pattern that eliminates scattered process.env access from application code.",
+      "summary": "Companion to tanstack-promptable-fullstack-app-template. Use when adding structured logging (pino), centralized environment validation (Zod), Sentry initialization, or fixing env/shellSession leaks in a TanStack Start app. Teaches the three-file bootstrap pattern (instrument.env.mts → instrument.shared.mts → instrument.server.mts; emitted as .mjs for production), the src/env/ schema split (server vs public), and createModuleLogger / createServerLogger factories that eliminate scattered process.env access.",
       "projectName": "TanStack AI-Promptable Full-Stack Template",
       "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
-      "version": "1.2.0",
+      "version": "1.4.0",
       "author": {
         "name": "Carlos Martin-Sanchez",
         "url": "https://github.com/carlosvin"
@@ -79,8 +79,13 @@
         "webServerEnv",
         "shellSession",
         "getBrowserShellSession",
+        "webEnvMiddleware",
         "LOG_LEVEL",
-        "SENTRY_DSN"
+        "SENTRY_DSN",
+        "serverEnv leak",
+        "window.__ENV__",
+        "process.env in handler",
+        "process.env in application code"
       ],
       "inputs": [
         "TanStack Start app (from this template or another)"
@@ -144,6 +149,13 @@
           "output": "Root loader calls getBrowserShellSession(); UI reads shellSession from loader data — never import webEnv or package.json in client components"
         }
       ],
+      "companionSkills": [
+        {
+          "id": "tanstack-promptable-fullstack-app-template",
+          "relationship": "parent",
+          "summary": "Architecture contract for this template — schema layers, server boundaries, AI tools, and middleware-inferred request context. Install for all non-observability TanStack work."
+        }
+      ],
       "source": "skills/src/observability-and-env.skill.yaml",
       "outputsByFormat": {
         "skill": ".agents/skills/observability-and-env/SKILL.md",
@@ -153,10 +165,10 @@
     {
       "id": "tanstack-promptable-fullstack-app-template",
       "title": "TanStack Promptable Fullstack App Template",
-      "summary": "Use when scaffolding a new TanStack Start project, adding domain entities to the fullstack template, or implementing the interface-first repository pattern with AI-promptable tools, or nested layout routes duplicate beforeLoad checks or loaders that should live on a parent route, or TanStack Router, Start, or AI behavior must be verified against current documentation instead of training data, or route loaders may import databases or secrets, or server-only code may leak into the client bundle, or isomorphic loader boundaries are unclear, or TanStack Start request context (middleware-inferred), or serverEnv leakage to the client must be handled correctly.",
+      "summary": "Use when scaffolding a new TanStack Start project, adding domain entities, implementing the interface-first repository pattern with AI-promptable tools, fixing nested layout routes that duplicate parent beforeLoad/loaders, verifying TanStack Router/Start/AI against current docs, or enforcing server/client execution boundaries (isomorphic loaders, import protection, middleware-inferred request context). For logging, Sentry, env schemas, or shellSession setup, load companion skill observability-and-env instead.",
       "projectName": "TanStack AI-Promptable Full-Stack Template",
       "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
-      "version": "1.20.0",
+      "version": "1.22.0",
       "author": {
         "name": "Carlos Martin-Sanchez",
         "url": "https://github.com/carlosvin"
@@ -212,7 +224,7 @@
         "TanStack Intent + CLI as doc-aligned guidance (not duplicated command manuals)",
         "Assistant chat renders Markdown (GFM) — lists, tables, code blocks; internal links stay navigable",
         "Server/client execution boundaries — isomorphic loaders, *.server.ts, createServerOnlyFn, import protection",
-        "Request context — middleware-inferred ctx.context, parse-don't-validate inside handlers, browser-safe session projection"
+        "Request context — middleware-inferred ctx.context, parse-don't-validate inside handlers; env/shellSession invariants (setup in observability-and-env)"
       ],
       "triggers": [
         "fullstack template",
@@ -260,7 +272,7 @@
         "Promptable by default — root loader checks getAIAvailability(); chat input includes browserContext (timezone, locale, path); chat() uses agentLoopStrategy maxIterations(N)",
         "Verify TanStack Router/Start/AI APIs with npx @tanstack/cli against current docs; use TanStack Intent for package skills — do not add them as project deps unless the app needs them as tooling",
         "Operational detail — UI library, chat Markdown rendering (implementation in AGENTS.md §8), logging, Sentry, testing, env bridge — follows repo AGENTS.md",
-        "Request context — parse env once at startup into webServerEnv + shellSession; inject via next({ context }); type by chaining middleware on consumers; never leak serverEnv to the client (browser config only via getBrowserShellSession / shellSession)"
+        "Request context — chain middleware for inferred context.* types; never leak serverEnv to the client (browser config only via getBrowserShellSession / shellSession). Env parse/bootstrap/logging/Sentry setup lives in companion skill observability-and-env — do not duplicate here."
       ],
       "steps": [
         "Define repository-layer and tools-layer schemas; implement repository interfaces (seed + production)",
@@ -280,6 +292,13 @@
         {
           "input": "Swap MongoDB to Postgres",
           "output": "Implement repository interface and switch factory without app-level changes"
+        }
+      ],
+      "companionSkills": [
+        {
+          "id": "observability-and-env",
+          "relationship": "companion",
+          "summary": "Logging, Sentry bootstrap, env schemas, webEnvMiddleware, and shellSession setup. Install when work touches observability, process.env, or browser runtime config."
         }
       ],
       "source": "skills/src/tanstack-promptable-fullstack-app-template.skill.yaml",
