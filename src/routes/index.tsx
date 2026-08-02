@@ -1,10 +1,22 @@
 import { Badge, Card, Container, Group, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core'
 import { createFileRoute, useLoaderData } from '@tanstack/react-router'
-import { CheckCircle, Circle, Clock, ListTodo } from 'lucide-react'
+import { CheckCircle, Circle, Clock, ListTodo, type LucideIcon } from 'lucide-react'
+import { z } from 'zod'
 import { Link } from '../components/Link/Link'
-import type { TASK_STATUSES } from '../constants/options'
+import { TASK_STATUSES } from '../constants/options'
 import { getTasks } from '../services/api/serverFns'
 import type { Task } from '../types'
+
+const DashboardStatSchema = z.object({
+	label: z.string(),
+	value: z.number(),
+	icon: z.custom<LucideIcon>(),
+	color: z.string(),
+	status: z.enum(TASK_STATUSES).optional(),
+	filterLabel: z.string(),
+})
+
+type DashboardStat = z.infer<typeof DashboardStatSchema>
 
 export const Route = createFileRoute('/')({
 	loader: () => getTasks({}),
@@ -19,14 +31,7 @@ function DashboardPage() {
 	const tasks = Route.useLoaderData()
 	const { shellSession } = useLoaderData({ from: '__root__' })
 
-	const stats: Array<{
-		label: string
-		value: number
-		icon: typeof ListTodo
-		color: string
-		status?: (typeof TASK_STATUSES)[number]
-		filterLabel: string
-	}> = [
+	const stats: DashboardStat[] = [
 		{
 			label: 'Total',
 			value: tasks.length,
