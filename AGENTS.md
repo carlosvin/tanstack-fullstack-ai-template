@@ -31,7 +31,9 @@ This template is the reference app for the skill. **Already landed on `main`:** 
 | **4 — Hardening** | `createServerOnlyFn`; `PUBLIC_ROUTES`; router introspection for nav manifest | **Partial** — `PUBLIC_ROUTES`, `*.server.ts` + import protection done; `createServerOnlyFn` deferred |
 | **5 — Deploy** | Ship to [leafy-manatee-16b96c.netlify.app](https://leafy-manatee-16b96c.netlify.app) | After merge to `main` |
 
-**Phase 5 checklist:** `pnpm format && pnpm lint && pnpm test && pnpm build` → merge → Netlify auto-deploy from `main` (`vite build`, `@netlify/vite-plugin-tanstack-start`) → smoke-test demo. **Netlify env** (post-#6): `SENTRY_DSN`, `ENV`, `LOG_LEVEL`, `REPOSITORY_TYPE=seed`, `OPENAI_API_KEY` (or chosen provider) — not `VITE_SENTRY_DSN`.
+**CI/CD (Netlify-native):** GitHub Actions runs validation only (`.github/workflows/ci.yml`: lint, test, build). Netlify Git integration handles all deploys — **deploy previews** on pull requests and **production** on merge to `main` (`netlify.toml` → `pnpm build`, publish `.output/public`). No `NETLIFY_AUTH_TOKEN` secrets in GitHub. In Netlify: production branch `main`, deploy previews on, branch deploys off.
+
+**Phase 5 checklist:** `pnpm format && pnpm lint && pnpm test && pnpm build` → merge → Netlify auto-deploy from `main` → smoke-test demo. **Netlify env** (post-#6): `SENTRY_DSN`, `ENV`, `LOG_LEVEL`, `REPOSITORY_TYPE=seed`, `OPENAI_API_KEY` (or chosen provider) — not `VITE_SENTRY_DSN`.
 
 See the skill **Implementation Flow** for the per-entity file checklist when adding domain entities.
 
@@ -394,3 +396,4 @@ Package manager is **pnpm**; the standard commands live in `package.json` and se
 - **E2E gotcha — `networkidle` hangs in dev mode.** `pnpm test:e2e` defaults to starting `pnpm dev` (see `playwright.config.ts`, `reuseExistingServer: true`). The `@tanstack/devtools-vite` plugin holds an open background connection in dev, so the `task-crud` specs that use `page.goto(..., { waitUntil: 'networkidle' })` never settle and time out. To get a clean run, start a **production** server first and let Playwright reuse it: `pnpm build` then `REPOSITORY_TYPE=seed PORT=3000 pnpm start`, then `pnpm test:e2e` in another shell.
 - **Pre-existing E2E selector drift (not an environment issue).** `e2e/task-crud.spec.ts` "creates a new task" targets Priority via `getByRole('textbox', { name: 'Priority' })`, but Mantine v9 renders that Select as a `combobox`, so this one test fails regardless of setup. Expect ~17/22 E2E specs green; unit tests (`pnpm test`), lint, and build are all fully green.
 - **Harmless noise:** `pnpm install` prints an "Ignored build scripts" warning (esbuild/swc/etc.) — build/dev/test all work anyway. `pnpm test` (Vitest) prints a "close timed out" / "module is not defined" message during teardown after all tests pass.
+- **Deploys are Netlify-only.** PR previews and production deploys come from Netlify Git integration, not GitHub Actions. GHA validates; Netlify publishes. Confirm deploy previews are enabled in the Netlify site settings.
