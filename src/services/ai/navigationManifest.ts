@@ -65,7 +65,22 @@ export function isUserFacingPath(path: string): boolean {
  * Builds a plain-text summary of app navigation for the system prompt.
  */
 export function getNavigationPromptSection(): string {
-	const lines: string[] = ['## App Navigation', '', 'The app navigation structure (from src/routeTree.gen.ts) is:', '']
+	const lines: string[] = [
+		'## App Navigation',
+		'',
+		'The app navigation structure (from src/routeTree.gen.ts) is:',
+		'',
+		'When you mention a page, task, or filtered list in your reply, include a **markdown link** the user can click:',
+		'- Home: `[Home](/)`',
+		'- Tasks list: `[Tasks](/tasks)`',
+		'- Filtered list: `[In-progress tasks](/tasks?status=in-progress)`',
+		'- Task detail: `[View task](/tasks/<taskId>)` (replace `<taskId>` with the real id from tool results)',
+		'- Edit task: `[Edit task](/tasks/<taskId>/edit)`',
+		'- Create task: `[New task](/tasks/new)`',
+		'',
+		'Routes:',
+		'',
+	]
 
 	for (const route of APP_NAVIGATION) {
 		lines.push(`- **${route.path}**: ${route.description}`)

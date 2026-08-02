@@ -15,60 +15,39 @@ import {
 import { clientTools, createChatClientOptions } from '@tanstack/ai-client'
 import type { UIMessage } from '@tanstack/ai-react'
 import { fetchServerSentEvents, useChat } from '@tanstack/ai-react'
-import { type LinkProps, Link as RouterLink, useRouter } from '@tanstack/react-router'
+import { Link as RouterLink, useRouter } from '@tanstack/react-router'
 import { Bot, Send, Square, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { isUserFacingPath } from '../../services/ai/navigationManifest'
 import { invalidateRouterToolDef, NavigateInputSchema, navigateToolDef } from '../../services/ai/tools'
+import { toInternalRouterLinkTarget } from '../../utils/internalLinks'
 import styles from './ChatDrawer.module.css'
-
-function isInternalPath(href: string): boolean {
-	try {
-		const path = href.startsWith('/') ? href : new URL(href).pathname
-		return path.startsWith('/') && !path.startsWith('/api/')
-	} catch {
-		return href.startsWith('/') && !href.startsWith('/api/')
-	}
-}
-
-function parseInternalHref(href: string): { to: string; search?: Record<string, string> } {
-	const [pathname, searchStr] = href.split('?')
-	const to = pathname ?? href
-	if (!searchStr) return { to }
-	const search: Record<string, string> = {}
-	for (const pair of searchStr.split('&')) {
-		const [key, value] = pair.split('=')
-		if (key && value !== undefined) search[decodeURIComponent(key)] = decodeURIComponent(value)
-	}
-	return { to, search }
-}
 
 /** Renders internal app links as Router Link, external as <a>. */
 function MarkdownLink({ href, children }: { href?: string; children?: React.ReactNode }) {
 	if (!href) return <span>{children}</span>
-	if (!isInternalPath(href)) {
+
+	const linkTarget = toInternalRouterLinkTarget(href)
+	if (linkTarget) {
 		return (
-			<a href={href} target="_blank" rel="noopener noreferrer">
+			<RouterLink
+				to={linkTarget.to}
+				{...(linkTarget.params ? { params: linkTarget.params } : {})}
+				{...(linkTarget.search ? { search: linkTarget.search } : {})}
+				preload="intent"
+				style={{ color: 'inherit', textDecoration: 'underline' }}
+			>
 				{children}
-			</a>
+			</RouterLink>
 		)
 	}
-	const { to, search } = parseInternalHref(href)
-	if (!isUserFacingPath(to)) {
-		return <span>{children}</span>
-	}
-	// Internal markdown paths are validated by isUserFacingPath before render.
-	const internalTo = to as LinkProps['to']
-	const toWithQuery =
-		search && Object.keys(search).length > 0
-			? (`${to}?${new URLSearchParams(search).toString()}` as LinkProps['to'])
-			: internalTo
+
 	return (
-		<RouterLink to={toWithQuery} preload="intent" style={{ color: 'inherit', textDecoration: 'underline' }}>
+		<a href={href} target="_blank" rel="noopener noreferrer">
 			{children}
-		</RouterLink>
+		</a>
 	)
 }
 

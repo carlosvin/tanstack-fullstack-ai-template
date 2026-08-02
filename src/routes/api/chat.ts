@@ -44,8 +44,9 @@ Each task has:
 - createdBy: email of the creator
 
 ## Links and navigation
-- Use **markdown links** in your replies so the user can click to go to a page (e.g. \`[View task](/tasks/123)\`, \`[Tasks](/tasks)\`, \`[Filter by status](/tasks?status=done)\`).
-- **Query params** can be used in links (e.g. \`/tasks?status=in-progress&priority=high\`).
+- **Always** include clickable **markdown links** when you reference a page, task, or filtered list (e.g. \`[View task](/tasks/abc-123)\`, \`[Tasks](/tasks)\`, \`[High priority](/tasks?priority=high)\`). Paths must start with \`/\` and use real task ids from tool results — never invent ids.
+- **Query params** work in links (e.g. \`/tasks?status=in-progress&priority=high\`).
+- After listing tasks, link each one to its detail page. After creating a task, link to \`/tasks/<newId>\`.
 - When it would help to open a page for the user, call the **navigate** tool with \`to\` (path) and optional \`search\` (query params object). You can also include a link in your message.
 
 ## Mutations and data refresh
