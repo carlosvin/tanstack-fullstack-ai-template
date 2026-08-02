@@ -2,17 +2,17 @@ id: observability-and-env
 title: Observability and Environment Setup
 summary: >-
   Companion to tanstack-promptable-fullstack-app-template. Use when adding
-  structured logging (pino), centralized environment validation (Zod), Sentry
-  initialization, or fixing env/shellSession leaks in a TanStack Start app.
-  Teaches the three-file bootstrap pattern (instrument.env.mts →
-  instrument.shared.mts → instrument.server.mts; emitted as .mjs for production),
-  the src/env/ schema split (server vs public), and createModuleLogger /
-  createServerLogger factories that eliminate scattered process.env access.
+  structured logging, centralized environment validation (runtime schemas),
+  error-tracking bootstrap, or fixing env/shellSession leaks in a TanStack Start app. Teaches
+  interface-first observability patterns: parse env once, inject via middleware,
+  project a browser-safe shellSession, and keep process.env out of handlers.
+  The reference app uses pino + Sentry behind ObservabilityService — swap vendors
+  without changing middleware or handler contracts.
 projectName: TanStack AI-Promptable Full-Stack Template
 projectSummary: >-
   A production-ready TanStack Start template designed to make internal tools AI
   promptable by default.
-version: 1.4.0
+version: 1.7.0
 author:
   name: Carlos Martin-Sanchez
   url: https://github.com/carlosvin
@@ -46,10 +46,11 @@ tags:
   - configuration
   - tanstack-start
 capabilities:
-  - Centralized Zod env schemas with server/public split (src/env/)
+  - Interface-first observability — handlers depend on ObservabilityService, not a specific vendor
+  - Centralized runtime-validated env schemas with server/public split (src/env/) — reference uses Zod
   - process.env read only once at module-level parse — no scattered env access
-  - createModuleLogger(name, options) pino factory — no process.env inside
-  - createServerLogger(name) bound factory — eliminates repeated env boilerplate
+  - 'Structured logger factory pattern (reference: pino via createModuleLogger / createServerLogger)'
+  - 'Error-tracking bootstrap pattern (reference: Sentry via instrument.*.mts)'
   - instrument.env.shared.mts for a shared deployment env schema (bootstrap + TS callers)
   - instrument.env.mts for strict bootstrap env validation using the shared deployment env schema
   - instrument.shared.mts for reusable initSentry — callers pre-resolve all values
@@ -59,9 +60,12 @@ capabilities:
   - No window.__ENV__ global
 triggers:
   - add logging
-  - set up pino
+  - set up logging
+  - structured logging
   - pino logger
   - sentry init
+  - error tracking
+  - opentelemetry
   - instrument server
   - instrument.server.mts
   - instrument.server.mjs
@@ -87,13 +91,19 @@ companionSkills:
     summary: >-
       Architecture contract for this template — schema layers, server boundaries, AI tools,
       and middleware-inferred request context. Install for all non-observability TanStack work.
+  - id: reference-tech-stack
+    relationship: companion
+    summary: >-
+      Opinionated vendor map for this template's reference app. Install when
+      matching the demo stack's concrete packages.
 inputs:
   - TanStack Start app (from this template or another)
 outputs:
   - src/env/runtimeEnvSchema.ts with DeploymentEnv and LogLevel enums
   - src/env/webEnv.ts with webServerEnv + shellSession singletons (parsed once at startup)
-  - src/utils/logger.ts with createModuleLogger factory
+  - src/utils/logger.ts with createModuleLogger factory (vendor-agnostic options)
   - src/utils/serverLogger.ts with createServerLogger bound factory
+  - src/services/observability/ with ObservabilityService interface + swappable implementations
   - instrument.env.shared.mts with the shared DeploymentEnvSchema for bootstrap + TS callers
   - instrument.env.mts with resolveSentryBootstrapEnv helper
   - instrument.shared.mts with initSentry (all values pre-resolved by caller)
@@ -104,16 +114,18 @@ constraints:
   - Logger options (logLevel, environment) are passed as arguments to createModuleLogger — never resolved inside the factory
   - webEnvMiddleware injects ctx.context.serverEnv and shellSession via next({ context }); chain on server fns that need those fields
   - Browser sees only getBrowserShellSession / shellSession via root loader — never serverEnv or window.__ENV__
-  - Module-scope Zod parse is for Node/Netlify process lifetime; on edge SSR (e.g. Cloudflare Workers) read process.env inside handlers/middleware per TanStack Start env docs
+  - Module-scope env parse is for the server process lifetime on Node hosts; on edge SSR (e.g. Cloudflare Workers) read process.env inside handlers/middleware per TanStack Start env docs
   - Dev runs Node with tsx preloaded then instrument.server.mts; production uses node --import on emitted .output/server/instrument.server.mjs
   - instrument.env.mts validates bootstrap env in one place, importing the shared DeploymentEnvSchema (relative imports use .mjs extension for NodeNext emit mapping)
   - Bootstrap NODE_ENV uses DeploymentEnvSchema.optional(); unsupported values fail fast instead of being trimmed, ignored, or coerced
-  - Bootstrap SENTRY_DSN is the only Sentry DSN env var, and DSN values are passed through exactly as provided
+  - Bootstrap error-tracking DSN env var is read only in instrument.env.mts; values are passed through exactly as provided
   - instrument.shared.mts receives dsn and environment as explicit pre-resolved arguments — no process.env inside
   - DeploymentEnvSchema is defined once in instrument.env.shared.mts and re-exported from runtimeEnvSchema.ts for TypeScript callers
-  - Root logger (pino instance) is created lazily and only once per process — all module loggers are child() instances
+  - 'Root logger is created lazily and only once per process — all module loggers are child() instances (reference: pino)'
+  - 'Application code calls getObservability() / createServerLogger() — never imports @sentry/* or pino directly in handlers'
 steps:
-  - Add pino and pino-pretty to dependencies
+  - 'Choose logging and error-tracking implementations behind ObservabilityService (reference app: pino + Sentry)'
+  - 'Add chosen logger dependencies (reference: pino and pino-pretty)'
   - Create instrument.env.shared.mts with DeploymentEnvSchema
   - Create src/env/runtimeEnvSchema.ts with DeploymentEnv, LogLevel, and optional preprocessors
   - Create src/env/webEnv.ts — parse process.env once into webServerEnv; derive shellSession (public env + app from package.json)
@@ -131,9 +143,10 @@ examples:
   - input: Add structured logging to a server function
     output: Import createServerLogger and call createServerLogger('myModule') — env and
       logLevel come from webServerEnv automatically
-  - input: Set up Sentry for the server
+  - input: Set up error tracking for the server
     output: Create instrument.env.mts + instrument.shared.mts; keep
       instrument.server.mts as a bootstrap entry; emit .mjs via tsc for production
+      (reference implementation uses Sentry — swap via ObservabilityService)
   - input: Read environment variables safely in application code
     output: Import webServerEnv from src/env/webEnv.ts (already validated), or read
       context.serverEnv in handlers — never read process.env directly in app code
@@ -143,26 +156,39 @@ examples:
 content: |
   # Observability and Environment Setup
 
-  **Purpose:** Establish a clean observability stack — validated env schemas,
-  structured pino logging, and centralized Sentry bootstrap — following the
+  **Purpose:** Establish **vendor-agnostic observability plumbing** — validated env
+  schemas, structured logging factories, and error-tracking bootstrap — following
   patterns proven in production TanStack Start apps. Keeps `process.env` access
-  confined to two files; application code receives typed, validated values as
-  arguments.
+  confined to env modules; application code receives typed, validated values as
+  arguments and calls an **`ObservabilityService` interface**, not a specific SDK.
 
+  > **Reference implementation (this template):** [pino](https://getpino.io/) for
+  > structured logs and [Sentry](https://sentry.io/) for error tracking, both
+  > behind `src/services/observability/`. Replace implementations without
+  > changing middleware contracts or handler call sites.
+  >
   > **Parent skill:** `tanstack-promptable-fullstack-app-template` — architecture
   > contract (schema layers, server boundaries, middleware-inferred context).
   > Load **this skill additionally** when work touches logging, env schemas,
-  > Sentry bootstrap, or `shellSession` / `getBrowserShellSession` plumbing.
+  > error-tracking bootstrap, or `shellSession` / `getBrowserShellSession` plumbing.
   >
   > **Handbook:** [AGENTS.md §9](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) — file map and usage in this repo.
+
+  ## Design principle — interface first
+
+  1. **Env** — parse once at startup; inject `serverEnv` + `shellSession` via middleware.
+  2. **Logging** — `createServerLogger('module')` in handlers; the factory binds validated env — swap pino for winston, consola, or OpenTelemetry log exporters behind the same API.
+  3. **Error tracking / tracing** — `getObservability().startSpan(...)` in handlers; bootstrap in `instrument.*.mts` before the app entry — swap Sentry for another vendor or OpenTelemetry without touching route handlers.
+  4. **Never** import vendor SDKs (`pino`, `@sentry/*`) directly in server function handlers or route loaders.
 
   ## Skill routing
 
   | Task | Load |
   |------|------|
-  | Pino, Sentry, `instrument.*.mts`, `src/env/`, env leaks, `shellSession` | **This skill** |
+  | Logging, error tracking, `instrument.*.mts`, `src/env/`, env leaks, `shellSession` | **This skill** |
+  | Concrete package choices for this template (Zod, Mantine, pino, …) | **`reference-tech-stack`** |
   | New routes, entities, AI tools, repository pattern, import protection | **`tanstack-promptable-fullstack-app-template`** |
-  | Server fn that logs and uses `context.serverEnv` | **Both** |
+  | Server fn that logs and uses `context.serverEnv` | **This skill** + architecture |
 
   ## Key invariants (do not violate)
 
@@ -205,7 +231,8 @@ content: |
 
   ## src/env/runtimeEnvSchema.ts
 
-  Shared Zod enums and preprocessors used by web env (and any future pipeline env).
+  Shared deployment enums and preprocessors used by web env (and any future pipeline env).
+  **Reference implementation uses Zod** — ArkType or Valibot work if you keep the same parse-once-at-startup contract.
 
   ```typescript
   import { z } from 'zod'
@@ -273,7 +300,8 @@ content: |
 
   ## src/utils/logger.ts
 
-  Pino factory. No `process.env` access — env values come from the caller.
+  Structured logger factory. No `process.env` access — env values come from the caller.
+  **Reference implementation uses pino**; keep the same `createModuleLogger(name, options)` signature when swapping vendors.
 
   ```typescript
   import pino, { type Logger } from 'pino'
@@ -358,6 +386,7 @@ content: |
   ## instrument.shared.mts
 
   Receives all values pre-resolved — no `process.env` reads inside.
+  **Reference implementation uses `@sentry/tanstackstart-react`**; rename `initSentry` to match your vendor or wrap it inside `ObservabilityService`.
 
   ```typescript
   import * as Sentry from '@sentry/tanstackstart-react'

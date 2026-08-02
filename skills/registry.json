@@ -4,10 +4,10 @@
     {
       "id": "observability-and-env",
       "title": "Observability and Environment Setup",
-      "summary": "Companion to tanstack-promptable-fullstack-app-template. Use when adding structured logging (pino), centralized environment validation (Zod), Sentry initialization, or fixing env/shellSession leaks in a TanStack Start app. Teaches the three-file bootstrap pattern (instrument.env.mts → instrument.shared.mts → instrument.server.mts; emitted as .mjs for production), the src/env/ schema split (server vs public), and createModuleLogger / createServerLogger factories that eliminate scattered process.env access.",
+      "summary": "Companion to tanstack-promptable-fullstack-app-template. Use when adding structured logging, centralized environment validation (runtime schemas), error-tracking bootstrap, or fixing env/shellSession leaks in a TanStack Start app. Teaches interface-first observability patterns: parse env once, inject via middleware, project a browser-safe shellSession, and keep process.env out of handlers. The reference app uses pino + Sentry behind ObservabilityService — swap vendors without changing middleware or handler contracts.",
       "projectName": "TanStack AI-Promptable Full-Stack Template",
       "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
-      "version": "1.4.0",
+      "version": "1.7.0",
       "author": {
         "name": "Carlos Martin-Sanchez",
         "url": "https://github.com/carlosvin"
@@ -50,10 +50,11 @@
         "tanstack-start"
       ],
       "capabilities": [
-        "Centralized Zod env schemas with server/public split (src/env/)",
+        "Interface-first observability — handlers depend on ObservabilityService, not a specific vendor",
+        "Centralized runtime-validated env schemas with server/public split (src/env/) — reference uses Zod",
         "process.env read only once at module-level parse — no scattered env access",
-        "createModuleLogger(name, options) pino factory — no process.env inside",
-        "createServerLogger(name) bound factory — eliminates repeated env boilerplate",
+        "Structured logger factory pattern (reference: pino via createModuleLogger / createServerLogger)",
+        "Error-tracking bootstrap pattern (reference: Sentry via instrument.*.mts)",
         "instrument.env.shared.mts for a shared deployment env schema (bootstrap + TS callers)",
         "instrument.env.mts for strict bootstrap env validation using the shared deployment env schema",
         "instrument.shared.mts for reusable initSentry — callers pre-resolve all values",
@@ -64,9 +65,12 @@
       ],
       "triggers": [
         "add logging",
-        "set up pino",
+        "set up logging",
+        "structured logging",
         "pino logger",
         "sentry init",
+        "error tracking",
+        "opentelemetry",
         "instrument server",
         "instrument.server.mts",
         "instrument.server.mjs",
@@ -93,8 +97,9 @@
       "outputs": [
         "src/env/runtimeEnvSchema.ts with DeploymentEnv and LogLevel enums",
         "src/env/webEnv.ts with webServerEnv + shellSession singletons (parsed once at startup)",
-        "src/utils/logger.ts with createModuleLogger factory",
+        "src/utils/logger.ts with createModuleLogger factory (vendor-agnostic options)",
         "src/utils/serverLogger.ts with createServerLogger bound factory",
+        "src/services/observability/ with ObservabilityService interface + swappable implementations",
         "instrument.env.shared.mts with the shared DeploymentEnvSchema for bootstrap + TS callers",
         "instrument.env.mts with resolveSentryBootstrapEnv helper",
         "instrument.shared.mts with initSentry (all values pre-resolved by caller)",
@@ -106,17 +111,19 @@
         "Logger options (logLevel, environment) are passed as arguments to createModuleLogger — never resolved inside the factory",
         "webEnvMiddleware injects ctx.context.serverEnv and shellSession via next({ context }); chain on server fns that need those fields",
         "Browser sees only getBrowserShellSession / shellSession via root loader — never serverEnv or window.__ENV__",
-        "Module-scope Zod parse is for Node/Netlify process lifetime; on edge SSR (e.g. Cloudflare Workers) read process.env inside handlers/middleware per TanStack Start env docs",
+        "Module-scope env parse is for the server process lifetime on Node hosts; on edge SSR (e.g. Cloudflare Workers) read process.env inside handlers/middleware per TanStack Start env docs",
         "Dev runs Node with tsx preloaded then instrument.server.mts; production uses node --import on emitted .output/server/instrument.server.mjs",
         "instrument.env.mts validates bootstrap env in one place, importing the shared DeploymentEnvSchema (relative imports use .mjs extension for NodeNext emit mapping)",
         "Bootstrap NODE_ENV uses DeploymentEnvSchema.optional(); unsupported values fail fast instead of being trimmed, ignored, or coerced",
-        "Bootstrap SENTRY_DSN is the only Sentry DSN env var, and DSN values are passed through exactly as provided",
+        "Bootstrap error-tracking DSN env var is read only in instrument.env.mts; values are passed through exactly as provided",
         "instrument.shared.mts receives dsn and environment as explicit pre-resolved arguments — no process.env inside",
         "DeploymentEnvSchema is defined once in instrument.env.shared.mts and re-exported from runtimeEnvSchema.ts for TypeScript callers",
-        "Root logger (pino instance) is created lazily and only once per process — all module loggers are child() instances"
+        "Root logger is created lazily and only once per process — all module loggers are child() instances (reference: pino)",
+        "Application code calls getObservability() / createServerLogger() — never imports @sentry/* or pino directly in handlers"
       ],
       "steps": [
-        "Add pino and pino-pretty to dependencies",
+        "Choose logging and error-tracking implementations behind ObservabilityService (reference app: pino + Sentry)",
+        "Add chosen logger dependencies (reference: pino and pino-pretty)",
         "Create instrument.env.shared.mts with DeploymentEnvSchema",
         "Create src/env/runtimeEnvSchema.ts with DeploymentEnv, LogLevel, and optional preprocessors",
         "Create src/env/webEnv.ts — parse process.env once into webServerEnv; derive shellSession (public env + app from package.json)",
@@ -137,8 +144,8 @@
           "output": "Import createServerLogger and call createServerLogger('myModule') — env and logLevel come from webServerEnv automatically"
         },
         {
-          "input": "Set up Sentry for the server",
-          "output": "Create instrument.env.mts + instrument.shared.mts; keep instrument.server.mts as a bootstrap entry; emit .mjs via tsc for production"
+          "input": "Set up error tracking for the server",
+          "output": "Create instrument.env.mts + instrument.shared.mts; keep instrument.server.mts as a bootstrap entry; emit .mjs via tsc for production (reference implementation uses Sentry — swap via ObservabilityService)"
         },
         {
           "input": "Read environment variables safely in application code",
@@ -154,6 +161,11 @@
           "id": "tanstack-promptable-fullstack-app-template",
           "relationship": "parent",
           "summary": "Architecture contract for this template — schema layers, server boundaries, AI tools, and middleware-inferred request context. Install for all non-observability TanStack work."
+        },
+        {
+          "id": "reference-tech-stack",
+          "relationship": "companion",
+          "summary": "Opinionated vendor map for this template's reference app. Install when matching the demo stack's concrete packages."
         }
       ],
       "source": "skills/src/observability-and-env.skill.yaml",
@@ -163,12 +175,131 @@
       }
     },
     {
-      "id": "tanstack-promptable-fullstack-app-template",
-      "title": "TanStack Promptable Fullstack App Template",
-      "summary": "Use when scaffolding a new TanStack Start project, adding domain entities, implementing the interface-first repository pattern with AI-promptable tools, fixing nested layout routes that duplicate parent beforeLoad/loaders, verifying TanStack Router/Start/AI against current docs, or enforcing server/client execution boundaries (isomorphic loaders, import protection, middleware-inferred request context). For logging, Sentry, env schemas, or shellSession setup, load companion skill observability-and-env instead.",
+      "id": "reference-tech-stack",
+      "title": "Reference Tech Stack (Opinionated Defaults)",
+      "summary": "Companion to tanstack-promptable-fullstack-app-template. Documents this template's opinionated vendor choices — Zod, Mantine, lucide-react, MongoDB + seed, jose JWT auth, OpenAI adapter, pino + Sentry, react-markdown, Biome, Vitest, Playwright, Netlify — so agents implement against the reference app without baking those choices into the architecture skill.",
       "projectName": "TanStack AI-Promptable Full-Stack Template",
       "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
-      "version": "1.23.0",
+      "version": "1.1.0",
+      "author": {
+        "name": "Carlos Martin-Sanchez",
+        "url": "https://github.com/carlosvin"
+      },
+      "license": "MIT",
+      "homepage": "https://github.com/carlosvin/tanstack-fullstack-ai-template",
+      "repository": "https://github.com/carlosvin/tanstack-fullstack-ai-template",
+      "documentationUrl": "https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md",
+      "status": "stable",
+      "supportedTools": [
+        {
+          "id": "windsurf",
+          "name": "Windsurf",
+          "installMode": "native",
+          "tested": true,
+          "notes": "Reads `.agents/skills/` directly when the skill lives in the project."
+        },
+        {
+          "id": "cursor",
+          "name": "Cursor",
+          "installMode": "copy",
+          "tested": true,
+          "notes": "Copy the generated skill folder into the global Cursor skills directory."
+        },
+        {
+          "id": "claude-code",
+          "name": "Claude Code",
+          "installMode": "copy",
+          "tested": true,
+          "notes": "Copy the generated skill folder into the Claude Code skills directory."
+        }
+      ],
+      "tags": [
+        "reference-stack",
+        "opinionated",
+        "mantine",
+        "zod",
+        "mongodb",
+        "netlify",
+        "tanstack-start"
+      ],
+      "capabilities": [
+        "Opinionated vendor map for this template (UI, validation, DB, auth, AI, observability, tooling)",
+        "Pointers to AGENTS.md sections for operational how-to",
+        "Clear separation from the architecture skill (patterns) and observability-and-env (env/logging recipes)",
+        "Guidance for forking teams that want to swap a vendor without rewriting architecture"
+      ],
+      "triggers": [
+        "reference tech stack",
+        "opinionated stack",
+        "which UI library",
+        "use Mantine",
+        "use Zod",
+        "MongoDB repository",
+        "lucide icons",
+        "Biome lint",
+        "Netlify deploy",
+        "template defaults",
+        "stack choices"
+      ],
+      "inputs": [
+        "TanStack Start app built from this template (or forking its stack)"
+      ],
+      "outputs": [
+        "Clear map of chosen packages and where they live in the repo",
+        "Pointers to AGENTS.md for UI, auth, AI, testing, and deploy detail"
+      ],
+      "constraints": [
+        "Do not treat this skill as architecture — patterns and invariants live in tanstack-promptable-fullstack-app-template",
+        "When swapping a vendor in a fork, update this skill (or drop it) and AGENTS.md; keep the architecture skill vendor-agnostic",
+        "Prefer one library per concern (one UI kit, one validator, one icon set)",
+        "Observability setup details stay in observability-and-env — this skill only names the chosen vendors"
+      ],
+      "steps": [
+        "Confirm you are working in this template (or intentionally adopting its defaults)",
+        "Use the Stack map below for package and file locations",
+        "Follow AGENTS.md sections linked for each concern",
+        "For env/logging/Sentry wiring, also load observability-and-env",
+        "If forking away from a default, replace the implementation behind the existing interface and update this skill"
+      ],
+      "examples": [
+        {
+          "input": "Which UI library should I use in this template?",
+          "output": "Mantine (@mantine/core, @mantine/hooks, @mantine/notifications) with lucide-react icons — see AGENTS.md §3 and Stack map in this skill."
+        },
+        {
+          "input": "Can I use ArkType instead of Zod?",
+          "output": "Architecture allows it; this reference stack uses Zod. To switch, pick one validator app-wide, update schemas, and revise this skill / AGENTS.md."
+        },
+        {
+          "input": "Where is MongoDB wired?",
+          "output": "Behind ReadRepository / WritableRepository — Mongo + seed implementations in src/services/repository/; factory in getRepository.server.ts."
+        }
+      ],
+      "companionSkills": [
+        {
+          "id": "tanstack-promptable-fullstack-app-template",
+          "relationship": "parent",
+          "summary": "Architecture contract — schema layers, server boundaries, AI tools, and middleware-inferred request context. Vendor-agnostic; install for all TanStack work."
+        },
+        {
+          "id": "observability-and-env",
+          "relationship": "companion",
+          "summary": "Env parse, logger factories, and error-tracking bootstrap. This stack skill names pino + Sentry; that companion owns the setup recipe."
+        }
+      ],
+      "source": "skills/src/reference-tech-stack.skill.yaml",
+      "outputsByFormat": {
+        "skill": ".agents/skills/reference-tech-stack/SKILL.md",
+        "markdown": "skills/dist/reference-tech-stack.md"
+      }
+    },
+    {
+      "id": "tanstack-promptable-fullstack-app-template",
+      "title": "TanStack Promptable Fullstack App Template",
+      "summary": "Use when scaffolding a new TanStack Start project, adding domain entities, implementing the interface-first repository pattern with AI-promptable tools, fixing nested layout routes that duplicate parent beforeLoad/loaders, verifying TanStack Router/Start/AI against current docs, or enforcing server/client execution boundaries (isomorphic loaders, import protection, middleware-inferred request context). For logging, error tracking, env schemas, or shellSession setup, load companion skill observability-and-env instead. For this template's concrete package defaults, load companion skill reference-tech-stack.",
+      "projectName": "TanStack AI-Promptable Full-Stack Template",
+      "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
+      "version": "1.27.0",
       "author": {
         "name": "Carlos Martin-Sanchez",
         "url": "https://github.com/carlosvin"
@@ -258,7 +389,7 @@
       ],
       "constraints": [
         "External services are accessed through interfaces only",
-        "Domain wire shapes come from Zod/ArkType schemas and z.infer<>; repository interfaces use repository-layer types only",
+        "Domain wire shapes come from runtime validation schemas (Zod, ArkType, Valibot, or equivalent); infer types from schemas — repository interfaces use repository-layer types only",
         "Tools-layer schemas shared by createServerFn and AI tools; repository interfaces use repository-layer types only; UI and AI never import repository schemas",
         "Map inbound with RepoInputSchema.parse(fromTools(...)) and outbound with ToolsOutputSchema.parse(fromRepo(...)) so wire shapes never bypass validation",
         "After Schema.parse, preserve inferred types end-to-end — avoid widening to any or Record<string, unknown>; avoid as casts except at documented third-party boundaries; prefer satisfies, discriminated unions, const tuples, type guards, and exhaustive handling",
@@ -266,19 +397,19 @@
         "Never put DB drivers, repository imports, or secret process.env reads in route loaders or route top-level imports; use createServerFn from serverFns.ts and *.server.ts modules",
         "POST mutations chain `.middleware([requireAuthMiddleware, invalidateMiddleware])`; handlers throw HttpError; callers normalize via processResponse / safeToolHandler / createSafeServerTool",
         "Expose every repository method as a safe AI tool; distinct-values tools for enum-ish filters",
-        "Use .describe() for human-readable schema text; use .meta() only for structured extras (unit, format, title, …); closed vocabularies via const tuple + z.enum + z.infer<>",
-        "Prefer schema and router introspection over hand-maintained AI manifests; use z.toJSONSchema when exporting metadata to UI",
+        "Attach human-readable descriptions to schema fields for AI/UI metadata (reference — Zod `.describe()`; ArkType and Valibot have equivalent metadata APIs); use structured schema extras only for non-description hints (unit, format, title, …); closed vocabularies via const tuple + schema enum + inferred type",
+        "Prefer schema and router introspection over hand-maintained AI manifests; export JSON Schema from your validator when the UI needs it (reference — `z.toJSONSchema()` with Zod)",
         "Shared route gates and expensive reads live on the parent layout route; use a project Link that preserves search params by default",
         "Router defaults bundle — defaultStaleTime, defaultPreload 'intent', defaultPreloadStaleTime 0, scrollRestoration, notFoundComponent — ship together",
         "Auth middleware enriches ctx.context with a repository-built ticket (e.g. getReadRepository().getUserAccess(email)); WritableRepository writes accept a TraceabilityContext built from that ticket",
         "Promptable by default — root loader checks getAIAvailability(); chat input includes browserContext (timezone, locale, path); chat() uses agentLoopStrategy maxIterations(N)",
         "Verify TanStack Router/Start/AI APIs with npx @tanstack/cli against current docs; use TanStack Intent for package skills — do not add them as project deps unless the app needs them as tooling",
-        "Operational detail — UI library, chat Markdown rendering (implementation in AGENTS.md §8), logging, Sentry, testing, env bridge — follows repo AGENTS.md",
-        "Request context — chain middleware for inferred context.* types; never leak serverEnv to the client (browser config only via getBrowserShellSession / shellSession). Env parse/bootstrap/logging/Sentry setup lives in companion skill observability-and-env — do not duplicate here."
+        "Operational detail — UI library, chat Markdown rendering (implementation in AGENTS.md §8), logging, error tracking, testing, env bridge — follows repo AGENTS.md",
+        "Request context — chain middleware for inferred context.* types; never leak serverEnv to the client (browser config only via getBrowserShellSession / shellSession). Env parse/bootstrap/logging/error-tracking setup lives in companion skill observability-and-env — do not duplicate here."
       ],
       "steps": [
         "Define repository-layer and tools-layer schemas; implement repository interfaces (seed + production)",
-        "Map between layers with Schema.parse() at boundaries; carry z.infer types through handlers UI tools without erasing to any or untyped records",
+        "Map between layers with Schema.parse() at boundaries; carry schema-inferred types through handlers, UI, and tools without erasing to any or untyped records",
         "Add GET/POST server functions with shared tools-layer input validators",
         "Register global middleware — auth (enrich ctx.context with a repository-built ticket), invalidation; optional pre-auth redirects",
         "Configure router defaults bundle and project Link wrapper; add routes with validateSearch, loaderDeps, loaders; nest shared work on parent layouts",
@@ -300,7 +431,12 @@
         {
           "id": "observability-and-env",
           "relationship": "companion",
-          "summary": "Logging, Sentry bootstrap, env schemas, webEnvMiddleware, and shellSession setup. Install when work touches observability, process.env, or browser runtime config."
+          "summary": "Logging, error-tracking bootstrap, env schemas, webEnvMiddleware, and shellSession setup. Install when work touches observability, process.env, or browser runtime config."
+        },
+        {
+          "id": "reference-tech-stack",
+          "relationship": "companion",
+          "summary": "Opinionated vendor map for this template's reference app. Install when implementing against the demo stack defaults (UI kit, validator, DB, deploy)."
         }
       ],
       "source": "skills/src/tanstack-promptable-fullstack-app-template.skill.yaml",
