@@ -1,10 +1,11 @@
 import { chat, convertMessagesToModelMessages, maxIterations, toServerSentEventsResponse } from '@tanstack/ai'
 import { createFileRoute } from '@tanstack/react-router'
 import { getAIAdapterService } from '../../services/ai/adapter'
-import { getNavigationPromptSection } from '../../services/ai/navigationManifest'
+import { getNavigationPromptSection, matchUserFacingRoute } from '../../services/ai/navigationManifest'
 import {
 	createTaskTool,
 	deleteTaskTool,
+	getAppRuntimeInfoTool,
 	getAssigneesTool,
 	getCurrentUserContextTool,
 	getTasksTool,
@@ -30,6 +31,7 @@ const BASE_SYSTEM_PROMPT = `You are a helpful task management assistant. You hav
 - Navigate the user to app pages (use the navigate tool)
 - Create, update, and delete tasks (when the user is allowed)
 - Check who is logged in and what they can do (getCurrentUserContext)
+- Look up app name, version, and deployment environment (getAppRuntimeInfo)
 - Refresh the page data after mutations (use the invalidateRouter tool)
 
 ## Data Model
@@ -45,9 +47,9 @@ Each task has:
 - lastModifiedBy: email of the last editor
 
 ## Links and navigation
-- Use **markdown links** in your replies so the user can click to go to a page (e.g. \`[View task](/tasks/123)\`, \`[Tasks](/tasks)\`, \`[Filter by status](/tasks?status=done)\`).
-- **Query params** can be used in links (e.g. \`/tasks?status=in-progress&priority=high\`).
-- When it would help to open a page for the user, call the **navigate** tool with \`to\` (path) and optional \`search\` (query params object). You can also include a link in your message.
+- Include clickable **markdown links** when you reference a page, task, or filtered list. Use real task ids from tool results — see **App Navigation** below for path examples.
+- After listing tasks, link each one to its detail page. After creating a task, link to the new task.
+- When it would help to open a page for the user, call the **navigate** tool with \`to\` and optional \`search\`. You can also include a link in your message.
 
 ## Mutations and data refresh
 - After **createTask**, **updateTask**, or **deleteTask**, always call **invalidateRouter** so the user sees the latest data without refreshing the page.
@@ -99,8 +101,8 @@ function buildSystemPrompt(
 
 		if (currentPath || currentSearch || currentHref) {
 			const fullPath = `${currentPath ?? ''}${currentSearch ?? ''}` || 'unknown'
-			const taskDetailMatch = currentPath?.match(/^\/tasks\/([^/]+)$/)
-			const currentTaskId = taskDetailMatch?.[1]
+			const matchedRoute = currentPath ? matchUserFacingRoute(currentPath) : null
+			const currentTaskId = matchedRoute?.to === '/tasks/$taskId' ? matchedRoute.params?.taskId : undefined
 
 			const locationLines = [
 				'## Current Location',
@@ -153,6 +155,7 @@ export const Route = createFileRoute('/api/chat')({
 					getTaskTool,
 					getAssigneesTool,
 					getUserProfileTool,
+					getAppRuntimeInfoTool,
 					getCurrentUserContextTool,
 					createTaskTool,
 					updateTaskTool,

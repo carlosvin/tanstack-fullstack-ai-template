@@ -9,6 +9,8 @@
  */
 import { z } from 'zod'
 import { TASK_PRIORITIES, TASK_STATUSES } from '../../constants/options'
+import { OptionalDeploymentEnvSchema } from '../../env/runtimeEnvSchema'
+import { AppMetaSchema } from '../../env/webEnv'
 
 // ---------------------------------------------------------------------------
 // Enums
@@ -66,6 +68,17 @@ export const BrowserContextSchema = z.object({
 })
 
 export type BrowserContext = z.infer<typeof BrowserContextSchema>
+
+// ---------------------------------------------------------------------------
+// App runtime info (AI tool + public deployment metadata)
+// ---------------------------------------------------------------------------
+
+export const AppRuntimeInfoSchema = z.object({
+	app: AppMetaSchema.describe('Application name and version'),
+	ENV: OptionalDeploymentEnvSchema.describe('Deployment name: development, staging, or production'),
+})
+
+export type AppRuntimeInfo = z.infer<typeof AppRuntimeInfoSchema>
 
 // ---------------------------------------------------------------------------
 // Task — the sample domain entity
