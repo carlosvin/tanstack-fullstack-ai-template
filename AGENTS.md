@@ -26,7 +26,7 @@ This template is the reference app for the skill. **Already landed on `main`:** 
 |-------|----------------|----------------|
 | **0 — Observability & env** | Centralized env parse once; pino; Sentry; `webServerEnv` + `shellSession` | **Done** — `src/env/webEnv.ts`, `instrument.*.mts`, `webEnvMiddleware`, `getBrowserShellSession` |
 | **1 — Schema boundaries** | Outbound `Schema.parse()` (repo → tools); router defaults bundle; `Link` with `search: true` | **Done** — `serverFns.ts`, `taskMappers.ts`, `router.tsx`, `src/components/Link/Link.tsx` |
-| **2 — Auth & writes** | Auth ticket + `TraceabilityContext` (skill allows stock `user`/`userProfile` until enriched) | **Partial** — `TraceabilityContext` on writes; full auth ticket still open |
+| **2 — Auth & writes** | Auth ticket + `TraceabilityContext` (skill allows stock `user`/`userProfile` until enriched) | **Partial** — `TraceabilityContext` persisted on create/update (`createdBy` / `lastModifiedBy`); full auth ticket still open |
 | **3 — Data loading & AI** | Parent loader dedup; `getAIAvailability()` gates chat UI | **Done** — `__root.tsx`, task routes, `Header`, `AppLayout`, `ChatDrawer` |
 | **4 — Hardening** | `createServerOnlyFn`; `PUBLIC_ROUTES`; router introspection for nav manifest | **Partial** — `PUBLIC_ROUTES`, `*.server.ts` + import protection done; `createServerOnlyFn` deferred |
 | **5 — Deploy** | Ship to [leafy-manatee-16b96c.netlify.app](https://leafy-manatee-16b96c.netlify.app) | After merge to `main` |
@@ -172,7 +172,8 @@ export const myMutation = createServerFn({ method: 'POST' })
   .middleware([requireAuthMiddleware, invalidateMiddleware])
   .inputValidator(MyInputSchema)
   .handler(async ({ data, context }) => {
-    return getWritableRepository().doSomething(data, context.user.email)
+    const trace = createWriteTrace(context.user.email)
+    return getWritableRepository().doSomething(data, trace)
   })
 
 const result = await processResponse(() => myMutation({ data: input }))
@@ -201,7 +202,7 @@ Routes live in `src/routes/`; tree is auto-generated in `routeTree.gen.ts`. Rout
 | `src/routes/api/chat.ts` | SSE endpoint, `BASE_SYSTEM_PROMPT`, `buildSystemPrompt` |
 | `src/components/ChatDrawer/ChatDrawer.tsx` | `useChat`, client tools, markdown rendering |
 
-**Promptable gating (skill #12):** root loader should call `getAIAvailability()` and mount chat UI only when configured. *Template gap:* `Header` / `ChatDrawer` currently always render; see alignment roadmap phase 3.
+**Promptable gating (skill #12):** root loader calls `getAIAvailability()`; `AppLayout` / `Header` mount chat UI only when configured (no disabled placeholder).
 
 ### AI Adapter Interface
 
@@ -366,7 +367,7 @@ Handled by the [observability-and-env skill](.agents/skills/observability-and-en
 
 ## 14. Special Patterns
 
-Bulk edit (URL multi-select), overlay repository, distinct-values tools, help surface, controlled components: [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) **Special Patterns** and **Core Contract** #7–8.
+Bulk edit (URL multi-select), overlay repository, distinct-values tools, help surface, controlled components, debounced free-text search (uncontrolled input + `useDebouncedCallback`): [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) **Special Patterns** and **Core Contract** #7–8.
 
 ## 15. Validate Changes
 

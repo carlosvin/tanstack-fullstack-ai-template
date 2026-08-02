@@ -14,7 +14,8 @@ description: 'Use when scaffolding a new TanStack Start project, adding domain
   "interface-first", "new app scaffold", "nested routes", "layout route",
   "beforeLoad", "tanstack cli", "tanstack intent", "package skills", "client
   bundle leak", "server-only", "isomorphic loader", "process.env in loader",
-  "import protection", "request context", "middleware context".'
+  "import protection", "request context", "middleware context", "debounced
+  search", "search input".'
 ---
 
 > This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.
@@ -56,6 +57,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 ## Common failure modes (avoid these)
 
 - **Route state in React state:** filters, tabs, or selections in `useState` instead of validated URL search params + `loaderDeps`.
+- **Navigate on every search keystroke:** binding a free-text search input to URL search params with `navigate` on each `onChange` re-runs loaders and drops characters. Use uncontrolled input + `useDebouncedCallback` (see **Special Patterns**).
 - **Repository schemas at the wrong edge:** importing repository-layer schemas into UI, tools, or AI tool inputs — use tools-layer schemas only.
 - **Server function without a tool:** adding `createServerFn` but skipping `toolDefinition` + `createSafeServerTool` for the same capability.
 - **Parse only half the boundary:** validating inbound tools input but returning raw repo rows to UI/AI without tools-layer `Schema.parse` on the way out.
@@ -98,7 +100,7 @@ Scan before changing code:
 - **No type erasure:** after `Schema.parse`, carry **`z.infer`-derived types** through server functions, repos, tools, and components — do not widen back to `Record<string, unknown>` / `any`.
 - **Repository interfaces = repo-layer types only:** mapping lives beside schemas / mappers — not in React components.
 - **Auth ticket is repository-backed and server-enforced:** middleware builds the ticket (e.g. `getReadRepository().getUserAccess(email)`); guards run in **server handlers**, never UI-only.
-- **Writes use `TraceabilityContext`:** pass audit fields from the ticket through a single context object on `WritableRepository` mutations — avoid sprinkling raw `email` arguments.
+- **Writes use `TraceabilityContext`:** pass audit fields from the ticket (or stock `context.user.email`) through a single context object on `WritableRepository` mutations — avoid sprinkling raw `email` arguments. Repository implementations must **persist** `createdBy` / `lastModifiedBy` from that context onto the entity.
 - **Navigation is one decision:** ship the **router defaults bundle** and the **project `Link` wrapper** (`search: true`) together so URL state survives navigation.
 - **AI stack is complete:** every repo method → server tool + safe handler; client **`navigate`** / **`invalidateRouter`**; root **`getAIAvailability()`**; chat payload includes **`browserContext`**; **`chat({ agentLoopStrategy: maxIterations(N) })`**.
 - **Routes:** **`validateSearch`** + **`loaderDeps`**; duplicate **`beforeLoad`** / shared loaders only on **parent** layouts.
@@ -335,15 +337,13 @@ export const updateTask = createServerFn({ method: 'POST' })
   })
 ```
 
-Stock template equivalent — same rules; `requireAuthMiddleware` chains auth so `context.user` is inferred:
+Stock template equivalent — same rules; `requireAuthMiddleware` chains auth so `context.user` is inferred. Build a `TraceabilityContext` (do not pass a bare email string as the mutation’s second argument):
 
 ```typescript
 .handler(async ({ data, context }) => {
-  const email = context.user.email
   const repoPatch = TaskRepoPatchSchema.parse(mapToolUpdateToRepo(data))
-  return getWritableRepository().updateTask(data.taskId, repoPatch, {
-    lastModifiedBy: email,
-  })
+  const trace = updateWriteTrace(context.user.email)
+  return getWritableRepository().updateTask(data.taskId, repoPatch, trace)
 })
 ```
 
@@ -354,7 +354,9 @@ Stock template equivalent — same rules; `requireAuthMiddleware` chains auth so
 
 ## Interface Contracts
 
-Repository interfaces reference **repository-layer types** only. **`WritableRepository`** mutations take an optional **`TraceabilityContext`** built from the auth ticket — not ad-hoc optional email parameters at each call site.
+Repository interfaces reference **repository-layer types** only. **`WritableRepository`** mutations take an optional **`TraceabilityContext`** built from the auth ticket (stock template: helpers such as `createWriteTrace` / `updateWriteTrace` from `context.user.email`) — not ad-hoc optional email parameters at each call site.
+
+Implementations must **persist** audit fields from the trace onto the entity (`createdBy` on create, `lastModifiedBy` on update). Ignoring the `trace` argument is a contract violation.
 
 ```typescript
 interface TraceabilityContext {
@@ -393,6 +395,29 @@ interface WritableRepository {
 
 - **Overlay repository:** read-only upstream source + sparse user overrides; pure `applyOverrides`; writes only to overrides.
 - **URL bulk edit:** selection and category tabs in search params; batched mutation; per-row auth.
+- **Debounced free-text search (URL-as-state):** Keep filters in validated search params + `loaderDeps`, but do **not** control free-text search from the URL on every keystroke. Use an uncontrolled input (`defaultValue` from the current search param) and Mantine `useDebouncedCallback` (already in the template via `@mantine/hooks`) to `navigate({ replace: true, search })` only after the user pauses. Discrete filters (`Select`, tabs) may navigate immediately. Call `navigate` from the debounce callback — do not watch a debounced value in `useEffect` just to navigate. Prefer this over adding `@tanstack/pacer` for a single search box.
+
+  ```typescript
+  const updateSearch = (updates: Partial<Search>, replace = false) => {
+    navigate({
+      to: '/tasks',
+      replace,
+      search: (prev) => ({ ...prev, ...updates }),
+    })
+  }
+
+  const debouncedSearch = useDebouncedCallback((value: string) => {
+    const next = value || undefined
+    if (next === search.search) return
+    updateSearch({ search: next }, true)
+  }, 300)
+
+  <TextInput
+    defaultValue={search.search ?? ''}
+    onChange={(e) => debouncedSearch(e.currentTarget.value)}
+  />
+  ```
+
 - **Help surface:** single `docs/help.md` can back `/help`, an AI tool, and suggested prompts (see AGENTS.md).
 - **Distinct values:** `getDistinctValues` → GET server fn → read-only AI tool so filters match real data.
 - **Dynamic AI navigation:** derive route/help context from `router.flatRoutes` + `validateSearch` introspection where possible.

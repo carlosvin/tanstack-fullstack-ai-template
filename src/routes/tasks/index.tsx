@@ -1,4 +1,5 @@
 import { ActionIcon, Badge, Button, Card, Container, Group, Select, Stack, Text, TextInput, Title } from '@mantine/core'
+import { useDebouncedCallback } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import { createFileRoute, Outlet, useLoaderData, useNavigate } from '@tanstack/react-router'
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
@@ -32,13 +33,21 @@ function TasksPage() {
 	const search = Route.useSearch()
 	const navigate = useNavigate()
 	const isAuth = Boolean(currentUser?.identity?.email)
+	const urlSearch = search.search ?? ''
 
-	const updateSearch = (updates: Partial<z.infer<typeof TasksSearchSchema>>) => {
+	const updateSearch = (updates: Partial<z.infer<typeof TasksSearchSchema>>, replace = false) => {
 		navigate({
 			to: '/tasks',
+			replace,
 			search: (prev) => ({ ...prev, ...updates }),
 		})
 	}
+
+	const debouncedSearch = useDebouncedCallback((value: string) => {
+		const next = value || undefined
+		if (next === search.search) return
+		updateSearch({ search: next }, true)
+	}, 300)
 
 	const handleDeleteClick = (task: Task) => {
 		if (!window.confirm(`Delete "${task.title}"?`)) return
@@ -72,8 +81,8 @@ function TasksPage() {
 					<TextInput
 						placeholder="Search tasks..."
 						leftSection={<Search size={16} />}
-						value={search.search ?? ''}
-						onChange={(e) => updateSearch({ search: e.currentTarget.value || undefined })}
+						defaultValue={urlSearch}
+						onChange={(e) => debouncedSearch(e.currentTarget.value)}
 						style={{ flex: 1 }}
 					/>
 					<Select

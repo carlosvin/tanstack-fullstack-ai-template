@@ -31,6 +31,8 @@ pnpm test:skill-evals -- --skill tanstack-promptable-fullstack-app-template
 - `serverFns` maps outbound rows via `toToolTask` / `toToolUserProfile`
 - No middleware context casts or runtime guards
 - AI chat gated on `getAIAvailability`
+- Writes use `TraceabilityContext` helpers; repos persist `createdBy` / `lastModifiedBy`
+- AGENTS.md does not claim chat UI always renders
 - Bounded agent loop in `chat.ts`
 - `importProtection` in `vite.config.ts`
 - Generated skills include **Skill routing** tables and **Companion skills (install if missing)** sections
