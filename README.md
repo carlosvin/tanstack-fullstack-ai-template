@@ -6,7 +6,7 @@ Built with [TanStack Start](https://tanstack.com/start) — with every external 
 
 **Default stack**: [Mantine](https://mantine.dev/) + [MongoDB](https://www.mongodb.com/) + [TanStack AI](https://tanstack.com/ai) (OpenAI) + [Sentry](https://sentry.io/). All swappable.
 
-**[Live Demo](https://leafy-manatee-16b96c.netlify.app)** | **[Blog Post](building-ai-promptable-fullstack-apps.md)**
+**[Live Demo](https://fullstack-promptable-app-example.netlify.app)** | **[Blog Post](building-ai-promptable-fullstack-apps.md)**
 
 ## Use the Agent Skill
 
