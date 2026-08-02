@@ -2,11 +2,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import {
-	findMissingCompanionReciprocity,
-	formatCompanionInstallCommand,
-	getSkillPaths,
-} from './buildSkills.mjs'
+import { findMissingCompanionReciprocity, formatCompanionInstallCommand, getSkillPaths } from './buildSkills.mjs'
 
 const defaultRootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
@@ -410,8 +406,7 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 		{
 			id: 'template-skill-vendor-agnostic',
 			skill: 'tanstack-promptable-fullstack-app-template',
-			description:
-				'Architecture skill stays vendor-agnostic and documents Fixed vs swappable stack',
+			description: 'Architecture skill stays vendor-agnostic and documents Fixed vs swappable stack',
 			async run() {
 				const { agentSkillsDir } = getSkillPaths(rootDir)
 				const templateSkill = await readText(
