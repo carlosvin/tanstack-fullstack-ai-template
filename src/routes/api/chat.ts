@@ -1,7 +1,7 @@
 import { chat, convertMessagesToModelMessages, maxIterations, toServerSentEventsResponse } from '@tanstack/ai'
 import { createFileRoute } from '@tanstack/react-router'
 import { getAIAdapterService } from '../../services/ai/adapter'
-import { getNavigationPromptSection } from '../../services/ai/navigationManifest'
+import { getNavigationPromptSection, matchUserFacingRoute } from '../../services/ai/navigationManifest'
 import {
 	createTaskTool,
 	deleteTaskTool,
@@ -46,9 +46,9 @@ Each task has:
 - createdBy: email of the creator
 
 ## Links and navigation
-- Use **markdown links** in your replies so the user can click to go to a page (e.g. \`[View task](/tasks/123)\`, \`[Tasks](/tasks)\`, \`[Filter by status](/tasks?status=done)\`).
-- **Query params** can be used in links (e.g. \`/tasks?status=in-progress&priority=high\`).
-- When it would help to open a page for the user, call the **navigate** tool with \`to\` (path) and optional \`search\` (query params object). You can also include a link in your message.
+- Include clickable **markdown links** when you reference a page, task, or filtered list. Use real task ids from tool results — see **App Navigation** below for path examples.
+- After listing tasks, link each one to its detail page. After creating a task, link to the new task.
+- When it would help to open a page for the user, call the **navigate** tool with \`to\` and optional \`search\`. You can also include a link in your message.
 
 ## Mutations and data refresh
 - After **createTask**, **updateTask**, or **deleteTask**, always call **invalidateRouter** so the user sees the latest data without refreshing the page.
@@ -100,8 +100,8 @@ function buildSystemPrompt(
 
 		if (currentPath || currentSearch || currentHref) {
 			const fullPath = `${currentPath ?? ''}${currentSearch ?? ''}` || 'unknown'
-			const taskDetailMatch = currentPath?.match(/^\/tasks\/([^/]+)$/)
-			const currentTaskId = taskDetailMatch?.[1]
+			const matchedRoute = currentPath ? matchUserFacingRoute(currentPath) : null
+			const currentTaskId = matchedRoute?.to === '/tasks/$taskId' ? matchedRoute.params?.taskId : undefined
 
 			const locationLines = [
 				'## Current Location',
