@@ -1,9 +1,10 @@
 import { createMiddleware } from '@tanstack/react-start'
+import { getCookie, setCookie } from '@tanstack/react-start/server'
 import { webServerEnv } from '../env/webEnv'
 import { getReadRepository } from '../services/repository/getRepository.server'
 import type { UserIdentity, UserProfile } from '../types'
-import { extractIdentityFromJwt } from '../utils/jwt.server'
 import { createServerLogger } from '../utils/serverLogger'
+import { createTestAuthToken, resolveAccessTicket, TEST_AUTH_COOKIE_NAME } from '../utils/testAuth.server'
 
 const log = createServerLogger('auth')
 
@@ -13,14 +14,15 @@ const AUTH_HEADER_NAME = webServerEnv.AUTH_HEADER_NAME ?? 'Authorization'
 /** Paths that skip repository profile lookup (health, static, public config). */
 const PUBLIC_ROUTE_PREFIXES = ['/api/health', '/.well-known', '/assets'] as const
 
-function isPublicRoute(pathname: string): boolean {
-	return PUBLIC_ROUTE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+const TEST_AUTH_COOKIE_OPTIONS = {
+	path: '/',
+	httpOnly: true,
+	sameSite: 'lax' as const,
+	maxAge: 60 * 60 * 24 * 30,
 }
 
-const ANONYMOUS_USER: UserIdentity = {
-	email: '',
-	name: 'Anonymous',
-	groups: [],
+function isPublicRoute(pathname: string): boolean {
+	return PUBLIC_ROUTE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
 }
 
 /**
@@ -30,6 +32,7 @@ const ANONYMOUS_USER: UserIdentity = {
 export interface AuthContext {
 	user: UserIdentity
 	userProfile: UserProfile | null
+	isTestUser: boolean
 }
 
 /**
@@ -38,15 +41,19 @@ export interface AuthContext {
  * and provides both in `context.user` and `context.userProfile`.
  *
  * Runs on every request (SSR, server functions, API routes).
- * - If a valid JWT is present, the decoded identity is used and the profile is loaded.
- * - If no valid JWT is present, an anonymous user is returned with no profile.
+ * - If a valid JWT is present in the auth header, the decoded identity is used.
+ * - Otherwise a persistent test user is minted (or restored from the test-auth cookie).
  */
 export const authMiddleware = createMiddleware().server(async ({ next, request }) => {
 	const pathname = new URL(request.url).pathname
 	const authHeader = request.headers.get(AUTH_HEADER_NAME)
-	const identity = extractIdentityFromJwt(authHeader)
+	const ticket = resolveAccessTicket(authHeader, getCookie(TEST_AUTH_COOKIE_NAME))
 
-	const user: UserIdentity = identity.email ? identity : ANONYMOUS_USER
+	if (ticket.shouldSetTestAuthCookie) {
+		setCookie(TEST_AUTH_COOKIE_NAME, createTestAuthToken(ticket.user), TEST_AUTH_COOKIE_OPTIONS)
+	}
+
+	const { user, isTestUser } = ticket
 
 	let userProfile: UserProfile | null = null
 	if (user.email && !isPublicRoute(pathname)) {
@@ -58,5 +65,5 @@ export const authMiddleware = createMiddleware().server(async ({ next, request }
 		log.debug({ pathname }, 'public route — skipped profile load')
 	}
 
-	return next({ context: { user, userProfile } })
+	return next({ context: { user, userProfile, isTestUser } })
 })

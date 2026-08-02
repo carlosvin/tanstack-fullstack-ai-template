@@ -5,6 +5,7 @@
 export type {
 	AppError,
 	BrowserContext,
+	CurrentUser,
 	ProcessedResponse,
 	Task,
 	TaskFilter,

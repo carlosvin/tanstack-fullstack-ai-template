@@ -1,12 +1,13 @@
 import { AppShell } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import type { ShellSession } from '../../env/webEnv'
-import type { UserIdentity, UserProfile } from '../../types'
+import type { CurrentUser } from '../../types'
 import { ChatDrawer } from '../ChatDrawer/ChatDrawer'
 import { Header } from '../Header/Header'
+import { TestUserBanner } from '../TestUserBanner/TestUserBanner'
 
 interface AppLayoutProps {
-	currentUser?: { identity: UserIdentity; profile: UserProfile | null }
+	currentUser?: CurrentUser
 	shellSession: ShellSession
 	aiAvailable?: boolean
 	children: React.ReactNode
@@ -20,7 +21,10 @@ export function AppLayout({ currentUser, shellSession, aiAvailable = false, chil
 			<AppShell.Header>
 				<Header currentUser={currentUser} appMeta={shellSession.app} aiAvailable={aiAvailable} onOpenChat={openChat} />
 			</AppShell.Header>
-			<AppShell.Main>{children}</AppShell.Main>
+			<AppShell.Main>
+				<TestUserBanner currentUser={currentUser} />
+				{children}
+			</AppShell.Main>
 			{aiAvailable ? <ChatDrawer opened={chatOpened} onClose={closeChat} /> : null}
 		</AppShell>
 	)

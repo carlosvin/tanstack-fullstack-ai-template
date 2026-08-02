@@ -74,7 +74,7 @@ export const getAIAvailability = createServerFn({ method: 'GET' })
 export const getCurrentUser = createServerFn({ method: 'GET' })
 	.middleware([authMiddleware])
 	.handler(async ({ context }) => {
-		return { identity: context.user, profile: context.userProfile }
+		return { identity: context.user, profile: context.userProfile, isTestUser: context.isTestUser }
 	})
 
 // ============================================================================

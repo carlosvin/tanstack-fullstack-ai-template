@@ -51,6 +51,14 @@ export const UserProfileSchema = z.object({
 
 export type UserProfile = z.infer<typeof UserProfileSchema>
 
+export const CurrentUserSchema = z.object({
+	identity: UserIdentitySchema.describe('Authenticated user identity from the access ticket'),
+	profile: UserProfileSchema.nullable().describe('Repository profile when available'),
+	isTestUser: z.boolean().describe('True when the server auto-generated a demo test user'),
+})
+
+export type CurrentUser = z.infer<typeof CurrentUserSchema>
+
 // ---------------------------------------------------------------------------
 // Browser Context (sent by the client with each chat request)
 // ---------------------------------------------------------------------------

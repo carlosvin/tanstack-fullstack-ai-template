@@ -156,11 +156,11 @@ const getCurrentUserContextToolDef = toolDefinition({
 
 /** AI server tool: returns identity, profile, and a permissions summary for the current user. */
 export const getCurrentUserContextTool = createSafeServerTool(getCurrentUserContextToolDef, async () => {
-	const { identity, profile } = await getCurrentUser()
+	const { identity, profile, isTestUser } = await getCurrentUser()
 	const permissions = identity.email
 		? 'Anyone logged in can create tasks. Only the task creator can edit or delete a task (check task.createdBy).'
 		: 'Log in to create, edit, or delete tasks.'
-	return { identity, profile, permissions }
+	return { identity, profile, isTestUser, permissions }
 })
 
 // ---------------------------------------------------------------------------

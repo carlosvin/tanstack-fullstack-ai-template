@@ -1,11 +1,11 @@
 import { ActionIcon, Button, Group, Text, Tooltip, useMantineColorScheme } from '@mantine/core'
 import { CheckSquare, Code, ListTodo, MessageCircle, Moon, Sun } from 'lucide-react'
 import type { AppMeta } from '../../env/webEnv'
-import type { UserIdentity, UserProfile } from '../../types'
+import type { CurrentUser } from '../../types'
 import { Link } from '../Link/Link'
 
 interface HeaderProps {
-	currentUser?: { identity: UserIdentity; profile: UserProfile | null }
+	currentUser?: CurrentUser
 	appMeta: AppMeta
 	aiAvailable?: boolean
 	onOpenChat?: () => void
