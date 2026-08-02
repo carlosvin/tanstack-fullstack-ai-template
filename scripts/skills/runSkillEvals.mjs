@@ -396,6 +396,40 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				return pass()
 			},
 		},
+		{
+			id: 'template-skill-ui-observability-agnostic',
+			skill: 'tanstack-promptable-fullstack-app-template',
+			description:
+				'Architecture skill stays vendor-agnostic (UI, observability, validation prose) and documents swappable stack',
+			async run() {
+				const templateSkill = await readText(
+					path.join(rootDir, '.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md'),
+				)
+				const forbidden = [
+					/\bMantine\b/i,
+					/@mantine\//,
+					/\bpino\b/i,
+					/\bSentry\b/,
+					/TextInput/,
+					/useDebouncedCallback/,
+					/react-markdown/,
+					/remark-gfm/,
+					/\bBiome\b/,
+				]
+				const violations = []
+				for (const pattern of forbidden) {
+					if (pattern.test(templateSkill)) {
+						violations.push(`SKILL.md matches ${pattern}`)
+					}
+				}
+				if (!/## Fixed vs swappable stack/.test(templateSkill)) {
+					violations.push('SKILL.md missing "Fixed vs swappable stack" section')
+				}
+				return violations.length === 0
+					? pass()
+					: fail('Architecture skill must stay vendor-agnostic and document swappable stack', violations)
+			},
+		},
 	]
 }
 

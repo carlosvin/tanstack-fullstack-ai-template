@@ -2,8 +2,8 @@
 
 This repo ships **[Agent Skills](https://agentskills.io)** for the TanStack fullstack template:
 
-- **`tanstack-promptable-fullstack-app-template`** — **architecture contract**: interface-first services, three schema layers, loader-first routes, URL-as-state, AI tool coverage, server/client boundaries, middleware-inferred request context.
-- **`observability-and-env`** — **companion recipe**: centralized env parsing, pino logger factories, Sentry bootstrap, `webEnvMiddleware`, and `getBrowserShellSession` (no `window.__ENV__`).
+- **`tanstack-promptable-fullstack-app-template`** — **architecture contract**: interface-first services, three schema layers, loader-first routes, URL-as-state, AI tool coverage, server/client boundaries, middleware-inferred request context. **UI-library-agnostic** — does not prescribe Mantine or any component kit.
+- **`observability-and-env`** — **companion recipe**: centralized env parsing, structured logging + error-tracking bootstrap behind `ObservabilityService`, `webEnvMiddleware`, and `getBrowserShellSession` (no `window.__ENV__`). Reference app uses pino + Sentry; swap vendors without changing handler contracts.
 
 Operational detail that should stay repo-local (UI kit, auth snippets, chat wiring, tests) still lives in **[AGENTS.md](../AGENTS.md)**.
 
@@ -12,17 +12,17 @@ Operational detail that should stay repo-local (UI kit, auth snippets, chat wiri
 | You're working on… | Load |
 |--------------------|------|
 | New entity, routes, schemas, AI tools, auth, import protection | `tanstack-promptable-fullstack-app-template` |
-| Pino, Sentry, `instrument.*.mts`, `src/env/`, env leaks, `shellSession` | `observability-and-env` |
+| Logging, error tracking, `instrument.*.mts`, `src/env/`, env leaks, `shellSession` | `observability-and-env` |
 | Both (e.g. server fn that logs and reads `context.serverEnv`) | **Both** — architecture first, then observability |
 
-Keep them **separate** (industry norm: core + focused sub-skill). The parent skill states env **invariants**; the companion owns the **setup recipe**.
+Keep them **separate** (industry norm: core + focused sub-skill). The parent skill states architecture **invariants** and which stack pieces are **swappable**; companions and AGENTS.md own concrete vendor choices.
 
 **Use them when** you scaffold or extend a TanStack Start app from this pattern, migrate an existing app, or need agents to follow current TanStack docs instead of guessing.
 
 ## Published skills
 
 - `tanstack-promptable-fullstack-app-template`: architecture, schema boundaries, routing, server functions, AI tools, and parent layout patterns.
-- `observability-and-env`: logging, Sentry bootstrap, validated env schemas, and runtime config plumbing.
+- `observability-and-env`: logging, error-tracking bootstrap, validated env schemas, and runtime config plumbing (reference: pino + Sentry).
 
 ## Super quick install
 

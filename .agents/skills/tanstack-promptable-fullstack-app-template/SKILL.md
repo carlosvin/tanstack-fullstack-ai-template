@@ -5,8 +5,8 @@ description: 'Use when scaffolding a new TanStack Start project, adding domain
   AI-promptable tools, fixing nested layout routes that duplicate parent
   beforeLoad/loaders, verifying TanStack Router/Start/AI against current docs,
   or enforcing server/client execution boundaries (isomorphic loaders, import
-  protection, middleware-inferred request context). For logging, Sentry, env
-  schemas, or shellSession setup, load companion skill observability-and-env
+  protection, middleware-inferred request context). For logging, error tracking,
+  env schemas, or shellSession setup, load companion skill observability-and-env
   instead. Companion skills: observability-and-env (companion). Install missing
   companions with npx skills add carlosvin/tanstack-fullstack-ai-template
   --skill <id>. Project: TanStack AI-Promptable Full-Stack Template. Triggers on
@@ -24,7 +24,7 @@ description: 'Use when scaffolding a new TanStack Start project, adding domain
 
 This template publishes **multiple** skills. If only **this** skill is installed, add companions **before** related work:
 
-- **`observability-and-env`** (companion) — Logging, Sentry bootstrap, env schemas, webEnvMiddleware, and shellSession setup. Install when work touches observability, process.env, or browser runtime config.
+- **`observability-and-env`** (companion) — Logging, error-tracking bootstrap, env schemas, webEnvMiddleware, and shellSession setup. Install when work touches observability, process.env, or browser runtime config.
   ```bash
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env
   ```
@@ -35,16 +35,16 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 **Purpose:** Capture the **interface-first, schema-layered, AI-promptable** contract for TanStack Start apps from this template. Day-to-day conventions (UI kit, chat wiring, logging, tests) live in the repo’s **AGENTS.md** — use this skill for **architecture**, AGENTS.md for **operations**.
 
-> **Companion handbook:** [AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) — structure, styling, auth snippets, Biome, testing/E2E, validation checklist, AI chat setup.
+> **Companion handbook:** [AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) — structure, styling, auth snippets, lint/test tooling, validation checklist, AI chat setup.
 >
-> **Companion skill:** `observability-and-env` — logging, Sentry bootstrap, env schemas, `webEnvMiddleware`, `getBrowserShellSession`. Load it for observability work; this skill keeps only the architecture invariants.
+> **Companion skill:** `observability-and-env` — env schemas, browser shell session, logging/error-tracking bootstrap. Load it for observability work; this skill keeps only the architecture invariants (no vendor-specific logging or APM choices).
 
 ## Skill routing
 
 | Task | Load |
 |------|------|
 | New entity, routes, schemas, AI tools, auth, server boundaries | **This skill** |
-| Pino, Sentry, `instrument.*.mts`, `src/env/`, `shellSession`, env leaks | **`observability-and-env`** |
+| Logging, error tracking, `instrument.*.mts`, `src/env/`, `shellSession`, env leaks | **`observability-and-env`** |
 | Both (e.g. new server fn that logs + needs `context.serverEnv`) | **Both** — architecture first, then observability patterns |
 
 ## How to use this skill
@@ -52,12 +52,31 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 1. Read **Core Contract** first — it is the non-negotiable architecture.
 2. Run the **Architecture Checklist** before every non-trivial change.
 3. Jump to **Server execution boundaries**, **Schema Boundaries**, **Request Context**, or **Special Patterns** only when that concern applies.
-4. Use **[AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md)** for operational how-to (UI kit, chat wiring, logging, tests, validation commands) — not for inventing alternate architecture.
+4. Use **[AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md)** for operational how-to (UI kit, chat wiring, logging, tests, validation commands) — not for inventing alternate architecture. **This skill is UI-library-agnostic** and does not prescribe a component kit; **observability vendors** belong in **`observability-and-env`**, not here.
+
+## Fixed vs swappable stack
+
+**Fixed by this skill (TanStack):** TanStack **Start** (server functions, middleware, SSR boundaries), **Router** (file routes, `validateSearch`, loaders, URL-as-state), **AI** (`chat()`, `toolDefinition`, client/server tools, SSE). Use **TanStack Intent** and **`@tanstack/cli`** for version-matched package skills and current docs.
+
+**Swappable (interface-first or project choice — not prescribed here):**
+
+| Concern | Pattern in this skill | Reference in this repo | Swappable to |
+|---------|----------------------|------------------------|--------------|
+| Runtime validation | `Schema.parse()` at boundaries; one schema per wire shape | Zod | ArkType, Valibot (TanStack Router/Start adapters) |
+| Database | `ReadRepository` / `WritableRepository` | See `src/services/repository/` | Postgres, SQLite, REST upstream, … |
+| Auth | Middleware-built ticket + server-enforced guards | See AGENTS.md §5 | Sessions, OAuth, header JWT, … |
+| AI provider | `AIAdapterService` | See AGENTS.md §8 | Anthropic, Gemini, OpenRouter, Ollama, … |
+| Observability | `ObservabilityService`, env middleware | **`observability-and-env`** skill | OpenTelemetry, other log/APM vendors |
+| UI kit | Page components + project styling | AGENTS.md §3 | Radix, Chakra, plain CSS, … |
+| Markdown chat rendering | GFM contract (tables, links, code) | GFM markdown renderer | Any GFM-capable library |
+| Lint / test / deploy | AGENTS.md §10–§17 | Project defaults in handbook | ESLint, other runners, Vercel/Node/Docker |
+
+Pick **one validator library** per app and use it consistently across router search, server-fn validators, and AI tool schemas. Code samples below use **Zod as the reference syntax**; translate idioms when using ArkType or Valibot.
 
 ## Common failure modes (avoid these)
 
 - **Route state in React state:** filters, tabs, or selections in `useState` instead of validated URL search params + `loaderDeps`.
-- **Navigate on every search keystroke:** binding a free-text search input to URL search params with `navigate` on each `onChange` re-runs loaders and drops characters. Use uncontrolled input + `useDebouncedCallback` (see **Special Patterns**).
+- **Navigate on every search keystroke:** binding a free-text search input to URL search params with `navigate` on each `onChange` re-runs loaders and drops characters. Use an uncontrolled input + debounced callback (see **Special Patterns**).
 - **Repository schemas at the wrong edge:** importing repository-layer schemas into UI, tools, or AI tool inputs — use tools-layer schemas only.
 - **Server function without a tool:** adding `createServerFn` but skipping `toolDefinition` + `createSafeServerTool` for the same capability.
 - **Parse only half the boundary:** validating inbound tools input but returning raw repo rows to UI/AI without tools-layer `Schema.parse` on the way out.
@@ -74,7 +93,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 ## Core Contract
 
 1. **Interfaces:** Database, AI, observability (and other externals) sit behind interfaces; implementations are swappable.
-2. **Schemas as the type source:** Wire and tool shapes use Zod/ArkType + `z.infer<>`. Hand-written interfaces define **behavior** (`ReadRepository`, `AIAdapterService`, …), not ad-hoc JSON types.
+2. **Schemas as the type source:** Wire and tool shapes use a runtime validator (Zod, ArkType, Valibot, …) with **schema-inferred types**. Hand-written interfaces define **behavior** (`ReadRepository`, `AIAdapterService`, …), not ad-hoc JSON types.
 3. **Three schema layers:** **Repository** (DB-shaped), **tools / server-fn** (API-shaped, shared between `createServerFn` and `toolDefinition`), **router search** (URL-shaped). Translate with `Schema.parse()` at each boundary.
 4. **TypeScript inside the typed flow:** After schema boundaries, preserve **inferred types end-to-end** — prefer `satisfies`, discriminated unions, `as const` tuples, narrow **type guards**, and **exhaustive `switch`** (e.g. `default` branch calling `assertNever`) over `any`, broad `unknown` plumbing, or `as` casts (only use `as` at documented third-party/library seams per AGENTS.md).
 5. **Repository vs tools:** Repository implementations use repository-layer schemas only. **Server functions and AI tools share the same tools-layer schemas** (`.inputValidator` / `toolDefinition` inputSchema + `Schema.parse`). UI and AI consume tools-layer types only — never import repository schemas at those edges.
@@ -86,7 +105,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 11. **AI tool coverage:** expose **every** repository method as a server AI tool via `createSafeServerTool`; add **distinct-values** tools for enum-ish filters; expose `navigate` and `invalidateRouter` as client tools.
 12. **Promptable by default:** root loader checks `getAIAvailability()` and only mounts chat UI when configured (no disabled state). Chat input includes a `browserContext` (timezone, locale, path) consumed by `buildSystemPrompt` alongside the auth ticket.
 13. **Bound the agent loop:** every `chat()` call sets `agentLoopStrategy: maxIterations(N)` explicitly (default `N=10`); tune after measuring — do not rely on the framework default.
-14. **Metadata for AI and UI:** Use `.describe()` for all narrative explanations (JSON Schema `description`). Use `.meta({ ... })` only for **structured extras** — `unit`, `format`, optional `title`, app-specific hints — not as a substitute for `.describe()`. Prefer deriving prompts and UI copy from schemas + `z.toJSONSchema()` and router introspection over parallel hand-maintained maps.
+14. **Metadata for AI and UI:** Attach human-readable **descriptions** to schema fields (reference — Zod `.describe()` → JSON Schema `description`; ArkType/Valibot have equivalents). Use **structured schema extras** only for non-description hints — `unit`, `format`, optional `title`. Prefer deriving prompts and UI copy from schemas + JSON Schema export and router introspection over parallel hand-maintained maps.
 15. **Parent layouts:** Shared `beforeLoad`, redirects, and expensive reads belong on the **parent** layout route; children read parent loader data via `getRouteApi` / `useLoaderData({ from })` — do not duplicate parent work.
 16. **Server execution boundaries:** Route loaders are **isomorphic** — they run on the server during SSR and on the client during SPA navigations. Loaders only **call** exported `createServerFn` from `serverFns.ts` (e.g. `getTasks({ data: deps })`). DB access, secrets, and Node-only SDKs live in `*.server.ts` or behind `createServerOnlyFn`; extend `tanstackStart({ importProtection })` when adding node packages.
 17. **Startup-validated env + typed context + browser shell:** Parse env once at startup into `webServerEnv` and `shellSession`; inject via `next({ context })`; chain middleware for inferred types; expose browser-safe config only through `getBrowserShellSession` / `shellSession` — never `serverEnv` or `window.__ENV__`. **Setup recipe:** companion skill `observability-and-env`.
@@ -97,15 +116,15 @@ Scan before changing code:
 
 - **One tools-layer schema per wire shape:** `createServerFn` `.inputValidator(Schema)` and AI `toolDefinition({ inputSchema })` share the same schema — no duplicate hand-written wire types.
 - **Parse both directions:** tools → repository inputs and repository rows → tools/API outputs each end in the target layer’s `Schema.parse()` (pure mapper functions are fine if the final step is always `.parse()`).
-- **No type erasure:** after `Schema.parse`, carry **`z.infer`-derived types** through server functions, repos, tools, and components — do not widen back to `Record<string, unknown>` / `any`.
+- **No type erasure:** after `Schema.parse`, carry **schema-inferred types** through server functions, repos, tools, and components — do not widen back to `Record<string, unknown>` / `any`.
 - **Repository interfaces = repo-layer types only:** mapping lives beside schemas / mappers — not in React components.
 - **Auth ticket is repository-backed and server-enforced:** middleware builds the ticket (e.g. `getReadRepository().getUserAccess(email)`); guards run in **server handlers**, never UI-only.
 - **Writes use `TraceabilityContext`:** pass audit fields from the ticket (or stock `context.user.email`) through a single context object on `WritableRepository` mutations — avoid sprinkling raw `email` arguments. Repository implementations must **persist** `createdBy` / `lastModifiedBy` from that context onto the entity.
 - **Navigation is one decision:** ship the **router defaults bundle** and the **project `Link` wrapper** (`search: true`) together so URL state survives navigation.
 - **AI stack is complete:** every repo method → server tool + safe handler; client **`navigate`** / **`invalidateRouter`**; root **`getAIAvailability()`**; chat payload includes **`browserContext`**; **`chat({ agentLoopStrategy: maxIterations(N) })`**.
 - **Routes:** **`validateSearch`** + **`loaderDeps`**; duplicate **`beforeLoad`** / shared loaders only on **parent** layouts.
-- **Metadata discipline:** `.describe()` for narrative copy; `.meta()` for structured extras; closed vocabularies = `as const` tuple + `z.enum` + `z.infer<>`.
-- **Server boundaries:** loaders call `serverFns` only — no `process.env` secrets, DB drivers, or repo imports in route files; `*.server.ts` for Mongo/Node SDKs; `createServerOnlyFn` for non-RPC infra; `importProtection` updated for new node packages.
+- **Metadata discipline:** schema field descriptions for narrative copy; structured extras for units/formats; closed vocabularies = `as const` tuple + schema enum + inferred type.
+- **Server boundaries:** loaders call `serverFns` only — no `process.env` secrets, DB drivers, or repo imports in route files; `*.server.ts` for DB drivers / Node SDKs; `createServerOnlyFn` for non-RPC infra; `importProtection` updated for new node packages.
 - **Request context:** middleware validates once; handlers **chain middleware** and read `context.*` directly — no runtime context helpers, no context casts, no Register; browser sees only **`getBrowserShellSession`** output (env bootstrap: **`observability-and-env`**).
 
 ## Server execution boundaries
@@ -114,7 +133,7 @@ TanStack route **loaders are isomorphic** — they run during SSR **and** on cli
 
 ### Forbidden in route files
 
-- Top-level imports of `getDb`, repositories, `mongodb`, `fs`, or other Node-only modules.
+- Top-level imports of `getDb`, repositories, database drivers, `fs`, or other Node-only modules.
 - `process.env` for secrets inside `loader` bodies.
 - Inline DB queries or repository calls inside `loader`.
 
@@ -171,14 +190,15 @@ tanstackStart({
   importProtection: {
     behavior: 'error',
     client: {
-      specifiers: ['mongodb', 'jose'],
+      // Reference template uses mongodb + jose — replace with your packages
+      specifiers: ['<db-driver>', '<auth-crypto-lib>'],
       files: ['**/services/db/**', '**/repository/*.server.ts'],
     },
   },
 })
 ```
 
-Add `jose` (or other auth/crypto libs) when they are not isolated in `*.server.ts`. Set `ignoreImporters: ['**/*.test.ts']` if unit tests import server modules in jsdom. Verify with `pnpm build`. Docs: `npx @tanstack/cli search-docs "import protection" --library start`.
+Add your DB driver and auth/crypto libraries when they are not isolated in `*.server.ts`. Set `ignoreImporters: ['**/*.test.ts']` if unit tests import server modules in jsdom. Verify with your build command. Docs: `npx @tanstack/cli search-docs "import protection" --library start`.
 
 ### If the user asks for DB/secrets in a component or route config
 
@@ -195,7 +215,7 @@ Add `jose` (or other auth/crypto libs) when they are not isolated in `*.server.t
 
 ## Markdown assistant replies (UX contract)
 
-Assistant messages in the chat UI must **render as Markdown** (including GFM): lists, **tables**, fenced and inline code blocks, and links. Internal paths like `[Tasks](/tasks)` should remain **client-navigable** where the app implements markdown links (do not flatten assistant output to plain text for display). Concrete stack (`react-markdown`, `remark-gfm`, styling, `MarkdownLink` behavior) lives in **AGENTS.md §8** — agents changing chat rendering must follow that section.
+Assistant messages in the chat UI must **render as Markdown** (including GFM): lists, **tables**, fenced and inline code blocks, and links. Internal paths like `[Tasks](/tasks)` should remain **client-navigable** where the app implements markdown links (do not flatten assistant output to plain text for display). **Renderer choice is project-specific** — follow **AGENTS.md §8** for this repo's implementation.
 
 ## Schema Boundaries
 
@@ -203,9 +223,11 @@ Assistant messages in the chat UI must **render as Markdown** (including GFM): l
 
 `repo output → mapping → tools schema → AI or UI`
 
-**Layer 1 — Repository (DB-shaped):** define in `src/services/schemas/repository.ts` (target layout; today some apps still colocate in `schemas.ts`). No `.describe()` required here. Infer with `z.infer<>`.
+**Layer 1 — Repository (DB-shaped):** define in `src/services/schemas/repository.ts` (target layout; today some apps still colocate in `schemas.ts`). No field descriptions required here. Infer types from your validator.
 
 **Layer 2 — Tools / server functions (API-shaped):** one schema for `.inputValidator(Schema)` and `toolDefinition({ inputSchema })`; parse args with `Schema.parse(args)`.
+
+*Reference implementation (Zod) — use ArkType or Valibot with TanStack adapters when preferred:*
 
 ```typescript
 // Example: tools-layer object — .describe() for text; .meta() for non-description fields
@@ -220,7 +242,7 @@ const TaskInputSchema = z.object({
 })
 ```
 
-**Closed vocabularies (enums, tool categories, filter buckets):** `const VALUES = [...] as const`, then `z.enum(VALUES)`, put prose in `.describe()`, optional `.meta({ title: '...' })`, infer with `z.infer<>`. **Do not** treat `export const LABELS = { id: 'Display Name' } as const` as the authority for the same strings unless it is derived from or validated by that schema.
+**Closed vocabularies (enums, tool categories, filter buckets):** `const VALUES = [...] as const`, then a schema enum, attach descriptions for AI/UI, optional structured extras, infer the union type from the schema. **Do not** treat `export const LABELS = { id: 'Display Name' } as const` as the authority for the same strings unless it is derived from or validated by that schema.
 
 ```typescript
 const TOOL_CATEGORY_VALUES = ['Metadata & Navigation', 'Strategic Objectives'] as const
@@ -271,7 +293,7 @@ function toToolTask(row: TaskRepo): z.infer<typeof TaskToolSchema> {
 }
 ```
 
-**TypeScript discipline (complements Zod):** Zod validates **at boundaries**; TypeScript keeps the interior honest — narrow with guards instead of casting.
+**TypeScript discipline (complements runtime validation):** the validator checks **at boundaries**; TypeScript keeps the interior honest — narrow with guards instead of casting.
 
 ```typescript
 type TaskStatus = 'pending' | 'done'
@@ -303,7 +325,7 @@ function labelForStatus(status: TaskStatus): string {
 
 ### Context and philosophy — parse, don't validate
 
-- **Validate at the edge:** use Zod (or another runtime validator) in Start **middleware** when assembling request context — JWT parsing, `process.env` / `serverEnv`, external headers, repository enrichment.
+- **Validate at the edge:** use a runtime validator (Zod, ArkType, Valibot, …) in Start **middleware** when assembling request context — token/session parsing, `process.env` / `serverEnv`, external headers, repository enrichment.
 - **TypeScript inside handlers:** once middleware calls `next({ context })`, Start **infers** `ctx.context` from the middleware chain on that server fn / route. Chain the middleware that provides the fields you need (e.g. `.middleware([webEnvMiddleware])` or `.middleware([requireAuthMiddleware])`).
 - **Do not re-validate context in handlers:** no shallow "is this field present?" guards on middleware output. Parse at true **external** boundaries only; let middleware chaining carry types downstream. No `Register` / module-augmentation for middleware context.
 
@@ -313,14 +335,14 @@ Field names are app-specific (`accessTicket`, `identity`, `serverEnv`, …). Thi
 
 **Invariant (Core Contract #17):** parse env once → inject `serverEnv` + `shellSession` via middleware → project **`shellSession`** to the browser only via `getBrowserShellSession` in the root loader.
 
-**Do not duplicate the setup recipe here.** File layout, Zod schemas, `instrument.*.mts`, pino factories, and `webEnvMiddleware` wiring are in companion skill **`observability-and-env`**.
+**Do not duplicate the setup recipe here.** File layout, env schemas, `instrument.*.mts`, logger factories, and `webEnvMiddleware` wiring are in companion skill **`observability-and-env`**.
 
 ### Core rules for agents
 
 1. **Direct context access** — read `ctx.context` fields directly (e.g. `context.user`, `context.serverEnv`, `context.shellSession`).
 2. **No runtime context guards** — never add or call wrappers such as `getShellAuthContext(ctx.context)`, `getAccessTicket(ctx.context)`, or `accessTicketFrom(context)`. Middleware guarantees shape; missing fields are a middleware bug, not something handlers paper over.
 3. **No type bypasses** — never cast context with `as unknown`, `as any`, or `context as SomeContext`. Chain middleware (e.g. `requireAuthMiddleware` after `authMiddleware`, or `webEnvMiddleware` for env fields) so `context` is inferred.
-4. **Maintain boundary validation** — keep Zod (or equivalent) on **external** inputs: env, JWT claims before enrichment, request bodies, third-party payloads, **browser session serialization**. Do not duplicate validation on context already built by trusted middleware.
+4. **Maintain boundary validation** — keep a runtime validator on **external** inputs: env, auth claims before enrichment, request bodies, third-party payloads, **browser session serialization**. Do not duplicate validation on context already built by trusted middleware.
 5. **Env is a startup singleton** — parse with the chosen schema library once; put the result on context; do not call `process.env` or re-parse in handlers.
 
 Enforce authorization in **server handlers** for every mutation and sensitive read. UI may hide controls; handlers are authoritative.
@@ -395,7 +417,7 @@ interface WritableRepository {
 
 - **Overlay repository:** read-only upstream source + sparse user overrides; pure `applyOverrides`; writes only to overrides.
 - **URL bulk edit:** selection and category tabs in search params; batched mutation; per-row auth.
-- **Debounced free-text search (URL-as-state):** Keep filters in validated search params + `loaderDeps`, but do **not** control free-text search from the URL on every keystroke. Use an uncontrolled input (`defaultValue` from the current search param) and Mantine `useDebouncedCallback` (already in the template via `@mantine/hooks`) to `navigate({ replace: true, search })` only after the user pauses. Discrete filters (`Select`, tabs) may navigate immediately. Call `navigate` from the debounce callback — do not watch a debounced value in `useEffect` just to navigate. Prefer this over adding `@tanstack/pacer` for a single search box.
+- **Debounced free-text search (URL-as-state):** Keep filters in validated search params + `loaderDeps`, but do **not** control free-text search from the URL on every keystroke. Use an uncontrolled text input (`defaultValue` from the current search param) and a debounced callback — your UI library's debounce hook, `@tanstack/pacer`, or a small local helper — to `navigate({ replace: true, search })` only after the user pauses. Discrete filters (dropdowns, tabs, segmented controls) may navigate immediately. Call `navigate` from the debounce callback — do not watch a debounced value in `useEffect` just to navigate. **UI-agnostic:** this skill does not prescribe a component library; follow the project's UI kit in **AGENTS.md §3** for concrete input/select components.
 
   ```typescript
   const updateSearch = (updates: Partial<Search>, replace = false) => {
@@ -406,16 +428,18 @@ interface WritableRepository {
     })
   }
 
-  const debouncedSearch = useDebouncedCallback((value: string) => {
+  const debouncedSearch = debounce((value: string) => {
     const next = value || undefined
     if (next === search.search) return
     updateSearch({ search: next }, true)
   }, 300)
 
-  <TextInput
-    defaultValue={search.search ?? ''}
-    onChange={(e) => debouncedSearch(e.currentTarget.value)}
-  />
+// Render with your project's text input component (not prescribed here)
+<input
+  type="search"
+  defaultValue={search.search ?? ''}
+  onChange={(e) => debouncedSearch(e.currentTarget.value)}
+/>
   ```
 
 - **Help surface:** single `docs/help.md` can back `/help`, an AI tool, and suggested prompts (see AGENTS.md).
@@ -432,11 +456,11 @@ interface WritableRepository {
 
 | Need | Where |
 |------|--------|
-| UI kit (default Mantine), styling | §3 |
+| UI kit and styling (project choice — not prescribed by this skill) | §3 |
 | Auth, middleware, guards | §5 |
 | AI adapters, chat client, tools, prompts, Markdown (GFM) rendering | §8 |
-| Observability (Sentry, pino, env bridge) | §9 + **`observability-and-env`** skill |
-| Vitest, Playwright, E2E fixtures | §10 |
+| Observability and env bridge (implementation in companion skill) | §9 + **`observability-and-env`** skill |
+| Lint, unit/E2E test runners (project choice) | §10–§11 |
 | Full validation checklist (format, lint, test, build) | §17 |
 | Public runtime config (`shellSession`, not `window.__ENV__`) | §13 + **`observability-and-env`** skill |
 
