@@ -1,9 +1,9 @@
 import { ActionIcon, Badge, Button, Card, Container, Group, Select, Stack, Text, TextInput, Title } from '@mantine/core'
-import { useDebouncedCallback } from '@mantine/hooks'
+import { useDebouncedState } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import { createFileRoute, Outlet, useLoaderData, useNavigate } from '@tanstack/react-router'
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useEffect } from 'react'
 import { z } from 'zod'
 import { Link } from '../../components/Link/Link'
 import { TASK_PRIORITIES, TASK_STATUSES } from '../../constants/options'
@@ -35,26 +35,19 @@ function TasksPage() {
 	const navigate = useNavigate()
 	const isAuth = Boolean(currentUser?.identity?.email)
 	const urlSearch = search.search ?? ''
-	const [searchInput, setSearchInput] = useState(urlSearch)
-	const [prevUrlSearch, setPrevUrlSearch] = useState(urlSearch)
-	const pendingSearchRef = useRef<string | null>(null)
+	const [debouncedSearch, setDebouncedSearch] = useDebouncedState(urlSearch, 300)
+	const searchInputKey = `${search.status ?? ''}:${search.priority ?? ''}`
 
-	if (urlSearch !== prevUrlSearch) {
-		setPrevUrlSearch(urlSearch)
-		if (pendingSearchRef.current !== urlSearch) {
-			setSearchInput(urlSearch)
+	useEffect(() => {
+		const next = debouncedSearch || undefined
+		if (next !== search.search) {
+			navigate({
+				to: '/tasks',
+				replace: true,
+				search: (prev) => ({ ...prev, search: next }),
+			})
 		}
-		pendingSearchRef.current = null
-	}
-
-	const debouncedUpdateSearch = useDebouncedCallback((value: string) => {
-		pendingSearchRef.current = value
-		navigate({
-			to: '/tasks',
-			replace: true,
-			search: (prev) => ({ ...prev, search: value || undefined }),
-		})
-	}, 300)
+	}, [debouncedSearch, navigate, search.search])
 
 	const updateSearch = (updates: Partial<z.infer<typeof TasksSearchSchema>>) => {
 		navigate({
@@ -93,14 +86,11 @@ function TasksPage() {
 
 				<Group gap="sm">
 					<TextInput
+						key={searchInputKey}
 						placeholder="Search tasks..."
 						leftSection={<Search size={16} />}
-						value={searchInput}
-						onChange={(e) => {
-							const value = e.currentTarget.value
-							setSearchInput(value)
-							debouncedUpdateSearch(value)
-						}}
+						defaultValue={urlSearch}
+						onChange={(e) => setDebouncedSearch(e.currentTarget.value)}
 						style={{ flex: 1 }}
 					/>
 					<Select
