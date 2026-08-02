@@ -14,6 +14,7 @@ import {
 	createTask,
 	deleteTask,
 	getAssignees,
+	getBrowserShellSession,
 	getCurrentUser,
 	getTask,
 	getTasks,
@@ -21,6 +22,7 @@ import {
 	updateTask,
 } from '../api/serverFns'
 import {
+	AppRuntimeInfoSchema,
 	TaskFilterSchema,
 	TaskIdInputSchema,
 	TaskInputSchema,
@@ -119,6 +121,26 @@ export const invalidateRouterToolDef = toolDefinition({
 		'Refresh the page data so the user sees up-to-date information. Call after createTask, updateTask, or deleteTask.',
 	inputSchema: z.object({}),
 	outputSchema: z.object({ success: z.boolean() }),
+})
+
+// ---------------------------------------------------------------------------
+// App runtime info
+// ---------------------------------------------------------------------------
+
+const getAppRuntimeInfoToolDef = toolDefinition({
+	name: 'getAppRuntimeInfo',
+	description:
+		'Get the application name, version, and deployment environment (development, staging, or production). Use when the user asks what app this is, what version is running, or which environment they are on.',
+	inputSchema: z.object({}),
+})
+
+/** AI server tool: returns browser-safe app identity and deployment ENV. */
+export const getAppRuntimeInfoTool = createSafeServerTool(getAppRuntimeInfoToolDef, async () => {
+	const session = await getBrowserShellSession()
+	return AppRuntimeInfoSchema.parse({
+		app: session.app,
+		ENV: session.ENV,
+	})
 })
 
 // ---------------------------------------------------------------------------

@@ -5,6 +5,7 @@ import { getNavigationPromptSection, matchUserFacingRoute } from '../../services
 import {
 	createTaskTool,
 	deleteTaskTool,
+	getAppRuntimeInfoTool,
 	getAssigneesTool,
 	getCurrentUserContextTool,
 	getTasksTool,
@@ -30,6 +31,7 @@ const BASE_SYSTEM_PROMPT = `You are a helpful task management assistant. You hav
 - Navigate the user to app pages (use the navigate tool)
 - Create, update, and delete tasks (when the user is allowed)
 - Check who is logged in and what they can do (getCurrentUserContext)
+- Look up app name, version, and deployment environment (getAppRuntimeInfo)
 - Refresh the page data after mutations (use the invalidateRouter tool)
 
 ## Data Model
@@ -152,6 +154,7 @@ export const Route = createFileRoute('/api/chat')({
 					getTaskTool,
 					getAssigneesTool,
 					getUserProfileTool,
+					getAppRuntimeInfoTool,
 					getCurrentUserContextTool,
 					createTaskTool,
 					updateTaskTool,
