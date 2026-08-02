@@ -1,7 +1,9 @@
 import { ActionIcon, Badge, Button, Card, Container, Group, Select, Stack, Text, TextInput, Title } from '@mantine/core'
+import { useDebouncedCallback } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import { createFileRoute, Outlet, useLoaderData, useNavigate } from '@tanstack/react-router'
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { z } from 'zod'
 import { Link } from '../../components/Link/Link'
 import { TASK_PRIORITIES, TASK_STATUSES } from '../../constants/options'
@@ -32,6 +34,20 @@ function TasksPage() {
 	const search = Route.useSearch()
 	const navigate = useNavigate()
 	const isAuth = Boolean(currentUser?.identity?.email)
+	const urlSearch = search.search ?? ''
+	const [searchInput, setSearchInput] = useState(urlSearch)
+
+	useEffect(() => {
+		setSearchInput(urlSearch)
+	}, [urlSearch])
+
+	const debouncedUpdateSearch = useDebouncedCallback((value: string) => {
+		navigate({
+			to: '/tasks',
+			replace: true,
+			search: (prev) => ({ ...prev, search: value || undefined }),
+		})
+	}, 300)
 
 	const updateSearch = (updates: Partial<z.infer<typeof TasksSearchSchema>>) => {
 		navigate({
@@ -72,8 +88,12 @@ function TasksPage() {
 					<TextInput
 						placeholder="Search tasks..."
 						leftSection={<Search size={16} />}
-						value={search.search ?? ''}
-						onChange={(e) => updateSearch({ search: e.currentTarget.value || undefined })}
+						value={searchInput}
+						onChange={(e) => {
+							const value = e.currentTarget.value
+							setSearchInput(value)
+							debouncedUpdateSearch(value)
+						}}
 						style={{ flex: 1 }}
 					/>
 					<Select
