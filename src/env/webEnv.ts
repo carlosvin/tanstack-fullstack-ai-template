@@ -2,9 +2,12 @@ import { config } from 'dotenv'
 import { z } from 'zod'
 import pkg from '../../package.json' with { type: 'json' }
 
-const appDisplayName = (pkg as { displayName?: string }).displayName ?? pkg.name
-
-import { OptionalDeploymentEnvSchema, OptionalLogLevelSchema, OptionalTrimmedStringSchema } from './runtimeEnvSchema'
+import {
+	envStringToUndefined,
+	OptionalDeploymentEnvSchema,
+	OptionalLogLevelSchema,
+	OptionalTrimmedStringSchema,
+} from './runtimeEnvSchema'
 
 /** Load local `.env` files before the one-time Zod parse (Vite also loads them during dev/build). */
 function loadLocalEnvFiles(): void {
@@ -13,7 +16,7 @@ function loadLocalEnvFiles(): void {
 }
 
 export const AppMetaSchema = z.object({
-	name: z.string().min(1).describe('Human-readable application name (package.json displayName, or name as fallback).'),
+	name: z.string().min(1).describe('Human-readable application name from DISPLAY_NAME env (default: TaskHub).'),
 	version: z.string().min(1).describe('Application version from package.json'),
 })
 
@@ -41,6 +44,9 @@ export type ShellSession = z.infer<typeof ShellSessionSchema>
  * is visible before the Zod parse runs.
  */
 export const WebServerEnvSchema = WebPublicEnvSchema.extend({
+	DISPLAY_NAME: z
+		.preprocess(envStringToUndefined, z.string().min(1).default('TaskHub'))
+		.describe('Human-readable application name shown in the header and page title.'),
 	AUTH_HEADER_NAME: OptionalTrimmedStringSchema.describe(
 		'HTTP header name for the JWT. Default: Authorization when unset or blank.',
 	),
@@ -88,7 +94,7 @@ export function getShellSession(): ShellSession {
 			ENV: env.ENV,
 			LOG_LEVEL: env.LOG_LEVEL,
 			SENTRY_DSN: env.SENTRY_DSN,
-			app: { name: appDisplayName, version: pkg.version },
+			app: { name: env.DISPLAY_NAME, version: pkg.version },
 		})
 	}
 	return cachedShellSession
