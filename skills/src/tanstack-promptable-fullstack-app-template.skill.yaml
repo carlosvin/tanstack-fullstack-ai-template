@@ -13,7 +13,7 @@ projectName: TanStack AI-Promptable Full-Stack Template
 projectSummary: >-
   A production-ready TanStack Start template designed to make internal tools AI
   promptable by default.
-version: 1.26.0
+version: 1.27.0
 author:
   name: Carlos Martin-Sanchez
   url: https://github.com/carlosvin
@@ -170,22 +170,13 @@ content: |
 
   ## Fixed vs swappable stack
 
-  **Fixed by this skill (TanStack):** TanStack **Start** (server functions, middleware, SSR boundaries), **Router** (file routes, `validateSearch`, loaders, URL-as-state), **AI** (`chat()`, `toolDefinition`, client/server tools, SSE). Use **TanStack Intent** and **`@tanstack/cli`** for version-matched package skills and current docs.
+  **Fixed by this skill (TanStack):** TanStack **Start**, **Router**, and **AI** (server functions, middleware, file routes, `validateSearch`, loaders, `chat()` / tools / SSE). Use **TanStack Intent** and **`@tanstack/cli`** for current docs.
 
-  **Swappable (interface-first or project choice — not prescribed here):**
+  **Swappable (not prescribed here):** runtime validation, database, auth mechanism, AI provider, observability vendors, UI kit, markdown renderer, lint/test/deploy tooling. Patterns stay interface-first (`Schema.parse()`, repository interfaces, `AIAdapterService`, `ObservabilityService`).
 
-  | Concern | Pattern in this skill | This template's choice | Swappable to |
-  |---------|----------------------|------------------------|--------------|
-  | Runtime validation | `Schema.parse()` at boundaries; one schema per wire shape | **`reference-tech-stack`** | ArkType, Valibot (TanStack adapters) |
-  | Database | `ReadRepository` / `WritableRepository` | **`reference-tech-stack`** | Postgres, SQLite, REST upstream, … |
-  | Auth | Middleware-built ticket + server-enforced guards | **`reference-tech-stack`** + AGENTS.md §5 | Sessions, OAuth, header JWT, … |
-  | AI provider | `AIAdapterService` | **`reference-tech-stack`** + AGENTS.md §8 | Anthropic, Gemini, OpenRouter, Ollama, … |
-  | Observability | `ObservabilityService`, env middleware | **`observability-and-env`** + **`reference-tech-stack`** | OpenTelemetry, other log/APM vendors |
-  | UI kit | Page components + project styling | **`reference-tech-stack`** + AGENTS.md §3 | Radix, Chakra, plain CSS, … |
-  | Markdown chat rendering | GFM contract (tables, links, code) | **`reference-tech-stack`** | Any GFM-capable library |
-  | Lint / test / deploy | Project tooling | **`reference-tech-stack`** + AGENTS.md §10–§17 | ESLint, other runners, Vercel/Node/Docker |
+  Concrete packages for *this* template: companion skill **`reference-tech-stack`**. Env/logging bootstrap: **`observability-and-env`**.
 
-  Pick **one validator library** per app and use it consistently across router search, server-fn validators, and AI tool schemas. Code samples below use **Zod as the reference syntax** (this template's choice — see **`reference-tech-stack`**); translate idioms when using ArkType or Valibot.
+  Pick **one validator library** per app and use it consistently across router search, server-fn validators, and AI tool schemas. Code samples below use **Zod as the reference syntax** (see **`reference-tech-stack`**); translate idioms when using ArkType or Valibot.
 
   ## Common failure modes (avoid these)
 

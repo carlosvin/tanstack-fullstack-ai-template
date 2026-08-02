@@ -2,13 +2,62 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
+import { formatCompanionInstallCommand, renderCompanionSkillsBlock } from './buildSkills.mjs'
 import { createSkillEvals, runSkillEvals } from './runSkillEvals.mjs'
 
 const createdDirs: string[] = []
 
+const FIXTURE_SKILLS = [
+	{
+		id: 'tanstack-promptable-fullstack-app-template',
+		companionSkills: [
+			{ id: 'observability-and-env', relationship: 'companion', summary: 'Env and logging companion.' },
+			{ id: 'reference-tech-stack', relationship: 'companion', summary: 'Opinionated package map.' },
+		],
+	},
+	{
+		id: 'observability-and-env',
+		companionSkills: [
+			{
+				id: 'tanstack-promptable-fullstack-app-template',
+				relationship: 'parent',
+				summary: 'Architecture parent skill.',
+			},
+			{ id: 'reference-tech-stack', relationship: 'companion', summary: 'Opinionated package map.' },
+		],
+	},
+	{
+		id: 'reference-tech-stack',
+		companionSkills: [
+			{
+				id: 'tanstack-promptable-fullstack-app-template',
+				relationship: 'parent',
+				summary: 'Architecture parent skill.',
+			},
+			{ id: 'observability-and-env', relationship: 'companion', summary: 'Env and logging companion.' },
+		],
+	},
+] as const
+
+function fixtureSkillMd(skill: (typeof FIXTURE_SKILLS)[number], extraSections = '') {
+	return `## Skill routing\n${renderCompanionSkillsBlock(skill)}${extraSections}`
+}
+
 async function createMinimalWorkspace(overrides = {}) {
 	const rootDir = await mkdtemp(path.join(os.tmpdir(), 'skill-eval-'))
 	createdDirs.push(rootDir)
+
+	const skillFiles = Object.fromEntries(
+		FIXTURE_SKILLS.map((skill) => {
+			const extra =
+				skill.id === 'tanstack-promptable-fullstack-app-template'
+					? '## Fixed vs swappable stack\n'
+					: skill.id === 'reference-tech-stack'
+						? '## Stack map\n'
+						: ''
+			return [`.agents/skills/${skill.id}/SKILL.md`, fixtureSkillMd(skill, extra)]
+		}),
+	)
 
 	const files = {
 		'src/env/webEnv.ts': 'export const webServerEnv = {}\nexport const shellSession = {}\n',
@@ -31,37 +80,8 @@ async function createMinimalWorkspace(overrides = {}) {
 		'AGENTS.md': '## Skill alignment roadmap\nPhase 3 chat gating is done.\n',
 		'src/routes/api/chat.ts': 'chat({ agentLoopStrategy: maxIterations(10) })\n',
 		'vite.config.ts': "tanstackStart({ importProtection: { behavior: 'error' } })\n",
-		'.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md':
-			'## Skill routing\n## Companion skills (install if missing)\nnpx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env\nnpx skills add carlosvin/tanstack-fullstack-ai-template --skill reference-tech-stack\n',
-		'.agents/skills/observability-and-env/SKILL.md':
-			'## Skill routing\n## Companion skills (install if missing)\nnpx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-promptable-fullstack-app-template\nnpx skills add carlosvin/tanstack-fullstack-ai-template --skill reference-tech-stack\n',
-		'.agents/skills/reference-tech-stack/SKILL.md':
-			'## Skill routing\n## Companion skills (install if missing)\nnpx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-promptable-fullstack-app-template\nnpx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env\n',
-		'skills/registry.json': JSON.stringify({
-			skills: [
-				{
-					id: 'tanstack-promptable-fullstack-app-template',
-					companionSkills: [
-						{ id: 'observability-and-env' },
-						{ id: 'reference-tech-stack' },
-					],
-				},
-				{
-					id: 'observability-and-env',
-					companionSkills: [
-						{ id: 'tanstack-promptable-fullstack-app-template' },
-						{ id: 'reference-tech-stack' },
-					],
-				},
-				{
-					id: 'reference-tech-stack',
-					companionSkills: [
-						{ id: 'tanstack-promptable-fullstack-app-template' },
-						{ id: 'observability-and-env' },
-					],
-				},
-			],
-		}),
+		...skillFiles,
+		'skills/registry.json': JSON.stringify({ skills: FIXTURE_SKILLS }),
 		'instrument.env.shared.mts': 'export const DeploymentEnvSchema = {}\n',
 		'instrument.env.mts': 'export function resolveSentryBootstrapEnv() {}\n',
 		'instrument.shared.mts': 'export function initSentry() {}\n',
@@ -85,11 +105,12 @@ afterEach(async () => {
 })
 
 describe('runSkillEvals', () => {
-	it('exposes architecture and observability eval suites', () => {
+	it('exposes architecture, observability, and reference-stack eval suites', () => {
 		const evals = createSkillEvals()
 		expect(evals.length).toBeGreaterThanOrEqual(10)
 		expect(evals.some((evalDef) => evalDef.skill === 'observability-and-env')).toBe(true)
 		expect(evals.some((evalDef) => evalDef.skill === 'tanstack-promptable-fullstack-app-template')).toBe(true)
+		expect(evals.some((evalDef) => evalDef.skill === 'reference-tech-stack')).toBe(true)
 	})
 
 	it('passes on the real workspace', async () => {
@@ -108,5 +129,9 @@ describe('runSkillEvals', () => {
 			'src/services/repository/mongoRepository.server.ts': 'return col.find() as Promise<TaskRepo[]>\n',
 		})
 		await expect(runSkillEvals({ rootDir, logger: { log() {} } })).rejects.toThrow(/Skill evals failed/)
+	})
+
+	it('uses shared companion install command helper', () => {
+		expect(formatCompanionInstallCommand('reference-tech-stack')).toContain('--skill reference-tech-stack')
 	})
 })

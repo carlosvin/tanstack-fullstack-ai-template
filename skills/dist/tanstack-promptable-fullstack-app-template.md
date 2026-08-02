@@ -11,7 +11,7 @@
 - Supported tools: Windsurf [native, tested], Cursor [copy, tested], Claude Code [copy, tested]
 - Capabilities: Interface-first boundaries with swappable implementations, Three schema layers with mandatory Schema.parse() at every boundary (tool→repo and repo→tool), Strong TypeScript in the typed flow — inference preserved via satisfies, unions, exhaustive switches; casts minimized, Loader-first routes and URL-driven state via validateSearch, Router config bundle (defaults + project Link wrapper preserving search params), Full AI tool coverage mirroring repository surface + client navigate/invalidate tools, Schema-first AI/UI metadata (.describe + optional .meta for unit/format/title), Promptable by default — getAIAvailability gating + browserContext + bounded agent loop, Auth ticket built in middleware via repository + TraceabilityContext on writes, Parent layout routes deduplicating shared beforeLoad and loaders, Optional patterns — overlay repo, bulk edit, distinct-values tools, dynamic route introspection, debounced free-text search, TanStack Intent + CLI as doc-aligned guidance (not duplicated command manuals), Assistant chat renders Markdown (GFM) — lists, tables, code blocks; internal links stay navigable, Server/client execution boundaries — isomorphic loaders, *.server.ts, createServerOnlyFn, import protection, Request context — middleware-inferred ctx.context, parse-don't-validate inside handlers; env/shellSession invariants (setup in observability-and-env)
 - ID: `tanstack-promptable-fullstack-app-template`
-- Version: `1.26.0`
+- Version: `1.27.0`
 - Tags: tanstack-start, fullstack, architecture, interface-first, repository-pattern, ai-promptable
 
 ## Summary
@@ -69,22 +69,13 @@ Use when scaffolding a new TanStack Start project, adding domain entities, imple
 
 ## Fixed vs swappable stack
 
-**Fixed by this skill (TanStack):** TanStack **Start** (server functions, middleware, SSR boundaries), **Router** (file routes, `validateSearch`, loaders, URL-as-state), **AI** (`chat()`, `toolDefinition`, client/server tools, SSE). Use **TanStack Intent** and **`@tanstack/cli`** for version-matched package skills and current docs.
+**Fixed by this skill (TanStack):** TanStack **Start**, **Router**, and **AI** (server functions, middleware, file routes, `validateSearch`, loaders, `chat()` / tools / SSE). Use **TanStack Intent** and **`@tanstack/cli`** for current docs.
 
-**Swappable (interface-first or project choice — not prescribed here):**
+**Swappable (not prescribed here):** runtime validation, database, auth mechanism, AI provider, observability vendors, UI kit, markdown renderer, lint/test/deploy tooling. Patterns stay interface-first (`Schema.parse()`, repository interfaces, `AIAdapterService`, `ObservabilityService`).
 
-| Concern | Pattern in this skill | This template's choice | Swappable to |
-|---------|----------------------|------------------------|--------------|
-| Runtime validation | `Schema.parse()` at boundaries; one schema per wire shape | **`reference-tech-stack`** | ArkType, Valibot (TanStack adapters) |
-| Database | `ReadRepository` / `WritableRepository` | **`reference-tech-stack`** | Postgres, SQLite, REST upstream, … |
-| Auth | Middleware-built ticket + server-enforced guards | **`reference-tech-stack`** + AGENTS.md §5 | Sessions, OAuth, header JWT, … |
-| AI provider | `AIAdapterService` | **`reference-tech-stack`** + AGENTS.md §8 | Anthropic, Gemini, OpenRouter, Ollama, … |
-| Observability | `ObservabilityService`, env middleware | **`observability-and-env`** + **`reference-tech-stack`** | OpenTelemetry, other log/APM vendors |
-| UI kit | Page components + project styling | **`reference-tech-stack`** + AGENTS.md §3 | Radix, Chakra, plain CSS, … |
-| Markdown chat rendering | GFM contract (tables, links, code) | **`reference-tech-stack`** | Any GFM-capable library |
-| Lint / test / deploy | Project tooling | **`reference-tech-stack`** + AGENTS.md §10–§17 | ESLint, other runners, Vercel/Node/Docker |
+Concrete packages for *this* template: companion skill **`reference-tech-stack`**. Env/logging bootstrap: **`observability-and-env`**.
 
-Pick **one validator library** per app and use it consistently across router search, server-fn validators, and AI tool schemas. Code samples below use **Zod as the reference syntax** (this template's choice — see **`reference-tech-stack`**); translate idioms when using ArkType or Valibot.
+Pick **one validator library** per app and use it consistently across router search, server-fn validators, and AI tool schemas. Code samples below use **Zod as the reference syntax** (see **`reference-tech-stack`**); translate idioms when using ArkType or Valibot.
 
 ## Common failure modes (avoid these)
 

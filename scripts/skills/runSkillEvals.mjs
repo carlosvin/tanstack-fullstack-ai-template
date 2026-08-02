@@ -2,6 +2,11 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import {
+	findMissingCompanionReciprocity,
+	formatCompanionInstallCommand,
+	getSkillPaths,
+} from './buildSkills.mjs'
 
 const defaultRootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
@@ -12,6 +17,18 @@ const PROCESS_ENV_ALLOWED = new Set([
 ])
 
 const PROCESS_ENV_ALLOWED_PREFIXES = ['e2e/', 'playwright.config.ts', 'instrument.env.test.ts']
+
+const ARCHITECTURE_VENDOR_FORBIDDEN = [
+	/\bMantine\b/i,
+	/@mantine\//,
+	/\bpino\b/i,
+	/\bSentry\b/,
+	/TextInput/,
+	/useDebouncedCallback/,
+	/react-markdown/,
+	/remark-gfm/,
+	/\bBiome\b/,
+]
 
 async function walkFiles(dir, options = {}) {
 	const { extensions = null, ignoreDirs = new Set(['node_modules', '.output', 'dist', '.git']) } = options
@@ -338,41 +355,50 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 			},
 		},
 		{
-			id: 'skills-companion-discovery',
+			id: 'skills-companion-and-routing',
 			skill: 'tanstack-promptable-fullstack-app-template',
-			description: 'registry.json lists bidirectional companionSkills; generated SKILL.md includes install commands',
+			description:
+				'registry companions are reciprocal; each generated SKILL.md has routing + companion install commands',
 			async run() {
-				const registryPath = path.join(rootDir, 'skills', 'registry.json')
+				const { registryPath, agentSkillsDir } = getSkillPaths(rootDir)
 				try {
 					await fs.access(registryPath)
 				} catch {
+					// App-only fixtures may omit the registry; skip metadata checks.
 					return pass()
 				}
 
 				const registry = JSON.parse(await readText(registryPath))
 				const skills = registry.skills ?? []
-				const byId = new Map(skills.map((skill) => [skill.id, skill]))
+				if (skills.length === 0) {
+					return fail('registry.json has no skills')
+				}
 
-				for (const skill of skills) {
-					for (const companion of skill.companionSkills ?? []) {
-						const other = byId.get(companion.id)
-						if (!other) {
-							return fail(`registry missing companion ${companion.id} for ${skill.id}`)
-						}
-						const reciprocal = (other.companionSkills ?? []).some((entry) => entry.id === skill.id)
-						if (!reciprocal) {
-							return fail(`${companion.id} does not reciprocate companion link to ${skill.id}`)
-						}
-					}
+				const missing = findMissingCompanionReciprocity(skills)
+				if (missing.length > 0) {
+					return fail(
+						'Companion skills must be reciprocal in registry.json',
+						missing.map((entry) => `${entry.skillId} → ${entry.companionId}: ${entry.reason}`),
+					)
 				}
 
 				for (const skill of skills) {
-					const skillMd = await readText(path.join(rootDir, '.agents', 'skills', skill.id, 'SKILL.md'))
+					const skillMdPath = path.join(agentSkillsDir, skill.id, 'SKILL.md')
+					try {
+						await fs.access(skillMdPath)
+					} catch {
+						return fail(`Missing SKILL.md for ${skill.id}`)
+					}
+					const skillMd = await readText(skillMdPath)
+					if (!/## Skill routing/.test(skillMd)) {
+						return fail(`SKILL.md for ${skill.id} missing Skill routing section`)
+					}
 					if (!/## Companion skills \(install if missing\)/.test(skillMd)) {
 						return fail(`SKILL.md for ${skill.id} missing companion install section`)
 					}
 					for (const companion of skill.companionSkills ?? []) {
-						if (!skillMd.includes(`npx skills add carlosvin/tanstack-fullstack-ai-template --skill ${companion.id}`)) {
+						const installCmd = formatCompanionInstallCommand(companion.id)
+						if (!skillMd.includes(installCmd)) {
 							return fail(`SKILL.md for ${skill.id} missing install command for ${companion.id}`)
 						}
 					}
@@ -382,58 +408,17 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 			},
 		},
 		{
-			id: 'skills-routing-tables',
-			skill: 'tanstack-promptable-fullstack-app-template',
-			description: 'Generated skills include Skill routing tables for agent load decisions',
-			async run() {
-				const registryPath = path.join(rootDir, 'skills', 'registry.json')
-				try {
-					await fs.access(registryPath)
-				} catch {
-					return fail('skills/registry.json missing')
-				}
-				const registry = JSON.parse(await readText(registryPath))
-				const skillIds = (registry.skills ?? []).map((skill) => skill.id)
-				if (skillIds.length === 0) {
-					return fail('registry.json has no skills')
-				}
-				for (const skillId of skillIds) {
-					const skillMdPath = path.join(rootDir, '.agents/skills', skillId, 'SKILL.md')
-					try {
-						await fs.access(skillMdPath)
-					} catch {
-						return fail(`Missing SKILL.md for ${skillId}`)
-					}
-					const skillMd = await readText(skillMdPath)
-					if (!/## Skill routing/.test(skillMd)) {
-						return fail(`SKILL.md for ${skillId} missing Skill routing section`)
-					}
-				}
-				return pass()
-			},
-		},
-		{
-			id: 'template-skill-ui-observability-agnostic',
+			id: 'template-skill-vendor-agnostic',
 			skill: 'tanstack-promptable-fullstack-app-template',
 			description:
-				'Architecture skill stays vendor-agnostic (UI, observability, validation prose) and documents swappable stack',
+				'Architecture skill stays vendor-agnostic and documents Fixed vs swappable stack',
 			async run() {
+				const { agentSkillsDir } = getSkillPaths(rootDir)
 				const templateSkill = await readText(
-					path.join(rootDir, '.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md'),
+					path.join(agentSkillsDir, 'tanstack-promptable-fullstack-app-template', 'SKILL.md'),
 				)
-				const forbidden = [
-					/\bMantine\b/i,
-					/@mantine\//,
-					/\bpino\b/i,
-					/\bSentry\b/,
-					/TextInput/,
-					/useDebouncedCallback/,
-					/react-markdown/,
-					/remark-gfm/,
-					/\bBiome\b/,
-				]
 				const violations = []
-				for (const pattern of forbidden) {
+				for (const pattern of ARCHITECTURE_VENDOR_FORBIDDEN) {
 					if (pattern.test(templateSkill)) {
 						violations.push(`SKILL.md matches ${pattern}`)
 					}
@@ -444,6 +429,25 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				return violations.length === 0
 					? pass()
 					: fail('Architecture skill must stay vendor-agnostic and document swappable stack', violations)
+			},
+		},
+		{
+			id: 'reference-tech-stack-map',
+			skill: 'reference-tech-stack',
+			description: 'Reference stack skill publishes a Stack map section',
+			async run() {
+				const { agentSkillsDir } = getSkillPaths(rootDir)
+				const skillMdPath = path.join(agentSkillsDir, 'reference-tech-stack', 'SKILL.md')
+				try {
+					await fs.access(skillMdPath)
+				} catch {
+					return fail('Missing .agents/skills/reference-tech-stack/SKILL.md')
+				}
+				const skillMd = await readText(skillMdPath)
+				if (!/## Stack map/.test(skillMd)) {
+					return fail('reference-tech-stack SKILL.md must include a Stack map section')
+				}
+				return pass()
 			},
 		},
 	]

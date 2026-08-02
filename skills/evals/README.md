@@ -5,9 +5,10 @@ Automated static checks that validate the **example app** against the generated 
 ## Commands
 
 ```bash
-pnpm test:skill-evals          # all evals (architecture + observability)
+pnpm test:skill-evals          # all evals
 pnpm test:skill-evals -- --skill observability-and-env
 pnpm test:skill-evals -- --skill tanstack-promptable-fullstack-app-template
+pnpm test:skill-evals -- --skill reference-tech-stack
 ```
 
 `pnpm lint` also runs skill evals after `skills:check`.
@@ -35,9 +36,12 @@ pnpm test:skill-evals -- --skill tanstack-promptable-fullstack-app-template
 - AGENTS.md does not claim chat UI always renders
 - Bounded agent loop in `chat.ts`
 - `importProtection` in `vite.config.ts`
-- Generated skills include **Skill routing** tables and **Companion skills (install if missing)** sections
-- Architecture skill documents **Fixed vs swappable stack** and stays vendor-agnostic in prose (UI, observability, markdown renderer, lint tools)
-- `reference-tech-stack` skill publishes the opinionated package map for this template
+- Generated skills: reciprocal companions, Skill routing, companion install commands
+- Architecture skill documents **Fixed vs swappable stack** and stays vendor-agnostic in prose
+
+### `reference-tech-stack`
+
+- Generated skill includes a **Stack map** section
 
 ## Manual pressure scenarios
 

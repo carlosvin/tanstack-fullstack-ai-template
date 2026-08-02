@@ -79,35 +79,11 @@ coupling into the architecture skill.
 
 ## How to use these defaults
 
-1. **Prefer the table above** when adding features to *this* repo or cloning the template as-is.
-2. **Do not invent a second library** for the same concern (e.g. do not add Radix beside Mantine, or ArkType beside Zod) unless you are intentionally migrating.
-3. **Keep interfaces:** swap Mongo → Postgres by implementing `ReadRepository` / `WritableRepository`; swap OpenAI by implementing `AIAdapterService`; swap Sentry/pino behind `ObservabilityService` + logger factories.
-4. **After a fork swap:** update this skill's Stack map and AGENTS.md; leave the architecture skill vendor-agnostic.
-
-## Mantine / UI conventions (reference)
-
-- Prefer Mantine components and style props (`c`, `fw`, `size`, `variant`) before custom CSS.
-- CSS Modules only when Mantine props are insufficient; use `--mantine-color-*` variables.
-- Support light and dark color schemes.
-- Debounced free-text search: uncontrolled input + `@mantine/hooks` `useDebouncedCallback` (see architecture skill **Special Patterns** for URL/`loaderDeps` rules).
-
-## Zod conventions (reference)
-
-- One tools-layer schema shared by `createServerFn` `.inputValidator` and AI `toolDefinition`.
-- Boundary mapping ends in `.parse()` both directions.
-- `.describe()` for AI/UI narrative; `.meta()` for structured extras (`unit`, `format`, `title`).
-- Closed vocabularies: `as const` tuple + `z.enum` + `z.infer<>`.
-
-## Forking away from a default
-
-| If you want… | Keep | Change |
-|--------------|------|--------|
-| ArkType / Valibot | Three schema layers + `Schema.parse()` contract | All schema modules; this skill; AGENTS.md |
-| Another UI kit | Thin routes + page components in `src/components/` | Components, theme, this skill §UI |
-| Postgres / other DB | Repository interfaces + `*.server.ts` | Implementations + factory + importProtection |
-| Different AI provider | `AIAdapterService` + tool coverage | `adapter.ts`, env vars, AGENTS.md §8 |
-| OpenTelemetry instead of Sentry | `ObservabilityService` + env middleware | `observability-and-env` impl + this stack row |
+1. Prefer the stack map when extending *this* repo or cloning the template as-is.
+2. Do not add a second library for the same concern unless you are intentionally migrating.
+3. Keep interfaces when swapping (repository, `AIAdapterService`, `ObservabilityService`); update this stack map and AGENTS.md; leave the architecture skill vendor-agnostic.
+4. UI and schema *how-to* live in AGENTS.md §3 / architecture skill — this skill only names packages.
 
 ## Verification
 
-After stack-affecting changes in this template repo: `pnpm skills:build`, `pnpm skills:check`, and AGENTS.md §15 (`pnpm format && pnpm lint && pnpm test && pnpm build`).
+After stack-affecting changes: `pnpm skills:build`, `pnpm skills:check`, and AGENTS.md §15.
