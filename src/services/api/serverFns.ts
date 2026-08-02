@@ -7,6 +7,7 @@ import { HttpError } from '../../utils/httpError'
 import { getAIAdapterService } from '../ai/adapter'
 import { getObservability } from '../observability'
 import { getReadRepository, getWritableRepository } from '../repository/getRepository.server'
+import { createWriteTrace, updateWriteTrace } from '../repository/traceability'
 import { TaskRepoFilterSchema, TaskRepoInputSchema } from '../schemas/repository'
 import {
 	TaskFilterSchema,
@@ -88,8 +89,9 @@ export const createTask = createServerFn({ method: 'POST' })
 	.inputValidator(TaskInputSchema)
 	.handler(async ({ data, context }) => {
 		const repoInput = TaskRepoInputSchema.parse(data)
+		const trace = createWriteTrace(context.user.email)
 		const row = await getObservability({}).startSpan('createTask', () =>
-			getWritableRepository().createTask(repoInput, { createdBy: context.user.email }),
+			getWritableRepository().createTask(repoInput, trace),
 		)
 		return toToolTask(row)
 	})
@@ -105,8 +107,9 @@ export const updateTask = createServerFn({ method: 'POST' })
 			throw new HttpError(403, 'Only the task creator can edit this task')
 		}
 		const repoUpdates = TaskRepoInputSchema.partial().parse(data.updates)
+		const trace = updateWriteTrace(context.user.email)
 		const row = await getObservability({}).startSpan('updateTask', () =>
-			getWritableRepository().updateTask(data.taskId, repoUpdates, { lastModifiedBy: context.user.email }),
+			getWritableRepository().updateTask(data.taskId, repoUpdates, trace),
 		)
 		return row ? toToolTask(row) : null
 	})

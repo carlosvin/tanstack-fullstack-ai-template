@@ -44,6 +44,7 @@ Each task has:
 - assignee: email of the assigned person
 - createdAt / updatedAt: timestamps
 - createdBy: email of the creator
+- lastModifiedBy: email of the last editor
 
 ## Links and navigation
 - Include clickable **markdown links** when you reference a page, task, or filtered list. Use real task ids from tool results — see **App Navigation** below for path examples.

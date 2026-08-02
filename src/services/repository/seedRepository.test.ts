@@ -66,16 +66,32 @@ describe('SeedRepository', () => {
 			expect(task.id).toBeTruthy()
 			expect(task.title).toBe('New task')
 			expect(task.createdBy).toBe('test@example.com')
+			expect(task.lastModifiedBy).toBe('test@example.com')
 			expect(task.createdAt).toBeTruthy()
+		})
+
+		it('prefers lastModifiedBy over createdBy on create when both are provided', async () => {
+			const task = await repo.createTask(
+				{ title: 'Attributed task', status: 'pending', priority: 'low' },
+				{ createdBy: 'creator@example.com', lastModifiedBy: 'editor@example.com' },
+			)
+			expect(task.createdBy).toBe('creator@example.com')
+			expect(task.lastModifiedBy).toBe('editor@example.com')
 		})
 	})
 
 	describe('updateTask', () => {
-		it('updates a task and changes updatedAt', async () => {
+		it('updates a task and persists lastModifiedBy from TraceabilityContext', async () => {
 			const before = await repo.getTask('task-1')
-			const updated = await repo.updateTask('task-1', { title: 'Updated title' })
+			const updated = await repo.updateTask(
+				'task-1',
+				{ title: 'Updated title' },
+				{ lastModifiedBy: 'editor@example.com' },
+			)
 			expect(updated?.title).toBe('Updated title')
 			expect(updated?.updatedAt).not.toBe(before?.updatedAt)
+			expect(updated?.lastModifiedBy).toBe('editor@example.com')
+			expect(updated?.createdBy).toBe(before?.createdBy)
 		})
 
 		it('returns null for unknown task', async () => {

@@ -13,6 +13,7 @@ export function toToolTask(row: TaskRepo) {
 		createdAt: row.createdAt,
 		updatedAt: row.updatedAt,
 		createdBy: row.createdBy,
+		lastModifiedBy: row.lastModifiedBy,
 	})
 }
 
