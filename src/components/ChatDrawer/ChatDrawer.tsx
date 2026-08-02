@@ -80,6 +80,13 @@ interface ChatDrawerProps {
 /** Maps tool call names to user-friendly loading labels. */
 function getToolLabel(toolName: string): string {
 	const labels: Record<string, string> = {
+		getAppMetadata: 'loading app metadata',
+		getSchemaMetadata: 'loading schema metadata',
+		getToolCatalog: 'loading tool catalog',
+		getNavigationMetadata: 'loading navigation info',
+		getVocabularies: 'loading vocabularies',
+		getCapabilities: 'loading capabilities',
+		explainField: 'explaining field',
 		getTasks: 'searching tasks',
 		getTask: 'loading task details',
 		getAssignees: 'checking assignees',

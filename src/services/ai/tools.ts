@@ -9,17 +9,29 @@
  */
 import { toolDefinition } from '@tanstack/ai'
 import { z } from 'zod'
-import { TASK_PRIORITIES, TASK_STATUSES } from '../../constants/options'
 import {
 	createTask,
 	deleteTask,
+	explainField,
+	getAppMetadata,
 	getAssignees,
+	getCapabilities,
 	getCurrentUser,
+	getNavigationMetadata,
+	getSchemaMetadata,
 	getTask,
 	getTasks,
+	getToolCatalog,
 	getUserProfile,
+	getVocabularies,
 	updateTask,
 } from '../api/serverFns'
+import {
+	ExplainFieldInputSchema,
+	MetadataSectionsInputSchema,
+	NavigateInputSchema,
+	SchemaMetadataInputSchema,
+} from '../schemas/metadataSchemas'
 import {
 	TaskFilterSchema,
 	TaskIdInputSchema,
@@ -28,6 +40,8 @@ import {
 	UserProfileByEmailSchema,
 } from '../schemas/schemas'
 import { createSafeServerTool } from './serverTool'
+
+export { NavigateInputSchema } from '../schemas/metadataSchemas'
 
 // ---------------------------------------------------------------------------
 // Tasks (queries)
@@ -54,6 +68,88 @@ const getTaskToolDef = toolDefinition({
 /** AI server tool: fetch a single task by ID. */
 export const getTaskTool = createSafeServerTool(getTaskToolDef, async (args) =>
 	getTask({ data: TaskIdInputSchema.parse(args) }),
+)
+
+// ---------------------------------------------------------------------------
+// Metadata introspection
+// ---------------------------------------------------------------------------
+
+const getAppMetadataToolDef = toolDefinition({
+	name: 'getAppMetadata',
+	description:
+		'Get comprehensive app metadata: schemas, navigation, vocabularies, tool catalog, capabilities, and runtime info. Use when you need to understand the app structure, data model, or available tools.',
+	inputSchema: MetadataSectionsInputSchema,
+})
+
+/** AI server tool: bundled app metadata with optional section filter. */
+export const getAppMetadataTool = createSafeServerTool(getAppMetadataToolDef, async (args) =>
+	getAppMetadata({ data: MetadataSectionsInputSchema.parse(args) }),
+)
+
+const getSchemaMetadataToolDef = toolDefinition({
+	name: 'getSchemaMetadata',
+	description:
+		'Get JSON Schema metadata for domain entities (Task, TaskInput, TaskFilter, etc.). Includes field descriptions, types, and enum values. Use to understand the data model before querying or mutating.',
+	inputSchema: SchemaMetadataInputSchema,
+})
+
+/** AI server tool: JSON Schema metadata for one or all domain schemas. */
+export const getSchemaMetadataTool = createSafeServerTool(getSchemaMetadataToolDef, async (args) =>
+	getSchemaMetadata({ data: SchemaMetadataInputSchema.parse(args) }),
+)
+
+const getToolCatalogToolDef = toolDefinition({
+	name: 'getToolCatalog',
+	description:
+		'List all AI tools with names, descriptions, categories, execution type (server/client), and input JSON Schemas. Use to discover what tools are available.',
+	inputSchema: z.object({}),
+})
+
+/** AI server tool: introspect the full AI tool catalog. */
+export const getToolCatalogTool = createSafeServerTool(getToolCatalogToolDef, async () => getToolCatalog())
+
+const getNavigationMetadataToolDef = toolDefinition({
+	name: 'getNavigationMetadata',
+	description:
+		'Get user-facing routes, path patterns, and search/query parameters. Use before navigating or building links.',
+	inputSchema: z.object({}),
+})
+
+/** AI server tool: app navigation structure for links and the navigate client tool. */
+export const getNavigationMetadataTool = createSafeServerTool(getNavigationMetadataToolDef, async () =>
+	getNavigationMetadata(),
+)
+
+const getVocabulariesToolDef = toolDefinition({
+	name: 'getVocabularies',
+	description:
+		'Get closed vocabularies: task statuses (pending, in-progress, done, cancelled) and priorities (low, medium, high, critical) with JSON Schema metadata.',
+	inputSchema: z.object({}),
+})
+
+/** AI server tool: enum vocabularies for filters and task fields. */
+export const getVocabulariesTool = createSafeServerTool(getVocabulariesToolDef, async () => getVocabularies())
+
+const getCapabilitiesToolDef = toolDefinition({
+	name: 'getCapabilities',
+	description:
+		'Get what anonymous and authenticated users can do: read tasks, create/edit/delete, use AI chat. Use before mutations to explain permission errors.',
+	inputSchema: z.object({}),
+})
+
+/** AI server tool: permission and capability rules. */
+export const getCapabilitiesTool = createSafeServerTool(getCapabilitiesToolDef, async () => getCapabilities())
+
+const explainFieldToolDef = toolDefinition({
+	name: 'explainField',
+	description:
+		'Explain a virtual or computed concept not fully captured in entity schemas (e.g. task.permissions, app.auth). Returns null with available fields when unknown.',
+	inputSchema: ExplainFieldInputSchema,
+})
+
+/** AI server tool: explain virtual/computed fields. */
+export const explainFieldTool = createSafeServerTool(explainFieldToolDef, async (args) =>
+	explainField({ data: ExplainFieldInputSchema.parse(args) }),
 )
 
 // ---------------------------------------------------------------------------
@@ -88,20 +184,6 @@ export const getUserProfileTool = createSafeServerTool(getUserProfileToolDef, as
 // ---------------------------------------------------------------------------
 // Client tools — definition-only (implementations in ChatDrawer.tsx)
 // ---------------------------------------------------------------------------
-
-const NavigateSearchSchema = z
-	.object({
-		status: z.enum(TASK_STATUSES).optional().describe('Filter by status'),
-		priority: z.enum(TASK_PRIORITIES).optional().describe('Filter by priority'),
-		search: z.string().optional().describe('Full-text search over tasks'),
-	})
-	.optional()
-
-/** Input schema for the navigate client tool. */
-export const NavigateInputSchema = z.object({
-	to: z.string().describe('Path to navigate to (e.g. /, /tasks, /tasks/123)'),
-	search: NavigateSearchSchema.describe('Optional query params for /tasks (status, priority, search)'),
-})
 
 /** AI client tool definition: trigger in-app navigation. Implementation in ChatDrawer.tsx. */
 export const navigateToolDef = toolDefinition({

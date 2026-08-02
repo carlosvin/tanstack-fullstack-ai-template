@@ -5,11 +5,18 @@ import { getNavigationPromptSection } from '../../services/ai/navigationManifest
 import {
 	createTaskTool,
 	deleteTaskTool,
+	explainFieldTool,
+	getAppMetadataTool,
 	getAssigneesTool,
+	getCapabilitiesTool,
 	getCurrentUserContextTool,
+	getNavigationMetadataTool,
+	getSchemaMetadataTool,
 	getTasksTool,
 	getTaskTool,
+	getToolCatalogTool,
 	getUserProfileTool,
+	getVocabulariesTool,
 	invalidateRouterToolDef,
 	navigateToolDef,
 	updateTaskTool,
@@ -31,6 +38,7 @@ const BASE_SYSTEM_PROMPT = `You are a helpful task management assistant. You hav
 - Create, update, and delete tasks (when the user is allowed)
 - Check who is logged in and what they can do (getCurrentUserContext)
 - Refresh the page data after mutations (use the invalidateRouter tool)
+- **Introspect app metadata** — use getAppMetadata, getSchemaMetadata, getToolCatalog, getNavigationMetadata, getVocabularies, getCapabilities, or explainField when you need the data model, routes, vocabularies, available tools, or permission rules
 
 ## Data Model
 Each task has:
@@ -148,6 +156,13 @@ export const Route = createFileRoute('/api/chat')({
 
 				const systemPrompt = buildSystemPrompt(user, userProfile, browserContext)
 				const tools = [
+					getAppMetadataTool,
+					getSchemaMetadataTool,
+					getToolCatalogTool,
+					getNavigationMetadataTool,
+					getVocabulariesTool,
+					getCapabilitiesTool,
+					explainFieldTool,
 					getTasksTool,
 					getTaskTool,
 					getAssigneesTool,

@@ -5,8 +5,22 @@ import { requireAuthMiddleware } from '../../middleware/requireAuth'
 import { webEnvMiddleware } from '../../middleware/webEnv'
 import { HttpError } from '../../utils/httpError'
 import { getAIAdapterService } from '../ai/adapter'
+import {
+	buildAppMetadata,
+	buildCapabilitiesMetadata,
+	buildFieldExplanation,
+	buildNavigationMetadata,
+	buildSchemaMetadata,
+	buildToolCatalogMetadata,
+	buildVocabulariesMetadata,
+} from '../metadata/buildAppMetadata'
 import { getObservability } from '../observability'
 import { getReadRepository, getWritableRepository } from '../repository/getRepository.server'
+import {
+	ExplainFieldInputSchema,
+	MetadataSectionsInputSchema,
+	SchemaMetadataInputSchema,
+} from '../schemas/metadataSchemas'
 import { TaskRepoFilterSchema, TaskRepoInputSchema } from '../schemas/repository'
 import {
 	TaskFilterSchema,
@@ -64,6 +78,37 @@ export const getAIAvailability = createServerFn({ method: 'GET' })
 	.handler(async () => ({
 		available: getAIAdapterService().isConfigured(),
 	}))
+
+// ============================================================================
+// Metadata introspection (GET) — schemas, navigation, tools, capabilities
+// ============================================================================
+
+/** Comprehensive app metadata bundle. Optionally filter by section. */
+export const getAppMetadata = createServerFn({ method: 'GET' })
+	.inputValidator(MetadataSectionsInputSchema.optional())
+	.handler(async ({ data }) => buildAppMetadata(data?.sections))
+
+/** JSON Schema metadata for one or all registered domain schemas. */
+export const getSchemaMetadata = createServerFn({ method: 'GET' })
+	.inputValidator(SchemaMetadataInputSchema.optional())
+	.handler(async ({ data }) => buildSchemaMetadata(data?.schemaName))
+
+/** Full AI tool catalog with input JSON Schemas. */
+export const getToolCatalog = createServerFn({ method: 'GET' }).handler(async () => buildToolCatalogMetadata())
+
+/** User-facing routes and search parameters. */
+export const getNavigationMetadata = createServerFn({ method: 'GET' }).handler(async () => buildNavigationMetadata())
+
+/** Closed vocabularies (statuses, priorities) with JSON Schema. */
+export const getVocabularies = createServerFn({ method: 'GET' }).handler(async () => buildVocabulariesMetadata())
+
+/** Permission and capability rules for anonymous and authenticated users. */
+export const getCapabilities = createServerFn({ method: 'GET' }).handler(async () => buildCapabilitiesMetadata())
+
+/** Explain a virtual or computed field not fully described by entity schemas. */
+export const explainField = createServerFn({ method: 'GET' })
+	.inputValidator(ExplainFieldInputSchema)
+	.handler(async ({ data }) => buildFieldExplanation(data.entity, data.field))
 
 // ============================================================================
 // Current user — identity + profile from middleware context
