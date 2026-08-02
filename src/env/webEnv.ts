@@ -2,6 +2,8 @@ import { config } from 'dotenv'
 import { z } from 'zod'
 import pkg from '../../package.json' with { type: 'json' }
 
+const appDisplayName = (pkg as { displayName?: string }).displayName ?? pkg.name
+
 import { OptionalDeploymentEnvSchema, OptionalLogLevelSchema, OptionalTrimmedStringSchema } from './runtimeEnvSchema'
 
 /** Load local `.env` files before the one-time Zod parse (Vite also loads them during dev/build). */
@@ -11,7 +13,7 @@ function loadLocalEnvFiles(): void {
 }
 
 export const AppMetaSchema = z.object({
-	name: z.string().min(1).describe('Application name from package.json'),
+	name: z.string().min(1).describe('Human-readable application name (package.json displayName, or name as fallback).'),
 	version: z.string().min(1).describe('Application version from package.json'),
 })
 
@@ -86,7 +88,7 @@ export function getShellSession(): ShellSession {
 			ENV: env.ENV,
 			LOG_LEVEL: env.LOG_LEVEL,
 			SENTRY_DSN: env.SENTRY_DSN,
-			app: { name: pkg.name, version: pkg.version },
+			app: { name: appDisplayName, version: pkg.version },
 		})
 	}
 	return cachedShellSession

@@ -1,5 +1,6 @@
 {
 	"name": "tanstack-fullstack-template",
+	"displayName": "TaskHub",
 	"private": true,
 	"type": "module",
 	"version": "0.1.0",

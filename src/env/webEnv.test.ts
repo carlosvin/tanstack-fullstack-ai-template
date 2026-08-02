@@ -6,7 +6,8 @@ describe('webEnv', () => {
 	it('builds shellSession from webServerEnv and package.json once', () => {
 		const env = getWebServerEnv()
 		const session = getShellSession()
-		expect(session.app).toEqual({ name: pkg.name, version: pkg.version })
+		const expectedName = (pkg as { displayName?: string }).displayName ?? pkg.name
+		expect(session.app).toEqual({ name: expectedName, version: pkg.version })
 		expect(session.ENV).toBe(env.ENV)
 		expect(session.LOG_LEVEL).toBe(env.LOG_LEVEL)
 		expect(session.SENTRY_DSN).toBe(env.SENTRY_DSN)
