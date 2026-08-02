@@ -364,7 +364,7 @@ Handled by the [observability-and-env skill](.agents/skills/observability-and-en
 
 ## 14. Special Patterns
 
-Bulk edit (URL multi-select), overlay repository, distinct-values tools, help surface, controlled components: [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) **Special Patterns** and **Core Contract** #7–8.
+Bulk edit (URL multi-select), overlay repository, distinct-values tools, help surface, controlled components, debounced free-text search (uncontrolled input + `useDebouncedCallback`): [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) **Special Patterns** and **Core Contract** #7–8.
 
 ## 15. Validate Changes
 
