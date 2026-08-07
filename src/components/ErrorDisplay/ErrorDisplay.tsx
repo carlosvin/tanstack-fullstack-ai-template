@@ -1,6 +1,6 @@
-import { Button, Container, Stack, Text, Title } from '@mantine/core'
+import { Alert, Button, Container, Stack, Title } from '@mantine/core'
 import { useRouter } from '@tanstack/react-router'
-import { AlertTriangle, Home } from 'lucide-react'
+import { Home } from 'lucide-react'
 
 interface ErrorDisplayProps {
 	error: Error
@@ -12,10 +12,11 @@ export function ErrorDisplay({ error }: ErrorDisplayProps) {
 
 	return (
 		<Container size="sm" py="xl">
-			<Stack align="center" gap="lg" ta="center">
-				<AlertTriangle size={48} />
+			<Stack align="center" gap="lg">
 				<Title order={2}>Something went wrong</Title>
-				<Text c="dimmed">{error.message || 'An unexpected error occurred.'}</Text>
+				<Alert variant="light" color="red" title="Error" w="100%">
+					{error.message || 'An unexpected error occurred.'}
+				</Alert>
 				<Button leftSection={<Home size={16} />} onClick={() => router.navigate({ to: '/' })}>
 					Back to Home
 				</Button>

@@ -5,6 +5,7 @@ import { ArrowLeft, Calendar, Pencil, Trash2, User } from 'lucide-react'
 import { Link } from '../../components/Link/Link'
 import { processResponse } from '../../services/api/processResponse'
 import { deleteTask, getTask } from '../../services/api/serverFns'
+import { confirmDelete } from '../../utils/confirmDelete'
 import { priorityColor, statusColor } from '../../utils/taskDisplay'
 
 export const Route = createFileRoute('/tasks/$taskId')({
@@ -38,18 +39,19 @@ function TaskDetailPage() {
 		)
 	}
 
-	const handleDeleteClick = async () => {
-		if (!window.confirm(`Delete "${task.title}"?`)) return
-		const taskId = task.id
-		// Leave the detail route before delete + router invalidation so we do not
-		// reload this loader for a task that no longer exists.
-		await router.navigate({ to: '/tasks', replace: true })
-		const result = await processResponse(() => deleteTask({ data: { taskId } }))
-		if (result.error) {
-			notifications.show({ message: result.error.message, color: 'red' })
-			return
-		}
-		notifications.show({ message: 'Task deleted', color: 'green' })
+	const handleDeleteClick = () => {
+		confirmDelete(task.title, async () => {
+			const taskId = task.id
+			// Leave the detail route before delete + router invalidation so we do not
+			// reload this loader for a task that no longer exists.
+			await router.navigate({ to: '/tasks', replace: true })
+			const result = await processResponse(() => deleteTask({ data: { taskId } }))
+			if (result.error) {
+				notifications.show({ message: result.error.message, color: 'red' })
+				return
+			}
+			notifications.show({ message: 'Task deleted', color: 'green' })
+		})
 	}
 
 	return (

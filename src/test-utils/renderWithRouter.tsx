@@ -1,4 +1,5 @@
 import { MantineProvider } from '@mantine/core'
+import { ModalsProvider } from '@mantine/modals'
 import { render } from '@testing-library/react'
 import type { ReactNode } from 'react'
 
@@ -18,5 +19,9 @@ import type { ReactNode } from 'react'
  * ```
  */
 export function renderWithProviders(ui: ReactNode) {
-	return render(<MantineProvider>{ui}</MantineProvider>)
+	return render(
+		<MantineProvider>
+			<ModalsProvider>{ui}</ModalsProvider>
+		</MantineProvider>,
+	)
 }

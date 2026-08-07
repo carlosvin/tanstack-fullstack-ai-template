@@ -1,4 +1,17 @@
-import { ActionIcon, Badge, Button, Card, Container, Group, Select, Stack, Text, TextInput, Title } from '@mantine/core'
+import {
+	ActionIcon,
+	Badge,
+	Button,
+	Card,
+	Container,
+	Flex,
+	Group,
+	Select,
+	Stack,
+	Text,
+	TextInput,
+	Title,
+} from '@mantine/core'
 import { useDebouncedCallback } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import { createFileRoute, Outlet, useLoaderData, useNavigate } from '@tanstack/react-router'
@@ -9,6 +22,7 @@ import { TASK_PRIORITIES, TASK_STATUSES } from '../../constants/options'
 import { processResponse } from '../../services/api/processResponse'
 import { deleteTask, getTasks } from '../../services/api/serverFns'
 import type { Task } from '../../types'
+import { confirmDelete } from '../../utils/confirmDelete'
 import { priorityColor, statusColor } from '../../utils/taskDisplay'
 
 const TasksSearchSchema = z.object({
@@ -50,14 +64,15 @@ function TasksPage() {
 	}, 300)
 
 	const handleDeleteClick = (task: Task) => {
-		if (!window.confirm(`Delete "${task.title}"?`)) return
-		processResponse(() => deleteTask({ data: { taskId: task.id } })).then((result) => {
-			if (result.error) {
-				notifications.show({ message: result.error.message, color: 'red' })
-				return
-			}
-			notifications.show({ message: 'Task deleted', color: 'green' })
-		})
+		confirmDelete(task.title, () =>
+			processResponse(() => deleteTask({ data: { taskId: task.id } })).then((result) => {
+				if (result.error) {
+					notifications.show({ message: result.error.message, color: 'red' })
+					return
+				}
+				notifications.show({ message: 'Task deleted', color: 'green' })
+			}),
+		)
 	}
 
 	return (
@@ -77,13 +92,13 @@ function TasksPage() {
 					)}
 				</Group>
 
-				<Group gap="sm">
+				<Flex gap="sm" align="flex-end">
 					<TextInput
 						placeholder="Search tasks..."
 						leftSection={<Search size={16} />}
 						defaultValue={urlSearch}
 						onChange={(e) => debouncedSearch(e.currentTarget.value)}
-						style={{ flex: 1 }}
+						flex={1}
 					/>
 					<Select
 						placeholder="Status"
@@ -101,7 +116,7 @@ function TasksPage() {
 						onChange={(val) => updateSearch({ priority: (val as (typeof TASK_PRIORITIES)[number]) || undefined })}
 						w={150}
 					/>
-				</Group>
+				</Flex>
 
 				{tasks.length === 0 ? (
 					<Text c="dimmed" ta="center" py="xl">
