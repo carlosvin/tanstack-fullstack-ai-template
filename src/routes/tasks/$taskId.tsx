@@ -38,16 +38,18 @@ function TaskDetailPage() {
 		)
 	}
 
-	const handleDeleteClick = () => {
+	const handleDeleteClick = async () => {
 		if (!window.confirm(`Delete "${task.title}"?`)) return
-		processResponse(() => deleteTask({ data: { taskId: task.id } })).then((result) => {
-			if (result.error) {
-				notifications.show({ message: result.error.message, color: 'red' })
-				return
-			}
-			notifications.show({ message: 'Task deleted', color: 'green' })
-			router.navigate({ to: '/tasks' })
-		})
+		const taskId = task.id
+		// Leave the detail route before delete + router invalidation so we do not
+		// reload this loader for a task that no longer exists.
+		await router.navigate({ to: '/tasks', replace: true })
+		const result = await processResponse(() => deleteTask({ data: { taskId } }))
+		if (result.error) {
+			notifications.show({ message: result.error.message, color: 'red' })
+			return
+		}
+		notifications.show({ message: 'Task deleted', color: 'green' })
 	}
 
 	return (
