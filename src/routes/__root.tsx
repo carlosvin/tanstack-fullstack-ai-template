@@ -2,6 +2,7 @@ import '@mantine/core/styles.css'
 import '@mantine/notifications/styles.css'
 import '../styles.css'
 import { Button, ColorSchemeScript, Container, createTheme, MantineProvider, Stack, Text, Title } from '@mantine/core'
+import { ModalsProvider } from '@mantine/modals'
 import { Notifications } from '@mantine/notifications'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { createRootRoute, HeadContent, Scripts, useRouter } from '@tanstack/react-router'
@@ -83,10 +84,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			</head>
 			<body>
 				<MantineProvider defaultColorScheme="auto" theme={theme}>
-					<Notifications position="top-right" />
-					<AppLayout currentUser={currentUser} shellSession={shellSession} aiAvailable={aiAvailable}>
-						{children}
-					</AppLayout>
+					<ModalsProvider>
+						<Notifications position="top-right" />
+						<AppLayout currentUser={currentUser} shellSession={shellSession} aiAvailable={aiAvailable}>
+							{children}
+						</AppLayout>
+					</ModalsProvider>
 				</MantineProvider>
 				<TanStackDevtools
 					config={{ position: 'bottom-right' }}

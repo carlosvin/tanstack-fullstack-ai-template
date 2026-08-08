@@ -1,5 +1,5 @@
 import { expect, test } from './auth'
-import { selectMantineOption } from './helpers'
+import { confirmMantineDelete, selectMantineOption } from './helpers'
 
 const runId = Date.now()
 const CREATED_TASK_TITLE = `E2E CRUD ${runId}`
@@ -71,10 +71,8 @@ test.describe('Task CRUD (authenticated as Alice)', () => {
 		await expect(detailCard.getByText('done', { exact: true })).toBeVisible()
 		await expect(detailCard.getByText('critical', { exact: true })).toBeVisible()
 
-		await page.evaluate(() => {
-			window.confirm = () => true
-		})
 		await page.locator('main').getByRole('button', { name: 'Delete', exact: true }).click()
+		await confirmMantineDelete(page)
 		await page.waitForURL(/\/tasks\/?$/, { timeout: 10_000 })
 		await expect(page.getByText(UPDATED_TASK_TITLE)).not.toBeVisible()
 	})

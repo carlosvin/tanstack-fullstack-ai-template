@@ -25,9 +25,6 @@ export const test = base.extend<AuthFixtures>({
 	},
 	authedPage: async ({ authedContext }, use) => {
 		const page = await authedContext.newPage()
-		await page.addInitScript(() => {
-			window.confirm = () => true
-		})
 		await use(page)
 	},
 })
