@@ -29,6 +29,16 @@ export const UserProfileRepoSchema = z.object({
 
 export type UserProfileRepo = z.infer<typeof UserProfileRepoSchema>
 
+/** Repository-backed access record used to build the request auth ticket. */
+export const UserAccessRepoSchema = z.object({
+	email: z.string(),
+	name: z.string(),
+	role: z.string().optional(),
+	roles: z.array(z.string()).default([]),
+})
+
+export type UserAccessRepo = z.infer<typeof UserAccessRepoSchema>
+
 // ---------------------------------------------------------------------------
 // Task (persisted document shape)
 // ---------------------------------------------------------------------------

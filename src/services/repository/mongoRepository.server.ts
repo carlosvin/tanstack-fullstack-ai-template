@@ -1,7 +1,7 @@
 import type { Collection, Db, Filter } from 'mongodb'
 import { getDb } from '../db/mongoClient.server'
 import { parseTaskRepo, parseTaskRepoOrNull, parseUserProfileRepoOrNull } from '../schemas/repoParsers'
-import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserProfileRepo } from '../schemas/repository'
+import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserAccessRepo, UserProfileRepo } from '../schemas/repository'
 import { resolveCreateLastModifiedBy } from './traceability'
 import type { DistinctValueField, Repository, TraceabilityContext } from './types'
 
@@ -62,6 +62,17 @@ export class MongoRepository implements Repository {
 		const col = db.collection<UserProfileRepo>(USERS_COLLECTION)
 		const row = await col.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } })
 		return parseUserProfileRepoOrNull(row)
+	}
+
+	async getUserAccess(email: string): Promise<UserAccessRepo | null> {
+		const profile = await this.getUserProfile(email)
+		if (!profile) return null
+		return {
+			email: profile.email,
+			name: profile.name,
+			role: profile.role,
+			roles: profile.role ? [profile.role] : [],
+		}
 	}
 
 	async createTask(input: TaskRepoInput, trace?: TraceabilityContext): Promise<TaskRepo> {

@@ -10,6 +10,7 @@ import {
 	getDistinctValuesTool,
 	getTasksTool,
 	getTaskTool,
+	getUserAccessTool,
 	getUserProfileTool,
 	invalidateRouterToolDef,
 	navigateToolDef,
@@ -146,17 +147,23 @@ export const Route = createFileRoute('/api/chat')({
 
 				const body = await request.json()
 
-				const { user, userProfile, isTestUser } = context
+				const { accessTicket } = context
 
 				const browserContextResult = BrowserContextSchema.safeParse(body.browserContext)
 				const browserContext: BrowserContext | null = browserContextResult.success ? browserContextResult.data : null
 
-				const systemPrompt = buildSystemPrompt(user, userProfile, browserContext, isTestUser)
+				const systemPrompt = buildSystemPrompt(
+					accessTicket.identity,
+					accessTicket.profile,
+					browserContext,
+					accessTicket.isTestUser,
+				)
 				const tools = [
 					getTasksTool,
 					getTaskTool,
 					getDistinctValuesTool,
 					getUserProfileTool,
+					getUserAccessTool,
 					getAppRuntimeInfoTool,
 					getCurrentUserContextTool,
 					createTaskTool,

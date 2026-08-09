@@ -8,7 +8,7 @@ import { getAIAdapterService } from '../ai/adapter'
 import { getObservability } from '../observability'
 import { getReadRepository, getWritableRepository } from '../repository/getRepository.server'
 import { createWriteTrace, updateWriteTrace } from '../repository/traceability'
-import { TaskRepoFilterSchema, TaskRepoInputSchema } from '../schemas/repository'
+import { TaskRepoFilterSchema, TaskRepoInputSchema, UserAccessRepoSchema } from '../schemas/repository'
 import {
 	CurrentUserSchema,
 	DistinctValuesInputSchema,
@@ -58,6 +58,16 @@ export const getUserProfile = createServerFn({ method: 'GET' })
 		return row ? toToolUserProfile(row) : null
 	})
 
+/** Fetch repository-backed access roles for a user email. */
+export const getUserAccess = createServerFn({ method: 'GET' })
+	.inputValidator(UserProfileByEmailSchema)
+	.handler(async ({ data }) => {
+		const row = await getObservability({}).startSpan('getUserAccess', () =>
+			getReadRepository().getUserAccess(data.email),
+		)
+		return row ? UserAccessRepoSchema.parse(row) : null
+	})
+
 /** Browser-safe shell session for the root loader. */
 export const getBrowserShellSession = createServerFn({ method: 'GET' })
 	.middleware([webEnvMiddleware])
@@ -79,9 +89,9 @@ export const getCurrentUser = createServerFn({ method: 'GET' })
 	.middleware([authMiddleware])
 	.handler(async ({ context }) =>
 		CurrentUserSchema.parse({
-			identity: context.user,
-			profile: context.userProfile,
-			isTestUser: context.isTestUser,
+			identity: context.accessTicket.identity,
+			profile: context.accessTicket.profile,
+			isTestUser: context.accessTicket.isTestUser,
 		}),
 	)
 
@@ -97,7 +107,7 @@ export const createTask = createServerFn({ method: 'POST' })
 	.inputValidator(TaskInputSchema)
 	.handler(async ({ data, context }) => {
 		const repoInput = TaskRepoInputSchema.parse(data)
-		const trace = createWriteTrace(context.user.email)
+		const trace = createWriteTrace(context.accessTicket.identity.email)
 		const row = await getObservability({}).startSpan('createTask', () =>
 			getWritableRepository().createTask(repoInput, trace),
 		)
@@ -111,11 +121,9 @@ export const updateTask = createServerFn({ method: 'POST' })
 	.handler(async ({ data, context }) => {
 		const task = await getReadRepository().getTask(data.taskId)
 		if (!task) throw new HttpError(404, 'Task not found')
-		if (task.createdBy && task.createdBy !== context.user.email) {
-			throw new HttpError(403, 'Only the task creator can edit this task')
-		}
+		context.accessTicket.requireTaskCreator(task)
 		const repoUpdates = TaskRepoInputSchema.partial().parse(data.updates)
-		const trace = updateWriteTrace(context.user.email)
+		const trace = updateWriteTrace(context.accessTicket.identity.email)
 		const row = await getObservability({}).startSpan('updateTask', () =>
 			getWritableRepository().updateTask(data.taskId, repoUpdates, trace),
 		)
@@ -129,8 +137,6 @@ export const deleteTask = createServerFn({ method: 'POST' })
 	.handler(async ({ data, context }) => {
 		const task = await getReadRepository().getTask(data.taskId)
 		if (!task) throw new HttpError(404, 'Task not found')
-		if (task.createdBy && task.createdBy !== context.user.email) {
-			throw new HttpError(403, 'Only the task creator can delete this task')
-		}
+		context.accessTicket.requireTaskCreator(task)
 		return getObservability({}).startSpan('deleteTask', () => getWritableRepository().deleteTask(data.taskId))
 	})

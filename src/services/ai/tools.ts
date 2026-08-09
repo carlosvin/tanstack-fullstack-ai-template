@@ -18,6 +18,7 @@ import {
 	getDistinctValues,
 	getTask,
 	getTasks,
+	getUserAccess,
 	getUserProfile,
 	updateTask,
 } from '../api/serverFns'
@@ -91,6 +92,18 @@ export const getUserProfileTool = createSafeServerTool(getUserProfileToolDef, as
 	getUserProfile({ data: UserProfileByEmailSchema.parse(args) }),
 )
 
+const getUserAccessToolDef = toolDefinition({
+	name: 'getUserAccess',
+	description:
+		'Look up repository-backed access roles for a user email. Useful when checking what roles someone has before explaining permissions.',
+	inputSchema: UserProfileByEmailSchema,
+})
+
+/** AI server tool: resolve access roles from an email address. */
+export const getUserAccessTool = createSafeServerTool(getUserAccessToolDef, async (args) =>
+	getUserAccess({ data: UserProfileByEmailSchema.parse(args) }),
+)
+
 // ---------------------------------------------------------------------------
 // Client tools — definition-only (implementations in ChatDrawer.tsx)
 // ---------------------------------------------------------------------------
@@ -161,8 +174,12 @@ const getCurrentUserContextToolDef = toolDefinition({
 /** AI server tool: returns identity, profile, and a permissions summary for the current user. */
 export const getCurrentUserContextTool = createSafeServerTool(getCurrentUserContextToolDef, async () => {
 	const currentUser = await getCurrentUser()
+	const access = currentUser.identity.email
+		? await getUserAccess({ data: { email: currentUser.identity.email } })
+		: null
 	return {
 		...currentUser,
+		roles: access?.roles ?? currentUser.identity.groups,
 		permissions:
 			'Anyone logged in can create tasks. Only the task creator can edit or delete a task (check task.createdBy).',
 	}

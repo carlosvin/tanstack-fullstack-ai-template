@@ -1,4 +1,4 @@
-import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserProfileRepo } from '../schemas/repository'
+import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserAccessRepo, UserProfileRepo } from '../schemas/repository'
 
 /** Field name accepted by {@link ReadRepository.getDistinctValues}. */
 export type DistinctValueField = 'assignee' | 'status' | 'priority'
@@ -25,6 +25,9 @@ export interface ReadRepository {
 
 	/** Get a user profile by email. Returns null if not found. */
 	getUserProfile(email: string): Promise<UserProfileRepo | null>
+
+	/** Get repository-backed access data (roles) for building the auth ticket. */
+	getUserAccess(email: string): Promise<UserAccessRepo | null>
 }
 
 /**

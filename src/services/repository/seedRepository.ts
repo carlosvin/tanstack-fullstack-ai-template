@@ -1,4 +1,4 @@
-import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserProfileRepo } from '../schemas/repository'
+import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserAccessRepo, UserProfileRepo } from '../schemas/repository'
 import { resolveCreateLastModifiedBy } from './traceability'
 import type { DistinctValueField, Repository, TraceabilityContext } from './types'
 
@@ -131,6 +131,17 @@ export class SeedRepository implements Repository {
 
 	async getUserProfile(email: string): Promise<UserProfileRepo | null> {
 		return this.users.find((u) => u.email.toLowerCase() === email.toLowerCase()) ?? null
+	}
+
+	async getUserAccess(email: string): Promise<UserAccessRepo | null> {
+		const profile = await this.getUserProfile(email)
+		if (!profile) return null
+		return {
+			email: profile.email,
+			name: profile.name,
+			role: profile.role,
+			roles: profile.role ? [profile.role] : [],
+		}
 	}
 
 	async createTask(input: TaskRepoInput, trace?: TraceabilityContext): Promise<TaskRepo> {

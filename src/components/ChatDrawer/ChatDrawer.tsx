@@ -38,6 +38,7 @@ function getToolLabel(toolName: string): string {
 		getDistinctValues: 'checking filter options',
 		navigate: 'opening page',
 		invalidateRouter: 'refreshing data',
+		getUserAccess: 'checking access roles',
 		getCurrentUserContext: 'checking permissions',
 		createTask: 'creating task',
 		updateTask: 'updating task',

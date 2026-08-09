@@ -143,4 +143,18 @@ describe('SeedRepository', () => {
 			expect(profile).toBeNull()
 		})
 	})
+
+	describe('getUserAccess', () => {
+		it('returns roles derived from the user profile', async () => {
+			const access = await repo.getUserAccess('alice@example.com')
+			expect(access).not.toBeNull()
+			expect(access?.email).toBe('alice@example.com')
+			expect(access?.roles).toContain('Engineering Lead')
+		})
+
+		it('returns null for an unknown email', async () => {
+			const access = await repo.getUserAccess('unknown@example.com')
+			expect(access).toBeNull()
+		})
+	})
 })
