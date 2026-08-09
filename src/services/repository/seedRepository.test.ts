@@ -48,12 +48,21 @@ describe('SeedRepository', () => {
 		})
 	})
 
-	describe('getAssignees', () => {
+	describe('getDistinctValues', () => {
 		it('returns sorted unique assignees', async () => {
-			const assignees = await repo.getAssignees()
+			const assignees = await repo.getDistinctValues('assignee')
 			expect(assignees.length).toBeGreaterThan(0)
 			const sorted = [...assignees].sort()
 			expect(assignees).toEqual(sorted)
+		})
+
+		it('returns distinct statuses present in seed data', async () => {
+			const statuses = await repo.getDistinctValues('status')
+			expect(statuses.length).toBeGreaterThan(0)
+			expect(statuses).toEqual([...statuses].sort())
+			for (const status of statuses) {
+				expect(['pending', 'in-progress', 'done', 'cancelled']).toContain(status)
+			}
 		})
 	})
 

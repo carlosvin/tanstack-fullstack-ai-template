@@ -8,7 +8,7 @@
  * for types that are validated at runtime.
  */
 import { z } from 'zod'
-import { TASK_PRIORITIES, TASK_STATUSES } from '../../constants/options'
+import { DISTINCT_VALUE_FIELDS, TASK_PRIORITIES, TASK_STATUSES } from '../../constants/options'
 import { OptionalDeploymentEnvSchema } from '../../env/runtimeEnvSchema'
 import { AppMetaSchema } from '../../env/webEnv'
 
@@ -124,6 +124,17 @@ export const TaskFilterSchema = z.object({
 })
 
 export type TaskFilter = z.infer<typeof TaskFilterSchema>
+
+/** Filterable task fields that support distinct-value discovery against real data. */
+export const DistinctValueFieldSchema = z
+	.enum(DISTINCT_VALUE_FIELDS)
+	.describe('Task field to collect distinct values from: assignee, status, or priority')
+
+export const DistinctValuesInputSchema = z.object({
+	field: DistinctValueFieldSchema,
+})
+
+export type DistinctValuesInput = z.infer<typeof DistinctValuesInputSchema>
 
 export const UserProfileByEmailSchema = z.object({
 	email: z.string().describe('Email address of the user whose profile to look up'),

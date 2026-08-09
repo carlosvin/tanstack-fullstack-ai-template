@@ -6,8 +6,8 @@ import {
 	createTaskTool,
 	deleteTaskTool,
 	getAppRuntimeInfoTool,
-	getAssigneesTool,
 	getCurrentUserContextTool,
+	getDistinctValuesTool,
 	getTasksTool,
 	getTaskTool,
 	getUserProfileTool,
@@ -27,7 +27,7 @@ const BASE_SYSTEM_PROMPT = `You are a helpful task management assistant. You hav
 ## Capabilities
 - Search and filter tasks by status, priority, assignee, or free text
 - Get detailed information about specific tasks
-- List all assignees
+- List distinct filter values that exist in the data (getDistinctValues for assignee, status, or priority)
 - Navigate the user to app pages (use the navigate tool)
 - Create, update, and delete tasks (when the user is allowed)
 - Check who is logged in and what they can do (getCurrentUserContext)
@@ -61,7 +61,7 @@ Each task has:
 ## Guidelines
 - Use the getTasks tool with filters when the user asks about tasks matching criteria.
 - Use the getTask tool when the user asks about a specific task.
-- Use getAssignees to discover team members, and getUserProfile to resolve display names and roles from emails.
+- Use getDistinctValues to discover real filter options (e.g. assignees), and getUserProfile to resolve display names and roles from emails.
 - Format responses clearly using markdown.
 - When listing tasks, include their status and priority.
 - Be concise but thorough.`
@@ -155,7 +155,7 @@ export const Route = createFileRoute('/api/chat')({
 				const tools = [
 					getTasksTool,
 					getTaskTool,
-					getAssigneesTool,
+					getDistinctValuesTool,
 					getUserProfileTool,
 					getAppRuntimeInfoTool,
 					getCurrentUserContextTool,

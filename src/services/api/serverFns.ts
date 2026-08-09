@@ -11,6 +11,7 @@ import { createWriteTrace, updateWriteTrace } from '../repository/traceability'
 import { TaskRepoFilterSchema, TaskRepoInputSchema } from '../schemas/repository'
 import {
 	CurrentUserSchema,
+	DistinctValuesInputSchema,
 	TaskFilterSchema,
 	TaskIdInputSchema,
 	TaskInputSchema,
@@ -40,10 +41,12 @@ export const getTask = createServerFn({ method: 'GET' })
 		return row ? toToolTask(row) : null
 	})
 
-/** Fetch all distinct assignee emails. */
-export const getAssignees = createServerFn({ method: 'GET' }).handler(async () => {
-	return getObservability({}).startSpan('getAssignees', () => getReadRepository().getAssignees())
-})
+/** Fetch distinct values for a filterable task field (assignee, status, priority). */
+export const getDistinctValues = createServerFn({ method: 'GET' })
+	.inputValidator(DistinctValuesInputSchema)
+	.handler(async ({ data }) => {
+		return getObservability({}).startSpan('getDistinctValues', () => getReadRepository().getDistinctValues(data.field))
+	})
 
 /** Fetch a user profile by email. */
 export const getUserProfile = createServerFn({ method: 'GET' })

@@ -1,3 +1,4 @@
+import { createServerOnlyFn } from '@tanstack/react-start'
 import { webServerEnv } from '../../env/webEnv'
 import { createServerLogger } from '../../utils/serverLogger'
 import { MongoRepository } from './mongoRepository.server'
@@ -34,25 +35,20 @@ function createRepositories(): { read: ReadRepository; writable: WritableReposit
 	}
 }
 
-/** Returns the singleton read repository instance. */
-export function getReadRepository(): ReadRepository {
-	if (!readInstance) {
+function ensureRepositories(): { read: ReadRepository; writable: WritableRepository } {
+	if (!readInstance || !writableInstance) {
 		const repos = createRepositories()
 		readInstance = repos.read
 		writableInstance = repos.writable
 	}
-	return readInstance
+	return { read: readInstance, writable: writableInstance }
 }
 
-/** Returns the singleton writable repository instance. */
-export function getWritableRepository(): WritableRepository {
-	if (!writableInstance) {
-		const repos = createRepositories()
-		readInstance = repos.read
-		writableInstance = repos.writable
-	}
-	return writableInstance
-}
+/** Returns the singleton read repository instance. Never callable from the client. */
+export const getReadRepository = createServerOnlyFn((): ReadRepository => ensureRepositories().read)
+
+/** Returns the singleton writable repository instance. Never callable from the client. */
+export const getWritableRepository = createServerOnlyFn((): WritableRepository => ensureRepositories().writable)
 
 /** Resets singletons. Useful for testing. */
 export function resetRepository(): void {

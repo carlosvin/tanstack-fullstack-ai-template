@@ -1,5 +1,5 @@
-import { Link as RouterLink } from '@tanstack/react-router'
 import { isInternalPath, toInternalRouterLinkTarget } from '../../utils/internalLinks'
+import { Link } from '../Link/Link'
 
 export function MarkdownLink({ href, children }: { href?: string; children?: React.ReactNode }) {
 	if (!href) return <span>{children}</span>
@@ -7,15 +7,16 @@ export function MarkdownLink({ href, children }: { href?: string; children?: Rea
 	const linkTarget = toInternalRouterLinkTarget(href)
 	if (linkTarget) {
 		return (
-			<RouterLink
+			<Link
 				to={linkTarget.to}
 				{...(linkTarget.params ? { params: linkTarget.params } : {})}
-				{...(linkTarget.search ? { search: linkTarget.search } : {})}
+				// Explicit search from the markdown href — do not retain unrelated current filters.
+				search={linkTarget.search ?? {}}
 				preload="intent"
 				style={{ color: 'inherit', textDecoration: 'underline' }}
 			>
 				{children}
-			</RouterLink>
+			</Link>
 		)
 	}
 

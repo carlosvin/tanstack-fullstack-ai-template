@@ -25,10 +25,10 @@ This template is the reference app for the skill. **Already landed on `main`:** 
 | Phase | Skill contract | Status / files |
 |-------|----------------|----------------|
 | **0 — Observability & env** | Centralized env parse once; pino; Sentry; `webServerEnv` + `shellSession` | **Done** — `src/env/webEnv.ts`, `instrument.*.mts`, `webEnvMiddleware`, `getBrowserShellSession` |
-| **1 — Schema boundaries** | Outbound `Schema.parse()` (repo → tools); router defaults bundle; `Link` with `search: true` | **Done** — `serverFns.ts`, `taskMappers.ts`, `router.tsx`, `src/components/Link/Link.tsx` |
+| **1 — Schema boundaries** | Outbound `Schema.parse()` (repo → tools); router defaults bundle; `Link` with `search: true` | **Done** — `serverFns.ts`, `taskMappers.ts`, `router.tsx` (`defaultNotFoundComponent`), `src/components/Link/Link.tsx` |
 | **2 — Auth & writes** | Auth ticket + `TraceabilityContext` (skill allows stock `user`/`userProfile` until enriched) | **Partial** — `TraceabilityContext` persisted on create/update (`createdBy` / `lastModifiedBy`); full auth ticket still open |
-| **3 — Data loading & AI** | Parent loader dedup; `getAIAvailability()` gates chat UI | **Done** — `__root.tsx`, task routes, `Header`, `AppLayout`, `ChatDrawer` |
-| **4 — Hardening** | `createServerOnlyFn`; `PUBLIC_ROUTES`; router introspection for nav manifest | **Partial** — `PUBLIC_ROUTES`, `*.server.ts` + import protection done; `createServerOnlyFn` deferred |
+| **3 — Data loading & AI** | Parent loader dedup; `getAIAvailability()` gates chat UI; distinct-values tools | **Done** — `__root.tsx`, task routes, `Header`, `AppLayout`, `ChatDrawer`, `getDistinctValues` |
+| **4 — Hardening** | `createServerOnlyFn`; `PUBLIC_ROUTES`; router introspection for nav manifest | **Partial** — `PUBLIC_ROUTES`, `*.server.ts` + import protection, `createServerOnlyFn` on DB/repo factories; nav still hand-maintained |
 | **5 — Deploy** | Ship to [fullstack-promptable-app-example.netlify.app](https://fullstack-promptable-app-example.netlify.app) | After merge to `main` |
 
 **CI/CD (Netlify-native):** GitHub Actions validates PRs and `main` (`.github/workflows/ci.yml`: lint, test, build). Netlify Git integration handles all deploys — **deploy previews** on pull requests and **production** on merge to `main` (`netlify.toml` → `pnpm build`, publish `dist`). With `NETLIFY=true` (set automatically on Netlify), `@netlify/vite-plugin-tanstack-start` writes static assets to `dist/` and SSR to `.netlify/`; local non-Netlify builds still emit `.output/public`. No `NETLIFY_AUTH_TOKEN` secrets in GitHub. In Netlify: production branch `main`, deploy previews on, branch deploys off.

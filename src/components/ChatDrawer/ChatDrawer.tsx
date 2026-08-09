@@ -35,7 +35,7 @@ function getToolLabel(toolName: string): string {
 	const labels: Record<string, string> = {
 		getTasks: 'searching tasks',
 		getTask: 'loading task details',
-		getAssignees: 'checking assignees',
+		getDistinctValues: 'checking filter options',
 		navigate: 'opening page',
 		invalidateRouter: 'refreshing data',
 		getCurrentUserContext: 'checking permissions',

@@ -1,5 +1,8 @@
 import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserProfileRepo } from '../schemas/repository'
 
+/** Field name accepted by {@link ReadRepository.getDistinctValues}. */
+export type DistinctValueField = 'assignee' | 'status' | 'priority'
+
 /** Audit fields attached to repository writes from the auth ticket. */
 export interface TraceabilityContext {
 	createdBy?: string
@@ -17,8 +20,8 @@ export interface ReadRepository {
 	/** Get a single task by ID. Returns null if not found. */
 	getTask(taskId: string): Promise<TaskRepo | null>
 
-	/** Get all distinct assignee emails. */
-	getAssignees(): Promise<string[]>
+	/** Get distinct non-empty values for a filterable task field (matches real data). */
+	getDistinctValues(field: DistinctValueField): Promise<string[]>
 
 	/** Get a user profile by email. Returns null if not found. */
 	getUserProfile(email: string): Promise<UserProfileRepo | null>

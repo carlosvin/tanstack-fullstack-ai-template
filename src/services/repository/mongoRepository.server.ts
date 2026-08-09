@@ -3,7 +3,7 @@ import { getDb } from '../db/mongoClient.server'
 import { parseTaskRepo, parseTaskRepoOrNull, parseUserProfileRepoOrNull } from '../schemas/repoParsers'
 import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserProfileRepo } from '../schemas/repository'
 import { resolveCreateLastModifiedBy } from './traceability'
-import type { Repository, TraceabilityContext } from './types'
+import type { DistinctValueField, Repository, TraceabilityContext } from './types'
 
 const TASKS_COLLECTION = 'tasks'
 const USERS_COLLECTION = 'users'
@@ -51,10 +51,10 @@ export class MongoRepository implements Repository {
 		return parseTaskRepoOrNull(row)
 	}
 
-	async getAssignees(): Promise<string[]> {
+	async getDistinctValues(field: DistinctValueField): Promise<string[]> {
 		const col = await this.collection()
-		const assignees = await col.distinct('assignee', { assignee: { $exists: true } })
-		return assignees.filter((a): a is string => typeof a === 'string').sort()
+		const values = await col.distinct(field, { [field]: { $exists: true, $nin: [null, ''] } })
+		return values.filter((value): value is string => typeof value === 'string' && value.length > 0).sort()
 	}
 
 	async getUserProfile(email: string): Promise<UserProfileRepo | null> {

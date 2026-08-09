@@ -1,15 +1,19 @@
 import '@mantine/core/styles.css'
 import '@mantine/notifications/styles.css'
 import '../styles.css'
+<<<<<<< HEAD
 import { Button, ColorSchemeScript, Container, createTheme, MantineProvider, Stack, Text, Title } from '@mantine/core'
 import { ModalsProvider } from '@mantine/modals'
+=======
+import { ColorSchemeScript, createTheme, MantineProvider } from '@mantine/core'
+>>>>>>> 3671f27 (feat: align skill gaps for distinct values and server-only boundaries)
 import { Notifications } from '@mantine/notifications'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import { createRootRoute, HeadContent, Scripts, useRouter } from '@tanstack/react-router'
+import { createRootRoute, HeadContent, Scripts } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { Home } from 'lucide-react'
 import { AppLayout } from '../components/AppLayout/AppLayout'
 import { ErrorDisplay } from '../components/ErrorDisplay/ErrorDisplay'
+import { NotFoundPage } from '../components/NotFoundPage/NotFoundPage'
 import { getAIAvailability, getBrowserShellSession, getCurrentUser } from '../services/api/serverFns'
 
 export const Route = createRootRoute({
@@ -51,27 +55,6 @@ const theme = createTheme({
 		Badge: { defaultProps: { radius: 'sm' } },
 	},
 })
-
-function NotFoundPage() {
-	const router = useRouter()
-
-	return (
-		<Container size="sm" py="xl">
-			<Stack align="center" gap="lg" ta="center">
-				<Title order={1} size="6rem" c="dimmed">
-					404
-				</Title>
-				<Title order={2}>Page Not Found</Title>
-				<Text c="dimmed" size="lg">
-					The page you're looking for doesn't exist or has been moved.
-				</Text>
-				<Button leftSection={<Home size={16} />} onClick={() => router.navigate({ to: '/' })}>
-					Back to Home
-				</Button>
-			</Stack>
-		</Container>
-	)
-}
 
 function RootDocument({ children }: { children: React.ReactNode }) {
 	const { currentUser, shellSession, aiAvailable } = Route.useLoaderData()
