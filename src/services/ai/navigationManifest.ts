@@ -1,10 +1,8 @@
 /**
- * App navigation manifest for the AI assistant.
- *
- * This list reflects the user-facing routes from src/routeTree.gen.ts.
- * Exclude /api/* routes. When you add or change routes or search params,
- * update this manifest so the AI knows the app structure.
+ * App navigation for the AI assistant, derived from the live router
+ * (`routesById` + `validateSearch` + route `staticData.description`).
  */
+import type { FileRouteTypes } from '../../routeTree.gen'
 
 export interface RouteSearchParam {
 	name: string
@@ -17,34 +15,78 @@ export interface AppRoute {
 	searchParams?: RouteSearchParam[]
 }
 
-/** User-facing routes and their search params. Source of truth: src/routeTree.gen.ts */
-export const APP_NAVIGATION: AppRoute[] = [
-	{
-		path: '/',
-		description: 'Home page',
-	},
-	{
-		path: '/tasks',
-		description: 'Tasks list with optional filters',
-		searchParams: [
-			{ name: 'status', description: 'Filter by status: pending | in-progress | done | cancelled' },
-			{ name: 'priority', description: 'Filter by priority: low | medium | high | critical' },
-			{ name: 'search', description: 'Full-text search over tasks' },
-		],
-	},
-	{
-		path: '/tasks/$taskId',
-		description: 'Task detail page; URL pattern is /tasks/<taskId> where $taskId is the concrete task id segment',
-	},
-	{
-		path: '/tasks/new',
-		description: 'Create task modal route over the tasks list page',
-	},
-	{
-		path: '/tasks/$taskId/edit',
-		description: 'Edit task modal route over the task detail page',
-	},
-]
+type ApiPath = '/api/chat' | '/api/health'
+
+/** User-facing `to` values from the generated route tree (excludes `/api/*`). */
+export type UserFacingTo = Exclude<FileRouteTypes['to'], ApiPath>
+
+interface RouteLike {
+	id: string
+	fullPath: string
+	options: {
+		staticData?: { description?: string }
+		validateSearch?: unknown
+	}
+}
+
+interface RouterLike {
+	routesById: object
+}
+
+function isRouteLike(value: unknown): value is RouteLike {
+	if (!value || typeof value !== 'object') return false
+	const route = value as Partial<RouteLike>
+	return typeof route.id === 'string' && typeof route.fullPath === 'string' && typeof route.options === 'object'
+}
+
+function displayPath(fullPath: string): string {
+	if (fullPath !== '/' && fullPath.endsWith('/')) return fullPath.slice(0, -1)
+	return fullPath
+}
+
+function isUserFacingRoute(route: RouteLike): boolean {
+	if (route.id === '__root__') return false
+	const path = displayPath(route.fullPath)
+	return !path.startsWith('/api')
+}
+
+function searchParamsFromValidateSearch(validateSearch: unknown): RouteSearchParam[] | undefined {
+	if (!validateSearch || typeof validateSearch !== 'object' || !('shape' in validateSearch)) {
+		return undefined
+	}
+
+	const shape = (validateSearch as { shape: Record<string, { description?: string }> }).shape
+	const params = Object.entries(shape).map(([name, schema]) => ({
+		name,
+		description: schema.description ?? name,
+	}))
+	return params.length > 0 ? params : undefined
+}
+
+/** Build the AI navigation list from a TanStack Router instance. */
+export function buildAppNavigation(router: RouterLike): AppRoute[] {
+	const seen = new Set<string>()
+	const routes: AppRoute[] = []
+
+	for (const value of Object.values(router.routesById as Record<string, unknown>)) {
+		if (!isRouteLike(value)) continue
+		const route = value
+		if (!isUserFacingRoute(route)) continue
+		const path = displayPath(route.fullPath)
+		if (seen.has(path)) continue
+		seen.add(path)
+
+		const description = route.options.staticData?.description ?? path
+		const searchParams = searchParamsFromValidateSearch(route.options.validateSearch)
+		routes.push({
+			path,
+			description,
+			...(searchParams ? { searchParams } : {}),
+		})
+	}
+
+	return routes.sort((a, b) => a.path.localeCompare(b.path))
+}
 
 /**
  * Returns true if the given path is a valid user-facing route or matches a dynamic segment (e.g. /tasks/abc-123).
@@ -54,7 +96,7 @@ export function isUserFacingPath(path: string): boolean {
 }
 
 export interface MatchedUserFacingRoute {
-	to: '/tasks/$taskId' | '/tasks/$taskId/edit' | '/' | '/tasks' | '/tasks/new'
+	to: UserFacingTo
 	params?: { taskId: string }
 }
 
@@ -81,11 +123,11 @@ export function matchUserFacingRoute(pathname: string): MatchedUserFacingRoute |
 /**
  * Builds a plain-text summary of app navigation for the system prompt.
  */
-export function getNavigationPromptSection(): string {
+export function getNavigationPromptSection(routes: AppRoute[]): string {
 	const lines: string[] = [
 		'## App Navigation',
 		'',
-		'The app navigation structure (from src/routeTree.gen.ts) is:',
+		'The app navigation structure (from the router route tree) is:',
 		'',
 		'When you mention a page, task, or filtered list in your reply, include a **markdown link** the user can click:',
 		'- Home: `[Home](/)`',
@@ -99,7 +141,7 @@ export function getNavigationPromptSection(): string {
 		'',
 	]
 
-	for (const route of APP_NAVIGATION) {
+	for (const route of routes) {
 		lines.push(`- **${route.path}**: ${route.description}`)
 		if (route.searchParams?.length) {
 			for (const p of route.searchParams) {

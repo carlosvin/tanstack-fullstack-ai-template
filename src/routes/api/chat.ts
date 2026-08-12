@@ -1,7 +1,12 @@
 import { chat, convertMessagesToModelMessages, maxIterations, toServerSentEventsResponse } from '@tanstack/ai'
 import { createFileRoute } from '@tanstack/react-router'
+import { getRouterInstance } from '@tanstack/react-start'
 import { getAIAdapterService } from '../../services/ai/adapter'
-import { getNavigationPromptSection, matchUserFacingRoute } from '../../services/ai/navigationManifest'
+import {
+	buildAppNavigation,
+	getNavigationPromptSection,
+	matchUserFacingRoute,
+} from '../../services/ai/navigationManifest'
 import {
 	createTaskTool,
 	deleteTaskTool,
@@ -72,8 +77,9 @@ function buildSystemPrompt(
 	profile: UserProfile | null,
 	browserContext: BrowserContext | null,
 	isTestUser: boolean,
+	navigationSection: string,
 ): string {
-	const sections: string[] = [BASE_SYSTEM_PROMPT, getNavigationPromptSection()]
+	const sections: string[] = [BASE_SYSTEM_PROMPT, navigationSection]
 
 	const displayName = profile?.name || user.name || 'Anonymous'
 	const role = profile?.role ?? 'User'
@@ -152,11 +158,13 @@ export const Route = createFileRoute('/api/chat')({
 				const browserContextResult = BrowserContextSchema.safeParse(body.browserContext)
 				const browserContext: BrowserContext | null = browserContextResult.success ? browserContextResult.data : null
 
+				const router = await getRouterInstance()
 				const systemPrompt = buildSystemPrompt(
 					accessTicket.identity,
 					accessTicket.profile,
 					browserContext,
 					accessTicket.isTestUser,
+					getNavigationPromptSection(buildAppNavigation(router)),
 				)
 				const tools = [
 					getTasksTool,
