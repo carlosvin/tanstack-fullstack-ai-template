@@ -2,17 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { buildAccessTicket } from './accessTicket'
 
 describe('buildAccessTicket', () => {
-	it('merges identity groups and repository roles', () => {
+	it('merges identity groups and profile role', () => {
 		const ticket = buildAccessTicket({
 			user: { email: 'alice@example.com', name: 'Alice', groups: ['editors'] },
 			profile: { email: 'alice@example.com', name: 'Alice Johnson', role: 'Engineering Lead' },
 			isTestUser: false,
-			access: {
-				email: 'alice@example.com',
-				name: 'Alice Johnson',
-				role: 'Engineering Lead',
-				roles: ['Engineering Lead'],
-			},
 		})
 
 		expect(ticket.roles).toEqual(['editors', 'Engineering Lead'])
@@ -25,7 +19,6 @@ describe('buildAccessTicket', () => {
 			user: { email: 'alice@example.com', name: 'Alice', groups: [] },
 			profile: null,
 			isTestUser: false,
-			access: null,
 		})
 
 		expect(() => ticket.requireTaskCreator({ createdBy: 'alice@example.com' })).not.toThrow()

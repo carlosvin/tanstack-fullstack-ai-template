@@ -1,7 +1,8 @@
+import type { DISTINCT_VALUE_FIELDS } from '../../constants/options'
 import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserAccessRepo, UserProfileRepo } from '../schemas/repository'
 
 /** Field name accepted by {@link ReadRepository.getDistinctValues}. */
-export type DistinctValueField = 'assignee' | 'status' | 'priority'
+export type DistinctValueField = (typeof DISTINCT_VALUE_FIELDS)[number]
 
 /** Audit fields attached to repository writes from the auth ticket. */
 export interface TraceabilityContext {

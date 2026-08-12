@@ -8,7 +8,7 @@ import { getAIAdapterService } from '../ai/adapter'
 import { getObservability } from '../observability'
 import { getReadRepository, getWritableRepository } from '../repository/getRepository.server'
 import { createWriteTrace, updateWriteTrace } from '../repository/traceability'
-import { TaskRepoFilterSchema, TaskRepoInputSchema, UserAccessRepoSchema } from '../schemas/repository'
+import { TaskRepoFilterSchema, TaskRepoInputSchema } from '../schemas/repository'
 import {
 	CurrentUserSchema,
 	DistinctValuesInputSchema,
@@ -18,7 +18,7 @@ import {
 	UpdateTaskInputSchema,
 	UserProfileByEmailSchema,
 } from '../schemas/schemas'
-import { toToolTask, toToolUserProfile } from '../schemas/taskMappers'
+import { toToolTask, toToolUserAccess, toToolUserProfile } from '../schemas/taskMappers'
 
 // ============================================================================
 // Queries (GET) — accessed from route loaders and AI tools
@@ -65,7 +65,7 @@ export const getUserAccess = createServerFn({ method: 'GET' })
 		const row = await getObservability({}).startSpan('getUserAccess', () =>
 			getReadRepository().getUserAccess(data.email),
 		)
-		return row ? UserAccessRepoSchema.parse(row) : null
+		return row ? toToolUserAccess(row) : null
 	})
 
 /** Browser-safe shell session for the root loader. */
@@ -92,6 +92,7 @@ export const getCurrentUser = createServerFn({ method: 'GET' })
 			identity: context.accessTicket.identity,
 			profile: context.accessTicket.profile,
 			isTestUser: context.accessTicket.isTestUser,
+			roles: context.accessTicket.roles,
 		}),
 	)
 

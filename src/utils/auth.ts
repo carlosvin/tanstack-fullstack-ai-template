@@ -2,7 +2,7 @@
  * Composable authorization guard helpers.
  *
  * These are called from server function handlers after the auth middleware
- * has populated context.user. They throw HttpError on failure, which is
+ * has populated context.accessTicket. They throw HttpError on failure, which is
  * caught by processResponse() for mutations or surfaces as a loader error
  * for queries.
  */
@@ -21,7 +21,7 @@ export function requireAuth(context: AuthContext): UserIdentity {
 /** Requires the user to belong to a specific group. Throws 403 if not a member. */
 export function requireGroup(context: AuthContext, group: string): UserIdentity {
 	const user = requireAuth(context)
-	if (!user.groups.includes(group) && !context.accessTicket.roles.includes(group)) {
+	if (!context.accessTicket.roles.includes(group)) {
 		throw new HttpError(403, `Membership in group "${group}" is required`)
 	}
 	return user

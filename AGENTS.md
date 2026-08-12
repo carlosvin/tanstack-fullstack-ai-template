@@ -26,7 +26,7 @@ This template is the reference app for the skill. **Already landed on `main`:** 
 |-------|----------------|----------------|
 | **0 — Observability & env** | Centralized env parse once; pino; Sentry; `webServerEnv` + `shellSession` | **Done** — `src/env/webEnv.ts`, `instrument.*.mts`, `webEnvMiddleware`, `getBrowserShellSession` |
 | **1 — Schema boundaries** | Outbound `Schema.parse()` (repo → tools); router defaults bundle; `Link` with `search: true` | **Done** — `serverFns.ts`, `taskMappers.ts`, `router.tsx` (`defaultNotFoundComponent`), `src/components/Link/Link.tsx` |
-| **2 — Auth & writes** | Auth ticket + `TraceabilityContext` (skill allows stock `user`/`userProfile` until enriched) | **Done** — `accessTicket` from `getUserAccess` + identity; `TraceabilityContext` on create/update; stock `user`/`userProfile` retained for compatibility |
+| **2 — Auth & writes** | Auth ticket + `TraceabilityContext` (skill allows stock `user`/`userProfile` until enriched) | **Done** — `accessTicket` from identity + `getUserProfile`; `TraceabilityContext` on create/update |
 | **3 — Data loading & AI** | Parent loader dedup; `getAIAvailability()` gates chat UI; distinct-values tools | **Done** — `__root.tsx`, task routes, `Header`, `AppLayout`, `ChatDrawer`, `getDistinctValues` |
 | **4 — Hardening** | `createServerOnlyFn`; `PUBLIC_ROUTES`; router introspection for nav manifest | **Partial** — `PUBLIC_ROUTES`, `*.server.ts` + import protection, `createServerOnlyFn` on DB/repo factories; nav still hand-maintained |
 | **5 — Deploy** | Ship to [fullstack-promptable-app-example.netlify.app](https://fullstack-promptable-app-example.netlify.app) | After merge to `main` |
@@ -135,12 +135,11 @@ If your team prefers [`@tabler/icons-react`](https://tabler.io/icons) (the Manti
 ```tsx
 // src/middleware/auth.ts
 interface AuthContext {
-  user: UserIdentity
-  userProfile: UserProfile | null
+  accessTicket: AccessTicket
 }
 ```
 
-`requireAuthMiddleware` chains `authMiddleware` so `context.user` is typed in mutation handlers.
+`requireAuthMiddleware` chains `authMiddleware` so `context.accessTicket` is typed in mutation handlers.
 
 ### Optional patterns (skill)
 
@@ -172,7 +171,7 @@ export const myMutation = createServerFn({ method: 'POST' })
   .middleware([requireAuthMiddleware, invalidateMiddleware])
   .inputValidator(MyInputSchema)
   .handler(async ({ data, context }) => {
-    const trace = createWriteTrace(context.user.email)
+    const trace = createWriteTrace(context.accessTicket.identity.email)
     return getWritableRepository().doSomething(data, trace)
   })
 

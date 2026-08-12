@@ -55,9 +55,18 @@ export const CurrentUserSchema = z.object({
 	identity: UserIdentitySchema.describe('Authenticated user identity from the access ticket'),
 	profile: UserProfileSchema.nullable().describe('Repository profile when available'),
 	isTestUser: z.boolean().describe('True when the server auto-generated a demo test user'),
+	roles: z.array(z.string()).describe('Combined identity groups and repository roles'),
 })
 
 export type CurrentUser = z.infer<typeof CurrentUserSchema>
+
+export const UserAccessSchema = z.object({
+	email: z.string().describe('Email address of the user whose access to look up'),
+	name: z.string().describe('Display name'),
+	roles: z.array(z.string()).describe('Repository-backed roles for this user'),
+})
+
+export type UserAccess = z.infer<typeof UserAccessSchema>
 
 // ---------------------------------------------------------------------------
 // Browser Context (sent by the client with each chat request)

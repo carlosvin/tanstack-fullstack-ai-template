@@ -33,7 +33,6 @@ export type UserProfileRepo = z.infer<typeof UserProfileRepoSchema>
 export const UserAccessRepoSchema = z.object({
 	email: z.string(),
 	name: z.string(),
-	role: z.string().optional(),
 	roles: z.array(z.string()).default([]),
 })
 
