@@ -23,6 +23,6 @@ export default defineConfig({
 		url: 'http://localhost:3000',
 		reuseExistingServer: true,
 		timeout: 30_000,
-		env: { NODE_ENV: 'development' },
+		env: { NODE_ENV: 'development', OPENAI_API_KEY: 'sk-e2e-placeholder' },
 	},
 })
