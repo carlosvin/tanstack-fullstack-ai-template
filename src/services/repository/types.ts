@@ -1,6 +1,7 @@
+import type { DistinctValueField } from '../../constants/options'
 import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserAccessRepo, UserProfileRepo } from '../schemas/repository'
 
-export type { DistinctValueField } from '../../constants/options'
+export type { DistinctValueField }
 
 /** Audit fields attached to repository writes from the auth ticket. */
 export interface TraceabilityContext {
