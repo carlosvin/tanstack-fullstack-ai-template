@@ -1,21 +1,17 @@
 import { Badge, Card, Container, Group, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core'
 import { CheckCircle, Circle, Clock, ListTodo, type LucideIcon } from 'lucide-react'
-import { z } from 'zod'
-import { TASK_STATUSES } from '../../constants/options'
+import type { TASK_STATUSES } from '../../constants/options'
 import type { Task } from '../../types'
 import { priorityColor, statusColor } from '../../utils/taskDisplay'
 import { Link } from '../Link/Link'
 
-const DashboardStatSchema = z.object({
-	label: z.string(),
-	value: z.number(),
-	icon: z.custom<LucideIcon>(),
-	color: z.string(),
-	status: z.enum(TASK_STATUSES).optional(),
-	filterLabel: z.string(),
-})
-
-type DashboardStat = z.infer<typeof DashboardStatSchema>
+interface DashboardStat {
+	label: string
+	value: number
+	icon: LucideIcon
+	status?: (typeof TASK_STATUSES)[number]
+	filterLabel: string
+}
 
 export interface DashboardPageProps {
 	tasks: Task[]
@@ -34,14 +30,12 @@ export function DashboardPage({ tasks, appName, appVersion, env }: DashboardPage
 			label: 'Total',
 			value: tasks.length,
 			icon: ListTodo,
-			color: 'blue',
 			filterLabel: 'View all tasks',
 		},
 		{
 			label: 'Pending',
 			value: statusCount(tasks, 'pending'),
 			icon: Circle,
-			color: 'yellow',
 			status: 'pending',
 			filterLabel: 'Filter tasks by pending status',
 		},
@@ -49,7 +43,6 @@ export function DashboardPage({ tasks, appName, appVersion, env }: DashboardPage
 			label: 'In Progress',
 			value: statusCount(tasks, 'in-progress'),
 			icon: Clock,
-			color: 'teal',
 			status: 'in-progress',
 			filterLabel: 'Filter tasks by in progress status',
 		},
@@ -57,7 +50,6 @@ export function DashboardPage({ tasks, appName, appVersion, env }: DashboardPage
 			label: 'Done',
 			value: statusCount(tasks, 'done'),
 			icon: CheckCircle,
-			color: 'green',
 			status: 'done',
 			filterLabel: 'Filter tasks by done status',
 		},
@@ -113,7 +105,12 @@ export function DashboardPage({ tasks, appName, appVersion, env }: DashboardPage
 											{stat.value}
 										</Title>
 									</div>
-									<ThemeIcon variant="light" color={stat.color} size="lg" radius="md">
+									<ThemeIcon
+										variant="light"
+										color={stat.status ? statusColor(stat.status) : 'blue'}
+										size="lg"
+										radius="md"
+									>
 										<stat.icon size={20} />
 									</ThemeIcon>
 								</Group>

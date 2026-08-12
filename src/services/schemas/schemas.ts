@@ -126,13 +126,16 @@ export type Task = z.infer<typeof TaskSchema>
 // ---------------------------------------------------------------------------
 
 export const TaskFilterSchema = z.object({
-	status: TaskStatusSchema.optional().describe('Filter by task status'),
-	priority: TaskPrioritySchema.optional().describe('Filter by task priority'),
+	status: TaskStatusSchema.optional().describe('Filter by status: pending | in-progress | done | cancelled'),
+	priority: TaskPrioritySchema.optional().describe('Filter by priority: low | medium | high | critical'),
 	assignee: z.string().optional().describe('Filter by assignee email'),
-	search: z.string().optional().describe('Full-text search across title and description'),
+	search: z.string().optional().describe('Full-text search over tasks'),
 })
 
 export type TaskFilter = z.infer<typeof TaskFilterSchema>
+
+/** URL search params for the tasks list (subset of TaskFilter without assignee). */
+export const TasksListSearchSchema = TaskFilterSchema.pick({ status: true, priority: true, search: true })
 
 /** Filterable task fields that support distinct-value discovery against real data. */
 export const DistinctValueFieldSchema = z

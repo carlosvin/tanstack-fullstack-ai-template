@@ -111,7 +111,7 @@ function buildSystemPrompt(
 		if (currentPath || currentSearch || currentHref) {
 			const fullPath = `${currentPath ?? ''}${currentSearch ?? ''}` || 'unknown'
 			const matchedRoute = currentPath ? matchUserFacingRoute(currentPath) : null
-			const currentTaskId = matchedRoute?.to === '/tasks/$taskId' ? matchedRoute.params?.taskId : undefined
+			const currentTaskId = matchedRoute?.params?.taskId
 
 			const locationLines = [
 				'## Current Location',
@@ -119,9 +119,9 @@ function buildSystemPrompt(
 				`- Full URL: ${currentHref ?? 'unknown'}`,
 			]
 
-			if (currentTaskId) {
+			if (currentTaskId && matchedRoute) {
 				locationLines.push(
-					`- This matches the task detail route pattern \`/tasks/$taskId\`; the current \`$taskId\` is \`${currentTaskId}\`.`,
+					`- This matches route \`${matchedRoute.to}\`; the current \`$taskId\` is \`${currentTaskId}\`.`,
 					'- When the user says "this task" or "the current task", default to this task id unless they specify another one.',
 				)
 			}

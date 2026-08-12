@@ -197,7 +197,7 @@ Routes live in `src/routes/`; tree is auto-generated in `routeTree.gen.ts`. Rout
 | `src/services/ai/adapter.ts` | Provider implementation |
 | `src/services/ai/tools.ts` | Server + client tool definitions |
 | `src/services/ai/serverTool.ts` | `createSafeServerTool` / `safeToolHandler` |
-| `src/services/ai/navigationManifest.ts` | AI route matching + prompt section; `buildAppNavigation(router)` from `flatRoutes` |
+| `src/services/ai/navigationManifest.ts` | AI route matching + prompt section; `buildAppNavigation(router)` from `routesById` |
 | `src/routes/api/chat.ts` | SSE endpoint, `BASE_SYSTEM_PROMPT`, `buildSystemPrompt` |
 | `src/components/ChatDrawer/ChatDrawer.tsx` | `useChat`, client tools, markdown rendering |
 
@@ -241,7 +241,7 @@ Definitions in `src/services/ai/tools.ts` — each calls the same `serverFns.ts`
 
 Client tools execute in the browser and are defined in `src/services/ai/tools.ts` (definition-only, no `.server()` call) with implementations in [ChatDrawer](src/components/ChatDrawer/ChatDrawer.tsx) using `clientTools()` from `@tanstack/ai-client`:
 
-- **navigate**: Triggers `router.navigate()` in the browser. Accepts `to` (path) and optional `search` (query params). Validates paths via `isUserFacingPath()`.
+- **navigate**: Triggers `router.navigate()` in the browser. Accepts `to` (path) and optional `search` (query params). Validates paths via `matchUserFacingRoute()` (`$param` patterns from `UserFacingTo`).
 - **invalidateRouter**: Calls `router.invalidate()` to refresh page data. The AI calls this after mutation tools so the user sees updated data.
 
 When adding client tools: export the `toolDefinition(...)` from `tools.ts`, pass it to `chat()` in the chat endpoint, and add a `.client()` implementation in `ChatDrawer.tsx` via `clientTools()`.
@@ -273,7 +273,7 @@ const { messages, sendMessage, isLoading } = useChat(
 
 ### App navigation and links
 
-When routes or `validateSearch` schemas change, set `staticData.description` on the route and `.describe()` on search fields. `buildAppNavigation(router)` in `src/services/ai/navigationManifest.ts` derives the AI prompt from `router.routesById` (no hand-maintained path list).
+When routes or `validateSearch` schemas change, set `staticData.description` on the route and `.describe()` on search fields. `buildAppNavigation(router)` derives the AI prompt from `router.routesById`. Path matching uses exhaustive `UserFacingTo` `$param` patterns in `navigationManifest.ts` (typecheck fails if a new user-facing `to` is missing). Markdown link examples in the prompt are generated from the derived route list.
 
 - Internal links in assistant messages: `ChatDrawer` `MarkdownLink` → TanStack Router `Link` with `preload="intent"`.
 - AI uses markdown links in replies; **navigate** client tool for programmatic navigation.

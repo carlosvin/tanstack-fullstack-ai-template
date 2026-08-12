@@ -9,7 +9,6 @@
  */
 import { toolDefinition } from '@tanstack/ai'
 import { z } from 'zod'
-import { TASK_PRIORITIES, TASK_STATUSES } from '../../constants/options'
 import {
 	createTask,
 	deleteTask,
@@ -28,6 +27,7 @@ import {
 	TaskFilterSchema,
 	TaskIdInputSchema,
 	TaskInputSchema,
+	TasksListSearchSchema,
 	UpdateTaskInputSchema,
 	UserProfileByEmailSchema,
 } from '../schemas/schemas'
@@ -108,13 +108,7 @@ export const getUserAccessTool = createSafeServerTool(getUserAccessToolDef, asyn
 // Client tools — definition-only (implementations in ChatDrawer.tsx)
 // ---------------------------------------------------------------------------
 
-const NavigateSearchSchema = z
-	.object({
-		status: z.enum(TASK_STATUSES).optional().describe('Filter by status'),
-		priority: z.enum(TASK_PRIORITIES).optional().describe('Filter by priority'),
-		search: z.string().optional().describe('Full-text search over tasks'),
-	})
-	.optional()
+const NavigateSearchSchema = TasksListSearchSchema.optional()
 
 /** Input schema for the navigate client tool. */
 export const NavigateInputSchema = z.object({

@@ -1,10 +1,10 @@
-import { notifications } from '@mantine/notifications'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { NewTaskPage } from '../../components/NewTaskPage/NewTaskPage'
 import { processResponse } from '../../services/api/processResponse'
 import { createTask } from '../../services/api/serverFns'
 import type { TaskInput } from '../../types'
+import { notifyProcessed } from '../../utils/notifyProcessed'
 
 export const Route = createFileRoute('/tasks/new')({
 	staticData: { description: 'Create task modal route over the tasks list page' },
@@ -24,12 +24,7 @@ function NewTaskRoute() {
 		const result = await processResponse(() => createTask({ data: values }))
 		setSubmitLoading(false)
 
-		if (result.error) {
-			notifications.show({ message: result.error.message, color: 'red' })
-			return
-		}
-
-		notifications.show({ message: 'Task created', color: 'green' })
+		if (!notifyProcessed(result, 'Task created')) return
 		closeModal()
 	}
 

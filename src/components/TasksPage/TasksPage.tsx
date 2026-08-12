@@ -25,21 +25,10 @@ export interface TasksPageProps {
 	isAuth: boolean
 	currentUserEmail?: string
 	onUpdateSearch: (updates: Partial<TaskFilter>, replace?: boolean) => void
-	onAddTask: () => void
-	onEditTask: (taskId: string) => void
 	onDeleteTask: (task: Task) => void
 }
 
-export function TasksPage({
-	tasks,
-	search,
-	isAuth,
-	currentUserEmail,
-	onUpdateSearch,
-	onAddTask,
-	onEditTask,
-	onDeleteTask,
-}: TasksPageProps) {
+export function TasksPage({ tasks, search, isAuth, currentUserEmail, onUpdateSearch, onDeleteTask }: TasksPageProps) {
 	const urlSearch = search.search ?? ''
 
 	const debouncedSearch = useDebouncedCallback((value: string) => {
@@ -59,9 +48,9 @@ export function TasksPage({
 						</Text>
 					</div>
 					{isAuth && (
-						<Button leftSection={<Plus size={16} />} onClick={onAddTask}>
-							Add task
-						</Button>
+						<Link to="/tasks/new" search={{}} style={{ textDecoration: 'none' }}>
+							<Button leftSection={<Plus size={16} />}>Add task</Button>
+						</Link>
 					)}
 				</Group>
 
@@ -134,15 +123,17 @@ export function TasksPage({
 											</Group>
 										</Link>
 										{isCreator && (
-											<Group gap={4} onClick={(e) => e.preventDefault()}>
-												<ActionIcon
-													variant="subtle"
-													size="sm"
-													aria-label="Edit task"
-													onClick={() => onEditTask(task.id)}
+											<Group gap={4}>
+												<Link
+													to="/tasks/$taskId/edit"
+													params={{ taskId: task.id }}
+													search={{}}
+													style={{ textDecoration: 'none' }}
 												>
-													<Pencil size={14} />
-												</ActionIcon>
+													<ActionIcon variant="subtle" size="sm" aria-label="Edit task">
+														<Pencil size={14} />
+													</ActionIcon>
+												</Link>
 												<ActionIcon
 													variant="subtle"
 													size="sm"
