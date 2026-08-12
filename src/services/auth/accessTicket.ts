@@ -32,7 +32,7 @@ export function buildAccessTicket(input: BuildAccessTicketInput): AccessTicket {
 		isTestUser,
 		roles,
 		requireTaskCreator(task) {
-			if (task.createdBy && task.createdBy !== user.email) {
+			if (task.createdBy && task.createdBy.toLowerCase() !== user.email.toLowerCase()) {
 				throw new HttpError(403, 'Only the task creator can change this task')
 			}
 		},

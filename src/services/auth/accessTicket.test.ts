@@ -22,6 +22,7 @@ describe('buildAccessTicket', () => {
 		})
 
 		expect(() => ticket.requireTaskCreator({ createdBy: 'alice@example.com' })).not.toThrow()
+		expect(() => ticket.requireTaskCreator({ createdBy: 'Alice@Example.COM' })).not.toThrow()
 		expect(() => ticket.requireTaskCreator({ createdBy: 'bob@example.com' })).toThrow(/task creator/)
 	})
 })
