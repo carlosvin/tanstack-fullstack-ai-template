@@ -6,3 +6,5 @@ export const TASK_PRIORITIES = ['low', 'medium', 'high', 'critical'] as const
 
 /** Task fields that support distinct-value discovery for filters. */
 export const DISTINCT_VALUE_FIELDS = ['assignee', 'status', 'priority'] as const
+
+export type DistinctValueField = (typeof DISTINCT_VALUE_FIELDS)[number]
