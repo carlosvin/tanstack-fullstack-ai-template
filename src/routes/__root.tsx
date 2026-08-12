@@ -1,12 +1,8 @@
 import '@mantine/core/styles.css'
 import '@mantine/notifications/styles.css'
 import '../styles.css'
-<<<<<<< HEAD
-import { Button, ColorSchemeScript, Container, createTheme, MantineProvider, Stack, Text, Title } from '@mantine/core'
-import { ModalsProvider } from '@mantine/modals'
-=======
 import { ColorSchemeScript, createTheme, MantineProvider } from '@mantine/core'
->>>>>>> 3671f27 (feat: align skill gaps for distinct values and server-only boundaries)
+import { ModalsProvider } from '@mantine/modals'
 import { Notifications } from '@mantine/notifications'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { createRootRoute, HeadContent, Scripts } from '@tanstack/react-router'
