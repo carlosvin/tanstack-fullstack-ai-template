@@ -6,7 +6,9 @@ export async function selectMantineOption(page: Page, fieldLabel: string, option
 	await page.getByRole('option', { name: optionLabel }).click()
 }
 
-/** Confirm a Mantine delete confirmation modal. */
+/** Confirm a Mantine delete confirmation modal and wait for it to close. */
 export async function confirmMantineDelete(page: Page) {
-	await page.getByRole('dialog').getByRole('button', { name: 'Delete' }).click()
+	const dialog = page.getByRole('dialog', { name: 'Delete task' })
+	await dialog.getByRole('button', { name: 'Delete' }).click()
+	await dialog.waitFor({ state: 'hidden' })
 }

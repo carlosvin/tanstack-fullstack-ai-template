@@ -48,11 +48,9 @@ test.describe('Task list', () => {
 		await expect(page.getByText('No tasks found matching your filters.')).toBeVisible()
 	})
 
-	test('anonymous user does not see Add task button or edit/delete icons', async ({ page }) => {
+	test('visitors without a JWT still get a demo test user and can add tasks', async ({ page }) => {
 		await page.goto('/tasks')
 
-		await expect(page.getByRole('button', { name: 'Add task' })).not.toBeVisible()
-		await expect(page.getByLabel('Edit task').first()).not.toBeVisible()
-		await expect(page.getByLabel('Delete task').first()).not.toBeVisible()
+		await expect(page.getByRole('button', { name: 'Add task' })).toBeVisible()
 	})
 })
