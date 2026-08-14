@@ -1,20 +1,19 @@
-import { ActionIcon, Button, Group, Text, Tooltip, useMantineColorScheme } from '@mantine/core'
-import { CheckSquare, Code, ListTodo, MessageCircle, Moon, Sun } from 'lucide-react'
+import { ActionIcon, Burger, Group, Text, Tooltip, useMantineColorScheme } from '@mantine/core'
+import { CheckSquare, MessageCircle, Moon, Sun } from 'lucide-react'
 import type { AppMeta } from '../../env/webEnv'
-import type { CurrentUser } from '../../types'
 import { Link } from '../Link/Link'
 
 interface HeaderProps {
-	currentUser?: CurrentUser
+	navOpened: boolean
+	onToggleNav: () => void
 	appMeta: AppMeta
 	aiAvailable?: boolean
 	onOpenChat?: () => void
 }
 
-/** Application header with navigation, color scheme toggle, and AI chat trigger. */
-export function Header({ currentUser, appMeta, aiAvailable = false, onOpenChat }: HeaderProps) {
+/** Compact AppShell header: burger (mobile), brand, theme, and AI chat. */
+export function Header({ navOpened, onToggleNav, appMeta, aiAvailable = false, onOpenChat }: HeaderProps) {
 	const { colorScheme, toggleColorScheme } = useMantineColorScheme()
-	const displayName = currentUser?.profile?.name || currentUser?.identity.name
 	const appTitle = appMeta.name
 
 	const handleOpenChat = (e: React.MouseEvent) => {
@@ -24,55 +23,22 @@ export function Header({ currentUser, appMeta, aiAvailable = false, onOpenChat }
 	}
 
 	return (
-		<Group h="100%" px="md" justify="space-between">
-			<Group gap="md">
-				<Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+		<Group h="100%" px="md" justify="space-between" wrap="nowrap">
+			<Group gap="sm" wrap="nowrap" miw={0} flex={1}>
+				<Burger opened={navOpened} onClick={onToggleNav} hiddenFrom="sm" size="sm" aria-label="Toggle navigation" />
+				<Link to="/" style={{ textDecoration: 'none', color: 'inherit', minWidth: 0 }}>
 					<Tooltip label={`${appTitle} v${appMeta.version}`}>
-						<Group gap="xs">
+						<Group gap="xs" wrap="nowrap" miw={0}>
 							<CheckSquare size={20} />
-							<Text fw={700} size="lg">
+							<Text fw={700} size="lg" truncate>
 								{appTitle}
 							</Text>
 						</Group>
 					</Tooltip>
 				</Link>
-
-				<Link to="/tasks" style={{ textDecoration: 'none', color: 'inherit' }}>
-					<Group gap={4}>
-						<ListTodo size={16} />
-						<Text size="sm">Tasks</Text>
-					</Group>
-				</Link>
 			</Group>
 
-			<Group gap="xs">
-				{displayName ? (
-					<Tooltip
-						label={`Demo test user (${currentUser?.identity.email}). Actions are attributed to this identity. Provide a real JWT in the auth header to use your own account.`}
-						disabled={!currentUser?.isTestUser}
-						multiline
-						w={280}
-					>
-						<Text size="sm" c="dimmed" style={currentUser?.isTestUser ? { cursor: 'help' } : undefined}>
-							{displayName}
-						</Text>
-					</Tooltip>
-				) : null}
-
-				<Tooltip label="View source on GitHub">
-					<ActionIcon
-						component="a"
-						href="https://github.com/carlosvin/tanstack-fullstack-ai-template"
-						target="_blank"
-						rel="noopener noreferrer"
-						variant="subtle"
-						size="lg"
-						aria-label="View source on GitHub"
-					>
-						<Code size={18} />
-					</ActionIcon>
-				</Tooltip>
-
+			<Group gap="xs" wrap="nowrap">
 				<Tooltip label={`Switch to ${colorScheme === 'dark' ? 'light' : 'dark'} mode`}>
 					<ActionIcon type="button" variant="subtle" onClick={toggleColorScheme} size="lg">
 						{colorScheme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
@@ -80,15 +46,11 @@ export function Header({ currentUser, appMeta, aiAvailable = false, onOpenChat }
 				</Tooltip>
 
 				{aiAvailable ? (
-					<Button
-						variant="light"
-						size="compact-sm"
-						leftSection={<MessageCircle size={16} />}
-						onClick={handleOpenChat}
-						aria-label="Open AI chat"
-					>
-						Ask AI
-					</Button>
+					<Tooltip label="Ask AI">
+						<ActionIcon type="button" variant="light" size="lg" onClick={handleOpenChat} aria-label="Open AI chat">
+							<MessageCircle size={18} />
+						</ActionIcon>
+					</Tooltip>
 				) : null}
 			</Group>
 		</Group>

@@ -12,6 +12,7 @@ import {
 	ThemeIcon,
 	Tooltip,
 } from '@mantine/core'
+import { useMediaQuery } from '@mantine/hooks'
 import { clientTools, createChatClientOptions } from '@tanstack/ai-client'
 import type { UIMessage } from '@tanstack/ai-react'
 import { fetchServerSentEvents, useChat } from '@tanstack/ai-react'
@@ -108,6 +109,7 @@ export function ChatDrawer({ opened, onClose }: ChatDrawerProps) {
 	const viewport = useRef<HTMLDivElement>(null)
 	const [input, setInput] = useState('')
 	const router = useRouter()
+	const isMobile = useMediaQuery('(max-width: 47.99em)', true)
 
 	const navigateClient = navigateToolDef.client((args) => {
 		const parsed = NavigateInputSchema.safeParse(args)
@@ -182,8 +184,15 @@ export function ChatDrawer({ opened, onClose }: ChatDrawerProps) {
 	}
 
 	return (
-		<Drawer opened={opened} onClose={onClose} title="AI Assistant" position="right" size="lg" padding="md">
-			<Stack h="calc(100vh - 120px)" justify="space-between">
+		<Drawer
+			opened={opened}
+			onClose={onClose}
+			title="AI Assistant"
+			position="right"
+			size={isMobile ? '100%' : 'lg'}
+			padding="md"
+		>
+			<Stack h="calc(100dvh - 120px)" justify="space-between">
 				<ScrollArea flex={1} viewportRef={viewport}>
 					<Stack gap="md" p="xs">
 						{messages.length === 0 && (

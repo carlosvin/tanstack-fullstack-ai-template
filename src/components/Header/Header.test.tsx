@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { renderWithProviders } from '../../test-utils/renderWithRouter'
@@ -11,31 +11,33 @@ vi.mock('../Link/Link', () => ({
 const appMeta = { name: 'TaskHub', version: '1.0.0' }
 
 describe('Header', () => {
-	it('shows the Ask AI button when aiAvailable is true', () => {
-		renderWithProviders(<Header appMeta={appMeta} aiAvailable onOpenChat={vi.fn()} />)
+	it('shows the Ask AI control when aiAvailable is true', () => {
+		renderWithProviders(
+			<Header navOpened={false} onToggleNav={vi.fn()} appMeta={appMeta} aiAvailable onOpenChat={vi.fn()} />,
+		)
 
-		expect(screen.getByRole('button', { name: 'Open AI chat' }).textContent).toBe('Ask AI')
+		expect(screen.getByRole('button', { name: 'Open AI chat' })).toBeTruthy()
 	})
 
-	it('hides the Ask AI button when aiAvailable is false', () => {
-		renderWithProviders(<Header appMeta={appMeta} aiAvailable={false} onOpenChat={vi.fn()} />)
+	it('hides the Ask AI control when aiAvailable is false', () => {
+		renderWithProviders(
+			<Header navOpened={false} onToggleNav={vi.fn()} appMeta={appMeta} aiAvailable={false} onOpenChat={vi.fn()} />,
+		)
 
 		expect(screen.queryByRole('button', { name: 'Open AI chat' })).toBeNull()
 	})
 
-	it('shows the display name for test users', () => {
-		renderWithProviders(
-			<Header
-				appMeta={appMeta}
-				currentUser={{
-					identity: { email: 'random1234@example.com', name: 'Test User 1234', groups: [] },
-					profile: null,
-					isTestUser: true,
-					roles: [],
-				}}
-			/>,
-		)
+	it('toggles navigation when the burger is clicked', () => {
+		const onToggleNav = vi.fn()
+		renderWithProviders(<Header navOpened={false} onToggleNav={onToggleNav} appMeta={appMeta} />)
 
-		expect(screen.getByText('Test User 1234')).toBeTruthy()
+		fireEvent.click(screen.getByRole('button', { name: 'Toggle navigation' }))
+		expect(onToggleNav).toHaveBeenCalledTimes(1)
+	})
+
+	it('does not render inline Tasks navigation', () => {
+		renderWithProviders(<Header navOpened={false} onToggleNav={vi.fn()} appMeta={appMeta} />)
+
+		expect(screen.queryByText('Tasks')).toBeNull()
 	})
 })

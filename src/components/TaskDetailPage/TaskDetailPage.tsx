@@ -28,9 +28,9 @@ export function TaskDetailPage({ task, isCreator, onEdit, onDelete }: TaskDetail
 	}
 
 	return (
-		<Container size="md" py="md">
+		<Container size="md" py={{ base: 'xs', sm: 'md' }} px={0}>
 			<Stack gap="lg">
-				<Group justify="space-between">
+				<Group justify="space-between" wrap="wrap" gap="sm">
 					<Link to="/tasks" style={{ textDecoration: 'none' }}>
 						<Button variant="subtle" leftSection={<ArrowLeft size={16} />} size="sm">
 							Back to Tasks
@@ -48,9 +48,9 @@ export function TaskDetailPage({ task, isCreator, onEdit, onDelete }: TaskDetail
 					)}
 				</Group>
 
-				<Card withBorder padding="xl">
+				<Card withBorder p={{ base: 'md', sm: 'xl' }}>
 					<Stack gap="md">
-						<Group justify="space-between" align="flex-start">
+						<Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
 							<div>
 								<Title order={2}>{task.title}</Title>
 								<Text size="xs" c="dimmed" mt={4}>
@@ -69,7 +69,7 @@ export function TaskDetailPage({ task, isCreator, onEdit, onDelete }: TaskDetail
 
 						{task.description && <Text>{task.description}</Text>}
 
-						<Group gap="xl" mt="md">
+						<Group gap="xl" mt="md" wrap="wrap">
 							{task.assignee && (
 								<Group gap="xs">
 									<User size={16} />

@@ -56,11 +56,11 @@ export function DashboardPage({ tasks, appName, appVersion, env }: DashboardPage
 	]
 
 	return (
-		<Container size="lg" py="md">
+		<Container size="lg" py={{ base: 'xs', sm: 'md' }} px={0}>
 			<Stack gap="xl">
 				<div>
 					<Title order={2}>Dashboard</Title>
-					<Group gap="xs" mt={4}>
+					<Group gap="xs" mt={4} wrap="wrap">
 						<Text c="dimmed">Overview of your task management workspace.</Text>
 						<Text size="sm" c="dimmed">
 							{appName} v{appVersion}
@@ -73,7 +73,7 @@ export function DashboardPage({ tasks, appName, appVersion, env }: DashboardPage
 					</Group>
 				</div>
 
-				<SimpleGrid cols={{ base: 2, sm: 4 }}>
+				<SimpleGrid cols={{ base: 1, xs: 2, sm: 4 }}>
 					{stats.map((stat) => (
 						<Link
 							key={stat.label}
@@ -137,9 +137,11 @@ export function DashboardPage({ tasks, appName, appVersion, env }: DashboardPage
 								style={{ textDecoration: 'none', color: 'inherit' }}
 							>
 								<Card withBorder padding="sm">
-									<Group justify="space-between">
-										<Group gap="sm">
-											<Text fw={500}>{task.title}</Text>
+									<Group justify="space-between" wrap="wrap" gap="xs">
+										<Group gap="sm" wrap="wrap" miw={0} flex={1}>
+											<Text fw={500} lineClamp={2}>
+												{task.title}
+											</Text>
 											<Badge size="sm" variant="light" color={priorityColor(task.priority)}>
 												{task.priority}
 											</Badge>
