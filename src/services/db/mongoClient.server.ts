@@ -1,3 +1,4 @@
+import { createServerOnlyFn } from '@tanstack/react-start'
 import { type Db, MongoClient } from 'mongodb'
 import { webServerEnv } from '../../env/webEnv'
 
@@ -6,9 +7,9 @@ let db: Db | null = null
 
 /**
  * Returns a singleton MongoDB database connection.
- * Lazily connects on first call.
+ * Lazily connects on first call. Never callable from the client.
  */
-export async function getDb(): Promise<Db> {
+export const getDb = createServerOnlyFn(async (): Promise<Db> => {
 	if (db) return db
 
 	const uri = webServerEnv.MONGODB_URI
@@ -23,4 +24,4 @@ export async function getDb(): Promise<Db> {
 	console.info(`[db] Connected to MongoDB database: ${dbName}`)
 	db = client.db(dbName)
 	return db
-}
+})

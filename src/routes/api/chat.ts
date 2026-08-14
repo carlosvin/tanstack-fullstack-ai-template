@@ -1,15 +1,21 @@
 import { chat, convertMessagesToModelMessages, maxIterations, toServerSentEventsResponse } from '@tanstack/ai'
 import { createFileRoute } from '@tanstack/react-router'
+import { getRouterInstance } from '@tanstack/react-start'
 import { getAIAdapterService } from '../../services/ai/adapter'
-import { getNavigationPromptSection, matchUserFacingRoute } from '../../services/ai/navigationManifest'
+import {
+	buildAppNavigation,
+	getNavigationPromptSection,
+	matchUserFacingRoute,
+} from '../../services/ai/navigationManifest'
 import {
 	createTaskTool,
 	deleteTaskTool,
 	getAppRuntimeInfoTool,
-	getAssigneesTool,
 	getCurrentUserContextTool,
+	getDistinctValuesTool,
 	getTasksTool,
 	getTaskTool,
+	getUserAccessTool,
 	getUserProfileTool,
 	invalidateRouterToolDef,
 	navigateToolDef,
@@ -27,7 +33,7 @@ const BASE_SYSTEM_PROMPT = `You are a helpful task management assistant. You hav
 ## Capabilities
 - Search and filter tasks by status, priority, assignee, or free text
 - Get detailed information about specific tasks
-- List all assignees
+- List distinct filter values that exist in the data (getDistinctValues for assignee, status, or priority)
 - Navigate the user to app pages (use the navigate tool)
 - Create, update, and delete tasks (when the user is allowed)
 - Check who is logged in and what they can do (getCurrentUserContext)
@@ -61,7 +67,7 @@ Each task has:
 ## Guidelines
 - Use the getTasks tool with filters when the user asks about tasks matching criteria.
 - Use the getTask tool when the user asks about a specific task.
-- Use getAssignees to discover team members, and getUserProfile to resolve display names and roles from emails.
+- Use getDistinctValues to discover real filter options (e.g. assignees), and getUserProfile to resolve display names and roles from emails.
 - Format responses clearly using markdown.
 - When listing tasks, include their status and priority.
 - Be concise but thorough.`
@@ -71,8 +77,9 @@ function buildSystemPrompt(
 	profile: UserProfile | null,
 	browserContext: BrowserContext | null,
 	isTestUser: boolean,
+	navigationSection: string,
 ): string {
-	const sections: string[] = [BASE_SYSTEM_PROMPT, getNavigationPromptSection()]
+	const sections: string[] = [BASE_SYSTEM_PROMPT, navigationSection]
 
 	const displayName = profile?.name || user.name || 'Anonymous'
 	const role = profile?.role ?? 'User'
@@ -104,7 +111,7 @@ function buildSystemPrompt(
 		if (currentPath || currentSearch || currentHref) {
 			const fullPath = `${currentPath ?? ''}${currentSearch ?? ''}` || 'unknown'
 			const matchedRoute = currentPath ? matchUserFacingRoute(currentPath) : null
-			const currentTaskId = matchedRoute?.to === '/tasks/$taskId' ? matchedRoute.params?.taskId : undefined
+			const currentTaskId = matchedRoute?.params?.taskId
 
 			const locationLines = [
 				'## Current Location',
@@ -112,9 +119,9 @@ function buildSystemPrompt(
 				`- Full URL: ${currentHref ?? 'unknown'}`,
 			]
 
-			if (currentTaskId) {
+			if (currentTaskId && matchedRoute) {
 				locationLines.push(
-					`- This matches the task detail route pattern \`/tasks/$taskId\`; the current \`$taskId\` is \`${currentTaskId}\`.`,
+					`- This matches route \`${matchedRoute.to}\`; the current \`$taskId\` is \`${currentTaskId}\`.`,
 					'- When the user says "this task" or "the current task", default to this task id unless they specify another one.',
 				)
 			}
@@ -146,17 +153,25 @@ export const Route = createFileRoute('/api/chat')({
 
 				const body = await request.json()
 
-				const { user, userProfile, isTestUser } = context
+				const { accessTicket } = context
 
 				const browserContextResult = BrowserContextSchema.safeParse(body.browserContext)
 				const browserContext: BrowserContext | null = browserContextResult.success ? browserContextResult.data : null
 
-				const systemPrompt = buildSystemPrompt(user, userProfile, browserContext, isTestUser)
+				const router = await getRouterInstance()
+				const systemPrompt = buildSystemPrompt(
+					accessTicket.identity,
+					accessTicket.profile,
+					browserContext,
+					accessTicket.isTestUser,
+					getNavigationPromptSection(buildAppNavigation(router)),
+				)
 				const tools = [
 					getTasksTool,
 					getTaskTool,
-					getAssigneesTool,
+					getDistinctValuesTool,
 					getUserProfileTool,
+					getUserAccessTool,
 					getAppRuntimeInfoTool,
 					getCurrentUserContextTool,
 					createTaskTool,

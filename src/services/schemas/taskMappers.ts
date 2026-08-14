@@ -1,5 +1,5 @@
-import type { TaskRepo, UserProfileRepo } from './repository'
-import { TaskSchema, UserProfileSchema } from './schemas'
+import type { TaskRepo, UserAccessRepo, UserProfileRepo } from './repository'
+import { TaskSchema, UserAccessSchema, UserProfileSchema } from './schemas'
 
 /** Repository row → tools/API task shape. */
 export function toToolTask(row: TaskRepo) {
@@ -25,5 +25,14 @@ export function toToolUserProfile(row: UserProfileRepo) {
 		role: row.role,
 		avatarUrl: row.avatarUrl,
 		preferences: row.preferences,
+	})
+}
+
+/** Repository access row → tools/API access shape. */
+export function toToolUserAccess(row: UserAccessRepo) {
+	return UserAccessSchema.parse({
+		email: row.email,
+		name: row.name,
+		roles: row.roles,
 	})
 }

@@ -48,12 +48,21 @@ describe('SeedRepository', () => {
 		})
 	})
 
-	describe('getAssignees', () => {
+	describe('getDistinctValues', () => {
 		it('returns sorted unique assignees', async () => {
-			const assignees = await repo.getAssignees()
+			const assignees = await repo.getDistinctValues('assignee')
 			expect(assignees.length).toBeGreaterThan(0)
 			const sorted = [...assignees].sort()
 			expect(assignees).toEqual(sorted)
+		})
+
+		it('returns distinct statuses present in seed data', async () => {
+			const statuses = await repo.getDistinctValues('status')
+			expect(statuses.length).toBeGreaterThan(0)
+			expect(statuses).toEqual([...statuses].sort())
+			for (const status of statuses) {
+				expect(['pending', 'in-progress', 'done', 'cancelled']).toContain(status)
+			}
 		})
 	})
 
@@ -132,6 +141,20 @@ describe('SeedRepository', () => {
 		it('returns null for an unknown email', async () => {
 			const profile = await repo.getUserProfile('unknown@example.com')
 			expect(profile).toBeNull()
+		})
+	})
+
+	describe('getUserAccess', () => {
+		it('returns roles derived from the user profile', async () => {
+			const access = await repo.getUserAccess('alice@example.com')
+			expect(access).not.toBeNull()
+			expect(access?.email).toBe('alice@example.com')
+			expect(access?.roles).toContain('Engineering Lead')
+		})
+
+		it('returns null for an unknown email', async () => {
+			const access = await repo.getUserAccess('unknown@example.com')
+			expect(access).toBeNull()
 		})
 	})
 })

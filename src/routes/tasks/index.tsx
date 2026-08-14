@@ -1,199 +1,55 @@
-import {
-	ActionIcon,
-	Badge,
-	Button,
-	Card,
-	Container,
-	Flex,
-	Group,
-	Select,
-	Stack,
-	Text,
-	TextInput,
-	Title,
-} from '@mantine/core'
-import { useDebouncedCallback } from '@mantine/hooks'
-import { notifications } from '@mantine/notifications'
 import { createFileRoute, Outlet, useLoaderData, useNavigate } from '@tanstack/react-router'
-import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
-import { z } from 'zod'
-import { Link } from '../../components/Link/Link'
-import { TASK_PRIORITIES, TASK_STATUSES } from '../../constants/options'
+import { TasksPage } from '../../components/TasksPage/TasksPage'
 import { processResponse } from '../../services/api/processResponse'
 import { deleteTask, getTasks } from '../../services/api/serverFns'
+import { TasksListSearchSchema } from '../../services/schemas/schemas'
 import type { Task } from '../../types'
 import { confirmDelete } from '../../utils/confirmDelete'
-import { priorityColor, statusColor } from '../../utils/taskDisplay'
-
-const TasksSearchSchema = z.object({
-	status: z.enum(TASK_STATUSES).optional(),
-	priority: z.enum(TASK_PRIORITIES).optional(),
-	search: z.string().optional(),
-})
+import { notifyProcessed } from '../../utils/notifyProcessed'
 
 export const Route = createFileRoute('/tasks/')({
-	validateSearch: TasksSearchSchema,
+	staticData: { description: 'Tasks list with optional filters' },
+	validateSearch: TasksListSearchSchema,
 	loaderDeps: ({ search }) => search,
 	loader: async ({ deps }) => {
 		const tasks = await getTasks({ data: deps })
 		return { tasks }
 	},
-	component: TasksPage,
+	component: TasksRoute,
 })
 
-function TasksPage() {
+function TasksRoute() {
 	const { tasks } = Route.useLoaderData()
 	const { currentUser } = useLoaderData({ from: '__root__' })
 	const search = Route.useSearch()
 	const navigate = useNavigate()
 	const isAuth = Boolean(currentUser?.identity?.email)
-	const urlSearch = search.search ?? ''
-
-	const updateSearch = (updates: Partial<z.infer<typeof TasksSearchSchema>>, replace = false) => {
-		navigate({
-			to: '/tasks',
-			replace,
-			search: (prev) => ({ ...prev, ...updates }),
-		})
-	}
-
-	const debouncedSearch = useDebouncedCallback((value: string) => {
-		const next = value || undefined
-		if (next === search.search) return
-		updateSearch({ search: next }, true)
-	}, 300)
 
 	const handleDeleteClick = (task: Task) => {
 		confirmDelete(task.title, () =>
 			processResponse(() => deleteTask({ data: { taskId: task.id } })).then((result) => {
-				if (result.error) {
-					notifications.show({ message: result.error.message, color: 'red' })
-					return
-				}
-				notifications.show({ message: 'Task deleted', color: 'green' })
+				notifyProcessed(result, 'Task deleted')
 			}),
 		)
 	}
 
 	return (
-		<Container size="lg" py="md">
-			<Stack gap="lg">
-				<Group justify="space-between" align="flex-end">
-					<div>
-						<Title order={2}>Tasks</Title>
-						<Text c="dimmed" mt={4}>
-							Browse and filter all tasks.
-						</Text>
-					</div>
-					{isAuth && (
-						<Button leftSection={<Plus size={16} />} onClick={() => navigate({ to: '/tasks/new' })}>
-							Add task
-						</Button>
-					)}
-				</Group>
-
-				<Flex gap="sm" align="flex-end">
-					<TextInput
-						placeholder="Search tasks..."
-						leftSection={<Search size={16} />}
-						defaultValue={urlSearch}
-						onChange={(e) => debouncedSearch(e.currentTarget.value)}
-						flex={1}
-					/>
-					<Select
-						placeholder="Status"
-						clearable
-						data={TASK_STATUSES.map((s) => ({ value: s, label: s }))}
-						value={search.status ?? null}
-						onChange={(val) => updateSearch({ status: (val as (typeof TASK_STATUSES)[number]) || undefined })}
-						w={150}
-					/>
-					<Select
-						placeholder="Priority"
-						clearable
-						data={TASK_PRIORITIES.map((p) => ({ value: p, label: p }))}
-						value={search.priority ?? null}
-						onChange={(val) => updateSearch({ priority: (val as (typeof TASK_PRIORITIES)[number]) || undefined })}
-						w={150}
-					/>
-				</Flex>
-
-				{tasks.length === 0 ? (
-					<Text c="dimmed" ta="center" py="xl">
-						No tasks found matching your filters.
-					</Text>
-				) : (
-					<Stack gap="xs">
-						{tasks.map((task) => {
-							const isCreator = isAuth && task.createdBy === currentUser?.identity?.email
-							return (
-								<Card key={task.id} withBorder padding="md">
-									<Group justify="space-between" wrap="nowrap">
-										<Link
-											to="/tasks/$taskId"
-											params={{ taskId: task.id }}
-											style={{ textDecoration: 'none', color: 'inherit', flex: 1, minWidth: 0 }}
-										>
-											<Group justify="space-between" wrap="nowrap">
-												<Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
-													<Group gap="sm">
-														<Text fw={500}>{task.title}</Text>
-														<Badge size="sm" variant="light" color={priorityColor(task.priority)}>
-															{task.priority}
-														</Badge>
-													</Group>
-													{task.description && (
-														<Text size="sm" c="dimmed" lineClamp={1}>
-															{task.description}
-														</Text>
-													)}
-												</Stack>
-												<Group gap="sm" wrap="nowrap">
-													{task.assignee && (
-														<Text size="xs" c="dimmed">
-															{task.assignee}
-														</Text>
-													)}
-													<Badge variant="dot" color={statusColor(task.status)}>
-														{task.status}
-													</Badge>
-												</Group>
-											</Group>
-										</Link>
-										{isCreator && (
-											<Group gap={4} onClick={(e) => e.preventDefault()}>
-												<ActionIcon
-													variant="subtle"
-													size="sm"
-													aria-label="Edit task"
-													onClick={() =>
-														navigate({
-															to: '/tasks/$taskId/edit',
-															params: { taskId: task.id },
-														})
-													}
-												>
-													<Pencil size={14} />
-												</ActionIcon>
-												<ActionIcon
-													variant="subtle"
-													size="sm"
-													color="red"
-													aria-label="Delete task"
-													onClick={() => handleDeleteClick(task)}
-												>
-													<Trash2 size={14} />
-												</ActionIcon>
-											</Group>
-										)}
-									</Group>
-								</Card>
-							)
-						})}
-					</Stack>
-				)}
-			</Stack>
+		<>
+			<TasksPage
+				tasks={tasks}
+				search={search}
+				isAuth={isAuth}
+				currentUserEmail={currentUser?.identity?.email}
+				onUpdateSearch={(updates, replace = false) => {
+					navigate({
+						to: '/tasks',
+						replace,
+						search: (prev) => ({ ...prev, ...updates }),
+					})
+				}}
+				onDeleteTask={handleDeleteClick}
+			/>
 			<Outlet />
-		</Container>
+		</>
 	)
 }

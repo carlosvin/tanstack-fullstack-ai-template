@@ -1,5 +1,7 @@
+import { createMemoryHistory, createRootRoute, createRoute, createRouter } from '@tanstack/react-router'
 import { describe, expect, it } from 'vitest'
-import { matchUserFacingRoute } from './navigationManifest'
+import { z } from 'zod'
+import { buildAppNavigation, getNavigationPromptSection, matchUserFacingRoute } from './navigationManifest'
 
 describe('matchUserFacingRoute', () => {
 	it('matches static routes', () => {
@@ -22,5 +24,47 @@ describe('matchUserFacingRoute', () => {
 	it('rejects unknown paths', () => {
 		expect(matchUserFacingRoute('/unknown')).toBeNull()
 		expect(matchUserFacingRoute('/api/chat')).toBeNull()
+	})
+})
+
+describe('buildAppNavigation', () => {
+	it('derives user-facing routes and search params from the router', () => {
+		const SearchSchema = z.object({
+			status: z.string().optional().describe('Filter by status: pending | in-progress | done | cancelled'),
+		})
+
+		const rootRoute = createRootRoute()
+		const indexRoute = createRoute({
+			getParentRoute: () => rootRoute,
+			path: '/',
+			staticData: { description: 'Home page' },
+		})
+		const tasksRoute = createRoute({
+			getParentRoute: () => rootRoute,
+			path: '/tasks',
+			validateSearch: SearchSchema,
+			staticData: { description: 'Tasks list with optional filters' },
+		})
+		const apiRoute = createRoute({
+			getParentRoute: () => rootRoute,
+			path: '/api/chat',
+			staticData: { description: 'should be excluded' },
+		})
+		const router = createRouter({
+			routeTree: rootRoute.addChildren([indexRoute, tasksRoute, apiRoute]),
+			history: createMemoryHistory({ initialEntries: ['/'] }),
+		})
+
+		const nav = buildAppNavigation(router)
+		expect(nav.map((r) => r.path)).toEqual(['/', '/tasks'])
+		expect(nav.find((r) => r.path === '/tasks')?.searchParams).toEqual([
+			{ name: 'status', description: 'Filter by status: pending | in-progress | done | cancelled' },
+		])
+		expect(getNavigationPromptSection(nav)).toContain('**/tasks**: Tasks list with optional filters')
+		expect(getNavigationPromptSection(nav)).not.toContain('/api/chat')
+		expect(getNavigationPromptSection(nav)).toContain('[/tasks](/tasks)')
+		expect(getNavigationPromptSection(nav)).toContain('[In-progress tasks](/tasks?status=in-progress)')
+		expect(getNavigationPromptSection(nav)).not.toContain('/tasks/new')
+		expect(getNavigationPromptSection(nav)).not.toContain('/tasks/<taskId>')
 	})
 })

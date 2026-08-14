@@ -74,7 +74,7 @@ test.describe('Task CRUD (authenticated as Alice)', () => {
 		await page.locator('main').getByRole('button', { name: 'Delete', exact: true }).click()
 		await confirmMantineDelete(page)
 		await page.waitForURL(/\/tasks\/?$/, { timeout: 10_000 })
-		await expect(page.getByText(UPDATED_TASK_TITLE)).not.toBeVisible()
+		await expect(page.locator('main').getByText(UPDATED_TASK_TITLE)).not.toBeVisible()
 	})
 
 	test('shows Edit/Delete on detail page for own task', async ({ authedPage: page }) => {

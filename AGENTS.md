@@ -25,10 +25,10 @@ This template is the reference app for the skill. **Already landed on `main`:** 
 | Phase | Skill contract | Status / files |
 |-------|----------------|----------------|
 | **0 — Observability & env** | Centralized env parse once; pino; Sentry; `webServerEnv` + `shellSession` | **Done** — `src/env/webEnv.ts`, `instrument.*.mts`, `webEnvMiddleware`, `getBrowserShellSession` |
-| **1 — Schema boundaries** | Outbound `Schema.parse()` (repo → tools); router defaults bundle; `Link` with `search: true` | **Done** — `serverFns.ts`, `taskMappers.ts`, `router.tsx`, `src/components/Link/Link.tsx` |
-| **2 — Auth & writes** | Auth ticket + `TraceabilityContext` (skill allows stock `user`/`userProfile` until enriched) | **Partial** — `TraceabilityContext` persisted on create/update (`createdBy` / `lastModifiedBy`); full auth ticket still open |
-| **3 — Data loading & AI** | Parent loader dedup; `getAIAvailability()` gates chat UI | **Done** — `__root.tsx`, task routes, `Header`, `AppLayout`, `ChatDrawer` |
-| **4 — Hardening** | `createServerOnlyFn`; `PUBLIC_ROUTES`; router introspection for nav manifest | **Partial** — `PUBLIC_ROUTES`, `*.server.ts` + import protection done; `createServerOnlyFn` deferred |
+| **1 — Schema boundaries** | Outbound `Schema.parse()` (repo → tools); router defaults bundle; `Link` with `search: true` | **Done** — `serverFns.ts`, `taskMappers.ts`, `router.tsx` (`defaultNotFoundComponent`), `src/components/Link/Link.tsx` |
+| **2 — Auth & writes** | Auth ticket + `TraceabilityContext` (skill allows stock `user`/`userProfile` until enriched) | **Done** — `accessTicket` from identity + `getUserProfile`; `TraceabilityContext` on create/update |
+| **3 — Data loading & AI** | Parent loader dedup; `getAIAvailability()` gates chat UI; distinct-values tools | **Done** — `__root.tsx`, task routes, `Header`, `AppLayout`, `ChatDrawer`, `getDistinctValues` |
+| **4 — Hardening** | `createServerOnlyFn`; `PUBLIC_ROUTES`; router introspection for nav manifest | **Done** — `PUBLIC_ROUTES`, `*.server.ts` + import protection, `createServerOnlyFn` on DB/repo factories; `buildAppNavigation(router.routesById)` |
 | **5 — Deploy** | Ship to [fullstack-promptable-app-example.netlify.app](https://fullstack-promptable-app-example.netlify.app) | After merge to `main` |
 
 **CI/CD (Netlify-native):** GitHub Actions validates PRs and `main` (`.github/workflows/ci.yml`: lint, test, build). Netlify Git integration handles all deploys — **deploy previews** on pull requests and **production** on merge to `main` (`netlify.toml` → `pnpm build`, publish `dist`). With `NETLIFY=true` (set automatically on Netlify), `@netlify/vite-plugin-tanstack-start` writes static assets to `dist/` and SSR to `.netlify/`; local non-Netlify builds still emit `.output/public`. No `NETLIFY_AUTH_TOKEN` secrets in GitHub. In Netlify: production branch `main`, deploy previews on, branch deploys off.
@@ -135,12 +135,11 @@ If your team prefers [`@tabler/icons-react`](https://tabler.io/icons) (the Manti
 ```tsx
 // src/middleware/auth.ts
 interface AuthContext {
-  user: UserIdentity
-  userProfile: UserProfile | null
+  accessTicket: AccessTicket
 }
 ```
 
-`requireAuthMiddleware` chains `authMiddleware` so `context.user` is typed in mutation handlers.
+`requireAuthMiddleware` chains `authMiddleware` so `context.accessTicket` is typed in mutation handlers.
 
 ### Optional patterns (skill)
 
@@ -172,7 +171,7 @@ export const myMutation = createServerFn({ method: 'POST' })
   .middleware([requireAuthMiddleware, invalidateMiddleware])
   .inputValidator(MyInputSchema)
   .handler(async ({ data, context }) => {
-    const trace = createWriteTrace(context.user.email)
+    const trace = createWriteTrace(context.accessTicket.identity.email)
     return getWritableRepository().doSomething(data, trace)
   })
 
@@ -198,7 +197,7 @@ Routes live in `src/routes/`; tree is auto-generated in `routeTree.gen.ts`. Rout
 | `src/services/ai/adapter.ts` | Provider implementation |
 | `src/services/ai/tools.ts` | Server + client tool definitions |
 | `src/services/ai/serverTool.ts` | `createSafeServerTool` / `safeToolHandler` |
-| `src/services/ai/navigationManifest.ts` | AI route manifest — update when routes/search params change |
+| `src/services/ai/navigationManifest.ts` | AI route matching + prompt section; `buildAppNavigation(router)` from `routesById` |
 | `src/routes/api/chat.ts` | SSE endpoint, `BASE_SYSTEM_PROMPT`, `buildSystemPrompt` |
 | `src/components/ChatDrawer/ChatDrawer.tsx` | `useChat`, client tools, markdown rendering |
 
@@ -242,7 +241,7 @@ Definitions in `src/services/ai/tools.ts` — each calls the same `serverFns.ts`
 
 Client tools execute in the browser and are defined in `src/services/ai/tools.ts` (definition-only, no `.server()` call) with implementations in [ChatDrawer](src/components/ChatDrawer/ChatDrawer.tsx) using `clientTools()` from `@tanstack/ai-client`:
 
-- **navigate**: Triggers `router.navigate()` in the browser. Accepts `to` (path) and optional `search` (query params). Validates paths via `isUserFacingPath()`.
+- **navigate**: Triggers `router.navigate()` in the browser. Accepts `to` (path) and optional `search` (query params). Validates paths via `matchUserFacingRoute()` (`$param` patterns from `UserFacingTo`).
 - **invalidateRouter**: Calls `router.invalidate()` to refresh page data. The AI calls this after mutation tools so the user sees updated data.
 
 When adding client tools: export the `toolDefinition(...)` from `tools.ts`, pass it to `chat()` in the chat endpoint, and add a `.client()` implementation in `ChatDrawer.tsx` via `clientTools()`.
@@ -274,7 +273,7 @@ const { messages, sendMessage, isLoading } = useChat(
 
 ### App navigation and links
 
-When routes or `validateSearch` schemas change, update `APP_NAVIGATION` in `src/services/ai/navigationManifest.ts` (descriptions should match schema `.describe()` text). Long-term: skill **Special Patterns** — derive from router introspection where possible.
+When routes or `validateSearch` schemas change, set `staticData.description` on the route and `.describe()` on search fields. `buildAppNavigation(router)` derives the AI prompt from `router.routesById`. Path matching uses exhaustive `UserFacingTo` `$param` patterns in `navigationManifest.ts` (typecheck fails if a new user-facing `to` is missing). Markdown link examples in the prompt are generated from the derived route list.
 
 - Internal links in assistant messages: `ChatDrawer` `MarkdownLink` → TanStack Router `Link` with `preload="intent"`.
 - AI uses markdown links in replies; **navigate** client tool for programmatic navigation.

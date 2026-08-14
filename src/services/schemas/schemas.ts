@@ -8,7 +8,7 @@
  * for types that are validated at runtime.
  */
 import { z } from 'zod'
-import { TASK_PRIORITIES, TASK_STATUSES } from '../../constants/options'
+import { DISTINCT_VALUE_FIELDS, TASK_PRIORITIES, TASK_STATUSES } from '../../constants/options'
 import { OptionalDeploymentEnvSchema } from '../../env/runtimeEnvSchema'
 import { AppMetaSchema } from '../../env/webEnv'
 
@@ -55,9 +55,18 @@ export const CurrentUserSchema = z.object({
 	identity: UserIdentitySchema.describe('Authenticated user identity from the access ticket'),
 	profile: UserProfileSchema.nullable().describe('Repository profile when available'),
 	isTestUser: z.boolean().describe('True when the server auto-generated a demo test user'),
+	roles: z.array(z.string()).describe('Combined identity groups and repository roles'),
 })
 
 export type CurrentUser = z.infer<typeof CurrentUserSchema>
+
+export const UserAccessSchema = z.object({
+	email: z.string().describe('Email address of the user whose access to look up'),
+	name: z.string().describe('Display name'),
+	roles: z.array(z.string()).describe('Repository-backed roles for this user'),
+})
+
+export type UserAccess = z.infer<typeof UserAccessSchema>
 
 // ---------------------------------------------------------------------------
 // Browser Context (sent by the client with each chat request)
@@ -117,13 +126,27 @@ export type Task = z.infer<typeof TaskSchema>
 // ---------------------------------------------------------------------------
 
 export const TaskFilterSchema = z.object({
-	status: TaskStatusSchema.optional().describe('Filter by task status'),
-	priority: TaskPrioritySchema.optional().describe('Filter by task priority'),
+	status: TaskStatusSchema.optional().describe('Filter by status: pending | in-progress | done | cancelled'),
+	priority: TaskPrioritySchema.optional().describe('Filter by priority: low | medium | high | critical'),
 	assignee: z.string().optional().describe('Filter by assignee email'),
-	search: z.string().optional().describe('Full-text search across title and description'),
+	search: z.string().optional().describe('Full-text search over tasks'),
 })
 
 export type TaskFilter = z.infer<typeof TaskFilterSchema>
+
+/** URL search params for the tasks list (subset of TaskFilter without assignee). */
+export const TasksListSearchSchema = TaskFilterSchema.pick({ status: true, priority: true, search: true })
+
+/** Filterable task fields that support distinct-value discovery against real data. */
+export const DistinctValueFieldSchema = z
+	.enum(DISTINCT_VALUE_FIELDS)
+	.describe('Task field to collect distinct values from: assignee, status, or priority')
+
+export const DistinctValuesInputSchema = z.object({
+	field: DistinctValueFieldSchema,
+})
+
+export type DistinctValuesInput = z.infer<typeof DistinctValuesInputSchema>
 
 export const UserProfileByEmailSchema = z.object({
 	email: z.string().describe('Email address of the user whose profile to look up'),

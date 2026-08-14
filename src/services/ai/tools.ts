@@ -9,23 +9,25 @@
  */
 import { toolDefinition } from '@tanstack/ai'
 import { z } from 'zod'
-import { TASK_PRIORITIES, TASK_STATUSES } from '../../constants/options'
 import {
 	createTask,
 	deleteTask,
-	getAssignees,
 	getBrowserShellSession,
 	getCurrentUser,
+	getDistinctValues,
 	getTask,
 	getTasks,
+	getUserAccess,
 	getUserProfile,
 	updateTask,
 } from '../api/serverFns'
 import {
 	AppRuntimeInfoSchema,
+	DistinctValuesInputSchema,
 	TaskFilterSchema,
 	TaskIdInputSchema,
 	TaskInputSchema,
+	TasksListSearchSchema,
 	UpdateTaskInputSchema,
 	UserProfileByEmailSchema,
 } from '../schemas/schemas'
@@ -62,14 +64,17 @@ export const getTaskTool = createSafeServerTool(getTaskToolDef, async (args) =>
 // Filters / Discovery
 // ---------------------------------------------------------------------------
 
-const getAssigneesToolDef = toolDefinition({
-	name: 'getAssignees',
-	description: 'Get all distinct assignee emails across all tasks. Useful for discovering who is working on tasks.',
-	inputSchema: z.object({}),
+const getDistinctValuesToolDef = toolDefinition({
+	name: 'getDistinctValues',
+	description:
+		'Get distinct non-empty values currently present in tasks for a filterable field (assignee, status, or priority). Use before filtering so options match real data.',
+	inputSchema: DistinctValuesInputSchema,
 })
 
-/** AI server tool: list distinct assignee emails. */
-export const getAssigneesTool = createSafeServerTool(getAssigneesToolDef, async () => getAssignees())
+/** AI server tool: list distinct values for a task filter field. */
+export const getDistinctValuesTool = createSafeServerTool(getDistinctValuesToolDef, async (args) =>
+	getDistinctValues({ data: DistinctValuesInputSchema.parse(args) }),
+)
 
 // ---------------------------------------------------------------------------
 // User profile lookup
@@ -78,7 +83,7 @@ export const getAssigneesTool = createSafeServerTool(getAssigneesToolDef, async 
 const getUserProfileToolDef = toolDefinition({
 	name: 'getUserProfile',
 	description:
-		'Look up a user profile by email. Returns name, role, and avatar URL. Useful for resolving assignee display names from emails returned by getAssignees or task.assignee.',
+		'Look up a user profile by email. Returns name, role, and avatar URL. Useful for resolving assignee display names from emails returned by getDistinctValues({ field: "assignee" }) or task.assignee.',
 	inputSchema: UserProfileByEmailSchema,
 })
 
@@ -87,17 +92,23 @@ export const getUserProfileTool = createSafeServerTool(getUserProfileToolDef, as
 	getUserProfile({ data: UserProfileByEmailSchema.parse(args) }),
 )
 
+const getUserAccessToolDef = toolDefinition({
+	name: 'getUserAccess',
+	description:
+		'Look up repository-backed access roles for a user email. Useful when checking what roles someone has before explaining permissions.',
+	inputSchema: UserProfileByEmailSchema,
+})
+
+/** AI server tool: resolve access roles from an email address. */
+export const getUserAccessTool = createSafeServerTool(getUserAccessToolDef, async (args) =>
+	getUserAccess({ data: UserProfileByEmailSchema.parse(args) }),
+)
+
 // ---------------------------------------------------------------------------
 // Client tools — definition-only (implementations in ChatDrawer.tsx)
 // ---------------------------------------------------------------------------
 
-const NavigateSearchSchema = z
-	.object({
-		status: z.enum(TASK_STATUSES).optional().describe('Filter by status'),
-		priority: z.enum(TASK_PRIORITIES).optional().describe('Filter by priority'),
-		search: z.string().optional().describe('Full-text search over tasks'),
-	})
-	.optional()
+const NavigateSearchSchema = TasksListSearchSchema.optional()
 
 /** Input schema for the navigate client tool. */
 export const NavigateInputSchema = z.object({

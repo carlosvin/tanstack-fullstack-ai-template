@@ -1,8 +1,9 @@
 import { createMiddleware } from '@tanstack/react-start'
 import { getCookie, setCookie } from '@tanstack/react-start/server'
 import { webServerEnv } from '../env/webEnv'
+import { type AccessTicket, buildAccessTicket } from '../services/auth/accessTicket'
 import { getReadRepository } from '../services/repository/getRepository.server'
-import type { UserIdentity, UserProfile } from '../types'
+import type { UserIdentity } from '../types'
 import { extractIdentityFromJwt } from '../utils/jwt.server'
 import { createServerLogger } from '../utils/serverLogger'
 import { resolveAccessTicket, TEST_AUTH_COOKIE_NAME } from '../utils/testAuth.server'
@@ -37,15 +38,13 @@ function isPublicRoute(pathname: string): boolean {
  * Access via `context` in server functions and route handlers.
  */
 export interface AuthContext {
-	user: UserIdentity
-	userProfile: UserProfile | null
-	isTestUser: boolean
+	accessTicket: AccessTicket
 }
 
 /**
  * Global request middleware that extracts user identity from the JWT in the
- * configured authorization header, loads the user profile from the repository,
- * and provides both in `context.user` and `context.userProfile`.
+ * configured authorization header, loads the repository profile, and provides
+ * `context.accessTicket`.
  *
  * Runs on every request (SSR, server functions, API routes).
  * - If a valid JWT is present in the auth header, the decoded identity is used.
@@ -59,7 +58,11 @@ export const authMiddleware = createMiddleware().server(async ({ next, request }
 		const headerIdentity = extractIdentityFromJwt(authHeader)
 		const user = headerIdentity.email ? headerIdentity : ANONYMOUS_USER
 		log.debug({ pathname }, 'public route — skipped profile load')
-		return next({ context: { user, userProfile: null, isTestUser: false } })
+		return next({
+			context: {
+				accessTicket: buildAccessTicket({ user, profile: null, isTestUser: false }),
+			},
+		})
 	}
 
 	const ticket = resolveAccessTicket(authHeader, getCookie(TEST_AUTH_COOKIE_NAME))
@@ -73,12 +76,12 @@ export const authMiddleware = createMiddleware().server(async ({ next, request }
 
 	const { user, isTestUser } = ticket
 
-	let userProfile: UserProfile | null = null
 	// Test users are ephemeral and never stored in the repository — skip the lookup.
-	if (user.email && !isTestUser) {
-		const repo = getReadRepository()
-		userProfile = await repo.getUserProfile(user.email)
-	}
+	const profile = user.email && !isTestUser ? await getReadRepository().getUserProfile(user.email) : null
 
-	return next({ context: { user, userProfile, isTestUser } })
+	return next({
+		context: {
+			accessTicket: buildAccessTicket({ user, profile, isTestUser }),
+		},
+	})
 })

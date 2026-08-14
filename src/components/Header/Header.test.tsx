@@ -31,6 +31,7 @@ describe('Header', () => {
 					identity: { email: 'random1234@example.com', name: 'Test User 1234', groups: [] },
 					profile: null,
 					isTestUser: true,
+					roles: [],
 				}}
 			/>,
 		)

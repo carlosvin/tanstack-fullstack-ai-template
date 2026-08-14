@@ -35,9 +35,10 @@ function getToolLabel(toolName: string): string {
 	const labels: Record<string, string> = {
 		getTasks: 'searching tasks',
 		getTask: 'loading task details',
-		getAssignees: 'checking assignees',
+		getDistinctValues: 'checking filter options',
 		navigate: 'opening page',
 		invalidateRouter: 'refreshing data',
+		getUserAccess: 'checking access roles',
 		getCurrentUserContext: 'checking permissions',
 		createTask: 'creating task',
 		updateTask: 'updating task',
@@ -109,7 +110,9 @@ export function ChatDrawer({ opened, onClose }: ChatDrawerProps) {
 	const router = useRouter()
 
 	const navigateClient = navigateToolDef.client((args) => {
-		const navInput = NavigateInputSchema.parse(args)
+		const parsed = NavigateInputSchema.safeParse(args)
+		if (!parsed.success) return { success: false }
+		const navInput = parsed.data
 		const path = navInput.to.startsWith('/') ? navInput.to : `/${navInput.to}`
 		const params = new URLSearchParams()
 		if (navInput.search) {
@@ -155,7 +158,7 @@ export function ChatDrawer({ opened, onClose }: ChatDrawerProps) {
 
 	const chatOptions = createChatClientOptions({ connection, tools })
 
-	const { messages, sendMessage, isLoading, clear, stop } = useChat(chatOptions)
+	const { messages, sendMessage, isLoading, error, clear, stop } = useChat(chatOptions)
 
 	const scrollToBottom = useCallback(() => {
 		viewport.current?.scrollTo({ top: viewport.current.scrollHeight, behavior: 'smooth' })
@@ -203,6 +206,11 @@ export function ChatDrawer({ opened, onClose }: ChatDrawerProps) {
 				</ScrollArea>
 
 				<Stack gap="xs">
+					{error ? (
+						<Text size="sm" c="red" role="alert">
+							{error.message}
+						</Text>
+					) : null}
 					<Group gap="xs">
 						<Textarea
 							flex={1}
@@ -216,13 +224,19 @@ export function ChatDrawer({ opened, onClose }: ChatDrawerProps) {
 						/>
 						{isLoading ? (
 							<Tooltip label="Stop generating">
-								<ActionIcon variant="subtle" onClick={stop} size="lg">
+								<ActionIcon variant="subtle" onClick={stop} size="lg" aria-label="Stop generating">
 									<Square size={18} />
 								</ActionIcon>
 							</Tooltip>
 						) : (
 							<Tooltip label="Send">
-								<ActionIcon variant="filled" onClick={handleSubmit} disabled={!input.trim()} size="lg">
+								<ActionIcon
+									variant="filled"
+									onClick={handleSubmit}
+									disabled={!input.trim()}
+									size="lg"
+									aria-label="Send"
+								>
 									<Send size={18} />
 								</ActionIcon>
 							</Tooltip>

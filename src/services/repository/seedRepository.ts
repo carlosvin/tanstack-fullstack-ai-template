@@ -1,6 +1,7 @@
-import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserProfileRepo } from '../schemas/repository'
+import { toUserAccessRepo } from '../schemas/repoParsers'
+import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserAccessRepo, UserProfileRepo } from '../schemas/repository'
 import { resolveCreateLastModifiedBy } from './traceability'
-import type { Repository, TraceabilityContext } from './types'
+import type { DistinctValueField, Repository, TraceabilityContext } from './types'
 
 /** Sample seed data for development without a database. */
 const SEED_TASKS: TaskRepo[] = [
@@ -118,13 +119,24 @@ export class SeedRepository implements Repository {
 		return this.tasks.find((t) => t.id === taskId) ?? null
 	}
 
-	async getAssignees(): Promise<string[]> {
-		const assignees = new Set(this.tasks.map((t) => t.assignee).filter(Boolean) as string[])
-		return [...assignees].sort()
+	async getDistinctValues(field: DistinctValueField): Promise<string[]> {
+		const values = new Set<string>()
+		for (const task of this.tasks) {
+			const value = task[field]
+			if (typeof value === 'string' && value.length > 0) {
+				values.add(value)
+			}
+		}
+		return [...values].sort()
 	}
 
 	async getUserProfile(email: string): Promise<UserProfileRepo | null> {
 		return this.users.find((u) => u.email.toLowerCase() === email.toLowerCase()) ?? null
+	}
+
+	async getUserAccess(email: string): Promise<UserAccessRepo | null> {
+		const profile = await this.getUserProfile(email)
+		return profile ? toUserAccessRepo(profile) : null
 	}
 
 	async createTask(input: TaskRepoInput, trace?: TraceabilityContext): Promise<TaskRepo> {
