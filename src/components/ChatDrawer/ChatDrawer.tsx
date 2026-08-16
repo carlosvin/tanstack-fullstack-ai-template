@@ -109,7 +109,8 @@ export function ChatDrawer({ opened, onClose }: ChatDrawerProps) {
 	const viewport = useRef<HTMLDivElement>(null)
 	const [input, setInput] = useState('')
 	const router = useRouter()
-	const isMobile = useMediaQuery('(max-width: 47.99em)', true)
+	// Desktop-default on SSR/first paint; Mantine resolves the real breakpoint in an effect.
+	const isMobile = useMediaQuery('(max-width: 47.99em)', false)
 
 	const navigateClient = navigateToolDef.client((args) => {
 		const parsed = NavigateInputSchema.safeParse(args)
