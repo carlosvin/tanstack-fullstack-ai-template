@@ -8,9 +8,10 @@ interface AppNavbarProps {
 	pathname: string
 	currentUser?: CurrentUser
 	appMeta: AppMeta
+	onNavigate?: () => void
 }
 
-export function AppNavbar({ pathname, currentUser, appMeta }: AppNavbarProps) {
+export function AppNavbar({ pathname, currentUser, appMeta, onNavigate }: AppNavbarProps) {
 	return (
 		<>
 			<AppShell.Section grow component={ScrollArea}>
@@ -20,6 +21,7 @@ export function AppNavbar({ pathname, currentUser, appMeta }: AppNavbarProps) {
 					label="Dashboard"
 					leftSection={<LayoutDashboard size={18} />}
 					active={pathname === '/'}
+					onClick={onNavigate}
 				/>
 				<NavLink
 					component={Link}
@@ -27,6 +29,7 @@ export function AppNavbar({ pathname, currentUser, appMeta }: AppNavbarProps) {
 					label="Tasks"
 					leftSection={<ListTodo size={18} />}
 					active={pathname === '/tasks' || pathname.startsWith('/tasks/')}
+					onClick={onNavigate}
 				/>
 			</AppShell.Section>
 			<AppShell.Section>
