@@ -11,7 +11,9 @@ import {
 	Textarea,
 	ThemeIcon,
 	Tooltip,
+	useMantineTheme,
 } from '@mantine/core'
+import { useMediaQuery } from '@mantine/hooks'
 import { clientTools, createChatClientOptions } from '@tanstack/ai-client'
 import type { UIMessage } from '@tanstack/ai-react'
 import { fetchServerSentEvents, useChat } from '@tanstack/ai-react'
@@ -103,11 +105,13 @@ function MessageBubble({ message }: { message: UIMessage }) {
 	)
 }
 
-/** AI chat drawer component with streaming support via TanStack AI. */
 export function ChatDrawer({ opened, onClose }: ChatDrawerProps) {
 	const viewport = useRef<HTMLDivElement>(null)
 	const [input, setInput] = useState('')
 	const router = useRouter()
+	const theme = useMantineTheme()
+	// Drawer `size` is not a responsive prop. Match AppShell `sm`; assume desktop on SSR.
+	const isSmUp = useMediaQuery(`(min-width: ${theme.breakpoints.sm})`, true)
 
 	const navigateClient = navigateToolDef.client((args) => {
 		const parsed = NavigateInputSchema.safeParse(args)
@@ -182,8 +186,15 @@ export function ChatDrawer({ opened, onClose }: ChatDrawerProps) {
 	}
 
 	return (
-		<Drawer opened={opened} onClose={onClose} title="AI Assistant" position="right" size="lg" padding="md">
-			<Stack h="calc(100vh - 120px)" justify="space-between">
+		<Drawer
+			opened={opened}
+			onClose={onClose}
+			title="AI Assistant"
+			position="right"
+			size={isSmUp ? 'lg' : '100%'}
+			padding="md"
+		>
+			<Stack h="calc(100dvh - 120px)" justify="space-between">
 				<ScrollArea flex={1} viewportRef={viewport}>
 					<Stack gap="md" p="xs">
 						{messages.length === 0 && (

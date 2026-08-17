@@ -427,6 +427,42 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 			},
 		},
 		{
+			id: 'architecture-mobile-first-default',
+			skill: 'tanstack-promptable-fullstack-app-template',
+			description:
+				'Mobile first is the default layout stance; agents ask the developer before choosing a different UX pattern',
+			async run() {
+				const { agentSkillsDir } = getSkillPaths(rootDir)
+				const templateSkill = await readText(
+					path.join(agentSkillsDir, 'tanstack-promptable-fullstack-app-template', 'SKILL.md'),
+				)
+				const agents = await readText(path.join(rootDir, 'AGENTS.md'))
+				const specialMatch = templateSkill.split('## Special Patterns')[1]
+				const coreMatch = templateSkill.split('## Core Contract')[1]?.split('## Architecture Checklist')[0] ?? ''
+				if (!specialMatch || !/Mobile first \(default\)/.test(specialMatch)) {
+					return fail('Architecture skill Special Patterns must include mobile first as the default')
+				}
+				if (!/Ask the developer/.test(specialMatch) || !/different UX pattern/.test(specialMatch)) {
+					return fail('Mobile first Special Pattern must ask the developer before choosing a different UX pattern')
+				}
+				if (!/developer\.mozilla\.org\/en-US\/docs\/Glossary\/Mobile_First/.test(specialMatch)) {
+					return fail('Mobile first Special Pattern must cite the MDN glossary definition')
+				}
+				if (/chrome/i.test(specialMatch) || /AppShell/.test(specialMatch) || /burger/i.test(specialMatch)) {
+					return fail('Architecture skill must not prescribe chrome widgets for mobile first')
+				}
+				if (/mobile first/i.test(coreMatch) || /mobile-first/i.test(coreMatch)) {
+					return fail('Mobile first must not be listed in Core Contract')
+				}
+				if (!/Mobile first \(default\)/.test(agents) || !/Ask the developer/.test(agents)) {
+					return fail(
+						'AGENTS.md §3 must document mobile first as default and ask the developer about other UX patterns',
+					)
+				}
+				return pass()
+			},
+		},
+		{
 			id: 'reference-tech-stack-map',
 			skill: 'reference-tech-stack',
 			description: 'Reference stack skill publishes a Stack map section',

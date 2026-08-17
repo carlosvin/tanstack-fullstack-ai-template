@@ -10,7 +10,7 @@ projectName: TanStack AI-Promptable Full-Stack Template
 projectSummary: >-
   A production-ready TanStack Start template designed to make internal tools AI
   promptable by default.
-version: 1.1.0
+version: 1.2.0
 author:
   name: Carlos Martin-Sanchez
   url: https://github.com/carlosvin
@@ -60,6 +60,8 @@ triggers:
   - Netlify deploy
   - template defaults
   - stack choices
+  - AppShell
+  - Mantine navbar
 companionSkills:
   - id: tanstack-promptable-fullstack-app-template
     relationship: parent
@@ -97,6 +99,10 @@ examples:
   - input: Where is MongoDB wired?
     output: Behind ReadRepository / WritableRepository — Mongo + seed implementations
       in src/services/repository/; factory in getRepository.server.ts.
+  - input: Make the header work on small screens in this template
+    output: Apply mobile first by default with Mantine — `base` then larger breakpoints,
+      AppShell + Burger + NavLink for navigation (AGENTS.md §3). Ask if the app should
+      follow a different UX pattern.
 content: |
   # Reference Tech Stack (Opinionated Defaults)
 
@@ -149,6 +155,14 @@ content: |
   2. Do not add a second library for the same concern unless you are intentionally migrating.
   3. Keep interfaces when swapping (repository, `AIAdapterService`, `ObservabilityService`); update this stack map and AGENTS.md; leave the architecture skill vendor-agnostic.
   4. UI and schema *how-to* live in AGENTS.md §3 / architecture skill — this skill only names packages.
+
+  ## Applying mobile first (default)
+
+  Architecture defaults to [mobile first](https://developer.mozilla.org/en-US/docs/Glossary/Mobile_First)
+  — not a named widget. In *this* template, express it with Mantine responsive props
+  (`base`, then `sm` / `md` / `lg`). Navigation that must collapse on small viewports can
+  use `AppShell` + `Burger` + `NavLink` (AGENTS.md §3). **Ask the developer** if this app
+  should follow a different UX pattern.
 
   ## Verification
 

@@ -180,7 +180,7 @@
       "summary": "Companion to tanstack-promptable-fullstack-app-template. Documents this template's opinionated vendor choices — Zod, Mantine, lucide-react, MongoDB + seed, jose JWT auth, OpenAI adapter, pino + Sentry, react-markdown, Biome, Vitest, Playwright, Netlify — so agents implement against the reference app without baking those choices into the architecture skill.",
       "projectName": "TanStack AI-Promptable Full-Stack Template",
       "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "author": {
         "name": "Carlos Martin-Sanchez",
         "url": "https://github.com/carlosvin"
@@ -239,7 +239,9 @@
         "Biome lint",
         "Netlify deploy",
         "template defaults",
-        "stack choices"
+        "stack choices",
+        "AppShell",
+        "Mantine navbar"
       ],
       "inputs": [
         "TanStack Start app built from this template (or forking its stack)"
@@ -273,6 +275,10 @@
         {
           "input": "Where is MongoDB wired?",
           "output": "Behind ReadRepository / WritableRepository — Mongo + seed implementations in src/services/repository/; factory in getRepository.server.ts."
+        },
+        {
+          "input": "Make the header work on small screens in this template",
+          "output": "Apply mobile first by default with Mantine — `base` then larger breakpoints, AppShell + Burger + NavLink for navigation (AGENTS.md §3). Ask if the app should follow a different UX pattern."
         }
       ],
       "companionSkills": [
@@ -299,7 +305,7 @@
       "summary": "Use when scaffolding a new TanStack Start project, adding domain entities, implementing the interface-first repository pattern with AI-promptable tools, fixing nested layout routes that duplicate parent beforeLoad/loaders, verifying TanStack Router/Start/AI against current docs, or enforcing server/client execution boundaries (isomorphic loaders, import protection, middleware-inferred request context). For logging, error tracking, env schemas, or shellSession setup, load companion skill observability-and-env instead. For this template's concrete package defaults, load companion skill reference-tech-stack.",
       "projectName": "TanStack AI-Promptable Full-Stack Template",
       "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
-      "version": "1.27.0",
+      "version": "1.29.0",
       "author": {
         "name": "Carlos Martin-Sanchez",
         "url": "https://github.com/carlosvin"
@@ -352,6 +358,7 @@
         "Auth ticket built in middleware via repository + TraceabilityContext on writes",
         "Parent layout routes deduplicating shared beforeLoad and loaders",
         "Optional patterns — overlay repo, bulk edit, distinct-values tools, dynamic route introspection, debounced free-text search",
+        "Mobile first by default — ask the developer if the app should follow a different UX pattern",
         "TanStack Intent + CLI as doc-aligned guidance (not duplicated command manuals)",
         "Assistant chat renders Markdown (GFM) — lists, tables, code blocks; internal links stay navigable",
         "Server/client execution boundaries — isomorphic loaders, *.server.ts, createServerOnlyFn, import protection",
@@ -377,7 +384,8 @@
         "request context",
         "middleware context",
         "debounced search",
-        "search input"
+        "search input",
+        "mobile first"
       ],
       "inputs": [
         "Existing or new TanStack Start codebase",
@@ -425,6 +433,10 @@
         {
           "input": "Swap MongoDB to Postgres",
           "output": "Implement repository interface and switch factory without app-level changes"
+        },
+        {
+          "input": "Layout should work on small screens",
+          "output": "Apply mobile first by default — narrow viewport first, then enhance as width grows; ask the developer if this app should follow a different UX pattern"
         }
       ],
       "companionSkills": [

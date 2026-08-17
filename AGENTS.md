@@ -88,7 +88,8 @@ This project uses [Mantine](https://mantine.dev/) as the primary UI framework.
 - **Use Mantine components first**: Before creating custom components, check if Mantine provides one.
 - **Styling props**: Use Mantine's built-in props (`c`, `fw`, `size`, `variant`, etc.) instead of CSS.
 - **CSS Modules**: When custom CSS beyond Mantine is needed, use CSS Modules (`Component.module.css`).
-- **Responsive props**: Use object syntax for responsive values: `<SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>`.
+- **Responsive props**: Use Mantine's object syntax for mobile-first values: `<SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>` (`base` is the narrow viewport; larger keys enhance).
+- **Mobile first (default):** [Progressive enhancement from small viewports up](https://developer.mozilla.org/en-US/docs/Glossary/Mobile_First) — not a particular widget. Start from `base` styles and add `sm` / `md` / `lg`. For navigation that overflows a narrow header, Mantine `AppShell` + `Burger` (`hiddenFrom="sm"`) + `NavLink` (project `Link`) is the kit recipe; keep AI chat as a right `Drawer`, not `AppShell.Aside`. **Ask the developer** if this app should follow a different UX pattern.
 - **Theming**: Customize the theme in `__root.tsx`. Use Mantine CSS variables (`--mantine-color-*`) in CSS Modules.
 - **Avoid inline styles**: Use Mantine props or CSS Modules instead.
 - **Avoid `!important`**: Minimize its use.
@@ -366,7 +367,7 @@ Handled by the [observability-and-env skill](.agents/skills/observability-and-en
 
 ## 14. Special Patterns
 
-Bulk edit (URL multi-select), overlay repository, distinct-values tools, help surface, controlled components, debounced free-text search (uncontrolled input + `useDebouncedCallback`): [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) **Special Patterns** and **Core Contract** #7–8.
+Bulk edit (URL multi-select), overlay repository, distinct-values tools, help surface, controlled components, debounced free-text search (uncontrolled input + `useDebouncedCallback`), [mobile first](https://developer.mozilla.org/en-US/docs/Glossary/Mobile_First) by default: [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) **Special Patterns** and **Core Contract** #7–8. How you apply it depends on the UI library — Mantine recipe in §3. Ask the developer if the app should follow a different UX pattern.
 
 ## 15. Validate Changes
 

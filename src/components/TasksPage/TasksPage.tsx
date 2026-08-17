@@ -38,9 +38,14 @@ export function TasksPage({ tasks, search, isAuth, currentUserEmail, onUpdateSea
 	}, 300)
 
 	return (
-		<Container size="lg" py="md">
+		<Container size="lg" py={{ base: 'xs', sm: 'md' }} px={0}>
 			<Stack gap="lg">
-				<Group justify="space-between" align="flex-end">
+				<Flex
+					justify="space-between"
+					align={{ base: 'stretch', sm: 'flex-end' }}
+					gap="sm"
+					direction={{ base: 'column', sm: 'row' }}
+				>
 					<div>
 						<Title order={2}>Tasks</Title>
 						<Text c="dimmed" mt={4}>
@@ -49,17 +54,20 @@ export function TasksPage({ tasks, search, isAuth, currentUserEmail, onUpdateSea
 					</div>
 					{isAuth && (
 						<Link to="/tasks/new" search={{}} style={{ textDecoration: 'none' }}>
-							<Button leftSection={<Plus size={16} />}>Add task</Button>
+							<Button leftSection={<Plus size={16} />} w={{ base: '100%', sm: 'auto' }}>
+								Add task
+							</Button>
 						</Link>
 					)}
-				</Group>
+				</Flex>
 
-				<Flex gap="sm" align="flex-end">
+				<Flex gap="sm" align="flex-end" direction={{ base: 'column', sm: 'row' }} wrap="wrap">
 					<TextInput
 						placeholder="Search tasks..."
 						leftSection={<Search size={16} />}
 						defaultValue={urlSearch}
 						onChange={(e) => debouncedSearch(e.currentTarget.value)}
+						w={{ base: '100%', sm: 'auto' }}
 						flex={1}
 					/>
 					<Select
@@ -68,7 +76,7 @@ export function TasksPage({ tasks, search, isAuth, currentUserEmail, onUpdateSea
 						data={TASK_STATUSES.map((s) => ({ value: s, label: s }))}
 						value={search.status ?? null}
 						onChange={(val) => onUpdateSearch({ status: (val as (typeof TASK_STATUSES)[number]) || undefined })}
-						w={150}
+						w={{ base: '100%', sm: 150 }}
 					/>
 					<Select
 						placeholder="Priority"
@@ -76,7 +84,7 @@ export function TasksPage({ tasks, search, isAuth, currentUserEmail, onUpdateSea
 						data={TASK_PRIORITIES.map((p) => ({ value: p, label: p }))}
 						value={search.priority ?? null}
 						onChange={(val) => onUpdateSearch({ priority: (val as (typeof TASK_PRIORITIES)[number]) || undefined })}
-						w={150}
+						w={{ base: '100%', sm: 150 }}
 					/>
 				</Flex>
 
@@ -90,16 +98,18 @@ export function TasksPage({ tasks, search, isAuth, currentUserEmail, onUpdateSea
 							const isCreator = isAuth && task.createdBy === currentUserEmail
 							return (
 								<Card key={task.id} withBorder padding="md">
-									<Group justify="space-between" wrap="nowrap">
+									<Group justify="space-between" wrap="wrap" gap="sm">
 										<Link
 											to="/tasks/$taskId"
 											params={{ taskId: task.id }}
 											style={{ textDecoration: 'none', color: 'inherit', flex: 1, minWidth: 0 }}
 										>
-											<Group justify="space-between" wrap="nowrap">
-												<Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
-													<Group gap="sm">
-														<Text fw={500}>{task.title}</Text>
+											<Group justify="space-between" wrap="wrap" gap="xs">
+												<Stack gap={2} miw={0} flex={1}>
+													<Group gap="sm" wrap="wrap">
+														<Text fw={500} lineClamp={2}>
+															{task.title}
+														</Text>
 														<Badge size="sm" variant="light" color={priorityColor(task.priority)}>
 															{task.priority}
 														</Badge>
@@ -110,7 +120,7 @@ export function TasksPage({ tasks, search, isAuth, currentUserEmail, onUpdateSea
 														</Text>
 													)}
 												</Stack>
-												<Group gap="sm" wrap="nowrap">
+												<Group gap="sm" wrap="wrap">
 													{task.assignee && (
 														<Text size="xs" c="dimmed">
 															{task.assignee}
