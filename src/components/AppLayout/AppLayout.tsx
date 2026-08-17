@@ -52,7 +52,7 @@ export function AppLayout({ currentUser, shellSession, aiAvailable = false, chil
 				/>
 			</AppShell.Header>
 			<AppShell.Navbar p="md">
-				<AppNavbar pathname={pathname} currentUser={currentUser} appMeta={shellSession.app} onNavigate={closeNav} />
+				<AppNavbar pathname={pathname} currentUser={currentUser} appMeta={shellSession.app} />
 			</AppShell.Navbar>
 			<AppShell.Main>{children}</AppShell.Main>
 			{aiAvailable ? <ChatDrawer opened={chatOpened} onClose={closeChat} /> : null}

@@ -11,27 +11,19 @@ interface HeaderProps {
 	onOpenChat?: () => void
 }
 
-/** Compact AppShell header: burger (mobile), brand, theme, and AI chat. */
 export function Header({ navOpened, onToggleNav, appMeta, aiAvailable = false, onOpenChat }: HeaderProps) {
 	const { colorScheme, toggleColorScheme } = useMantineColorScheme()
-	const appTitle = appMeta.name
-
-	const handleOpenChat = (e: React.MouseEvent) => {
-		e.preventDefault()
-		e.stopPropagation()
-		onOpenChat?.()
-	}
 
 	return (
 		<Group h="100%" px="md" justify="space-between" wrap="nowrap">
 			<Group gap="sm" wrap="nowrap" miw={0} flex={1}>
 				<Burger opened={navOpened} onClick={onToggleNav} hiddenFrom="sm" size="sm" aria-label="Toggle navigation" />
 				<Link to="/" style={{ textDecoration: 'none', color: 'inherit', minWidth: 0 }}>
-					<Tooltip label={`${appTitle} v${appMeta.version}`}>
+					<Tooltip label={`${appMeta.name} v${appMeta.version}`}>
 						<Group gap="xs" wrap="nowrap" miw={0}>
 							<CheckSquare size={20} />
 							<Text fw={700} size="lg" truncate>
-								{appTitle}
+								{appMeta.name}
 							</Text>
 						</Group>
 					</Tooltip>
@@ -47,7 +39,13 @@ export function Header({ navOpened, onToggleNav, appMeta, aiAvailable = false, o
 
 				{aiAvailable ? (
 					<Tooltip label="Ask AI">
-						<ActionIcon type="button" variant="light" size="lg" onClick={handleOpenChat} aria-label="Open AI chat">
+						<ActionIcon
+							type="button"
+							variant="light"
+							size="lg"
+							onClick={() => onOpenChat?.()}
+							aria-label="Open AI chat"
+						>
 							<MessageCircle size={18} />
 						</ActionIcon>
 					</Tooltip>

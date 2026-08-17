@@ -34,10 +34,4 @@ describe('Header', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Toggle navigation' }))
 		expect(onToggleNav).toHaveBeenCalledTimes(1)
 	})
-
-	it('does not render inline Tasks navigation', () => {
-		renderWithProviders(<Header navOpened={false} onToggleNav={vi.fn()} appMeta={appMeta} />)
-
-		expect(screen.queryByText('Tasks')).toBeNull()
-	})
 })

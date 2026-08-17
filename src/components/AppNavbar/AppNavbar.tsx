@@ -8,21 +8,9 @@ interface AppNavbarProps {
 	pathname: string
 	currentUser?: CurrentUser
 	appMeta: AppMeta
-	onNavigate?: () => void
 }
 
-function isDashboardActive(pathname: string) {
-	return pathname === '/'
-}
-
-function isTasksActive(pathname: string) {
-	return pathname === '/tasks' || pathname.startsWith('/tasks/')
-}
-
-/** Primary app navigation for AppShell.Navbar — overlay on mobile, pinned from `sm`. */
-export function AppNavbar({ pathname, currentUser, appMeta, onNavigate }: AppNavbarProps) {
-	const displayName = currentUser?.profile?.name || currentUser?.identity.name
-
+export function AppNavbar({ pathname, currentUser, appMeta }: AppNavbarProps) {
 	return (
 		<>
 			<AppShell.Section grow component={ScrollArea}>
@@ -31,23 +19,21 @@ export function AppNavbar({ pathname, currentUser, appMeta, onNavigate }: AppNav
 					to="/"
 					label="Dashboard"
 					leftSection={<LayoutDashboard size={18} />}
-					active={isDashboardActive(pathname)}
-					onClick={onNavigate}
+					active={pathname === '/'}
 				/>
 				<NavLink
 					component={Link}
 					to="/tasks"
 					label="Tasks"
 					leftSection={<ListTodo size={18} />}
-					active={isTasksActive(pathname)}
-					onClick={onNavigate}
+					active={pathname === '/tasks' || pathname.startsWith('/tasks/')}
 				/>
 			</AppShell.Section>
 			<AppShell.Section>
-				{displayName ? (
+				{currentUser ? (
 					<Tooltip
-						label={`Demo test user (${currentUser?.identity.email}). Actions are attributed to this identity. Provide a real JWT in the auth header to use your own account.`}
-						disabled={!currentUser?.isTestUser}
+						label={`Demo test user (${currentUser.identity.email}). Actions are attributed to this identity. Provide a real JWT in the auth header to use your own account.`}
+						disabled={!currentUser.isTestUser}
 						multiline
 						w={280}
 					>
@@ -57,9 +43,9 @@ export function AppNavbar({ pathname, currentUser, appMeta, onNavigate }: AppNav
 							truncate
 							px="sm"
 							py="xs"
-							style={currentUser?.isTestUser ? { cursor: 'help' } : undefined}
+							style={currentUser.isTestUser ? { cursor: 'help' } : undefined}
 						>
-							{displayName}
+							{currentUser.profile?.name || currentUser.identity.name}
 						</Text>
 					</Tooltip>
 				) : null}

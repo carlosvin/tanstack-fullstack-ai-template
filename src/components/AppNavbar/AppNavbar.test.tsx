@@ -1,19 +1,21 @@
 import { AppShell } from '@mantine/core'
 import { screen } from '@testing-library/react'
-import type { ReactNode } from 'react'
+import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { renderWithProviders } from '../../test-utils/renderWithRouter'
 import { AppNavbar } from './AppNavbar'
 
 vi.mock('../Link/Link', () => ({
-	Link: ({ children, to, ...props }: { children: ReactNode; to: string } & Record<string, unknown>) => {
-		const { search: _search, ...rest } = props
-		return (
-			<a href={to} {...rest}>
-				{children}
-			</a>
-		)
-	},
+	Link: ({
+		children,
+		to,
+		search: _search,
+		...rest
+	}: AnchorHTMLAttributes<HTMLAnchorElement> & { to: string; search?: unknown }) => (
+		<a href={to} {...rest}>
+			{children}
+		</a>
+	),
 }))
 
 const appMeta = { name: 'TaskHub', version: '1.0.0' }
