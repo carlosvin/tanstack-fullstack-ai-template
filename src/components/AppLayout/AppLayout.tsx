@@ -1,7 +1,7 @@
 import { AppShell } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
-import { useRouter, useRouterState } from '@tanstack/react-router'
-import { useEffect } from 'react'
+import { useRouterState } from '@tanstack/react-router'
+import { useEffect, useRef } from 'react'
 import type { ShellSession } from '../../env/webEnv'
 import type { CurrentUser } from '../../types'
 import { AppNavbar } from '../AppNavbar/AppNavbar'
@@ -19,13 +19,15 @@ export function AppLayout({ currentUser, shellSession, aiAvailable = false, chil
 	const [chatOpened, { open: openChatDrawer, close: closeChat }] = useDisclosure(false)
 	const [navOpened, { toggle: toggleNav, close: closeNav }] = useDisclosure(false)
 	const pathname = useRouterState({ select: (s) => s.location.pathname })
-	const router = useRouter()
+	const previousPathname = useRef(pathname)
 
+	// Close on committed navigations only. `onResolved` also fires for intent preload,
+	// which would collapse the mobile overlay before the tap reaches the link.
 	useEffect(() => {
-		return router.subscribe('onResolved', () => {
-			closeNav()
-		})
-	}, [router, closeNav])
+		if (previousPathname.current === pathname) return
+		previousPathname.current = pathname
+		closeNav()
+	}, [pathname, closeNav])
 
 	const openChat = () => {
 		closeNav()
