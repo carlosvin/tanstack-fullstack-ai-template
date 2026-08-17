@@ -455,7 +455,9 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 					return fail('Mobile first must not be listed in Core Contract')
 				}
 				if (!/Mobile first \(default\)/.test(agents) || !/Ask the developer/.test(agents)) {
-					return fail('AGENTS.md §3 must document mobile first as default and ask the developer about other UX patterns')
+					return fail(
+						'AGENTS.md §3 must document mobile first as default and ask the developer about other UX patterns',
+					)
 				}
 				return pass()
 			},
