@@ -11,7 +11,7 @@
 - Supported tools: Windsurf [native, tested], Cursor [copy, tested], Claude Code [copy, tested]
 - Capabilities: Opinionated vendor map for this template (UI, validation, DB, auth, AI, observability, tooling), Pointers to AGENTS.md sections for operational how-to, Clear separation from the architecture skill (patterns) and observability-and-env (env/logging recipes), Guidance for forking teams that want to swap a vendor without rewriting architecture
 - ID: `reference-tech-stack`
-- Version: `1.1.0`
+- Version: `1.2.0`
 - Tags: reference-stack, opinionated, mantine, zod, mongodb, netlify, tanstack-start
 
 ## Summary
@@ -31,6 +31,8 @@ Companion to tanstack-promptable-fullstack-app-template. Documents this template
 - Netlify deploy
 - template defaults
 - stack choices
+- AppShell
+- Mantine navbar
 
 ## Canonical Content
 # Reference Tech Stack (Opinionated Defaults)
@@ -84,6 +86,10 @@ coupling into the architecture skill.
 2. Do not add a second library for the same concern unless you are intentionally migrating.
 3. Keep interfaces when swapping (repository, `AIAdapterService`, `ObservabilityService`); update this stack map and AGENTS.md; leave the architecture skill vendor-agnostic.
 4. UI and schema *how-to* live in AGENTS.md §3 / architecture skill — this skill only names packages.
+
+## Mobile-first chrome (optional)
+
+Architecture treats mobile-first as **optional** and **kit-dependent**. When applying it in *this* template, use Mantine `AppShell` + `Burger` + `NavLink` (AGENTS.md §3) — do not invent a custom header menu. **Ask** before a chrome rewrite when the user did not request it, the change looks large, or a kit-native AppShell implementation is unclear or hard.
 
 ## Verification
 

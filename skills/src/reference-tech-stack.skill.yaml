@@ -10,7 +10,7 @@ projectName: TanStack AI-Promptable Full-Stack Template
 projectSummary: >-
   A production-ready TanStack Start template designed to make internal tools AI
   promptable by default.
-version: 1.1.0
+version: 1.2.0
 author:
   name: Carlos Martin-Sanchez
   url: https://github.com/carlosvin
@@ -60,6 +60,8 @@ triggers:
   - Netlify deploy
   - template defaults
   - stack choices
+  - AppShell
+  - Mantine navbar
 companionSkills:
   - id: tanstack-promptable-fullstack-app-template
     relationship: parent
@@ -97,6 +99,9 @@ examples:
   - input: Where is MongoDB wired?
     output: Behind ReadRepository / WritableRepository — Mongo + seed implementations
       in src/services/repository/; factory in getRepository.server.ts.
+  - input: Make the header mobile-first in this template
+    output: Use Mantine AppShell + Burger + NavLink (AGENTS.md §3). Architecture treats
+      this as optional — ask if the request is ambiguous or a kit-native rewrite looks hard.
 content: |
   # Reference Tech Stack (Opinionated Defaults)
 
@@ -149,6 +154,10 @@ content: |
   2. Do not add a second library for the same concern unless you are intentionally migrating.
   3. Keep interfaces when swapping (repository, `AIAdapterService`, `ObservabilityService`); update this stack map and AGENTS.md; leave the architecture skill vendor-agnostic.
   4. UI and schema *how-to* live in AGENTS.md §3 / architecture skill — this skill only names packages.
+
+  ## Mobile-first chrome (optional)
+
+  Architecture treats mobile-first as **optional** and **kit-dependent**. When applying it in *this* template, use Mantine `AppShell` + `Burger` + `NavLink` (AGENTS.md §3) — do not invent a custom header menu. **Ask** before a chrome rewrite when the user did not request it, the change looks large, or a kit-native AppShell implementation is unclear or hard.
 
   ## Verification
 

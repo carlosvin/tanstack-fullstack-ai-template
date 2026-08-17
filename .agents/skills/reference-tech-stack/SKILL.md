@@ -11,7 +11,7 @@ description: "Companion to tanstack-promptable-fullstack-app-template. Documents
   AI-Promptable Full-Stack Template. Triggers on \"reference tech stack\",
   \"opinionated stack\", \"which UI library\", \"use Mantine\", \"use Zod\",
   \"MongoDB repository\", \"lucide icons\", \"Biome lint\", \"Netlify deploy\",
-  \"template defaults\", \"stack choices\"."
+  \"template defaults\", \"stack choices\", \"AppShell\", \"Mantine navbar\"."
 ---
 
 > This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.
@@ -83,6 +83,10 @@ coupling into the architecture skill.
 2. Do not add a second library for the same concern unless you are intentionally migrating.
 3. Keep interfaces when swapping (repository, `AIAdapterService`, `ObservabilityService`); update this stack map and AGENTS.md; leave the architecture skill vendor-agnostic.
 4. UI and schema *how-to* live in AGENTS.md §3 / architecture skill — this skill only names packages.
+
+## Mobile-first chrome (optional)
+
+Architecture treats mobile-first as **optional** and **kit-dependent**. When applying it in *this* template, use Mantine `AppShell` + `Burger` + `NavLink` (AGENTS.md §3) — do not invent a custom header menu. **Ask** before a chrome rewrite when the user did not request it, the change looks large, or a kit-native AppShell implementation is unclear or hard.
 
 ## Verification
 

@@ -17,7 +17,8 @@ description: "Use when scaffolding a new TanStack Start project, adding domain
   \"tanstack cli\", \"tanstack intent\", \"package skills\", \"client bundle
   leak\", \"server-only\", \"isomorphic loader\", \"process.env in loader\",
   \"import protection\", \"request context\", \"middleware context\",
-  \"debounced search\", \"search input\"."
+  \"debounced search\", \"search input\", \"mobile first\", \"responsive
+  chrome\", \"app shell\"."
 ---
 
 > This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.
@@ -60,7 +61,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 1. Read **Core Contract** first — it is the non-negotiable architecture.
 2. Run the **Architecture Checklist** before every non-trivial change.
-3. Jump to **Server execution boundaries**, **Schema Boundaries**, **Request Context**, or **Special Patterns** only when that concern applies.
+3. Jump to **Server execution boundaries**, **Schema Boundaries**, **Request Context**, or **Special Patterns** only when that concern applies. Special Patterns (including optional mobile-first chrome) are not Core Contract.
 4. Use **[AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md)** for operational how-to — not for inventing alternate architecture. **This skill is vendor-agnostic** for UI kits and observability SDKs. Concrete packages for *this* template live in companion skill **`reference-tech-stack`**; env/logging setup lives in **`observability-and-env`**.
 
 ## Fixed vs swappable stack
@@ -89,6 +90,8 @@ Pick **one validator library** per app and use it consistently across router sea
 - **Runtime context guards:** `getShellAuthContext`, `getAccessTicket`, `accessTicketFrom`, or property-presence checks on middleware-assembled `context` — chain the middleware and read `ctx.context` directly (Start infers types).
 - **Context type bypasses:** `context as AuthContext`, `as unknown`, or `as any` on request context — chain middleware so TypeScript infers context.
 - **Secrets in the browser:** returning `serverEnv` or raw env to loaders/components — project through `shellSession` only.
+- **Overflowing app chrome:** stuffing all navigation into one header row that does not collapse on small viewports. When applying mobile-first, use the UI kit's first-class shell/navbar primitives — or **ask** if that pattern is missing or hard.
+- **Silent chrome rewrites:** forcing a custom hamburger/shell, or skipping a needed collapse, without asking when the user did not request it, the kit has no documented pattern, or a kit-native implementation is unclear.
 
 ## Core Contract
 
@@ -412,6 +415,7 @@ interface WritableRepository {
 5. **Middleware:** `start.ts` — auth, invalidation, optional pre-auth `308` redirects for legacy paths.
 6. **Routes:** `validateSearch`, `loaderDeps`, loaders; parent layouts for shared `beforeLoad`/data.
 7. **Chat:** adapter, `chat()`, `buildSystemPrompt`, tool list — details in AGENTS.md §8.
+8. **Chrome (optional):** mobile-first app shell using the project's UI-kit primitives when requested or when header overflow is the task; **ask** if unclear or hard — see **Special Patterns**.
 
 ## Special Patterns (use when the feature applies)
 
@@ -445,6 +449,7 @@ interface WritableRepository {
 - **Help surface:** single `docs/help.md` can back `/help`, an AI tool, and suggested prompts (see AGENTS.md).
 - **Distinct values:** `getDistinctValues` → GET server fn → read-only AI tool so filters match real data.
 - **Dynamic AI navigation:** derive route/help context from `router.flatRoutes` + `validateSearch` introspection where possible.
+- **Mobile-first chrome (optional):** Prefer layouts that fit the smallest viewport first so header/nav does not overflow. This is **not** Core Contract — skip it when the user wants desktop-only chrome or the current layout already fits. **Depends on the UI kit:** use that kit's first-class app-shell / navbar / burger primitives when they exist; do not invent a parallel custom shell. Concrete recipes for *this* template live in AGENTS.md §3 and companion **`reference-tech-stack`**. **Ask the user** when they did not request a chrome rewrite and the change would be large, when the kit has no documented shell pattern, or when a faithful kit-native implementation is unclear or hard. Do not silently force or skip the rewrite in those cases.
 
 ## TanStack Intent, CLI, and AI
 

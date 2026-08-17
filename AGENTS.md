@@ -89,7 +89,7 @@ This project uses [Mantine](https://mantine.dev/) as the primary UI framework.
 - **Styling props**: Use Mantine's built-in props (`c`, `fw`, `size`, `variant`, etc.) instead of CSS.
 - **CSS Modules**: When custom CSS beyond Mantine is needed, use CSS Modules (`Component.module.css`).
 - **Responsive props**: Use object syntax for responsive values: `<SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>`.
-- **App chrome**: Use Mantine `AppShell` with `AppShell.Header` + `AppShell.Navbar`. Collapse the navbar on mobile (`collapsed: { mobile: !opened }`) and toggle it with `Burger` (`hiddenFrom="sm"`). Put primary routes in `NavLink` wired to the project `Link`. Keep AI chat as a right `Drawer`, not `AppShell.Aside`.
+- **Mobile-first chrome (optional):** Prefer layouts that fit small viewports, but this is not mandatory. When applying it here, use Mantine `AppShell` with `AppShell.Header` + `AppShell.Navbar`. Collapse the navbar on mobile (`collapsed: { mobile: !opened }`) and toggle it with `Burger` (`hiddenFrom="sm"`). Put primary routes in `NavLink` wired to the project `Link`. Keep AI chat as a right `Drawer`, not `AppShell.Aside`. If the user did not ask for a chrome rewrite, the kit pattern is unclear, or a faithful AppShell implementation looks hard, **ask first** — do not invent a custom shell.
 - **Theming**: Customize the theme in `__root.tsx`. Use Mantine CSS variables (`--mantine-color-*`) in CSS Modules.
 - **Avoid inline styles**: Use Mantine props or CSS Modules instead.
 - **Avoid `!important`**: Minimize its use.
@@ -367,7 +367,7 @@ Handled by the [observability-and-env skill](.agents/skills/observability-and-en
 
 ## 14. Special Patterns
 
-Bulk edit (URL multi-select), overlay repository, distinct-values tools, help surface, controlled components, debounced free-text search (uncontrolled input + `useDebouncedCallback`): [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) **Special Patterns** and **Core Contract** #7–8.
+Bulk edit (URL multi-select), overlay repository, distinct-values tools, help surface, controlled components, debounced free-text search (uncontrolled input + `useDebouncedCallback`), optional mobile-first chrome: [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) **Special Patterns** and **Core Contract** #7–8. Mobile-first is kit-dependent — Mantine recipe in §3; ask when unclear or hard.
 
 ## 15. Validate Changes
 

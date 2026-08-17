@@ -427,6 +427,34 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 			},
 		},
 		{
+			id: 'architecture-optional-mobile-first',
+			skill: 'tanstack-promptable-fullstack-app-template',
+			description:
+				'Mobile-first chrome is an optional Special Pattern; agents ask when the UI kit makes it unclear or hard',
+			async run() {
+				const { agentSkillsDir } = getSkillPaths(rootDir)
+				const templateSkill = await readText(
+					path.join(agentSkillsDir, 'tanstack-promptable-fullstack-app-template', 'SKILL.md'),
+				)
+				const agents = await readText(path.join(rootDir, 'AGENTS.md'))
+				const specialMatch = templateSkill.split('## Special Patterns')[1]
+				const coreMatch = templateSkill.split('## Core Contract')[1]?.split('## Architecture Checklist')[0] ?? ''
+				if (!specialMatch || !/Mobile-first chrome \(optional\)/.test(specialMatch)) {
+					return fail('Architecture skill Special Patterns must include optional mobile-first chrome')
+				}
+				if (!/Ask the user/.test(specialMatch)) {
+					return fail('Mobile-first Special Pattern must tell agents to ask the user when unclear or hard')
+				}
+				if (/mobile-first/i.test(coreMatch)) {
+					return fail('Mobile-first chrome must not be listed in Core Contract')
+				}
+				if (!/Mobile-first chrome \(optional\)/.test(agents) || !/ask first/i.test(agents)) {
+					return fail('AGENTS.md §3 must document optional mobile-first chrome and ask-first guidance')
+				}
+				return pass()
+			},
+		},
+		{
 			id: 'reference-tech-stack-map',
 			skill: 'reference-tech-stack',
 			description: 'Reference stack skill publishes a Stack map section',
