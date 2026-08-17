@@ -99,9 +99,9 @@ examples:
   - input: Where is MongoDB wired?
     output: Behind ReadRepository / WritableRepository — Mongo + seed implementations
       in src/services/repository/; factory in getRepository.server.ts.
-  - input: Make the header mobile-first in this template
-    output: Use Mantine AppShell + Burger + NavLink (AGENTS.md §3). Architecture treats
-      this as optional — ask if the request is ambiguous or a kit-native rewrite looks hard.
+  - input: Make the header work on small screens in this template
+    output: Apply optional mobile first with Mantine — `base` then larger breakpoints,
+      AppShell + Burger + NavLink for navigation (AGENTS.md §3). Ask if the rewrite looks hard.
 content: |
   # Reference Tech Stack (Opinionated Defaults)
 
@@ -155,9 +155,13 @@ content: |
   3. Keep interfaces when swapping (repository, `AIAdapterService`, `ObservabilityService`); update this stack map and AGENTS.md; leave the architecture skill vendor-agnostic.
   4. UI and schema *how-to* live in AGENTS.md §3 / architecture skill — this skill only names packages.
 
-  ## Mobile-first chrome (optional)
+  ## Applying mobile first (optional)
 
-  Architecture treats mobile-first as **optional** and **kit-dependent**. When applying it in *this* template, use Mantine `AppShell` + `Burger` + `NavLink` (AGENTS.md §3) — do not invent a custom header menu. **Ask** before a chrome rewrite when the user did not request it, the change looks large, or a kit-native AppShell implementation is unclear or hard.
+  Architecture treats [mobile first](https://developer.mozilla.org/en-US/docs/Glossary/Mobile_First)
+  as an optional design principle, not a named widget. In *this* template, express it with
+  Mantine responsive props (`base`, then `sm` / `md` / `lg`). Navigation that must collapse
+  on small viewports can use `AppShell` + `Burger` + `NavLink` (AGENTS.md §3). **Ask** when
+  the user did not request it or a library-native implementation is unclear or hard.
 
   ## Verification
 

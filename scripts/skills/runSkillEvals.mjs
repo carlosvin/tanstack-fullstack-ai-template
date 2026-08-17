@@ -430,7 +430,7 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 			id: 'architecture-optional-mobile-first',
 			skill: 'tanstack-promptable-fullstack-app-template',
 			description:
-				'Mobile-first chrome is an optional Special Pattern; agents ask when the UI kit makes it unclear or hard',
+				'Mobile first is an optional Special Pattern (viewport progressive enhancement); agents ask when the UI library makes it unclear or hard',
 			async run() {
 				const { agentSkillsDir } = getSkillPaths(rootDir)
 				const templateSkill = await readText(
@@ -439,17 +439,23 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				const agents = await readText(path.join(rootDir, 'AGENTS.md'))
 				const specialMatch = templateSkill.split('## Special Patterns')[1]
 				const coreMatch = templateSkill.split('## Core Contract')[1]?.split('## Architecture Checklist')[0] ?? ''
-				if (!specialMatch || !/Mobile-first chrome \(optional\)/.test(specialMatch)) {
-					return fail('Architecture skill Special Patterns must include optional mobile-first chrome')
+				if (!specialMatch || !/Mobile first \(optional\)/.test(specialMatch)) {
+					return fail('Architecture skill Special Patterns must include optional mobile first')
 				}
 				if (!/Ask the user/.test(specialMatch)) {
-					return fail('Mobile-first Special Pattern must tell agents to ask the user when unclear or hard')
+					return fail('Mobile first Special Pattern must tell agents to ask the user when unclear or hard')
 				}
-				if (/mobile-first/i.test(coreMatch)) {
-					return fail('Mobile-first chrome must not be listed in Core Contract')
+				if (!/developer\.mozilla\.org\/en-US\/docs\/Glossary\/Mobile_First/.test(specialMatch)) {
+					return fail('Mobile first Special Pattern must cite the MDN glossary definition')
 				}
-				if (!/Mobile-first chrome \(optional\)/.test(agents) || !/ask first/i.test(agents)) {
-					return fail('AGENTS.md §3 must document optional mobile-first chrome and ask-first guidance')
+				if (/chrome/i.test(specialMatch) || /AppShell/.test(specialMatch) || /burger/i.test(specialMatch)) {
+					return fail('Architecture skill must not prescribe chrome widgets for mobile first')
+				}
+				if (/mobile first/i.test(coreMatch) || /mobile-first/i.test(coreMatch)) {
+					return fail('Mobile first must not be listed in Core Contract')
+				}
+				if (!/Mobile first \(optional\)/.test(agents) || !/ask first/i.test(agents)) {
+					return fail('AGENTS.md §3 must document optional mobile first and ask-first guidance')
 				}
 				return pass()
 			},
