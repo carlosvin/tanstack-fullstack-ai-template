@@ -278,7 +278,7 @@
         },
         {
           "input": "Make the header work on small screens in this template",
-          "output": "Apply optional mobile first with Mantine — `base` then larger breakpoints, AppShell + Burger + NavLink for navigation (AGENTS.md §3). Ask if the rewrite looks hard."
+          "output": "Apply mobile first by default with Mantine — `base` then larger breakpoints, AppShell + Burger + NavLink for navigation (AGENTS.md §3). Ask if the app should follow a different UX pattern."
         }
       ],
       "companionSkills": [
@@ -305,7 +305,7 @@
       "summary": "Use when scaffolding a new TanStack Start project, adding domain entities, implementing the interface-first repository pattern with AI-promptable tools, fixing nested layout routes that duplicate parent beforeLoad/loaders, verifying TanStack Router/Start/AI against current docs, or enforcing server/client execution boundaries (isomorphic loaders, import protection, middleware-inferred request context). For logging, error tracking, env schemas, or shellSession setup, load companion skill observability-and-env instead. For this template's concrete package defaults, load companion skill reference-tech-stack.",
       "projectName": "TanStack AI-Promptable Full-Stack Template",
       "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
-      "version": "1.28.1",
+      "version": "1.29.0",
       "author": {
         "name": "Carlos Martin-Sanchez",
         "url": "https://github.com/carlosvin"
@@ -357,7 +357,8 @@
         "Promptable by default — getAIAvailability gating + browserContext + bounded agent loop",
         "Auth ticket built in middleware via repository + TraceabilityContext on writes",
         "Parent layout routes deduplicating shared beforeLoad and loaders",
-        "Optional patterns — overlay repo, bulk edit, distinct-values tools, dynamic route introspection, debounced free-text search, optional mobile-first layout (ask when the UI library makes it unclear or hard)",
+        "Optional patterns — overlay repo, bulk edit, distinct-values tools, dynamic route introspection, debounced free-text search",
+        "Mobile first by default — ask the developer if the app should follow a different UX pattern",
         "TanStack Intent + CLI as doc-aligned guidance (not duplicated command manuals)",
         "Assistant chat renders Markdown (GFM) — lists, tables, code blocks; internal links stay navigable",
         "Server/client execution boundaries — isomorphic loaders, *.server.ts, createServerOnlyFn, import protection",
@@ -435,7 +436,7 @@
         },
         {
           "input": "Layout should work on small screens",
-          "output": "Optional mobile-first design — start from the narrow viewport and enhance as width grows; ask if the chosen UI library makes that unclear or hard"
+          "output": "Apply mobile first by default — narrow viewport first, then enhance as width grows; ask the developer if this app should follow a different UX pattern"
         }
       ],
       "companionSkills": [

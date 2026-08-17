@@ -2,7 +2,7 @@
 
 This repo ships **[Agent Skills](https://agentskills.io)** for the TanStack fullstack template:
 
-- **`tanstack-promptable-fullstack-app-template`** — **architecture contract**: interface-first services, three schema layers, loader-first routes, URL-as-state, AI tool coverage, server/client boundaries, middleware-inferred request context. **Vendor-agnostic** for UI kits and observability SDKs. Optional **mobile first** layout (ask when the UI library makes it unclear or hard).
+- **`tanstack-promptable-fullstack-app-template`** — **architecture contract**: interface-first services, three schema layers, loader-first routes, URL-as-state, AI tool coverage, server/client boundaries, middleware-inferred request context. **Vendor-agnostic** for UI kits and observability SDKs. **Mobile first** by default; ask the developer if the app should follow a different UX pattern.
 - **`observability-and-env`** — **companion recipe**: centralized env parsing, structured logging + error-tracking bootstrap behind `ObservabilityService`, `webEnvMiddleware`, and `getBrowserShellSession` (no `window.__ENV__`).
 - **`reference-tech-stack`** — **opinionated defaults** for *this* template: Zod, Mantine, lucide-react, MongoDB + seed, jose JWT, OpenAI adapter, pino + Sentry, react-markdown, Biome, Vitest, Playwright, Netlify.
 

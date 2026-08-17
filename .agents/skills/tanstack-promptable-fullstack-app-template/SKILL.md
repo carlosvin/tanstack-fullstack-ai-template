@@ -60,7 +60,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 1. Read **Core Contract** first — it is the non-negotiable architecture.
 2. Run the **Architecture Checklist** before every non-trivial change.
-3. Jump to **Server execution boundaries**, **Schema Boundaries**, **Request Context**, or **Special Patterns** only when that concern applies. Special Patterns (including optional mobile first) are not Core Contract.
+3. Jump to **Server execution boundaries**, **Schema Boundaries**, **Request Context**, or **Special Patterns** only when that concern applies. Special Patterns are not Core Contract. **Mobile first** is the default layout stance — ask before choosing a different UX pattern.
 4. Use **[AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md)** for operational how-to — not for inventing alternate architecture. **This skill is vendor-agnostic** for UI kits and observability SDKs. Concrete packages for *this* template live in companion skill **`reference-tech-stack`**; env/logging setup lives in **`observability-and-env`**.
 
 ## Fixed vs swappable stack
@@ -89,7 +89,7 @@ Pick **one validator library** per app and use it consistently across router sea
 - **Runtime context guards:** `getShellAuthContext`, `getAccessTicket`, `accessTicketFrom`, or property-presence checks on middleware-assembled `context` — chain the middleware and read `ctx.context` directly (Start infers types).
 - **Context type bypasses:** `context as AuthContext`, `as unknown`, or `as any` on request context — chain middleware so TypeScript infers context.
 - **Secrets in the browser:** returning `serverEnv` or raw env to loaders/components — project through `shellSession` only.
-- **Desktop-first layout:** designing for a wide viewport and only later squeezing it onto small screens. When applying mobile first, start from the narrow layout and enhance as width increases — or **ask** if the UI library makes that unclear or hard.
+- **Desktop-first without asking:** designing for a wide viewport and only later squeezing it onto small screens. Default to mobile first; **ask the developer** if this app should follow a different UX pattern.
 
 ## Core Contract
 
@@ -446,7 +446,7 @@ interface WritableRepository {
 - **Help surface:** single `docs/help.md` can back `/help`, an AI tool, and suggested prompts (see AGENTS.md).
 - **Distinct values:** `getDistinctValues` → GET server fn → read-only AI tool so filters match real data.
 - **Dynamic AI navigation:** derive route/help context from `router.flatRoutes` + `validateSearch` introspection where possible.
-- **Mobile first (optional):** [Progressive enhancement from small viewports up](https://developer.mozilla.org/en-US/docs/Glossary/Mobile_First) — create a usable layout at the narrowest width, then add richer layout as the viewport grows. This is **not** Core Contract, not a particular widget (header, nav, drawer), and not a browser- or library-specific recipe. How you express it depends on the project's UI library (breakpoint tokens, `min-width` media queries, or equivalent). **Ask the user** when they did not request it, when the chosen library has no clear responsive primitives, or when a faithful implementation is unclear or hard. Do not silently force or skip it in those cases. Concrete library recipes for *this* template live in AGENTS.md §3 and companion **`reference-tech-stack`**.
+- **Mobile first (default):** [Progressive enhancement from small viewports up](https://developer.mozilla.org/en-US/docs/Glossary/Mobile_First) — create a usable layout at the narrowest width, then add richer layout as the viewport grows. This is the **default** layout stance for UI work, not Core Contract, not a particular widget (header, nav, drawer), and not a browser- or library-specific recipe. How you express it depends on the project's UI library (breakpoint tokens, `min-width` media queries, or equivalent). **Ask the developer** if this app's needs call for a different UX pattern (desktop-first, a specialized layout, and so on). Do not silently switch away from mobile first. Concrete library recipes for *this* template live in AGENTS.md §3 and companion **`reference-tech-stack`**.
 
 ## TanStack Intent, CLI, and AI
 

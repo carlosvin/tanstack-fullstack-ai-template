@@ -87,13 +87,13 @@ coupling into the architecture skill.
 3. Keep interfaces when swapping (repository, `AIAdapterService`, `ObservabilityService`); update this stack map and AGENTS.md; leave the architecture skill vendor-agnostic.
 4. UI and schema *how-to* live in AGENTS.md §3 / architecture skill — this skill only names packages.
 
-## Applying mobile first (optional)
+## Applying mobile first (default)
 
-Architecture treats [mobile first](https://developer.mozilla.org/en-US/docs/Glossary/Mobile_First)
-as an optional design principle, not a named widget. In *this* template, express it with
-Mantine responsive props (`base`, then `sm` / `md` / `lg`). Navigation that must collapse
-on small viewports can use `AppShell` + `Burger` + `NavLink` (AGENTS.md §3). **Ask** when
-the user did not request it or a library-native implementation is unclear or hard.
+Architecture defaults to [mobile first](https://developer.mozilla.org/en-US/docs/Glossary/Mobile_First)
+— not a named widget. In *this* template, express it with Mantine responsive props
+(`base`, then `sm` / `md` / `lg`). Navigation that must collapse on small viewports can
+use `AppShell` + `Burger` + `NavLink` (AGENTS.md §3). **Ask the developer** if this app
+should follow a different UX pattern.
 
 ## Verification
 
