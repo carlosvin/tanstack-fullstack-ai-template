@@ -1,0 +1,56 @@
+# Changelog
+
+## [0.2.0](https://github.com/carlosvin/tanstack-fullstack-ai-template/compare/v0.1.0...v0.2.0) (2026-08-22)
+
+
+### Features
+
+* add documentation for using TanStack CLI to access up-to-date library resources ([6a03ef6](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/6a03ef6e3088467701bffde6477f5437b5b2a200))
+* add installation instructions for the TanStack fullstack pattern skill ([b8ed169](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/b8ed169da195397e6f4d4294138f0c6373c28cbf))
+* add observability-and-env skill with pino logger, Zod env schemas, and centralized Sentry bootstrap ([454f02d](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/454f02dfc1d8618dbfd63f2feb59929d74b03666))
+* add repository-backed accessTicket to auth middleware ([8a58461](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/8a58461547b878905fdd6a7083a4c10ebfbd97ad))
+* add support for publication metadata in skills ([303678c](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/303678c807e324d7d1c4288341491d6ad5f67ee7))
+* **ai:** expose app name, version, and ENV as getAppRuntimeInfo tool ([#21](https://github.com/carlosvin/tanstack-fullstack-ai-template/issues/21)) ([d27750b](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/d27750b0f92ed1da65e68c4056ba889926c6cea5))
+* align skill gaps for distinct values and server-only boundaries ([570e658](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/570e6583d0824c551e7a9b19aaff1fc5e026ee34))
+* align template app with TanStack fullstack skill (phases 0-4) ([14d5ef1](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/14d5ef1aca10fabb6459819867877dfbcfb2a018))
+* auto-generate test user when auth header is absent ([f360568](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/f360568d5db6c6debed4cb6bc32926a19ec18b8b))
+* auto-generate test user when auth header is absent ([#28](https://github.com/carlosvin/tanstack-fullstack-ai-template/issues/28)) ([9a1fa0a](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/9a1fa0adc4a97b54590145bb023e2cdc183964f9))
+* derive AI navigation from the router and extract page components ([616bec6](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/616bec6d6bd65dc408b5eb2b4c146875e629b964))
+* enhance TanStack Promptable Fullstack skills documentation ([8fc79f9](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/8fc79f9d6736841450032e4027725198cdfed10b))
+* make app chrome mobile-first with AppShell navbar ([9f697f2](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/9f697f2dc13c04c34b569defc50bc17e2beace6e))
+* mobile-first AppShell navbar and compact header ([#32](https://github.com/carlosvin/tanstack-fullstack-ai-template/issues/32)) ([47ba2bf](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/47ba2bf98c182ec1d3c1088b4261bf0422a6fbd5))
+* skill alignment — distinct values, createServerOnlyFn, router defaults ([#31](https://github.com/carlosvin/tanstack-fullstack-ai-template/issues/31)) ([74bfd06](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/74bfd06372014851b05bad4a762846bf35a3f271))
+* **skills:** add reference-tech-stack for opinionated package defaults ([c9782de](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/c9782deca2928ba84bcf6b2a2543eb8c57862360))
+* typed startup env context and browser shell session ([9e0f9a8](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/9e0f9a8b685f7b1d56c25b08d7623d9e529d2957))
+* upgrade Mantine to 9.5.1 and adopt better component patterns ([5eb8717](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/5eb8717989bdddcee24f25380914be75144218c0))
+* upgrade Mantine to 9.5.1 and adopt better component patterns ([#30](https://github.com/carlosvin/tanstack-fullstack-ai-template/issues/30)) ([2c47d14](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/2c47d14c49ef481da605fc46d52a0731a79a95fb))
+
+
+### Bug Fixes
+
+* address Copilot review on types import and email matching ([fc8d7a4](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/fc8d7a4e5d6cec85f43c9e9c871865e12b33b539))
+* address PR review for public env, auth header, and Sentry bootstrap ([ef85db6](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/ef85db6ebb217909ce40e654cd8d78a80f6729b7))
+* **ci:** pin pnpm v10 and use netlify CLI for full SSR preview deploy ([fae6786](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/fae6786d7eb49c6117008094a97e8c94675919a0))
+* close env architecture gaps in example app ([1413a03](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/1413a03bfe48d583015a067f29c6a1919f23d792))
+* debounce task search input to prevent dropped keystrokes ([#23](https://github.com/carlosvin/tanstack-fullstack-ai-template/issues/23)) ([738b1a8](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/738b1a8ddc28bf654cb05c1f0a46c750441fecad))
+* default chat drawer media query to desktop on SSR ([f7a635f](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/f7a635f61d09602dec9f0153a4d25a4cd6228dea))
+* derive DistinctValueField type from constants module ([ebed80a](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/ebed80a75bcabebae5b194e8e75817e17b94aeb7))
+* harden demo auth cookie handling per review ([d316d2a](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/d316d2a2a85faf2308af95add9bffa71af733921))
+* import DistinctValueField for local repository interface use ([d6aeb70](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/d6aeb70de18fa9f8fd2b3c1fcb838159cba3e558))
+* keep mobile nav open until the route commits ([7448b2a](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/7448b2a7029234881db4b00b7aeb692478950a36))
+* keep overlay close on navbar clicks ([fec8816](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/fec88165b5a7de068a2e647315ef7f95d88f2b15))
+* lazy-parse env for Netlify AI Gateway runtime injection ([bde745b](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/bde745b386b9110334aee76f896c9942f9a93e63))
+* **netlify:** publish dist instead of .output/public ([6aef6b7](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/6aef6b78fbe7226ba2e7ff74fbc476e4f119e191))
+* **netlify:** publish dist instead of .output/public ([#16](https://github.com/carlosvin/tanstack-fullstack-ai-template/issues/16)) ([b5fe1ca](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/b5fe1cac4c1ced6b78b90c241d05cb5d80238137))
+* redirect to tasks list before delete to avoid 404 ([762ddbe](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/762ddbe5e099a69f4b7cbf5f83c7af947cfe5f3e))
+* redirect to tasks list before delete to avoid 404 ([#29](https://github.com/carlosvin/tanstack-fullstack-ai-template/issues/29)) ([9b9b3ab](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/9b9b3abbf6690cff41c2008d29afc8f7e96b520f))
+* remove conflict markers from __root.tsx after rebase ([eceda89](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/eceda8925b9973578a4cd941c768b15cc19e66c2))
+* remove local pnpm store path from workspace config ([7ee7380](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/7ee7380796ad310c3b487cd0814dac38f6487efb))
+* remove unnecessary client observability useEffect from root ([c098f46](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/c098f46c633815ca66d9e17ab5f57241252f1cd2))
+* replace pino worker-thread transport with in-process pino-pretty stream ([be4dee1](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/be4dee1bc1732cb7e355fc88e165c5c71502398c))
+* replace pino worker-thread transport with in-process pino-pretty stream ([#34](https://github.com/carlosvin/tanstack-fullstack-ai-template/issues/34)) ([0e14cc6](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/0e14cc6ec5de7c342078148362745bc1096d3263))
+* restore AI button when env is loaded from .env files ([4c5f239](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/4c5f239bc054ebe93e1eeb17fe372e7765986da8))
+* **skills:** keep architecture skill UI- and observability-vendor agnostic ([#27](https://github.com/carlosvin/tanstack-fullstack-ai-template/issues/27)) ([0e83b58](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/0e83b5886dd77b46f0a7b5a6536e91238c78f244))
+* **skills:** keep skills vendor-agnostic and document swappable stack ([1788693](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/1788693809f227bae98386c4e93572e07dcc2a16))
+* **start:** align request context with skill (Register, no casts) ([6fb017c](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/6fb017caf19b85d7f7e4bf7457fac3de75be9172))
+* surface AI stream errors and cover chat drawer in E2E ([1561357](https://github.com/carlosvin/tanstack-fullstack-ai-template/commit/156135733be6d34b47bdf351b1ddab769d6b806c))
