@@ -95,9 +95,12 @@ arguments and calls an **`ObservabilityService` interface**, not a specific SDK.
 ## File layout
 
 ```
-src/env/
-  runtimeEnvSchema.ts      # DeploymentEnv, LogLevel, shared preprocessors
-  webEnv.ts                # webServerEnv + shellSession; parsed once
+src/env/                  # server-only — importProtection denies '**/env/**' in the client graph
+  webEnv.server.ts        # WebServerEnvSchema + webServerEnv/shellSession; parsed once
+
+src/services/schemas/
+  runtimeEnv.ts           # client-safe: DeploymentEnv, LogLevel, shared preprocessors
+  shellSession.ts         # client-safe: AppMeta / WebPublicEnv / ShellSession schemas
 
 src/utils/
   logger.ts             # createModuleLogger(name, { environment, logLevel? })
@@ -113,14 +116,15 @@ instrument.server.mts   # bootstrap entry: resolve + init (dev); emitted .mjs in
 tsconfig.instrument.json
 ```
 
-## src/env/runtimeEnvSchema.ts
+## src/services/schemas/runtimeEnv.ts
 
 Shared deployment enums and preprocessors used by web env (and any future pipeline env).
+Client-safe (no secrets, no env access) — may ship in the browser bundle.
 **Reference implementation uses Zod** — ArkType or Valibot work if you keep the same parse-once-at-startup contract.
 
 ```typescript
 import { z } from 'zod'
-import { DEPLOYMENT_ENV_VALUES, type DeploymentEnv, DeploymentEnvSchema } from '../../instrument.env.shared.mjs'
+import { DEPLOYMENT_ENV_VALUES, type DeploymentEnv, DeploymentEnvSchema } from '../../../instrument.env.shared.mjs'
 
 /** Empty / whitespace-only strings → undefined (Node process.env values are strings). */
 export function envStringToUndefined(val: unknown): unknown {
@@ -141,15 +145,15 @@ export const OptionalLogLevelSchema = z.preprocess(envStringToUndefined, LogLeve
 export const OptionalTrimmedStringSchema = z.preprocess(envStringToUndefined, z.string().optional())
 ```
 
-## src/env/webEnv.ts
+## src/services/schemas/shellSession.ts
 
-Parsed once when first imported. `ShellSessionSchema` is the browser-safe
-projection (public env + app). `WebServerEnvSchema` adds secrets.
+Browser-safe projection schemas (public env + app meta). Client-safe by
+contract — no secrets, no env access, no `dotenv` — so they may ship in the
+browser bundle.
 
 ```typescript
 import { z } from 'zod'
-import pkg from '../../package.json' with { type: 'json' }
-import { OptionalDeploymentEnvSchema, OptionalLogLevelSchema, OptionalTrimmedStringSchema } from './runtimeEnvSchema'
+import { OptionalDeploymentEnvSchema, OptionalLogLevelSchema, OptionalTrimmedStringSchema } from './runtimeEnv'
 
 export const AppMetaSchema = z.object({
   name: z.string().min(1),
@@ -164,6 +168,18 @@ export const WebPublicEnvSchema = z.object({
 
 export const ShellSessionSchema = WebPublicEnvSchema.extend({ app: AppMetaSchema })
 export type ShellSession = z.infer<typeof ShellSessionSchema>
+```
+
+## src/env/webEnv.server.ts
+
+Server-only — never import from client-shared modules (the `importProtection`
+client tripwire `**/env/**` fails the build otherwise). Parsed once per
+process. `WebServerEnvSchema` adds secrets on top of the public schemas.
+
+```typescript
+import { z } from 'zod'
+import pkg from '../../package.json' with { type: 'json' }
+import { ShellSessionSchema, WebPublicEnvSchema } from '../services/schemas/shellSession'
 
 export const WebServerEnvSchema = WebPublicEnvSchema.extend({
   AUTH_HEADER_NAME: z.string().optional(),
@@ -189,7 +205,7 @@ Structured logger factory. No `process.env` access — env values come from the 
 
 ```typescript
 import pino, { type Logger } from 'pino'
-import type { DeploymentEnv, LogLevel } from '../env/runtimeEnvSchema'
+import type { DeploymentEnv, LogLevel } from '../services/schemas/runtimeEnv'
 
 export type ModuleLoggerOptions = {
   environment: DeploymentEnv   // validated by caller's env schema
@@ -225,7 +241,7 @@ Thin bound factory for server-side modules — eliminates repeated
 `{ environment: webServerEnv.ENV, logLevel: webServerEnv.LOG_LEVEL }` boilerplate.
 
 ```typescript
-import { webServerEnv } from '../env/webEnv'
+import { webServerEnv } from '../env/webEnv.server'
 import { createModuleLogger } from './logger'
 
 /** Server-side logger factory pre-bound to webServerEnv options. */
@@ -323,7 +339,7 @@ Injects startup-validated `serverEnv` and `shellSession`. Types come from
 ```typescript
 // src/middleware/webEnv.ts
 import { createMiddleware } from '@tanstack/react-start'
-import { shellSession, webServerEnv } from '../env/webEnv'
+import { shellSession, webServerEnv } from '../env/webEnv.server'
 import { authMiddleware } from './auth'
 
 export const webEnvMiddleware = createMiddleware()
@@ -372,7 +388,7 @@ loader: async () => ({
 **observability/index.ts** — replace `process.env.SENTRY_DSN` with `shellSession`:
 
 ```typescript
-import { shellSession } from '../../env/webEnv'
+import { shellSession } from '../../env/webEnv.server'
 
 export function getObservability(options: GetObservabilityOptions): ObservabilityService {
   const dsn = options.shellSession?.SENTRY_DSN ?? shellSession.SENTRY_DSN
@@ -384,7 +400,7 @@ export function getObservability(options: GetObservabilityOptions): Observabilit
 `webServerEnv`:
 
 ```typescript
-import { webServerEnv } from '../env/webEnv'
+import { webServerEnv } from '../env/webEnv.server'
 const AUTH_HEADER_NAME = webServerEnv.AUTH_HEADER_NAME ?? 'Authorization'
 ```
 
@@ -394,7 +410,7 @@ const AUTH_HEADER_NAME = webServerEnv.AUTH_HEADER_NAME ?? 'Authorization'
 - [ ] `createModuleLogger` / `createServerLogger` never call `process.env`
 - [ ] `instrument.server.mts` uses `resolveSentryBootstrapEnv()` + `initSentry()`, and `pnpm build` emits `.output/server/instrument.*.mjs`
 - [ ] `package.json` is copied next to the emitted instrument bundle so version import works
-- [ ] `shellSession` is parsed once in `webEnv.ts` (public env + app from package.json)
+- [ ] `shellSession` is parsed once in `webEnv.server.ts` (public env + app from package.json)
 - [ ] Middleware injects `serverEnv` and `shellSession`; consumers chain middleware for inferred `context.*` types
 - [ ] Browser config uses `getBrowserShellSession` from route loaders (not `window.__ENV__`, not raw `serverEnv`)
 - [ ] `SENTRY_DSN` / `LOG_LEVEL` / `ENV` documented in `.env.example`

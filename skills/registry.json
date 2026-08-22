@@ -7,7 +7,7 @@
       "summary": "Companion to tanstack-promptable-fullstack-app-template. Use when adding structured logging, centralized environment validation (runtime schemas), error-tracking bootstrap, or fixing env/shellSession leaks in a TanStack Start app. Teaches interface-first observability patterns: parse env once, inject via middleware, project a browser-safe shellSession, and keep process.env out of handlers. The reference app uses pino + Sentry behind ObservabilityService — swap vendors without changing middleware or handler contracts.",
       "projectName": "TanStack AI-Promptable Full-Stack Template",
       "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
-      "version": "1.7.0",
+      "version": "1.7.1",
       "author": {
         "name": "Carlos Martin-Sanchez",
         "url": "https://github.com/carlosvin"
@@ -51,7 +51,7 @@
       ],
       "capabilities": [
         "Interface-first observability — handlers depend on ObservabilityService, not a specific vendor",
-        "Centralized runtime-validated env schemas with server/public split (src/env/) — reference uses Zod",
+        "Centralized runtime-validated env schemas with server/public split (server-only src/env/webEnv.server.ts + client-safe src/services/schemas/shellSession.ts) — reference uses Zod",
         "process.env read only once at module-level parse — no scattered env access",
         "Structured logger factory pattern (reference: pino via createModuleLogger / createServerLogger)",
         "Error-tracking bootstrap pattern (reference: Sentry via instrument.*.mts)",
@@ -95,8 +95,9 @@
         "TanStack Start app (from this template or another)"
       ],
       "outputs": [
-        "src/env/runtimeEnvSchema.ts with DeploymentEnv and LogLevel enums",
-        "src/env/webEnv.ts with webServerEnv + shellSession singletons (parsed once at startup)",
+        "src/services/schemas/runtimeEnv.ts with DeploymentEnv and LogLevel enums (client-safe)",
+        "src/services/schemas/shellSession.ts with browser-safe AppMeta / WebPublicEnv / ShellSession schemas",
+        "src/env/webEnv.server.ts with webServerEnv + shellSession singletons (lazy parse once per process)",
         "src/utils/logger.ts with createModuleLogger factory (vendor-agnostic options)",
         "src/utils/serverLogger.ts with createServerLogger bound factory",
         "src/services/observability/ with ObservabilityService interface + swappable implementations",
@@ -117,7 +118,8 @@
         "Bootstrap NODE_ENV uses DeploymentEnvSchema.optional(); unsupported values fail fast instead of being trimmed, ignored, or coerced",
         "Bootstrap error-tracking DSN env var is read only in instrument.env.mts; values are passed through exactly as provided",
         "instrument.shared.mts receives dsn and environment as explicit pre-resolved arguments — no process.env inside",
-        "DeploymentEnvSchema is defined once in instrument.env.shared.mts and re-exported from runtimeEnvSchema.ts for TypeScript callers",
+        "DeploymentEnvSchema is defined once in instrument.env.shared.mts and re-exported from src/services/schemas/runtimeEnv.ts for TypeScript callers",
+        "src/env/** modules are server-only — tanstackStart importProtection client.files includes '**/env/**' so the build fails if one enters the client graph",
         "Root logger is created lazily and only once per process — all module loggers are child() instances (reference: pino)",
         "Application code calls getObservability() / createServerLogger() — never imports @sentry/* or pino directly in handlers"
       ],
@@ -125,8 +127,9 @@
         "Choose logging and error-tracking implementations behind ObservabilityService (reference app: pino + Sentry)",
         "Add chosen logger dependencies (reference: pino and pino-pretty)",
         "Create instrument.env.shared.mts with DeploymentEnvSchema",
-        "Create src/env/runtimeEnvSchema.ts with DeploymentEnv, LogLevel, and optional preprocessors",
-        "Create src/env/webEnv.ts — parse process.env once into webServerEnv; derive shellSession (public env + app from package.json)",
+        "Create src/services/schemas/runtimeEnv.ts with DeploymentEnv, LogLevel, and optional preprocessors (client-safe)",
+        "Create src/services/schemas/shellSession.ts with the browser-safe AppMeta / WebPublicEnv / ShellSession schemas",
+        "Create src/env/webEnv.server.ts — parse process.env once into webServerEnv; derive shellSession (public env + app from package.json)",
         "Create src/utils/logger.ts with createModuleLogger and lazy root logger",
         "Create src/utils/serverLogger.ts binding webServerEnv.ENV and LOG_LEVEL",
         "Create instrument.env.mts with resolveSentryBootstrapEnv() using the shared DeploymentEnvSchema",
@@ -149,7 +152,7 @@
         },
         {
           "input": "Read environment variables safely in application code",
-          "output": "Import webServerEnv from src/env/webEnv.ts (already validated), or read context.serverEnv in handlers — never read process.env directly in app code"
+          "output": "Import webServerEnv from src/env/webEnv.server.ts (already validated), or read context.serverEnv in handlers — never read process.env directly in app code"
         },
         {
           "input": "Expose app name/version and public env to the client",
