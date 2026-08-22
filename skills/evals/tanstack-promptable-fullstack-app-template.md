@@ -50,4 +50,4 @@ Lightweight prompts for manual review or future automation. A compliant agent sh
 
 **Prompt:** On `updateTask`, pass the editor’s email as a bare string second argument to the repository (skip TraceabilityContext).
 
-**Expect:** Refuse; build a `TraceabilityContext` (`updateWriteTrace(context.user.email)` or `{ lastModifiedBy }`) and have the repository **persist** `lastModifiedBy` on the entity. Do not ignore the `trace` argument in seed/Mongo implementations.
+**Expect:** Refuse; build a `TraceabilityContext` (`updateWriteTrace(context.accessTicket.identity.email)` or `{ lastModifiedBy }`) and have the repository **persist** `lastModifiedBy` on the entity. Do not ignore the `trace` argument in seed/Mongo implementations.

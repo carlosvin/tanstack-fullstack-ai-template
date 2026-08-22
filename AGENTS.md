@@ -114,7 +114,7 @@ If your team prefers [`@tabler/icons-react`](https://tabler.io/icons) (the Manti
 
 ## 5. Middleware and Auth
 
-**Skill contract:** repository-backed auth ticket, server-enforced guards, `TraceabilityContext` on writes — see skill **Request Context** and **Interface Contracts**. **Current template** uses a simpler `AuthContext` (migration tracked in the alignment roadmap above).
+**Skill contract:** repository-backed auth ticket, server-enforced guards, `TraceabilityContext` on writes — see skill **Request Context** and **Interface Contracts**. This template implements the contract: `authMiddleware` builds an `accessTicket` from the JWT identity + repository profile (roadmap phase 2).
 
 ### Files and env
 
@@ -144,8 +144,8 @@ interface AuthContext {
 
 ### Optional patterns (skill)
 
-- **Public-route allowlist** — synthetic anonymous context for health/static paths (not yet in this template).
-- **Pre-auth 308 redirects** — legacy URL compatibility before `authMiddleware` (skill **Implementation Flow** #5).
+- **Public-route allowlist** — implemented: `PUBLIC_ROUTE_PREFIXES` in `src/middleware/auth.ts` skips the repository profile load and mints a synthetic anonymous ticket for health/static paths.
+- **Pre-auth 308 redirects** — legacy URL compatibility before `authMiddleware` (skill **Implementation Flow** #5; not yet in this template).
 
 ## 6. Server Functions and Data Access
 
