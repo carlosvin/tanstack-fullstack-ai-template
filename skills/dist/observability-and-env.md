@@ -223,6 +223,7 @@ Structured logger factory. No `process.env` access — env values come from the 
 
 ```typescript
 import pino, { type Logger } from 'pino'
+import pinoPretty from 'pino-pretty'
 import type { DeploymentEnv, LogLevel } from '../env/runtimeEnvSchema'
 
 export type ModuleLoggerOptions = {
@@ -237,12 +238,11 @@ function getRootLogger(environment: DeploymentEnv): Logger {
   // Server-only — not safe for client bundles.
   const isNodeTty = typeof process !== 'undefined' && process.stdout != null && Boolean(process.stdout.isTTY)
   const useTtyPretty = isNodeTty && environment !== 'production'
+  // In-process pino-pretty stream — never `pino.transport()`: its worker
+  // thread references `__dirname` and crashes bundled ESM server output.
   // Root at 'trace' so child level overrides are never filtered out
   rootLogger = useTtyPretty
-    ? pino({ level: 'trace' }, pino.transport({
-        target: 'pino-pretty',
-        options: { colorize: true, singleLine: true, translateTime: 'HH:MM:ss.l' },
-      }))
+    ? pino({ level: 'trace' }, pinoPretty({ colorize: true, singleLine: true, translateTime: 'HH:MM:ss.l' }))
     : pino({ level: 'trace' })
   return rootLogger
 }

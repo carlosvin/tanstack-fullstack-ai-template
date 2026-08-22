@@ -12,6 +12,7 @@
  */
 
 import pino, { type Logger } from 'pino'
+import pinoPretty from 'pino-pretty'
 
 import type { DeploymentEnv, LogLevel } from '../env/runtimeEnvSchema'
 
@@ -24,29 +25,27 @@ export type ModuleLoggerOptions = {
 
 /**
  * Lazily-initialised root logger. All module loggers are `child()` instances
- * of this single root, so the pino-pretty transport (which spawns a worker
- * thread) is created at most once per process — not once per importer.
+ * of this single root, so the pretty-print stream is created at most once per
+ * process — not once per importer.
  */
 let rootLogger: Logger | null = null
 
 function getRootLogger(environment: DeploymentEnv): Logger {
 	if (rootLogger) return rootLogger
 
-	// Server-only — not safe for client bundles. Pretty transport is only
+	// Server-only — not safe for client bundles. Pretty printing is only
 	// enabled in an interactive Node TTY outside of production.
 	const isNodeTty = typeof process !== 'undefined' && process.stdout != null && Boolean(process.stdout.isTTY)
 	const useTtyPretty = isNodeTty && environment !== 'production'
 
+	// Pretty printing runs in-process as a pino-pretty destination stream.
+	// `pino.transport()` must not be used here: it spawns a worker thread
+	// whose bundled ESM code references `__dirname`, which crashes Nitro
+	// server builds (`ReferenceError: __dirname is not defined`).
 	// Root is created at the most permissive level ('trace') so per-child level
 	// overrides are never filtered out at the root.
 	rootLogger = useTtyPretty
-		? pino(
-				{ level: 'trace' },
-				pino.transport({
-					target: 'pino-pretty',
-					options: { colorize: true, singleLine: true, translateTime: 'HH:MM:ss.l' },
-				}),
-			)
+		? pino({ level: 'trace' }, pinoPretty({ colorize: true, singleLine: true, translateTime: 'HH:MM:ss.l' }))
 		: pino({ level: 'trace' })
 
 	return rootLogger
