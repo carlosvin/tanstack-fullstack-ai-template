@@ -1,5 +1,5 @@
 import { createServerOnlyFn } from '@tanstack/react-start'
-import { webServerEnv } from '../../env/webEnv'
+import { webServerEnv } from '../../env/webEnv.server'
 import { createServerLogger } from '../../utils/serverLogger'
 import { MongoRepository } from './mongoRepository.server'
 import { SeedRepository } from './seedRepository'

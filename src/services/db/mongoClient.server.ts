@@ -1,6 +1,6 @@
 import { createServerOnlyFn } from '@tanstack/react-start'
 import { type Db, MongoClient } from 'mongodb'
-import { webServerEnv } from '../../env/webEnv'
+import { webServerEnv } from '../../env/webEnv.server'
 
 let client: MongoClient | null = null
 let db: Db | null = null

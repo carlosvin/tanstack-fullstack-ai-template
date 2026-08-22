@@ -1,6 +1,6 @@
 import { createMiddleware } from '@tanstack/react-start'
 import { getCookie, setCookie } from '@tanstack/react-start/server'
-import { webServerEnv } from '../env/webEnv'
+import { webServerEnv } from '../env/webEnv.server'
 import { type AccessTicket, buildAccessTicket } from '../services/auth/accessTicket'
 import { getReadRepository } from '../services/repository/getRepository.server'
 import type { UserIdentity } from '../types'
