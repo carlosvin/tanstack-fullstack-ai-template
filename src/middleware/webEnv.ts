@@ -1,5 +1,5 @@
 import { createMiddleware } from '@tanstack/react-start'
-import { getShellSession, getWebServerEnv } from '../env/webEnv'
+import { getShellSession, getWebServerEnv } from '../env/webEnv.server'
 import { authMiddleware } from './auth'
 
 /**

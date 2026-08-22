@@ -1,6 +1,6 @@
 import { AppShell, NavLink, ScrollArea, Text, Tooltip } from '@mantine/core'
 import { Code, LayoutDashboard, ListTodo } from 'lucide-react'
-import type { AppMeta } from '../../env/webEnv'
+import type { AppMeta } from '../../services/schemas/shellSession'
 import type { CurrentUser } from '../../types'
 import { Link } from '../Link/Link'
 

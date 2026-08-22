@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ShellSessionSchema } from '../../env/webEnv'
+import { ShellSessionSchema } from '../schemas/shellSession'
 
 function shellSessionSlice(sentryDsn: string | undefined) {
 	return ShellSessionSchema.pick({ SENTRY_DSN: true }).parse({ SENTRY_DSN: sentryDsn })
@@ -16,7 +16,7 @@ async function _assertGetObservabilityRequiresOptionsObject() {
 
 afterEach(() => {
 	vi.resetModules()
-	vi.doUnmock('../../env/webEnv')
+	vi.doUnmock('../../env/webEnv.server')
 	vi.unstubAllGlobals()
 })
 
@@ -24,8 +24,8 @@ describe('getObservability', () => {
 	it('uses the server shell session when callers pass an empty options object', async () => {
 		vi.stubGlobal('window', undefined)
 
-		vi.doMock('../../env/webEnv', async () => {
-			const actual = await vi.importActual<typeof import('../../env/webEnv')>('../../env/webEnv')
+		vi.doMock('../../env/webEnv.server', async () => {
+			const actual = await vi.importActual<typeof import('../../env/webEnv.server')>('../../env/webEnv.server')
 			const shellSession = ShellSessionSchema.parse({
 				...actual.getShellSession(),
 				SENTRY_DSN: 'https://examplePublicKey@o0.ingest.sentry.io/0',
