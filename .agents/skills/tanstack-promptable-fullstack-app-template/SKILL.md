@@ -355,7 +355,7 @@ export const updateTask = createServerFn({ method: 'POST' })
     context.accessTicket.requireTaskEditor(data.taskId)
     const repoPatch = TaskRepoPatchSchema.parse(mapToolUpdateToRepo(data))
     return getWritableRepository().updateTask(data.taskId, repoPatch, {
-      lastModifiedBy: context.identity.email,
+      lastModifiedBy: context.accessTicket.identity.email,
     })
   })
 ```

@@ -172,6 +172,7 @@ export const WebServerEnvSchema = WebPublicEnvSchema.extend({
   AUTH_HEADER_NAME: z.string().optional(),
   // ... secrets
 })
+export type WebServerEnv = z.infer<typeof WebServerEnvSchema>
 
 let cachedWebServerEnv: WebServerEnv | undefined
 
