@@ -330,7 +330,7 @@ function labelForStatus(status: TaskStatus): string {
 - **TypeScript inside handlers:** once middleware calls `next({ context })`, Start **infers** `ctx.context` from the middleware chain on that server fn / route. Chain the middleware that provides the fields you need (e.g. `.middleware([webEnvMiddleware])` or `.middleware([requireAuthMiddleware])`).
 - **Do not re-validate context in handlers:** no shallow "is this field present?" guards on middleware output. Parse at true **external** boundaries only; let middleware chaining carry types downstream. No `Register` / module-augmentation for middleware context.
 
-Field names are app-specific (`accessTicket`, `identity`, `serverEnv`, …). This stock template middleware attaches auth (`user`, `userProfile`) plus startup-validated **`serverEnv`** and **`shellSession`** (see **`observability-and-env`** for how those are parsed and injected).
+Field names are app-specific (`accessTicket`, `identity`, `serverEnv`, …). This stock template middleware attaches an **`accessTicket`** (JWT identity + repository profile, with roles and guards) plus startup-validated **`serverEnv`** and **`shellSession`** (see **`observability-and-env`** for how those are parsed and injected).
 
 ### Env and browser shell
 
@@ -340,7 +340,7 @@ Field names are app-specific (`accessTicket`, `identity`, `serverEnv`, …). Thi
 
 ### Core rules for agents
 
-1. **Direct context access** — read `ctx.context` fields directly (e.g. `context.user`, `context.serverEnv`, `context.shellSession`).
+1. **Direct context access** — read `ctx.context` fields directly (e.g. `context.accessTicket`, `context.serverEnv`, `context.shellSession`).
 2. **No runtime context guards** — never add or call wrappers such as `getShellAuthContext(ctx.context)`, `getAccessTicket(ctx.context)`, or `accessTicketFrom(context)`. Middleware guarantees shape; missing fields are a middleware bug, not something handlers paper over.
 3. **No type bypasses** — never cast context with `as unknown`, `as any`, or `context as SomeContext`. Chain middleware (e.g. `requireAuthMiddleware` after `authMiddleware`, or `webEnvMiddleware` for env fields) so `context` is inferred.
 4. **Maintain boundary validation** — keep a runtime validator on **external** inputs: env, auth claims before enrichment, request bodies, third-party payloads, **browser session serialization**. Do not duplicate validation on context already built by trusted middleware.
@@ -360,12 +360,12 @@ export const updateTask = createServerFn({ method: 'POST' })
   })
 ```
 
-Stock template equivalent — same rules; `requireAuthMiddleware` chains auth so `context.user` is inferred. Build a `TraceabilityContext` (do not pass a bare email string as the mutation’s second argument):
+Stock template equivalent — same rules; `requireAuthMiddleware` chains auth so `context.accessTicket` is inferred. Build a `TraceabilityContext` (do not pass a bare email string as the mutation’s second argument):
 
 ```typescript
 .handler(async ({ data, context }) => {
   const repoPatch = TaskRepoPatchSchema.parse(mapToolUpdateToRepo(data))
-  const trace = updateWriteTrace(context.user.email)
+  const trace = updateWriteTrace(context.accessTicket.identity.email)
   return getWritableRepository().updateTask(data.taskId, repoPatch, trace)
 })
 ```
@@ -377,7 +377,7 @@ Stock template equivalent — same rules; `requireAuthMiddleware` chains auth so
 
 ## Interface Contracts
 
-Repository interfaces reference **repository-layer types** only. **`WritableRepository`** mutations take an optional **`TraceabilityContext`** built from the auth ticket (stock template: helpers such as `createWriteTrace` / `updateWriteTrace` from `context.user.email`) — not ad-hoc optional email parameters at each call site.
+Repository interfaces reference **repository-layer types** only. **`WritableRepository`** mutations take an optional **`TraceabilityContext`** built from the auth ticket (stock template: helpers such as `createWriteTrace` / `updateWriteTrace` from `context.accessTicket.identity.email`) — not ad-hoc optional email parameters at each call site.
 
 Implementations must **persist** audit fields from the trace onto the entity (`createdBy` on create, `lastModifiedBy` on update). Ignoring the `trace` argument is a contract violation.
 
@@ -463,7 +463,7 @@ interface WritableRepository {
 | AI adapters, chat client, tools, prompts, Markdown (GFM) rendering | §8 |
 | Observability and env bridge | §9 + **`observability-and-env`** |
 | Lint, unit/E2E test runners | §10–§11 + **`reference-tech-stack`** |
-| Full validation checklist (format, lint, test, build) | §17 |
+| Full validation checklist (format, lint, test, build) | §15 |
 | Public runtime config (`shellSession`, not `window.__ENV__`) | §13 + **`observability-and-env`** |
 | Opinionated package map for this template | **`reference-tech-stack`** |
 
@@ -471,4 +471,4 @@ interface WritableRepository {
 
 **This template repo (skill authors):** after editing YAML, run `pnpm skills:build` and `pnpm skills:check`.
 
-**Apps built from the template:** follow **AGENTS.md** §17 — e.g. `pnpm format && pnpm lint && pnpm test && pnpm build`; smoke with dev server and `/api/health` when configuration allows.
+**Apps built from the template:** follow **AGENTS.md** §15 — e.g. `pnpm format && pnpm lint && pnpm test && pnpm build`; smoke with dev server and `/api/health` when configuration allows.

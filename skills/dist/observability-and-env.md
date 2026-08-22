@@ -89,7 +89,9 @@ arguments and calls an **`ObservabilityService` interface**, not a specific SDK.
 1. `process.env` is read **only** in `src/env/*.ts` (schema parse) and in a
    single `BootstrapEnvSchema.parse(process.env)` call inside
    `instrument.env.mts` (Sentry bootstrap — runs before the app entry).
-   Parsed values are module singletons — **once per process at startup**.
+   Parsed values are cached singletons — **once per process**, lazily on
+   first access so platform-injected env vars (e.g. Netlify AI Gateway)
+   are visible before the parse runs.
 2. Logger options (`logLevel`, `environment`) are **passed as arguments** to
    `createModuleLogger` — the factory never reads `process.env`.
 3. **Typed server context** — middleware attaches `serverEnv` and `shellSession`
@@ -153,7 +155,8 @@ export const OptionalTrimmedStringSchema = z.preprocess(envStringToUndefined, z.
 
 ## src/env/webEnv.ts
 
-Parsed once when first imported. `ShellSessionSchema` is the browser-safe
+Parsed once per process, lazily on first access (cached) — so runtime-injected
+env is visible before the Zod parse. `ShellSessionSchema` is the browser-safe
 projection (public env + app). `WebServerEnvSchema` adds secrets.
 
 ```typescript
@@ -180,15 +183,35 @@ export const WebServerEnvSchema = WebPublicEnvSchema.extend({
   // ... secrets
 })
 
-export const webServerEnv = WebServerEnvSchema.parse(process.env)
+let cachedWebServerEnv: WebServerEnv | undefined
 
-export const shellSession = ShellSessionSchema.parse({
-  ENV: webServerEnv.ENV,
-  LOG_LEVEL: webServerEnv.LOG_LEVEL,
-  SENTRY_DSN: webServerEnv.SENTRY_DSN,
-  app: { name: pkg.name, version: pkg.version },
-})
+/** Validated server env — parsed once per process on first access. */
+export function getWebServerEnv(): WebServerEnv {
+  if (!cachedWebServerEnv) {
+    cachedWebServerEnv = WebServerEnvSchema.parse(process.env)
+  }
+  return cachedWebServerEnv
+}
+
+let cachedShellSession: ShellSession | undefined
+
+/** Browser-safe shell session derived from validated server env + package.json. */
+export function getShellSession(): ShellSession {
+  if (!cachedShellSession) {
+    const env = getWebServerEnv()
+    cachedShellSession = ShellSessionSchema.parse({
+      ENV: env.ENV,
+      LOG_LEVEL: env.LOG_LEVEL,
+      SENTRY_DSN: env.SENTRY_DSN,
+      app: { name: pkg.name, version: pkg.version },
+    })
+  }
+  return cachedShellSession
+}
 ```
+
+Keep `webServerEnv` / `shellSession` const exports as lazy `Proxy` shims over the
+getters so existing imports keep working without triggering an eager parse.
 
 **Add required secrets** to `WebServerEnvSchema` only — they must never appear in `ShellSessionSchema`.
 
@@ -333,7 +356,7 @@ Injects startup-validated `serverEnv` and `shellSession`. Types come from
 ```typescript
 // src/middleware/webEnv.ts
 import { createMiddleware } from '@tanstack/react-start'
-import { shellSession, webServerEnv } from '../env/webEnv'
+import { getShellSession, getWebServerEnv } from '../env/webEnv'
 import { authMiddleware } from './auth'
 
 export const webEnvMiddleware = createMiddleware()
@@ -341,8 +364,8 @@ export const webEnvMiddleware = createMiddleware()
   .server(({ next }) =>
     next({
       context: {
-        serverEnv: webServerEnv,
-        shellSession,
+        serverEnv: getWebServerEnv(),
+        shellSession: getShellSession(),
       },
     }),
   )
@@ -379,13 +402,13 @@ loader: async () => ({
 
 ## Updating call sites
 
-**observability/index.ts** — replace `process.env.SENTRY_DSN` with `shellSession`:
+**observability/index.ts** — replace `process.env.SENTRY_DSN` with `getShellSession()`:
 
 ```typescript
-import { shellSession } from '../../env/webEnv'
+import { getShellSession } from '../../env/webEnv'
 
 export function getObservability(options: GetObservabilityOptions): ObservabilityService {
-  const dsn = options.shellSession?.SENTRY_DSN ?? shellSession.SENTRY_DSN
+  const dsn = options.shellSession?.SENTRY_DSN ?? getShellSession().SENTRY_DSN
   // ...
 }
 ```
