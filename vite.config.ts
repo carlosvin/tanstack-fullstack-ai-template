@@ -33,6 +33,10 @@ export default defineConfig(({ command }) => ({
 		viteTsConfigPaths({ projects: ['./tsconfig.json'] }),
 		tanstackStart({
 			importProtection: {
+				// Unit tests import server-only modules directly in the jsdom
+				// (client-like) environment; the production build is the
+				// authoritative client-graph tripwire.
+				enabled: !process.env.VITEST,
 				behavior: 'error',
 				ignoreImporters: ['**/*.test.ts', '**/*.spec.ts'],
 				client: {
@@ -41,6 +45,9 @@ export default defineConfig(({ command }) => ({
 						'**/services/db/**',
 						'**/repository/mongoRepository.server.ts',
 						'**/repository/getRepository.server.ts',
+						// Server-only env modules (secret field schemas, dotenv,
+						// process.env) must never ship in the client bundle.
+						'**/env/**',
 					],
 				},
 			},
