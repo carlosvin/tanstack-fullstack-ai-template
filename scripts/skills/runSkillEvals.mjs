@@ -6,11 +6,7 @@ import { findMissingCompanionReciprocity, formatCompanionInstallCommand, getSkil
 
 const defaultRootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
-const PROCESS_ENV_ALLOWED = new Set([
-	'src/env/webEnv.ts',
-	'src/env/runtimeEnvSchema.ts', // comment-only references allowed
-	'instrument.env.mts',
-])
+const PROCESS_ENV_ALLOWED = new Set(['src/env/webEnv.server.ts', 'instrument.env.mts'])
 
 const PROCESS_ENV_ALLOWED_PREFIXES = ['e2e/', 'playwright.config.ts', 'instrument.env.test.ts']
 
@@ -177,6 +173,41 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 					return fail('src/routes/__root.tsx must call getBrowserShellSession() in the loader')
 				}
 				return pass()
+			},
+		},
+		{
+			id: 'observability-no-client-env-imports',
+			skill: 'observability-and-env',
+			description:
+				'Client-shared modules (components, routes, schemas, constants, types) do not statically import src/env/** server modules',
+			async run() {
+				const clientSharedZones = ['src/components', 'src/routes', 'src/services/schemas', 'src/constants', 'src/types']
+				const violations = []
+				for (const zone of clientSharedZones) {
+					let files
+					try {
+						files = await walkFiles(path.join(rootDir, zone), { extensions: ['.ts', '.tsx'] })
+					} catch {
+						continue // zone does not exist in this workspace
+					}
+					for (const filePath of files) {
+						const rel = relative(rootDir, filePath)
+						if (rel.startsWith('src/routes/api/')) continue // API routes are server-only handlers
+						if (rel.endsWith('.test.ts') || rel.endsWith('.test.tsx') || rel.endsWith('.spec.ts')) continue
+						const content = await readText(filePath)
+						// Type-only imports are erased at compile time and cannot leak into the bundle.
+						const valueCode = content.replace(/import\s+type\s[^'"]*from\s+['"][^'"]*['"];?/g, '')
+						if (/(?:from|import)\s*\(?\s*['"][^'"]*\/env\//.test(valueCode)) {
+							violations.push(rel)
+						}
+					}
+				}
+				return violations.length === 0
+					? pass()
+					: fail(
+							'Client-shared modules must not import src/env/** (server-only). Browser-safe env schemas live in src/services/schemas/shellSession.ts',
+							violations,
+						)
 			},
 		},
 		{
