@@ -1,7 +1,14 @@
+/**
+ * Shared deployment/log-level enums and env preprocessors.
+ *
+ * Client-safe: no secrets and no Node env access — safe to import from
+ * browser-shipped modules. Server-only env parsing lives in
+ * `src/env/webEnv.server.ts`.
+ */
 import { z } from 'zod'
-import { DEPLOYMENT_ENV_VALUES, type DeploymentEnv, DeploymentEnvSchema } from '../../instrument.env.shared.mjs'
+import { DEPLOYMENT_ENV_VALUES, type DeploymentEnv, DeploymentEnvSchema } from '../../../instrument.env.shared.mjs'
 
-/** Empty / whitespace-only strings → undefined (Node `process.env` values are strings). */
+/** Empty / whitespace-only strings → undefined (Node env vars are always strings). */
 export function envStringToUndefined(val: unknown): unknown {
 	if (val === undefined || val === null) return undefined
 	const s = String(val).trim()

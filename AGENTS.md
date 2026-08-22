@@ -323,7 +323,7 @@ When modifying: add server tools to the `tools` array; add client tool defs and 
 | Interface | `src/services/observability/types.ts` |
 | Sentry / no-op | `sentry.ts`, `noop.ts`; factory `index.ts` |
 | Server bootstrap | `instrument.env.mts` → `instrument.shared.mts` → `instrument.server.mts` (emitted `.mjs` in `.output/server`) |
-| Env schemas | `src/env/runtimeEnvSchema.ts`, `src/env/webEnv.ts` |
+| Env schemas | `src/env/webEnv.server.ts` (server-only; `importProtection` denies `**/env/**` in the client graph); client-safe `src/services/schemas/runtimeEnv.ts`, `src/services/schemas/shellSession.ts` |
 | Pino | `src/utils/logger.ts`, `src/utils/serverLogger.ts` |
 | Public env middleware | `src/middleware/webEnv.ts` |
 | Public env + app meta for client | `getBrowserShellSession` in `serverFns.ts` + root loader (not `window.__ENV__`) |

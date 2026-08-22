@@ -1,6 +1,6 @@
 import { ActionIcon, Burger, Group, Text, Tooltip, useMantineColorScheme } from '@mantine/core'
 import { CheckSquare, MessageCircle, Moon, Sun } from 'lucide-react'
-import type { AppMeta } from '../../env/webEnv'
+import type { AppMeta } from '../../services/schemas/shellSession'
 import { Link } from '../Link/Link'
 
 interface HeaderProps {

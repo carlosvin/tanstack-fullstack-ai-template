@@ -1,42 +1,24 @@
+/**
+ * Server-only validated env: secret field schemas, `dotenv` loading, and the
+ * lazy `process.env` parse.
+ *
+ * Never import this module (or anything under `src/env/`) from client-shared
+ * modules — the `importProtection` client tripwire in `vite.config.ts`
+ * (`**\ /env/**`) fails the build if an env module enters the client graph.
+ * Browser-safe schemas live in `src/services/schemas/shellSession.ts` and
+ * `src/services/schemas/runtimeEnv.ts`.
+ */
 import { config } from 'dotenv'
 import { z } from 'zod'
 import pkg from '../../package.json' with { type: 'json' }
-
-import {
-	envStringToUndefined,
-	OptionalDeploymentEnvSchema,
-	OptionalLogLevelSchema,
-	OptionalTrimmedStringSchema,
-} from './runtimeEnvSchema'
+import { envStringToUndefined, OptionalTrimmedStringSchema } from '../services/schemas/runtimeEnv'
+import { type ShellSession, ShellSessionSchema, WebPublicEnvSchema } from '../services/schemas/shellSession'
 
 /** Load local `.env` files before the one-time Zod parse (Vite also loads them during dev/build). */
 function loadLocalEnvFiles(): void {
 	config({ path: '.env', quiet: true })
 	config({ path: '.env.local', quiet: true, override: true })
 }
-
-export const AppMetaSchema = z.object({
-	name: z.string().min(1).describe('Human-readable application name from DISPLAY_NAME env (default: TaskHub).'),
-	version: z.string().min(1).describe('Application version from package.json'),
-})
-
-export type AppMeta = z.infer<typeof AppMetaSchema>
-
-/** Non-secret deployment fields safe for the browser. */
-export const WebPublicEnvSchema = z.object({
-	ENV: OptionalDeploymentEnvSchema.describe('Deployment name: development, staging, or production.'),
-	LOG_LEVEL: OptionalLogLevelSchema.describe('Minimum pino log level.'),
-	SENTRY_DSN: OptionalTrimmedStringSchema.describe('Sentry DSN for both server and browser.'),
-})
-
-export type WebPublicEnv = z.infer<typeof WebPublicEnvSchema>
-
-/** Browser-safe startup config: public env fields + app identity. */
-export const ShellSessionSchema = WebPublicEnvSchema.extend({
-	app: AppMetaSchema.describe('Application name and version from package.json.'),
-})
-
-export type ShellSession = z.infer<typeof ShellSessionSchema>
 
 /**
  * Full validated `process.env` for the TanStack web server and SSR runtime.

@@ -60,7 +60,7 @@ async function createMinimalWorkspace(overrides = {}) {
 	)
 
 	const files = {
-		'src/env/webEnv.ts': 'export const webServerEnv = {}\nexport const shellSession = {}\n',
+		'src/env/webEnv.server.ts': 'export const webServerEnv = {}\nexport const shellSession = {}\n',
 		'src/utils/logger.ts': 'export function createModuleLogger() {}\n',
 		'src/utils/serverLogger.ts': 'export const createServerLogger = () => {}\n',
 		'src/start.ts':
@@ -120,6 +120,13 @@ describe('runSkillEvals', () => {
 	it('fails when process.env leaks into application code', async () => {
 		const rootDir = await createMinimalWorkspace({
 			'src/services/bad.ts': 'const x = process.env.SECRET\n',
+		})
+		await expect(runSkillEvals({ rootDir, logger: { log() {} } })).rejects.toThrow(/Skill evals failed/)
+	})
+
+	it('fails when a client-shared module imports a src/env server module', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'src/components/Bad/Bad.tsx': "import { webServerEnv } from '../../env/webEnv.server'\n",
 		})
 		await expect(runSkillEvals({ rootDir, logger: { log() {} } })).rejects.toThrow(/Skill evals failed/)
 	})

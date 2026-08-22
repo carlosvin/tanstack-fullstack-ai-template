@@ -12,7 +12,7 @@ projectName: TanStack AI-Promptable Full-Stack Template
 projectSummary: >-
   A production-ready TanStack Start template designed to make internal tools AI
   promptable by default.
-version: 1.7.0
+version: 1.7.1
 author:
   name: Carlos Martin-Sanchez
   url: https://github.com/carlosvin
@@ -47,7 +47,7 @@ tags:
   - tanstack-start
 capabilities:
   - Interface-first observability — handlers depend on ObservabilityService, not a specific vendor
-  - Centralized runtime-validated env schemas with server/public split (src/env/) — reference uses Zod
+  - Centralized runtime-validated env schemas with server/public split (server-only src/env/webEnv.server.ts + client-safe src/services/schemas/shellSession.ts) — reference uses Zod
   - process.env read only once at module-level parse — no scattered env access
   - 'Structured logger factory pattern (reference: pino via createModuleLogger / createServerLogger)'
   - 'Error-tracking bootstrap pattern (reference: Sentry via instrument.*.mts)'
@@ -99,8 +99,9 @@ companionSkills:
 inputs:
   - TanStack Start app (from this template or another)
 outputs:
-  - src/env/runtimeEnvSchema.ts with DeploymentEnv and LogLevel enums
-  - src/env/webEnv.ts with webServerEnv + shellSession singletons (parsed once at startup)
+  - src/services/schemas/runtimeEnv.ts with DeploymentEnv and LogLevel enums (client-safe)
+  - src/services/schemas/shellSession.ts with browser-safe AppMeta / WebPublicEnv / ShellSession schemas
+  - src/env/webEnv.server.ts with webServerEnv + shellSession singletons (lazy parse once per process)
   - src/utils/logger.ts with createModuleLogger factory (vendor-agnostic options)
   - src/utils/serverLogger.ts with createServerLogger bound factory
   - src/services/observability/ with ObservabilityService interface + swappable implementations
@@ -120,15 +121,17 @@ constraints:
   - Bootstrap NODE_ENV uses DeploymentEnvSchema.optional(); unsupported values fail fast instead of being trimmed, ignored, or coerced
   - Bootstrap error-tracking DSN env var is read only in instrument.env.mts; values are passed through exactly as provided
   - instrument.shared.mts receives dsn and environment as explicit pre-resolved arguments — no process.env inside
-  - DeploymentEnvSchema is defined once in instrument.env.shared.mts and re-exported from runtimeEnvSchema.ts for TypeScript callers
+  - DeploymentEnvSchema is defined once in instrument.env.shared.mts and re-exported from src/services/schemas/runtimeEnv.ts for TypeScript callers
+  - src/env/** modules are server-only — tanstackStart importProtection client.files includes '**/env/**' so the build fails if one enters the client graph
   - 'Root logger is created lazily and only once per process — all module loggers are child() instances (reference: pino)'
   - 'Application code calls getObservability() / createServerLogger() — never imports @sentry/* or pino directly in handlers'
 steps:
   - 'Choose logging and error-tracking implementations behind ObservabilityService (reference app: pino + Sentry)'
   - 'Add chosen logger dependencies (reference: pino and pino-pretty)'
   - Create instrument.env.shared.mts with DeploymentEnvSchema
-  - Create src/env/runtimeEnvSchema.ts with DeploymentEnv, LogLevel, and optional preprocessors
-  - Create src/env/webEnv.ts — parse process.env once into webServerEnv; derive shellSession (public env + app from package.json)
+  - Create src/services/schemas/runtimeEnv.ts with DeploymentEnv, LogLevel, and optional preprocessors (client-safe)
+  - Create src/services/schemas/shellSession.ts with the browser-safe AppMeta / WebPublicEnv / ShellSession schemas
+  - Create src/env/webEnv.server.ts — parse process.env once into webServerEnv; derive shellSession (public env + app from package.json)
   - Create src/utils/logger.ts with createModuleLogger and lazy root logger
   - Create src/utils/serverLogger.ts binding webServerEnv.ENV and LOG_LEVEL
   - Create instrument.env.mts with resolveSentryBootstrapEnv() using the shared DeploymentEnvSchema
@@ -148,7 +151,7 @@ examples:
       instrument.server.mts as a bootstrap entry; emit .mjs via tsc for production
       (reference implementation uses Sentry — swap via ObservabilityService)
   - input: Read environment variables safely in application code
-    output: Import webServerEnv from src/env/webEnv.ts (already validated), or read
+    output: Import webServerEnv from src/env/webEnv.server.ts (already validated), or read
       context.serverEnv in handlers — never read process.env directly in app code
   - input: Expose app name/version and public env to the client
     output: Root loader calls getBrowserShellSession(); UI reads shellSession from
@@ -211,9 +214,12 @@ content: |
   ## File layout
 
   ```
-  src/env/
-    runtimeEnvSchema.ts      # DeploymentEnv, LogLevel, shared preprocessors
-    webEnv.ts                # webServerEnv + shellSession; parsed once
+  src/env/                  # server-only — importProtection denies '**/env/**' in the client graph
+    webEnv.server.ts        # WebServerEnvSchema + webServerEnv/shellSession; parsed once
+
+  src/services/schemas/
+    runtimeEnv.ts           # client-safe: DeploymentEnv, LogLevel, shared preprocessors
+    shellSession.ts         # client-safe: AppMeta / WebPublicEnv / ShellSession schemas
 
   src/utils/
     logger.ts             # createModuleLogger(name, { environment, logLevel? })
@@ -229,14 +235,15 @@ content: |
   tsconfig.instrument.json
   ```
 
-  ## src/env/runtimeEnvSchema.ts
+  ## src/services/schemas/runtimeEnv.ts
 
   Shared deployment enums and preprocessors used by web env (and any future pipeline env).
+  Client-safe (no secrets, no env access) — may ship in the browser bundle.
   **Reference implementation uses Zod** — ArkType or Valibot work if you keep the same parse-once-at-startup contract.
 
   ```typescript
   import { z } from 'zod'
-  import { DEPLOYMENT_ENV_VALUES, type DeploymentEnv, DeploymentEnvSchema } from '../../instrument.env.shared.mjs'
+  import { DEPLOYMENT_ENV_VALUES, type DeploymentEnv, DeploymentEnvSchema } from '../../../instrument.env.shared.mjs'
 
   /** Empty / whitespace-only strings → undefined (Node process.env values are strings). */
   export function envStringToUndefined(val: unknown): unknown {
@@ -257,15 +264,15 @@ content: |
   export const OptionalTrimmedStringSchema = z.preprocess(envStringToUndefined, z.string().optional())
   ```
 
-  ## src/env/webEnv.ts
+  ## src/services/schemas/shellSession.ts
 
-  Parsed once when first imported. `ShellSessionSchema` is the browser-safe
-  projection (public env + app). `WebServerEnvSchema` adds secrets.
+  Browser-safe projection schemas (public env + app meta). Client-safe by
+  contract — no secrets, no env access, no `dotenv` — so they may ship in the
+  browser bundle.
 
   ```typescript
   import { z } from 'zod'
-  import pkg from '../../package.json' with { type: 'json' }
-  import { OptionalDeploymentEnvSchema, OptionalLogLevelSchema, OptionalTrimmedStringSchema } from './runtimeEnvSchema'
+  import { OptionalDeploymentEnvSchema, OptionalLogLevelSchema, OptionalTrimmedStringSchema } from './runtimeEnv'
 
   export const AppMetaSchema = z.object({
     name: z.string().min(1),
@@ -280,6 +287,18 @@ content: |
 
   export const ShellSessionSchema = WebPublicEnvSchema.extend({ app: AppMetaSchema })
   export type ShellSession = z.infer<typeof ShellSessionSchema>
+  ```
+
+  ## src/env/webEnv.server.ts
+
+  Server-only — never import from client-shared modules (the `importProtection`
+  client tripwire `**/env/**` fails the build otherwise). Parsed once per
+  process. `WebServerEnvSchema` adds secrets on top of the public schemas.
+
+  ```typescript
+  import { z } from 'zod'
+  import pkg from '../../package.json' with { type: 'json' }
+  import { ShellSessionSchema, WebPublicEnvSchema } from '../services/schemas/shellSession'
 
   export const WebServerEnvSchema = WebPublicEnvSchema.extend({
     AUTH_HEADER_NAME: z.string().optional(),
@@ -305,7 +324,7 @@ content: |
 
   ```typescript
   import pino, { type Logger } from 'pino'
-  import type { DeploymentEnv, LogLevel } from '../env/runtimeEnvSchema'
+  import type { DeploymentEnv, LogLevel } from '../services/schemas/runtimeEnv'
 
   export type ModuleLoggerOptions = {
     environment: DeploymentEnv   // validated by caller's env schema
@@ -341,7 +360,7 @@ content: |
   `{ environment: webServerEnv.ENV, logLevel: webServerEnv.LOG_LEVEL }` boilerplate.
 
   ```typescript
-  import { webServerEnv } from '../env/webEnv'
+  import { webServerEnv } from '../env/webEnv.server'
   import { createModuleLogger } from './logger'
 
   /** Server-side logger factory pre-bound to webServerEnv options. */
@@ -439,7 +458,7 @@ content: |
   ```typescript
   // src/middleware/webEnv.ts
   import { createMiddleware } from '@tanstack/react-start'
-  import { shellSession, webServerEnv } from '../env/webEnv'
+  import { shellSession, webServerEnv } from '../env/webEnv.server'
   import { authMiddleware } from './auth'
 
   export const webEnvMiddleware = createMiddleware()
@@ -488,7 +507,7 @@ content: |
   **observability/index.ts** — replace `process.env.SENTRY_DSN` with `shellSession`:
 
   ```typescript
-  import { shellSession } from '../../env/webEnv'
+  import { shellSession } from '../../env/webEnv.server'
 
   export function getObservability(options: GetObservabilityOptions): ObservabilityService {
     const dsn = options.shellSession?.SENTRY_DSN ?? shellSession.SENTRY_DSN
@@ -500,7 +519,7 @@ content: |
   `webServerEnv`:
 
   ```typescript
-  import { webServerEnv } from '../env/webEnv'
+  import { webServerEnv } from '../env/webEnv.server'
   const AUTH_HEADER_NAME = webServerEnv.AUTH_HEADER_NAME ?? 'Authorization'
   ```
 
@@ -510,7 +529,7 @@ content: |
   - [ ] `createModuleLogger` / `createServerLogger` never call `process.env`
   - [ ] `instrument.server.mts` uses `resolveSentryBootstrapEnv()` + `initSentry()`, and `pnpm build` emits `.output/server/instrument.*.mjs`
   - [ ] `package.json` is copied next to the emitted instrument bundle so version import works
-  - [ ] `shellSession` is parsed once in `webEnv.ts` (public env + app from package.json)
+  - [ ] `shellSession` is parsed once in `webEnv.server.ts` (public env + app from package.json)
   - [ ] Middleware injects `serverEnv` and `shellSession`; consumers chain middleware for inferred `context.*` types
   - [ ] Browser config uses `getBrowserShellSession` from route loaders (not `window.__ENV__`, not raw `serverEnv`)
   - [ ] `SENTRY_DSN` / `LOG_LEVEL` / `ENV` documented in `.env.example`

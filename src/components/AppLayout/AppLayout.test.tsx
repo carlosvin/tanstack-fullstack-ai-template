@@ -2,7 +2,7 @@ import { MantineProvider } from '@mantine/core'
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from '@tanstack/react-router'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import type { ShellSession } from '../../env/webEnv'
+import type { ShellSession } from '../../services/schemas/shellSession'
 import { AppLayout } from './AppLayout'
 
 const shellSession = {
