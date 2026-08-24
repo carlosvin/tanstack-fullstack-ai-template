@@ -6,11 +6,7 @@ import { findMissingCompanionReciprocity, formatCompanionInstallCommand, getSkil
 
 const defaultRootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
-const PROCESS_ENV_ALLOWED = new Set([
-	'src/env/webEnv.ts',
-	'src/env/runtimeEnvSchema.ts', // comment-only references allowed
-	'instrument.env.mts',
-])
+const PROCESS_ENV_ALLOWED = new Set(['src/env/webEnv.server.ts', 'instrument.env.mts'])
 
 const PROCESS_ENV_ALLOWED_PREFIXES = ['e2e/', 'playwright.config.ts', 'instrument.env.test.ts']
 
@@ -62,6 +58,38 @@ function isProcessEnvAllowed(relativePath) {
 
 async function readText(filePath) {
 	return fs.readFile(filePath, 'utf8')
+}
+
+/** Remove import/export statements that are type-only (erased at compile time). */
+function stripTypeOnlyImports(content) {
+	let result = content
+	// import type Foo from '...' | import type { Foo } from '...'
+	result = result.replace(/import\s+type\s[^;]+;?/g, '')
+	// export type { Foo } from '...'
+	result = result.replace(/export\s+type\s[^;]+;?/g, '')
+	// import { type A, type B } from '...' — all bindings are type-only
+	result = result.replace(/import\s*\{([^}]+)\}\s*from\s*['"][^'"]*['"];?/g, (match, inner) => {
+		const bindings = inner
+			.split(',')
+			.map((s) => s.trim())
+			.filter(Boolean)
+		if (bindings.length > 0 && bindings.every((b) => /^type\s/.test(b))) {
+			return ''
+		}
+		return match
+	})
+	// export { type A, type B } from '...' — all bindings are type-only
+	result = result.replace(/export\s*\{([^}]+)\}\s*from\s*['"][^'"]*['"];?/g, (match, inner) => {
+		const bindings = inner
+			.split(',')
+			.map((s) => s.trim())
+			.filter(Boolean)
+		if (bindings.length > 0 && bindings.every((b) => /^type\s/.test(b))) {
+			return ''
+		}
+		return match
+	})
+	return result
 }
 
 async function collectMatches(rootDir, files, pattern) {
@@ -177,6 +205,41 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 					return fail('src/routes/__root.tsx must call getBrowserShellSession() in the loader')
 				}
 				return pass()
+			},
+		},
+		{
+			id: 'observability-no-client-env-imports',
+			skill: 'observability-and-env',
+			description:
+				'Client-shared modules (components, routes, schemas, constants, types) do not statically import src/env/** server modules',
+			async run() {
+				const clientSharedZones = ['src/components', 'src/routes', 'src/services/schemas', 'src/constants', 'src/types']
+				const violations = []
+				for (const zone of clientSharedZones) {
+					let files
+					try {
+						files = await walkFiles(path.join(rootDir, zone), { extensions: ['.ts', '.tsx'] })
+					} catch {
+						continue // zone does not exist in this workspace
+					}
+					for (const filePath of files) {
+						const rel = relative(rootDir, filePath)
+						if (rel.startsWith('src/routes/api/')) continue // API routes are server-only handlers
+						if (rel.endsWith('.test.ts') || rel.endsWith('.test.tsx') || rel.endsWith('.spec.ts')) continue
+						const content = await readText(filePath)
+						// Type-only imports/exports are erased at compile time and cannot leak into the bundle.
+						const valueCode = stripTypeOnlyImports(content)
+						if (/(?:from|import)\s*\(?\s*['"][^'"]*\/env\//.test(valueCode)) {
+							violations.push(rel)
+						}
+					}
+				}
+				return violations.length === 0
+					? pass()
+					: fail(
+							'Client-shared modules must not import src/env/** (server-only). Browser-safe env schemas live in src/services/schemas/shellSession.ts',
+							violations,
+						)
 			},
 		},
 		{

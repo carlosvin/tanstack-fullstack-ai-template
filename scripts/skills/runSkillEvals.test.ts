@@ -60,7 +60,7 @@ async function createMinimalWorkspace(overrides = {}) {
 	)
 
 	const files = {
-		'src/env/webEnv.ts': 'export const webServerEnv = {}\nexport const shellSession = {}\n',
+		'src/env/webEnv.server.ts': 'export const webServerEnv = {}\nexport const shellSession = {}\n',
 		'src/utils/logger.ts': 'export function createModuleLogger() {}\n',
 		'src/utils/serverLogger.ts': 'export const createServerLogger = () => {}\n',
 		'src/start.ts':
@@ -122,6 +122,23 @@ describe('runSkillEvals', () => {
 			'src/services/bad.ts': 'const x = process.env.SECRET\n',
 		})
 		await expect(runSkillEvals({ rootDir, logger: { log() {} } })).rejects.toThrow(/Skill evals failed/)
+	})
+
+	it('fails when a client-shared module imports a src/env server module', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'src/components/Bad/Bad.tsx': "import { webServerEnv } from '../../env/webEnv.server'\n",
+		})
+		await expect(runSkillEvals({ rootDir, logger: { log() {} } })).rejects.toThrow(/Skill evals failed/)
+	})
+
+	it('allows inline type-only imports from src/env in client-shared modules', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'src/components/Ok/Ok.tsx': "import { type WebServerEnv } from '../../env/webEnv.server'\nexport const x = 1\n",
+		})
+		const evalDef = createSkillEvals(rootDir).find((e) => e.id === 'observability-no-client-env-imports')
+		expect(evalDef).toBeDefined()
+		const result = await evalDef.run()
+		expect(result.pass).toBe(true)
 	})
 
 	it('fails when mongo repository casts TaskRepo results', async () => {

@@ -1,5 +1,5 @@
-import type { ShellSession } from '../../env/webEnv'
-import { getShellSession } from '../../env/webEnv'
+import { getShellSession } from '../../env/webEnv.server'
+import type { ShellSession } from '../schemas/shellSession'
 import { NoopObservability } from './noop'
 import { SentryObservability } from './sentry'
 import type { ObservabilityService } from './types'

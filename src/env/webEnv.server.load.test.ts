@@ -17,7 +17,7 @@ describe('webEnv local file loading', () => {
 		writeFileSync(join(dir, '.env'), 'GEMINI_API_KEY=file-loaded-key\n', 'utf8')
 		process.chdir(dir)
 
-		const { getWebServerEnv } = await import('./webEnv')
+		const { getWebServerEnv } = await import('./webEnv.server')
 		expect(getWebServerEnv().GEMINI_API_KEY).toBe('file-loaded-key')
 	})
 })

@@ -9,8 +9,8 @@
  */
 import { z } from 'zod'
 import { DISTINCT_VALUE_FIELDS, TASK_PRIORITIES, TASK_STATUSES } from '../../constants/options'
-import { OptionalDeploymentEnvSchema } from '../../env/runtimeEnvSchema'
-import { AppMetaSchema } from '../../env/webEnv'
+import { OptionalDeploymentEnvSchema } from './runtimeEnv'
+import { AppMetaSchema } from './shellSession'
 
 // ---------------------------------------------------------------------------
 // Enums

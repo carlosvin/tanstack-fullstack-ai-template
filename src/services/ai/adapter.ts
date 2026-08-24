@@ -22,7 +22,7 @@ import type { GeminiTextModel } from '@tanstack/ai-gemini'
 import { createGeminiChat } from '@tanstack/ai-gemini'
 import type { OpenAIChatModel } from '@tanstack/ai-openai'
 import { createOpenaiChat } from '@tanstack/ai-openai'
-import { getWebServerEnv } from '../../env/webEnv'
+import { getWebServerEnv } from '../../env/webEnv.server'
 import type { AIAdapterService } from './types'
 
 function hasNetlifyAIGateway(env: ReturnType<typeof getWebServerEnv>): boolean {

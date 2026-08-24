@@ -20,11 +20,11 @@ Before non-trivial changes: read the skill **Core Contract** and run the **Archi
 
 This template is the reference app for the skill. **Already landed on `main`:** server-only boundaries ([#7](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/7)), request-context via middleware `next({ context })` + chaining ([#8](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/8), refined in [#12](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/12)), skill v1.19 Request Context rules, handbook dedupe ([#9](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/9)), Cursor Cloud setup ([#10](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/10)).
 
-**Observability & env ([#6](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/6)):** companion skill `observability-and-env` — Zod env schemas (`src/env/webEnv.ts`: `webServerEnv` + `shellSession`), pino, `instrument.*.mts` bootstrap, middleware-injected context, `getBrowserShellSession` via root loader (no `window.__ENV__`).
+**Observability & env ([#6](https://github.com/carlosvin/tanstack-fullstack-ai-template/pull/6)):** companion skill `observability-and-env` — Zod env schemas (`src/env/webEnv.server.ts`: `webServerEnv` + `shellSession`; client-safe `src/services/schemas/shellSession.ts`), pino, `instrument.*.mts` bootstrap, middleware-injected context, `getBrowserShellSession` via root loader (no `window.__ENV__`).
 
 | Phase | Skill contract | Status / files |
 |-------|----------------|----------------|
-| **0 — Observability & env** | Centralized env parse once; pino; Sentry; `webServerEnv` + `shellSession` | **Done** — `src/env/webEnv.ts`, `instrument.*.mts`, `webEnvMiddleware`, `getBrowserShellSession` |
+| **0 — Observability & env** | Centralized env parse once; pino; Sentry; `webServerEnv` + `shellSession` | **Done** — `src/env/webEnv.server.ts`, `src/services/schemas/shellSession.ts`, `instrument.*.mts`, `webEnvMiddleware`, `getBrowserShellSession` |
 | **1 — Schema boundaries** | Outbound `Schema.parse()` (repo → tools); router defaults bundle; `Link` with `search: true` | **Done** — `serverFns.ts`, `taskMappers.ts`, `router.tsx` (`defaultNotFoundComponent`), `src/components/Link/Link.tsx` |
 | **2 — Auth & writes** | Auth ticket + `TraceabilityContext` (skill allows stock `user`/`userProfile` until enriched) | **Done** — `accessTicket` from identity + `getUserProfile`; `TraceabilityContext` on create/update |
 | **3 — Data loading & AI** | Parent loader dedup; `getAIAvailability()` gates chat UI; distinct-values tools | **Done** — `__root.tsx`, task routes, `Header`, `AppLayout`, `ChatDrawer`, `getDistinctValues` |
@@ -323,7 +323,7 @@ When modifying: add server tools to the `tools` array; add client tool defs and 
 | Interface | `src/services/observability/types.ts` |
 | Sentry / no-op | `sentry.ts`, `noop.ts`; factory `index.ts` |
 | Server bootstrap | `instrument.env.mts` → `instrument.shared.mts` → `instrument.server.mts` (emitted `.mjs` in `.output/server`) |
-| Env schemas | `src/env/runtimeEnvSchema.ts`, `src/env/webEnv.ts` |
+| Env schemas | `src/env/webEnv.server.ts` (server-only; `importProtection` denies `**/env/**` in the client graph); client-safe `src/services/schemas/runtimeEnv.ts`, `src/services/schemas/shellSession.ts` |
 | Pino | `src/utils/logger.ts`, `src/utils/serverLogger.ts` |
 | Public env middleware | `src/middleware/webEnv.ts` |
 | Public env + app meta for client | `getBrowserShellSession` in `serverFns.ts` + root loader (not `window.__ENV__`) |
