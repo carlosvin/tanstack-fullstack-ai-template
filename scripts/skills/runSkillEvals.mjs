@@ -60,6 +60,38 @@ async function readText(filePath) {
 	return fs.readFile(filePath, 'utf8')
 }
 
+/** Remove import/export statements that are type-only (erased at compile time). */
+function stripTypeOnlyImports(content) {
+	let result = content
+	// import type Foo from '...' | import type { Foo } from '...'
+	result = result.replace(/import\s+type\s[^;]+;?/g, '')
+	// export type { Foo } from '...'
+	result = result.replace(/export\s+type\s[^;]+;?/g, '')
+	// import { type A, type B } from '...' — all bindings are type-only
+	result = result.replace(/import\s*\{([^}]+)\}\s*from\s*['"][^'"]*['"];?/g, (match, inner) => {
+		const bindings = inner
+			.split(',')
+			.map((s) => s.trim())
+			.filter(Boolean)
+		if (bindings.length > 0 && bindings.every((b) => /^type\s/.test(b))) {
+			return ''
+		}
+		return match
+	})
+	// export { type A, type B } from '...' — all bindings are type-only
+	result = result.replace(/export\s*\{([^}]+)\}\s*from\s*['"][^'"]*['"];?/g, (match, inner) => {
+		const bindings = inner
+			.split(',')
+			.map((s) => s.trim())
+			.filter(Boolean)
+		if (bindings.length > 0 && bindings.every((b) => /^type\s/.test(b))) {
+			return ''
+		}
+		return match
+	})
+	return result
+}
+
 async function collectMatches(rootDir, files, pattern) {
 	const regex = pattern instanceof RegExp ? pattern : new RegExp(pattern, 'g')
 	const matches = []
@@ -195,8 +227,8 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 						if (rel.startsWith('src/routes/api/')) continue // API routes are server-only handlers
 						if (rel.endsWith('.test.ts') || rel.endsWith('.test.tsx') || rel.endsWith('.spec.ts')) continue
 						const content = await readText(filePath)
-						// Type-only imports are erased at compile time and cannot leak into the bundle.
-						const valueCode = content.replace(/import\s+type\s[^'"]*from\s+['"][^'"]*['"];?/g, '')
+						// Type-only imports/exports are erased at compile time and cannot leak into the bundle.
+						const valueCode = stripTypeOnlyImports(content)
 						if (/(?:from|import)\s*\(?\s*['"][^'"]*\/env\//.test(valueCode)) {
 							violations.push(rel)
 						}

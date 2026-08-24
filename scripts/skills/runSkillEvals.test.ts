@@ -131,6 +131,16 @@ describe('runSkillEvals', () => {
 		await expect(runSkillEvals({ rootDir, logger: { log() {} } })).rejects.toThrow(/Skill evals failed/)
 	})
 
+	it('allows inline type-only imports from src/env in client-shared modules', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'src/components/Ok/Ok.tsx': "import { type WebServerEnv } from '../../env/webEnv.server'\nexport const x = 1\n",
+		})
+		const evalDef = createSkillEvals(rootDir).find((e) => e.id === 'observability-no-client-env-imports')
+		expect(evalDef).toBeDefined()
+		const result = await evalDef.run()
+		expect(result.pass).toBe(true)
+	})
+
 	it('fails when mongo repository casts TaskRepo results', async () => {
 		const rootDir = await createMinimalWorkspace({
 			'src/services/repository/mongoRepository.server.ts': 'return col.find() as Promise<TaskRepo[]>\n',
