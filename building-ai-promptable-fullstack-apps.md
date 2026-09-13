@@ -6,7 +6,7 @@ date: 2026-03-08
 image: assets/building-ai-promptable-fullstack-apps-cover.png
 ---
 
-![Building AI-Promptable Full-Stack Apps — cover image](assets/building-ai-promptable-fullstack-apps-cover.png)
+![Building AI-Promptable Full-Stack Apps — UI, AI Tools, Server, and Data architecture layers](assets/building-ai-promptable-fullstack-apps-cover.png)
 
 Every time our team started a new full-stack web app, we faced the same problem: rebuild the same architecture from scratch. Authentication, database access, UI shell, AI integration - all the plumbing that has nothing to do with the actual business logic.
 
