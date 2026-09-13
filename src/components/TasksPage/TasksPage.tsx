@@ -63,8 +63,13 @@ export function TasksPage({ tasks, search, isAuth, currentUserEmail, onUpdateSea
 
 				<Flex gap="sm" align="flex-end" direction={{ base: 'column', sm: 'row' }} wrap="wrap">
 					<TextInput
+						id="search"
+						type="search"
+						aria-label="Search tasks"
 						placeholder="Search tasks..."
-						leftSection={<Search size={16} />}
+						autoComplete="off"
+						spellCheck={false}
+						leftSection={<Search size={16} aria-hidden />}
 						defaultValue={urlSearch}
 						onChange={(e) => debouncedSearch(e.currentTarget.value)}
 						w={{ base: '100%', sm: 'auto' }}
