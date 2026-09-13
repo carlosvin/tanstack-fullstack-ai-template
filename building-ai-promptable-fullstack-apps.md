@@ -3,7 +3,10 @@ title: Building AI-Promptable Full-Stack Apps: A Reproducible Architecture
 slug: building-ai-promptable-fullstack-apps
 description: How we extracted a reproducible full-stack architecture for AI-promptable web apps with TanStack Start, interfaces for every external service, and Zod schemas as single source of truth.
 date: 2026-03-08
+image: assets/building-ai-promptable-fullstack-apps-cover.png
 ---
+
+![Building AI-Promptable Full-Stack Apps — cover image](assets/building-ai-promptable-fullstack-apps-cover.png)
 
 Every time our team started a new full-stack web app, we faced the same problem: rebuild the same architecture from scratch. Authentication, database access, UI shell, AI integration - all the plumbing that has nothing to do with the actual business logic.
 
