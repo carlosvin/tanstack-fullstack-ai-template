@@ -9,13 +9,14 @@
 		"start": "node --import ./.output/server/instrument.server.mjs .output/server/index.mjs",
 		"preview": "vite preview",
 		"test": "vitest run",
-		"test:skills": "vitest run scripts/skills/validateSkills.test.ts",
+		"test:skills": "vitest run scripts/skills/validateSkills.test.ts scripts/skills/runWazaCheck.test.ts",
 		"test:skill-evals": "vitest run scripts/skills/runSkillEvals.test.ts && node ./scripts/skills/runSkillEvals.mjs",
 		"test:e2e": "playwright test",
 		"format": "biome check --write --unsafe",
 		"lint": "biome check && pnpm typecheck && pnpm skills:check && pnpm test:skill-evals",
 		"typecheck": "tsc --noEmit",
-		"skills:check": "node ./scripts/skills/validateSkills.mjs"
+		"skills:check": "node ./scripts/skills/validateSkills.mjs",
+		"skills:waza": "node ./scripts/skills/runWazaCheck.mjs"
 	},
 	"dependencies": {
 		"@mantine/core": "^9.5.1",

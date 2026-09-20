@@ -74,3 +74,13 @@ export const TaskRepoFilterSchema = z.object({
 })
 
 export type TaskRepoFilter = z.infer<typeof TaskRepoFilterSchema>
+
+/** Distinct filter values read from persisted documents. */
+export const DistinctValueListRepoSchema = z.array(z.string().min(1))
+
+function nonemptyStrings(value: unknown): unknown {
+	if (!Array.isArray(value)) return value
+	return value.filter((item) => typeof item === 'string' && item.length > 0).sort()
+}
+
+export const ParsedDistinctValueListRepoSchema = z.preprocess(nonemptyStrings, DistinctValueListRepoSchema)

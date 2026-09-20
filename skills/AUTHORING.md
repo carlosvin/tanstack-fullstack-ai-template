@@ -20,9 +20,20 @@ Install instructions for consumers belong in the skill body (**Companion skills 
 
 ```bash
 pnpm skills:check   # Validate .agents/skills/*/SKILL.md against agentskills.io
+pnpm skills:waza    # Waza readiness + spec coverage + mock eval run
 ```
 
 `pnpm lint` runs `skills:check` and the skill evals.
+
+`pnpm skills:waza` requires the [Waza](https://microsoft.github.io/waza/) CLI (`waza`). Install with:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/microsoft/waza/main/install.sh | bash
+```
+
+`SKILL.md` descriptions follow [Waza](https://microsoft.github.io/waza/) routing plus the agentskills.io 1024-character limit: include `USE FOR`, `DO NOT USE FOR`, `INVOKES`, and `FOR SINGLE OPERATIONS`; no angle brackets. **Do not put commas inside DO NOT USE FOR items** — Waza splits anti-triggers on commas. Edit those phrases in the `SKILL.md` frontmatter (not a second YAML schema).
+
+CI installs a pinned Waza release and runs this command in `.github/workflows/skills.yml`. Locally, if `waza` is missing the script skips unless `WAZA_REQUIRED=1` or `CI=true`.
 
 ## Workflow
 
@@ -50,8 +61,9 @@ When app and skill disagree, pick one:
 
 ### PR checklist (architecture changes)
 
-- [ ] Skill contract changed? → edit `SKILL.md`, run `pnpm skills:check`, bump `metadata.version` if Core Contract / checklist changed
+- [ ] Skill contract changed? → edit `SKILL.md`, run `pnpm skills:check` and `pnpm skills:waza`, bump `metadata.version` if Core Contract / checklist changed
 - [ ] Example app updated to match (or roadmap exception documented)?
 - [ ] Skill eval added/updated for the new invariant?
+- [ ] Waza eval task covers new `USE FOR` / `DO NOT USE FOR` phrases (`pnpm skills:waza`)?
 - [ ] `AGENTS.md` roadmap status still accurate?
 - [ ] `pnpm lint && pnpm test && pnpm build` green (`lint` includes `skills:check` + skill evals)

@@ -53,7 +53,7 @@ function fixtureSkillMd(skill: (typeof FIXTURE_SKILLS)[number], extraSections = 
 
 	return `---
 name: ${skill.id}
-description: Fixture skill for ${skill.id} used in Agent Skills evals. Install with npx skills add carlosvin/tanstack-fullstack-ai-template --skill ${skill.id}.
+description: "**WORKFLOW SKILL** - Fixture for ${skill.id}. USE FOR: ${skill.id} tasks. DO NOT USE FOR: unrelated work. INVOKES: companion skills. FOR SINGLE OPERATIONS: Load the matching companion instead."
 license: MIT
 ---
 
@@ -93,7 +93,7 @@ async function createMinimalWorkspace(overrides = {}) {
 		'src/services/api/serverFns.ts':
 			'export const x = () => toToolTask(); export const y = () => toToolUserProfile()\nconst trace = createWriteTrace(context.user.email)\nconst updateTrace = updateWriteTrace(context.user.email)\n',
 		'src/services/repository/mongoRepository.server.ts':
-			'import { parseTaskRepo, parseUserProfileRepoOrNull } from "../schemas/repoParsers"\nexport class MongoRepository { async getTasks() { return rows.map(parseTaskRepo) } async updateTask(_id, _input, trace) { return { lastModifiedBy: trace?.lastModifiedBy } } }\n',
+			'import { parseTaskRepoList, parseDistinctValues, parseUserProfileRepoOrNull } from "../schemas/repoParsers"\nexport class MongoRepository { async getTasks() { return parseTaskRepoList(rows) } async getDistinctValues() { return parseDistinctValues(values) } async updateTask(_id, _input, trace) { return { lastModifiedBy: trace?.lastModifiedBy } } }\n',
 		'src/services/repository/seedRepository.ts':
 			'export class SeedRepository { async updateTask(_id, _input, trace) { return { lastModifiedBy: trace?.lastModifiedBy } } }\n',
 		'src/services/schemas/repository.ts': 'export const TaskRepoSchema = { lastModifiedBy: true }\n',

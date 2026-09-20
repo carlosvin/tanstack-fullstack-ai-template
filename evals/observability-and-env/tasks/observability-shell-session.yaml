@@ -1,0 +1,15 @@
+id: observability-shell-session
+name: Browser shell session
+description: Covers USE FOR shellSession.
+tags: [observability, trigger]
+inputs:
+  prompt: Expose shellSession to the browser via getBrowserShellSession. Do not add window.__ENV__.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

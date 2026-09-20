@@ -40,7 +40,7 @@ export default defineConfig(({ command }) => ({
 				behavior: 'error',
 				ignoreImporters: ['**/*.test.ts', '**/*.spec.ts'],
 				client: {
-					specifiers: ['mongodb'],
+					specifiers: ['mongodb', 'jose'],
 					files: [
 						'**/services/db/**',
 						'**/repository/mongoRepository.server.ts',

@@ -1,0 +1,18 @@
+id: architecture-trust-boundaries
+name: Parse untrusted I/O at trust boundaries
+description: Covers Schema.parse at repository I/O and validateSearch for URL params.
+tags: [architecture, schemas]
+inputs:
+  prompt: >-
+    Untrusted database rows and widget strings must become typed with the
+    chosen runtime validator Schema.parse. URL search params use validateSearch.
+    Do not add Array.find parsers that duplicate schema enums.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

@@ -1,0 +1,15 @@
+id: observability-env-schema
+name: Add env schema
+description: Covers USE FOR env schema.
+tags: [observability, trigger]
+inputs:
+  prompt: Add an env schema and inject it through webEnvMiddleware instead of scattering process.env.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

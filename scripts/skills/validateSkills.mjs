@@ -93,6 +93,14 @@ export function parseSkillMarkdown(raw, { directoryName, relativePath }) {
 	if (description.length > 1024) {
 		throw new Error(`${relativePath}: frontmatter.description exceeds 1024 characters (${description.length})`)
 	}
+	if (description.includes('<') || description.includes('>')) {
+		throw new Error(`${relativePath}: frontmatter.description must not contain angle brackets`)
+	}
+	for (const phrase of ['USE FOR:', 'DO NOT USE FOR:', 'INVOKES:', 'FOR SINGLE OPERATIONS:']) {
+		if (!description.includes(phrase)) {
+			throw new Error(`${relativePath}: frontmatter.description must include "${phrase}" (Waza routing)`)
+		}
+	}
 
 	if (frontmatter.license !== undefined && !isNonEmptyString(frontmatter.license)) {
 		throw new Error(`${relativePath}: frontmatter.license must be a non-empty string when present`)

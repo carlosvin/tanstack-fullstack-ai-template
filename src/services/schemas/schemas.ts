@@ -20,6 +20,20 @@ export const TaskStatusSchema = z.enum(TASK_STATUSES).describe('Current status o
 
 export const TaskPrioritySchema = z.enum(TASK_PRIORITIES).describe('Priority level of the task')
 
+export type TaskStatus = z.infer<typeof TaskStatusSchema>
+export type TaskPriority = z.infer<typeof TaskPrioritySchema>
+
+/** Widget empty values (`null`, `''`) become omitted optional enums. */
+function clearedSelectValue(value: unknown): unknown {
+	return value == null || value === '' ? undefined : value
+}
+
+/** Parse a status coming from an untyped widget (`string | null`). */
+export const OptionalTaskStatusSchema = z.preprocess(clearedSelectValue, TaskStatusSchema.optional())
+
+/** Parse a priority coming from an untyped widget (`string | null`). */
+export const OptionalTaskPrioritySchema = z.preprocess(clearedSelectValue, TaskPrioritySchema.optional())
+
 // ---------------------------------------------------------------------------
 // User Identity (extracted from JWT by auth middleware)
 // ---------------------------------------------------------------------------
@@ -31,6 +45,13 @@ export const UserIdentitySchema = z.object({
 })
 
 export type UserIdentity = z.infer<typeof UserIdentitySchema>
+
+/** Untrusted JWT payload claims before defaults are applied. */
+export const JwtIdentityClaimsSchema = z.object({
+	email: z.string().optional(),
+	name: z.string().optional(),
+	groups: z.array(z.string()).optional(),
+})
 
 // ---------------------------------------------------------------------------
 // User Profile (stored in the repository)
@@ -147,6 +168,10 @@ export const DistinctValuesInputSchema = z.object({
 })
 
 export type DistinctValuesInput = z.infer<typeof DistinctValuesInputSchema>
+
+export const DistinctValueListSchema = z
+	.array(z.string().min(1))
+	.describe('Distinct nonempty values currently present for a filterable task field')
 
 export const UserProfileByEmailSchema = z.object({
 	email: z.string().describe('Email address of the user whose profile to look up'),

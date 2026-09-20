@@ -1,0 +1,17 @@
+id: architecture-anti-observability
+name: Do not use for logging and env
+description: Covers DO NOT USE FOR logging, env schemas, or error-tracking bootstrap (use observability-and-env).
+tags: [architecture, anti-trigger]
+inputs:
+  prompt: >-
+    I need logging or env schemas (use observability-and-env) instead of the
+    architecture skill.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

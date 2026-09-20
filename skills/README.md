@@ -73,6 +73,7 @@ Author and commit these files — they are the contract, not generated output:
 - `.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md`
 - `.agents/skills/observability-and-env/SKILL.md`
 - `.agents/skills/reference-tech-stack/SKILL.md`
+- `evals/<id>/` — [Waza](https://microsoft.github.io/waza/) eval suites (CI via `pnpm skills:waza`)
 
 Format: [agentskills.io specification](https://agentskills.io/specification) (`name` + `description` frontmatter; directory name matches `name`).
 

@@ -1,0 +1,17 @@
+id: reference-anti-env-parse
+name: Do not use for env parse
+description: Covers DO NOT USE FOR env parse or logger factories (use observability-and-env).
+tags: [reference, anti-trigger]
+inputs:
+  prompt: >-
+    Set up env parse or logger factories (use observability-and-env) rather
+    than the reference tech stack skill.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

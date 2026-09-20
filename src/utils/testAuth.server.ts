@@ -1,3 +1,4 @@
+import { UserIdentitySchema } from '../services/schemas/schemas'
 import type { UserIdentity } from '../types'
 import { createUnsignedJwt, extractIdentityFromJwt } from './jwt.server'
 
@@ -9,11 +10,11 @@ const TEST_USER_EMAIL_PATTERN = /^random[a-f0-9]{8}@example\.com$/i
 /** Creates a random demo identity for visitors without an auth header. */
 export function createRandomTestIdentity(): UserIdentity {
 	const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8)
-	return {
+	return UserIdentitySchema.parse({
 		email: `random${suffix}@example.com`,
 		name: `Test User ${suffix.slice(0, 4)}`,
 		groups: [],
-	}
+	})
 }
 
 function parseTestUserFromCookie(cookieToken: string | null | undefined): UserIdentity | null {
@@ -23,11 +24,11 @@ function parseTestUserFromCookie(cookieToken: string | null | undefined): UserId
 	}
 
 	const suffix = identity.email.slice('random'.length, 'random'.length + 8)
-	return {
+	return UserIdentitySchema.parse({
 		email: identity.email.toLowerCase(),
 		name: identity.name || `Test User ${suffix.slice(0, 4)}`,
 		groups: [],
-	}
+	})
 }
 
 export interface ResolvedAccessTicket {

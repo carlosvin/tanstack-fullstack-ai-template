@@ -10,6 +10,8 @@ export type {
 	Task,
 	TaskFilter,
 	TaskInput,
+	TaskPriority,
+	TaskStatus,
 	UpdateTaskInput,
 	UserIdentity,
 	UserProfile,

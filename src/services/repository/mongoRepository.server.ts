@@ -1,7 +1,9 @@
 import type { Collection, Db, Filter } from 'mongodb'
 import { getDb } from '../db/mongoClient.server'
 import {
+	parseDistinctValues,
 	parseTaskRepo,
+	parseTaskRepoList,
 	parseTaskRepoOrNull,
 	parseUserProfileRepoOrNull,
 	toUserAccessRepo,
@@ -47,7 +49,7 @@ export class MongoRepository implements Repository {
 		}
 
 		const rows = await col.find(query).sort({ updatedAt: -1 }).toArray()
-		return rows.map((row) => parseTaskRepo(row))
+		return parseTaskRepoList(rows)
 	}
 
 	async getTask(taskId: string): Promise<TaskRepo | null> {
@@ -59,7 +61,7 @@ export class MongoRepository implements Repository {
 	async getDistinctValues(field: DistinctValueField): Promise<string[]> {
 		const col = await this.collection()
 		const values = await col.distinct(field, { [field]: { $exists: true, $nin: [null, ''] } })
-		return values.filter((value): value is string => typeof value === 'string' && value.length > 0).sort()
+		return parseDistinctValues(values)
 	}
 
 	async getUserProfile(email: string): Promise<UserProfileRepo | null> {

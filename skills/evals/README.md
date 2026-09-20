@@ -13,6 +13,16 @@ pnpm test:skill-evals -- --skill reference-tech-stack
 
 `pnpm lint` also runs skill evals after `skills:check`.
 
+## Waza (Agent Skills compliance)
+
+[Waza](https://microsoft.github.io/waza/) validates authored `.agents/skills/*/SKILL.md` files (frontmatter, token budget, links) and checks that `evals/<skill-id>/` tasks cover `USE FOR` / `DO NOT USE FOR` phrases.
+
+```bash
+pnpm skills:waza    # waza check + spec verify + mock run
+```
+
+CI runs this in `.github/workflows/skills.yml` with a pinned `waza` binary. Config lives in `.waza.yaml`. Suites use the **mock** executor so PRs do not need model API keys.
+
 ## What is checked
 
 ### `observability-and-env`

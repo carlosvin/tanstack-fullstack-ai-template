@@ -1,0 +1,17 @@
+id: architecture-anti-packages
+name: Do not use for concrete packages
+description: Covers DO NOT USE FOR picking this template concrete packages (use reference-tech-stack).
+tags: [architecture, anti-trigger]
+inputs:
+  prompt: >-
+    I am picking this template concrete packages (use reference-tech-stack)
+    instead of the architecture skill.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

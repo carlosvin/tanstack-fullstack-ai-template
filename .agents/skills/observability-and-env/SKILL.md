@@ -1,11 +1,25 @@
 ---
 name: observability-and-env
-description: "Use when adding structured logging, centralized environment validation, error-tracking bootstrap, or fixing env/shellSession leaks in a TanStack Start app. Parse env once, inject via middleware, project a browser-safe shellSession, and keep process.env out of handlers. Parent skill: tanstack-promptable-fullstack-app-template. Install with npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env."
+description: >-
+  **WORKFLOW SKILL** - Centralized env parse, structured logging, and
+  error-tracking bootstrap behind ObservabilityService.
+
+  USE FOR: structured logging, env schema, sentry init, shellSession,
+  process.env in handler.
+
+  DO NOT USE FOR: new entities or routes (use
+  tanstack-promptable-fullstack-app-template), UI kit or validator lookup (use
+  reference-tech-stack).
+
+  INVOKES: env schemas, logger factories, instrument bootstrap, and companion
+  skills.
+
+  FOR SINGLE OPERATIONS: Load the parent architecture skill for routes and
+  tools; this skill is env and logging only.
 license: MIT
-compatibility: Agents that load Agent Skills (agentskills.io) from .agents/skills.
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.30.0"
+  version: "1.7.2"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 

@@ -1,11 +1,24 @@
 ---
 name: reference-tech-stack
-description: "Documents this template's opinionated vendor choices — Zod, Mantine, lucide-react, MongoDB + seed, jose JWT, OpenAI adapter, pino + Sentry, react-markdown, Biome, Vitest, Playwright, Netlify. Use when matching the reference app stack. Parent skill: tanstack-promptable-fullstack-app-template. Install with npx skills add carlosvin/tanstack-fullstack-ai-template --skill reference-tech-stack."
+description: >-
+  **UTILITY SKILL** - Opinionated vendor map for this template's reference app
+  (UI, validation, DB, auth, AI, observability, deploy).
+
+  USE FOR: reference tech stack, which UI library, use Zod, Netlify deploy,
+  template defaults.
+
+  DO NOT USE FOR: architecture invariants (use
+  tanstack-promptable-fullstack-app-template), env parse or logger factories
+  (use observability-and-env).
+
+  INVOKES: AGENTS.md operational sections and companion skills.
+
+  FOR SINGLE OPERATIONS: Look up one package in the Stack map; do not treat this
+  skill as the architecture contract.
 license: MIT
-compatibility: Agents that load Agent Skills (agentskills.io) from .agents/skills.
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.30.0"
+  version: "1.2.1"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 

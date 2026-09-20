@@ -12,3 +12,7 @@ playwright-report/
 test-results/
 # Local Netlify folder
 .netlify
+# Waza evaluation output
+results/
+transcripts/
+.waza-cache/

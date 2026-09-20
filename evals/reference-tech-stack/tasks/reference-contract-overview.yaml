@@ -1,0 +1,17 @@
+id: reference-contract-overview
+name: Reference stack overview
+description: Covers the skill description tagline.
+tags: [reference, description]
+inputs:
+  prompt: >-
+    Show the opinionated vendor map for this template's reference app
+    (UI, validation, DB, auth, AI, observability, deploy).
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

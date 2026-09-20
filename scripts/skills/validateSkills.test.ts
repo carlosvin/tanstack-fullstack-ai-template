@@ -20,10 +20,10 @@ async function createWorkspace(skills: Record<string, string>) {
 function skillMd(name: string, extraBody = '', extras: { description?: string; extraFrontmatter?: string } = {}) {
 	const description =
 		extras.description ??
-		`Use this skill for ${name} tasks. Install with npx skills add carlosvin/tanstack-fullstack-ai-template --skill ${name}.`
+		`**WORKFLOW SKILL** - Fixture for ${name}. USE FOR: ${name} tasks. DO NOT USE FOR: unrelated work. INVOKES: companion skills. FOR SINGLE OPERATIONS: Load the matching companion instead.`
 	return `---
 name: ${name}
-description: ${description}
+description: ${JSON.stringify(description)}
 license: MIT
 ${extras.extraFrontmatter ?? ''}---
 
@@ -93,6 +93,21 @@ Body
 				{ directoryName: 'example-skill', relativePath: '.agents/skills/example-skill/SKILL.md' },
 			),
 		).toThrow(/exceeds 1024 characters/)
+	})
+
+	it('rejects descriptions that omit Waza routing phrases', () => {
+		expect(() =>
+			parseSkillMarkdown(
+				`---
+name: example-skill
+description: A valid description for the example skill used in tests.
+---
+
+Body
+`,
+				{ directoryName: 'example-skill', relativePath: '.agents/skills/example-skill/SKILL.md' },
+			),
+		).toThrow(/must include "USE FOR:"/)
 	})
 
 	it('rejects a name that does not match the directory', () => {

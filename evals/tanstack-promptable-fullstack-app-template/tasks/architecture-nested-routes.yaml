@@ -1,0 +1,17 @@
+id: architecture-nested-routes
+name: Nested layout routes
+description: Covers USE FOR nested routes.
+tags: [architecture, trigger]
+inputs:
+  prompt: >-
+    Fix nested routes that duplicate parent beforeLoad. Shared loaders belong
+    on the parent layout.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

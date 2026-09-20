@@ -322,6 +322,7 @@ pnpm format     # Auto-format (Biome)
 
 # skill authoring
 pnpm skills:check  # Validate Agent Skills (agentskills.io SKILL.md)
+pnpm skills:waza   # Waza skill readiness, spec coverage, and mock evals
 ```
 
 ## Tech Stack
