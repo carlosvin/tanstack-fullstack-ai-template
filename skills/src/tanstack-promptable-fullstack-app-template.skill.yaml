@@ -523,7 +523,7 @@ content: |
 
   Implementations must **persist** audit fields from the trace onto the entity (`createdBy` on create, `lastModifiedBy` on update). Ignoring the `trace` argument is a contract violation.
 
-  Auth for writes lives on **POST server functions** (`requireAuthMiddleware`), not on a second repository type. One `Repository` interface is enough; split read/write implementations only if a concrete backend needs it (for example an overlay decorator).
+  Auth for writes lives on **POST server functions** (`requireAuthMiddleware`), not on a second repository type.
 
   ```typescript
   interface TraceabilityContext {
@@ -536,6 +536,7 @@ content: |
     getTask(id: string): Promise<TaskRepoOutput | null>
     getDistinctValues(field: string): Promise<string[]>
     getUserProfile(email: string): Promise<UserProfile | null>
+    getUserAccess(email: string): Promise<UserAccessRepo | null>
     createTask(input: TaskRepoInput, trace?: TraceabilityContext): Promise<TaskRepoOutput>
     updateTask(
       id: string,

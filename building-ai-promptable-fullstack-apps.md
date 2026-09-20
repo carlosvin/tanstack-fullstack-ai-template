@@ -207,7 +207,7 @@ Adding a new domain entity is a six-step process:
 5. **Routes** for the UI pages
 6. **Tests** for the seed repository, new utilities, and E2E flows (Playwright runs against seed data)
 
-Because every layer follows the same pattern, adding a new entity takes minutes, not hours. The database, AI provider, and observability layer are behind interfaces; to swap one, implement the interface and update the factory (e.g. `getRepository.ts` for the repository, the AI adapter factory, or the observability factory in the repo).
+Because every layer follows the same pattern, adding a new entity takes minutes, not hours. The database, AI provider, and observability layer are behind interfaces; to swap one, implement the interface and update the factory (e.g. `getRepository.server.ts` for the repository), the AI adapter factory, or the observability factory in the repo).
 
 ## Conclusion
 
