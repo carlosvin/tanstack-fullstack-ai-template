@@ -17,7 +17,7 @@ description: >-
   skill as the architecture contract.
 license: MIT
 metadata:
-  version: 1.2.1
+  version: 1.3.0
 ---
 
 > This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.

@@ -10,10 +10,11 @@ export interface TraceabilityContext {
 }
 
 /**
- * Read-only repository interface.
- * All read methods are exposed as AI tools for the chat assistant.
+ * Data-access interface. Implementations are swappable (seed, Mongo, …).
+ * Every method is exposed as an AI tool; mutations still require auth at the
+ * server-function layer (`requireAuthMiddleware`), not via a separate write type.
  */
-export interface ReadRepository {
+export interface Repository {
 	/** Get all tasks, optionally filtered. */
 	getTasks(filter?: TaskRepoFilter): Promise<TaskRepo[]>
 
@@ -28,13 +29,7 @@ export interface ReadRepository {
 
 	/** Get repository-backed access data (roles) for building the auth ticket. */
 	getUserAccess(email: string): Promise<UserAccessRepo | null>
-}
 
-/**
- * Write repository interface for mutations.
- * Mutations require authentication.
- */
-export interface WritableRepository {
 	/** Create a new task. Returns the created task with generated ID and timestamps. */
 	createTask(input: TaskRepoInput, trace?: TraceabilityContext): Promise<TaskRepo>
 
@@ -44,6 +39,3 @@ export interface WritableRepository {
 	/** Delete a task by ID. Returns true if deleted, false if not found. */
 	deleteTask(taskId: string): Promise<boolean>
 }
-
-/** Combined repository interface. */
-export type Repository = ReadRepository & WritableRepository

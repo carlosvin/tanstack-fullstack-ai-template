@@ -3,14 +3,13 @@ import { webServerEnv } from '../../env/webEnv.server'
 import { createServerLogger } from '../../utils/serverLogger'
 import { MongoRepository } from './mongoRepository.server'
 import { SeedRepository } from './seedRepository'
-import type { ReadRepository, WritableRepository } from './types'
+import type { Repository } from './types'
 
 const log = createServerLogger('repository')
 
 type RepositoryType = 'seed' | 'mongo'
 
-let readInstance: ReadRepository | null = null
-let writableInstance: WritableRepository | null = null
+let instance: Repository | null = null
 
 function getRepositoryType(): RepositoryType {
 	const envType = webServerEnv.REPOSITORY_TYPE
@@ -19,39 +18,27 @@ function getRepositoryType(): RepositoryType {
 	return 'seed'
 }
 
-function createRepositories(): { read: ReadRepository; writable: WritableRepository } {
+function createRepository(): Repository {
 	const type = getRepositoryType()
 	log.info({ repo: type }, 'Using repository')
 
 	switch (type) {
-		case 'mongo': {
-			const repo = new MongoRepository()
-			return { read: repo, writable: repo }
-		}
-		default: {
-			const repo = new SeedRepository()
-			return { read: repo, writable: repo }
-		}
+		case 'mongo':
+			return new MongoRepository()
+		default:
+			return new SeedRepository()
 	}
 }
 
-function ensureRepositories(): { read: ReadRepository; writable: WritableRepository } {
-	if (!readInstance || !writableInstance) {
-		const repos = createRepositories()
-		readInstance = repos.read
-		writableInstance = repos.writable
+/** Returns the singleton repository instance. Never callable from the client. */
+export const getRepository = createServerOnlyFn((): Repository => {
+	if (!instance) {
+		instance = createRepository()
 	}
-	return { read: readInstance, writable: writableInstance }
-}
+	return instance
+})
 
-/** Returns the singleton read repository instance. Never callable from the client. */
-export const getReadRepository = createServerOnlyFn((): ReadRepository => ensureRepositories().read)
-
-/** Returns the singleton writable repository instance. Never callable from the client. */
-export const getWritableRepository = createServerOnlyFn((): WritableRepository => ensureRepositories().writable)
-
-/** Resets singletons. Useful for testing. */
+/** Resets the singleton. Useful for testing. */
 export function resetRepository(): void {
-	readInstance = null
-	writableInstance = null
+	instance = null
 }
