@@ -1,4 +1,5 @@
 import {
+	parseDistinctValues,
 	parseTaskRepo,
 	parseTaskRepoList,
 	parseTaskRepoOrNull,
@@ -140,7 +141,7 @@ export class SeedRepository implements Repository {
 				values.add(value)
 			}
 		}
-		return [...values].sort()
+		return parseDistinctValues([...values])
 	}
 
 	async getUserProfile(email: string): Promise<UserProfileRepo | null> {

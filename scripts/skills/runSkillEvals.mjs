@@ -291,6 +291,9 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				if (!/parseTaskRepoList/.test(mongoRepo) || !/parseUserProfileRepoOrNull/.test(mongoRepo)) {
 					return fail('mongoRepository.server.ts must use parseTaskRepoList / parseUserProfileRepoOrNull')
 				}
+				if (!/parseDistinctValues/.test(mongoRepo)) {
+					return fail('mongoRepository.server.ts must parse distinct values with parseDistinctValues')
+				}
 				return pass()
 			},
 		},
@@ -348,8 +351,34 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 					if (!/parseTaskRepoList/.test(seed) || !/UserProfileRepoSchema\.array\(\)\.parse/.test(seed)) {
 						return fail('seedRepository must Schema.parse seed documents at the repository boundary')
 					}
+					if (!/parseDistinctValues/.test(seed)) {
+						return fail('seedRepository must Schema.parse distinct values at the repository boundary')
+					}
 				} catch {
 					// App-only fixtures may omit seed.
+				}
+
+				const jwtPath = path.join(rootDir, 'src/utils/jwt.server.ts')
+				try {
+					const jwt = await readText(jwtPath)
+					if (!/JwtIdentityClaimsSchema\.parse/.test(jwt) || !/UserIdentitySchema\.parse/.test(jwt)) {
+						return fail('jwt.server.ts must Schema.parse JWT claims into UserIdentity')
+					}
+					if (/as string\[\]/.test(jwt)) {
+						return fail('jwt.server.ts must not cast JWT groups with as string[]')
+					}
+				} catch {
+					// App-only fixtures may omit jwt helpers.
+				}
+
+				const taskFormPath = path.join(rootDir, 'src/components/TaskForm/TaskForm.tsx')
+				try {
+					const taskForm = await readText(taskFormPath)
+					if (!/TaskInputSchema\.parse/.test(taskForm)) {
+						return fail('TaskForm must Schema.parse submitted values with TaskInputSchema')
+					}
+				} catch {
+					// App-only fixtures may omit forms.
 				}
 
 				return pass()

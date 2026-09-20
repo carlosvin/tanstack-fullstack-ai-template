@@ -1,7 +1,10 @@
 import { decodeJwt } from 'jose'
+import { JwtIdentityClaimsSchema, UserIdentitySchema } from '../services/schemas/schemas'
 import type { UserIdentity } from '../types'
 
 const JWT_HEADER = { alg: 'none', typ: 'JWT' } as const
+
+const EMPTY_IDENTITY = UserIdentitySchema.parse({ email: '', name: '', groups: [] })
 
 function encodeJwtPart(value: unknown): string {
 	const bytes = new TextEncoder().encode(JSON.stringify(value))
@@ -27,23 +30,22 @@ export function createUnsignedJwt(identity: UserIdentity): string {
  */
 export function extractIdentityFromJwt(authorizationHeader: string | null): UserIdentity {
 	if (!authorizationHeader) {
-		return { email: '', name: '', groups: [] }
+		return EMPTY_IDENTITY
 	}
 
 	const token = authorizationHeader.replace(/^Bearer\s+/i, '')
 	if (!token) {
-		return { email: '', name: '', groups: [] }
+		return EMPTY_IDENTITY
 	}
 
 	try {
-		const payload = decodeJwt(token)
-
-		return {
-			email: typeof payload.email === 'string' ? payload.email : '',
-			name: typeof payload.name === 'string' ? payload.name : '',
-			groups: Array.isArray(payload.groups) ? (payload.groups as string[]) : [],
-		}
+		const claims = JwtIdentityClaimsSchema.parse(decodeJwt(token))
+		return UserIdentitySchema.parse({
+			email: claims.email ?? '',
+			name: claims.name ?? '',
+			groups: claims.groups ?? [],
+		})
 	} catch {
-		return { email: '', name: '', groups: [] }
+		return EMPTY_IDENTITY
 	}
 }

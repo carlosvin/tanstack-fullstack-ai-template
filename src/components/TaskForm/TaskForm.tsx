@@ -55,12 +55,14 @@ export function TaskForm({ initialValues, onSubmit, loading = false, submitLabel
 	])
 
 	const handleSubmit = form.onSubmit((values) => {
-		onSubmit({
-			...values,
-			title: values.title.trim(),
-			description: values.description?.trim() || undefined,
-			assignee: values.assignee?.trim() || undefined,
-		})
+		onSubmit(
+			TaskInputSchema.parse({
+				...values,
+				title: values.title.trim(),
+				description: values.description?.trim() || undefined,
+				assignee: values.assignee?.trim() || undefined,
+			}),
+		)
 	})
 
 	return (

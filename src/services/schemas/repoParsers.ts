@@ -1,4 +1,5 @@
 import {
+	ParsedDistinctValueListRepoSchema,
 	type TaskRepo,
 	TaskRepoSchema,
 	type UserAccessRepo,
@@ -24,6 +25,11 @@ export function parseTaskRepoOrNull(doc: unknown | null | undefined): TaskRepo |
 /** MongoDB / external document → repository-layer user profile (validated). */
 export function parseUserProfileRepoOrNull(doc: unknown | null | undefined): UserProfileRepo | null {
 	return doc == null ? null : UserProfileRepoSchema.parse(doc)
+}
+
+/** Distinct DB/collection values → nonempty strings. */
+export function parseDistinctValues(values: unknown): string[] {
+	return ParsedDistinctValueListRepoSchema.parse(values)
 }
 
 /** Profile row → access record (roles derived from the profile role). */

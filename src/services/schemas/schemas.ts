@@ -46,6 +46,13 @@ export const UserIdentitySchema = z.object({
 
 export type UserIdentity = z.infer<typeof UserIdentitySchema>
 
+/** Untrusted JWT payload claims before defaults are applied. */
+export const JwtIdentityClaimsSchema = z.object({
+	email: z.string().optional(),
+	name: z.string().optional(),
+	groups: z.array(z.string()).optional(),
+})
+
 // ---------------------------------------------------------------------------
 // User Profile (stored in the repository)
 // ---------------------------------------------------------------------------
@@ -161,6 +168,10 @@ export const DistinctValuesInputSchema = z.object({
 })
 
 export type DistinctValuesInput = z.infer<typeof DistinctValuesInputSchema>
+
+export const DistinctValueListSchema = z
+	.array(z.string().min(1))
+	.describe('Distinct nonempty values currently present for a filterable task field')
 
 export const UserProfileByEmailSchema = z.object({
 	email: z.string().describe('Email address of the user whose profile to look up'),
