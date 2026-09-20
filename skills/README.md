@@ -1,6 +1,6 @@
 # TanStack Promptable Fullstack skills
 
-This repo ships **[Agent Skills](https://agentskills.io)** for the TanStack fullstack template:
+This repo ships **[Agent Skills](https://agentskills.io)** — one `SKILL.md` per skill directory, nothing else.
 
 - **`tanstack-promptable-fullstack-app-template`** — **architecture contract**: interface-first services, three schema layers, loader-first routes, URL-as-state, AI tool coverage, server/client boundaries, middleware-inferred request context. **Vendor-agnostic** for UI kits and observability SDKs. **Mobile first** by default; ask the developer if the app should follow a different UX pattern.
 - **`observability-and-env`** — **companion recipe**: centralized env parsing, structured logging + error-tracking bootstrap behind `ObservabilityService`, `webEnvMiddleware`, and `getBrowserShellSession` (no `window.__ENV__`).
@@ -21,15 +21,17 @@ Keep them **separate**. The parent skill states architecture **invariants** and 
 
 **Use them when** you scaffold or extend a TanStack Start app from this pattern, migrate an existing app, or need agents to follow current TanStack docs instead of guessing.
 
-## Published skills
+## Install with `npx skills`
 
-- `tanstack-promptable-fullstack-app-template`: architecture, schema boundaries, routing, server functions, AI tools, and parent layout patterns.
-- `observability-and-env`: logging, error-tracking bootstrap, validated env schemas, and runtime config plumbing.
-- `reference-tech-stack`: opinionated package map for the reference app.
+[skills](https://github.com/vercel-labs/skills) copies Agent Skills from this GitHub repo into your agent’s skills directory (Cursor, Claude Code, Codex, Windsurf, and others).
 
-## Super quick install
+Install **all** skills from this repo:
 
-**Recommended:** install all three (architecture + observability + reference stack):
+```bash
+npx skills add carlosvin/tanstack-fullstack-ai-template
+```
+
+Or install one skill:
 
 ```bash
 npx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-promptable-fullstack-app-template
@@ -37,52 +39,43 @@ npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-an
 npx skills add carlosvin/tanstack-fullstack-ai-template --skill reference-tech-stack
 ```
 
-Or install individually:
-
-```bash
-npx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-promptable-fullstack-app-template
-```
-
-```bash
-npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env
-```
-
-```bash
-npx skills add carlosvin/tanstack-fullstack-ai-template --skill reference-tech-stack
-```
-
-Each generated `SKILL.md` includes a **Companion skills (install if missing)** section with install commands if you only added one skill initially.
-
-Optional: install **globally** so the skills are available in every project:
-
-```bash
-npx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-promptable-fullstack-app-template -g
-npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env -g
-npx skills add carlosvin/tanstack-fullstack-ai-template --skill reference-tech-stack -g
-```
-
-List what this repo publishes, then confirm:
+List what this repo publishes:
 
 ```bash
 npx skills add carlosvin/tanstack-fullstack-ai-template --list
 npx skills list
 ```
 
+Optional: install **globally** (`-g`) so the skills are available in every project:
+
+```bash
+npx skills add carlosvin/tanstack-fullstack-ai-template -g
+```
+
+Target a specific agent with `-a` / `--agent` (for example `cursor`, `claude-code`, `codex`). See `npx skills add --help`.
+
+Each `SKILL.md` includes a **Companion skills (install if missing)** section with `npx skills` commands if you only added one skill initially.
+
+### Similar installers
+
+```bash
+gh skill install carlosvin/tanstack-fullstack-ai-template
+```
+
+Using **this repo as-is:** agents that read `.agents/skills/` (Cursor, Codex, Windsurf, and other agentskills.io clients) already see the skills — no extra step.
+
+Manual copy: copy `.agents/skills/<id>/` into your tool’s skills directory (for example `~/.cursor/skills/`).
+
 ## Skill files in this repository
 
-After clone, the generated skill lives here (committed on purpose):
+Author and commit these files — they are the contract, not generated output:
 
-- `.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md` — standard skill document agents load
-- `.agents/skills/observability-and-env/SKILL.md` — observability and env companion skill
-- `.agents/skills/reference-tech-stack/SKILL.md` — opinionated stack map for this template
-- `skills/dist/<id>.md` — portable copies for docs or paste
-- `skills/registry.json` — machine-readable manifest
+- `.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md`
+- `.agents/skills/observability-and-env/SKILL.md`
+- `.agents/skills/reference-tech-stack/SKILL.md`
 - `evals/<id>/` — [Waza](https://microsoft.github.io/waza/) eval suites (CI via `pnpm skills:waza`)
 
-## Other install options
-
-- **One-shot installer** (Cursor, Windsurf, Claude Code global dirs): see the root [README.md](../README.md#use-the-agent-skill).
-- **Manual copy**: copy the folder `.agents/skills/<id>/` into your tool's skills directory (for example `~/.cursor/skills/`).
+Format: [agentskills.io specification](https://agentskills.io/specification) (`name` + `description` frontmatter; directory name matches `name`).
 
 ## Try it
 
@@ -95,4 +88,4 @@ Paste one of these into your agent after install:
 
 ## Contributors
 
-To edit or regenerate the skill from YAML, see **[AUTHORING.md](./AUTHORING.md)**.
+To edit or validate skills, see **[AUTHORING.md](./AUTHORING.md)**.

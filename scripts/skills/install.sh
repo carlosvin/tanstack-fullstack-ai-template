@@ -1,18 +1,22 @@
 #!/usr/bin/env bash
 
-# TanStack Fullstack Pattern Skill Installer
-# Downloads both published skills into Cursor, Windsurf, and Claude Code global dirs.
+# Fallback installer for Agent Skills when npx skills / gh skill is unavailable.
+# Preferred:
+#   npx skills add carlosvin/tanstack-fullstack-ai-template
+#   gh skill install carlosvin/tanstack-fullstack-ai-template
 
 set -e
 
 SKILLS=(
 	"tanstack-promptable-fullstack-app-template"
 	"observability-and-env"
+	"reference-tech-stack"
 )
 REPO="carlosvin/tanstack-fullstack-ai-template"
 BASE_RAW_URL="https://raw.githubusercontent.com/${REPO}/main/.agents/skills"
 
-echo "Installing TanStack fullstack skills (${SKILLS[*]})..."
+echo "Preferred: npx skills add ${REPO}"
+echo "Fallback: copying SKILL.md into global agent directories..."
 
 if command -v curl >/dev/null 2>&1; then
 	DOWNLOAD_CMD="curl -sL"
@@ -52,8 +56,9 @@ done
 
 if [ $INSTALLED -eq 1 ]; then
 	echo "Successfully installed: ${SKILLS[*]}."
-	echo "List skills with: npx skills add ${REPO} --list"
+	echo "List / reinstall with: npx skills add ${REPO} --list"
 else
 	echo "Could not find default skill directories for Windsurf, Cursor, or Claude Code."
-	echo "To force installation into these directories anyway, pass --force to the script."
+	echo "Prefer: npx skills add ${REPO}"
+	echo "To force-copy into the fallback directories, pass --force."
 fi

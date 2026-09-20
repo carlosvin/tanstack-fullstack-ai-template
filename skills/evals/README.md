@@ -1,6 +1,6 @@
 # Skill evals
 
-Automated static checks that validate the **example app** against the generated skills. Run locally or in CI via `pnpm test:skill-evals`.
+Automated static checks that validate the **example app** against the Agent Skills in `.agents/skills/`. Run locally or in CI via `pnpm test:skill-evals`.
 
 ## Commands
 
@@ -15,7 +15,7 @@ pnpm test:skill-evals -- --skill reference-tech-stack
 
 ## Waza (Agent Skills compliance)
 
-[Waza](https://microsoft.github.io/waza/) validates generated `SKILL.md` files (frontmatter, token budget, links) and checks that `evals/<skill-id>/` tasks cover `USE FOR` / `DO NOT USE FOR` phrases.
+[Waza](https://microsoft.github.io/waza/) validates authored `.agents/skills/*/SKILL.md` files (frontmatter, token budget, links) and checks that `evals/<skill-id>/` tasks cover `USE FOR` / `DO NOT USE FOR` phrases.
 
 ```bash
 pnpm skills:waza    # waza check + spec verify + mock run
@@ -46,12 +46,12 @@ CI runs this in `.github/workflows/skills.yml` with a pinned `waza` binary. Conf
 - AGENTS.md does not claim chat UI always renders
 - Bounded agent loop in `chat.ts`
 - `importProtection` in `vite.config.ts`
-- Generated skills: reciprocal companions, Skill routing, companion install commands
+- Agent Skills companion reciprocity and `npx skills` install commands (`pnpm skills:check`)
 - Architecture skill documents **Fixed vs swappable stack** and stays vendor-agnostic in prose
 
 ### `reference-tech-stack`
 
-- Generated skill includes a **Stack map** section
+- `SKILL.md` includes a **Stack map** section
 
 ## Manual pressure scenarios
 

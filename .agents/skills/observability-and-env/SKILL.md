@@ -18,10 +18,10 @@ description: >-
   tools; this skill is env and logging only.
 license: MIT
 metadata:
-  version: 1.7.2
+  author: Carlos Martin-Sanchez
+  version: "1.7.2"
+  repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
-
-> This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.
 
 ## Companion skills (install if missing)
 

@@ -18,10 +18,10 @@ description: >-
   stretching this skill.
 license: MIT
 metadata:
-  version: 1.31.0
+  author: Carlos Martin-Sanchez
+  version: "1.31.0"
+  repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
-
-> This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.
 
 ## Companion skills (install if missing)
 
@@ -66,7 +66,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 ## Fixed vs swappable stack
 
-**Fixed by this skill (TanStack):** TanStack **Start**, **Router**, and **AI** (server functions, middleware, file routes, `validateSearch`, loaders, `chat()` / tools / SSE). Use **TanStack Intent** and **`@tanstack/cli`** for current docs.
+**Fixed by this skill (TanStack):** TanStack **Start**, **Router**, and **AI** (server functions, middleware, file routes, `validateSearch`, loaders, `chat()` / tools / SSE). Use **`@tanstack/cli`** for current library docs. This repo’s architecture lives in Agent Skills (`.agents/skills/*/SKILL.md`) only.
 
 **Swappable (not prescribed here):** runtime validation, database, auth mechanism, AI provider, observability vendors, UI kit, markdown renderer, lint/test/deploy tooling. Patterns stay interface-first (`Schema.parse()`, repository interfaces, `AIAdapterService`, `ObservabilityService`).
 
@@ -460,9 +460,9 @@ interface Repository {
 - **Dynamic AI navigation:** derive route/help context from `router.flatRoutes` + `validateSearch` introspection where possible.
 - **Mobile first (default):** [Progressive enhancement from small viewports up](https://developer.mozilla.org/en-US/docs/Glossary/Mobile_First) — create a usable layout at the narrowest width, then add richer layout as the viewport grows. This is the **default** layout stance for UI work, not Core Contract, not a particular widget (header, nav, drawer), and not a browser- or library-specific recipe. How you express it depends on the project's UI library (breakpoint tokens, `min-width` media queries, or equivalent). **Ask the developer** if this app's needs call for a different UX pattern (desktop-first, a specialized layout, and so on). Do not silently switch away from mobile first. Concrete library recipes for *this* template live in AGENTS.md §3 and companion **`reference-tech-stack`**.
 
-## TanStack Intent, CLI, and AI
+## Agent Skills, TanStack CLI, and AI
 
-- **Intent:** `npx @tanstack/intent@latest list | load <pkg>#<skill> | stale` — pick version-matched package skills before deep TanStack work.
+- **Agent Skills (only standard):** this template’s skills are [agentskills.io](https://agentskills.io) folders — `.agents/skills/<name>/SKILL.md`. Edit those files directly. Install into other projects with `npx skills add carlosvin/tanstack-fullstack-ai-template` (all skills) or `--skill <id>`. List: `npx skills add carlosvin/tanstack-fullstack-ai-template --list`. Similar: `gh skill install carlosvin/tanstack-fullstack-ai-template`. Do not maintain a second skill format (canonical YAML, TanStack Intent package skills, or generated copies).
 - **CLI (prefer current docs over memory):** `npx @tanstack/cli --help` → `libraries`, `search-docs "<query>" --library router|start|ai`, `doc <library> <path>`.
 - **AI stack:** `@tanstack/ai`, `@tanstack/ai-react`, `/api/chat` — provider table, SSE wiring, system prompt sections, and chat endpoint anatomy are spelled out in **AGENTS.md §8**.
 
@@ -481,6 +481,6 @@ interface Repository {
 
 ## Verification
 
-**This template repo (skill authors):** after editing YAML, run `pnpm skills:build` and `pnpm skills:check`.
+**This template repo (skill authors):** edit `.agents/skills/<id>/SKILL.md`, then run `pnpm skills:check` (companions / install commands) and `pnpm skills:waza` (Agent Skills spec; required in CI).
 
 **Apps built from the template:** follow **AGENTS.md** §15 — e.g. `pnpm format && pnpm lint && pnpm test && pnpm build`; smoke with dev server and `/api/health` when configuration allows.

@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { findMissingCompanionReciprocity, formatCompanionInstallCommand, getSkillPaths } from './buildSkills.mjs'
+import { getSkillPaths } from './validateSkills.mjs'
 
 const defaultRootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
@@ -303,20 +303,21 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 			description:
 				'Untrusted I/O uses Schema.parse / validateSearch; no hand-rolled tuple .find parsers for closed vocabularies',
 			async run() {
-				const yamlPath = path.join(rootDir, 'skills/src/tanstack-promptable-fullstack-app-template.skill.yaml')
+				const { agentSkillsDir } = getSkillPaths(rootDir)
+				const skillMdPath = path.join(agentSkillsDir, 'tanstack-promptable-fullstack-app-template', 'SKILL.md')
 				try {
-					await fs.access(yamlPath)
+					await fs.access(skillMdPath)
 				} catch {
 					return pass()
 				}
-				const yaml = await readText(yamlPath)
-				if (!/Trust boundaries/.test(yaml)) {
+				const skillMd = await readText(skillMdPath)
+				if (!/Trust boundaries/.test(skillMd)) {
 					return fail('Architecture skill must document Trust boundaries')
 				}
-				if (!/validateSearch/.test(yaml) || !/Schema\.parse/.test(yaml)) {
+				if (!/validateSearch/.test(skillMd) || !/Schema\.parse/.test(skillMd)) {
 					return fail('Architecture skill must name validateSearch and Schema.parse at trust boundaries')
 				}
-				if (!/Array\.find/.test(yaml) && !/hand-rolled/.test(yaml)) {
+				if (!/Array\.find/.test(skillMd) && !/hand-rolled/.test(skillMd)) {
 					return fail('Architecture skill must reject hand-rolled Array.find parsers')
 				}
 
@@ -500,59 +501,6 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				if (!/importProtection/.test(viteConfig) || !/behavior:\s*['"]error['"]/.test(viteConfig)) {
 					return fail('vite.config.ts must enable tanstackStart importProtection with behavior error')
 				}
-				return pass()
-			},
-		},
-		{
-			id: 'skills-companion-and-routing',
-			skill: 'tanstack-promptable-fullstack-app-template',
-			description:
-				'registry companions are reciprocal; each generated SKILL.md has routing + companion install commands',
-			async run() {
-				const { registryPath, agentSkillsDir } = getSkillPaths(rootDir)
-				try {
-					await fs.access(registryPath)
-				} catch {
-					// App-only fixtures may omit the registry; skip metadata checks.
-					return pass()
-				}
-
-				const registry = JSON.parse(await readText(registryPath))
-				const skills = registry.skills ?? []
-				if (skills.length === 0) {
-					return fail('registry.json has no skills')
-				}
-
-				const missing = findMissingCompanionReciprocity(skills)
-				if (missing.length > 0) {
-					return fail(
-						'Companion skills must be reciprocal in registry.json',
-						missing.map((entry) => `${entry.skillId} → ${entry.companionId}: ${entry.reason}`),
-					)
-				}
-
-				for (const skill of skills) {
-					const skillMdPath = path.join(agentSkillsDir, skill.id, 'SKILL.md')
-					try {
-						await fs.access(skillMdPath)
-					} catch {
-						return fail(`Missing SKILL.md for ${skill.id}`)
-					}
-					const skillMd = await readText(skillMdPath)
-					if (!/## Skill routing/.test(skillMd)) {
-						return fail(`SKILL.md for ${skill.id} missing Skill routing section`)
-					}
-					if (!/## Companion skills \(install if missing\)/.test(skillMd)) {
-						return fail(`SKILL.md for ${skill.id} missing companion install section`)
-					}
-					for (const companion of skill.companionSkills ?? []) {
-						const installCmd = formatCompanionInstallCommand(companion.id)
-						if (!skillMd.includes(installCmd)) {
-							return fail(`SKILL.md for ${skill.id} missing install command for ${companion.id}`)
-						}
-					}
-				}
-
 				return pass()
 			},
 		},

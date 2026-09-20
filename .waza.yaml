@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/microsoft/waza/main/schemas/config.schema.json
 # Waza config for this template's published Agent Skills.
-# Skills are generated into .agents/skills/; eval suites live in evals/.
+# Skills live in .agents/skills/; eval suites live in evals/.
 
 paths:
   skills: .agents/skills
@@ -16,9 +16,8 @@ defaults:
 
 tokens:
   # These are handbook-style architecture skills, not 500-token MCP snippets.
-  warningThreshold: 8000
+  warningThreshold: 10000
   fallbackLimit: 10000
   limits:
     defaults:
       ".agents/skills/**/SKILL.md": 10000
-      "skills/dist/**/*.md": 10000

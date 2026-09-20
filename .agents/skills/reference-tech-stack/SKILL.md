@@ -17,10 +17,10 @@ description: >-
   skill as the architecture contract.
 license: MIT
 metadata:
-  version: 1.3.0
+  author: Carlos Martin-Sanchez
+  version: "1.3.0"
+  repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
-
-> This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.
 
 ## Companion skills (install if missing)
 
@@ -81,7 +81,7 @@ coupling into the architecture skill.
 | Deploy | **Netlify** | `@netlify/vite-plugin-tanstack-start`; Git deploy previews | AGENTS.md CI/CD; `netlify.toml` |
 | Package manager | **pnpm** | Lockfile committed | AGENTS.md §12 / §15 |
 
-**Fixed (not listed as choices):** TanStack **Start**, **Router**, **AI**, Intent, and CLI — owned by the architecture skill.
+**Fixed (not listed as choices):** TanStack **Start**, **Router**, **AI**, and CLI — owned by the architecture skill.
 
 ## How to use these defaults
 
@@ -100,4 +100,4 @@ should follow a different UX pattern.
 
 ## Verification
 
-After stack-affecting changes: `pnpm skills:build`, `pnpm skills:check`, and AGENTS.md §15.
+After stack-affecting changes: update this `SKILL.md`, run `pnpm skills:check` and `pnpm skills:waza`, and follow AGENTS.md §15.
