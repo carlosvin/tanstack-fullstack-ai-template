@@ -1,5 +1,19 @@
-import { toUserAccessRepo } from '../schemas/repoParsers'
-import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserAccessRepo, UserProfileRepo } from '../schemas/repository'
+import {
+	parseDistinctValues,
+	parseTaskRepo,
+	parseTaskRepoList,
+	parseTaskRepoOrNull,
+	parseUserProfileRepoOrNull,
+	toUserAccessRepo,
+} from '../schemas/repoParsers'
+import {
+	type TaskRepo,
+	type TaskRepoFilter,
+	type TaskRepoInput,
+	type UserAccessRepo,
+	type UserProfileRepo,
+	UserProfileRepoSchema,
+} from '../schemas/repository'
 import { resolveCreateLastModifiedBy } from './traceability'
 import type { DistinctValueField, Repository, TraceabilityContext } from './types'
 
@@ -92,8 +106,8 @@ let nextId = SEED_TASKS.length + 1
  * Mutations modify the in-memory array (not persisted across restarts).
  */
 export class SeedRepository implements Repository {
-	private tasks: TaskRepo[] = [...SEED_TASKS]
-	private users: UserProfileRepo[] = [...SEED_USERS]
+	private tasks: TaskRepo[] = parseTaskRepoList(SEED_TASKS)
+	private users: UserProfileRepo[] = UserProfileRepoSchema.array().parse(SEED_USERS)
 
 	async getTasks(filter?: TaskRepoFilter): Promise<TaskRepo[]> {
 		let result = [...this.tasks]
@@ -112,11 +126,11 @@ export class SeedRepository implements Repository {
 			result = result.filter((t) => t.title.toLowerCase().includes(q) || t.description?.toLowerCase().includes(q))
 		}
 
-		return result
+		return parseTaskRepoList(result)
 	}
 
 	async getTask(taskId: string): Promise<TaskRepo | null> {
-		return this.tasks.find((t) => t.id === taskId) ?? null
+		return parseTaskRepoOrNull(this.tasks.find((t) => t.id === taskId))
 	}
 
 	async getDistinctValues(field: DistinctValueField): Promise<string[]> {
@@ -127,11 +141,11 @@ export class SeedRepository implements Repository {
 				values.add(value)
 			}
 		}
-		return [...values].sort()
+		return parseDistinctValues([...values])
 	}
 
 	async getUserProfile(email: string): Promise<UserProfileRepo | null> {
-		return this.users.find((u) => u.email.toLowerCase() === email.toLowerCase()) ?? null
+		return parseUserProfileRepoOrNull(this.users.find((u) => u.email.toLowerCase() === email.toLowerCase()))
 	}
 
 	async getUserAccess(email: string): Promise<UserAccessRepo | null> {
@@ -150,7 +164,7 @@ export class SeedRepository implements Repository {
 			lastModifiedBy: resolveCreateLastModifiedBy(trace),
 		}
 		this.tasks.push(task)
-		return task
+		return parseTaskRepo(task)
 	}
 
 	async updateTask(
@@ -161,12 +175,12 @@ export class SeedRepository implements Repository {
 		const index = this.tasks.findIndex((t) => t.id === taskId)
 		if (index === -1) return null
 
-		this.tasks[index] = {
+		this.tasks[index] = parseTaskRepo({
 			...this.tasks[index],
 			...input,
 			updatedAt: new Date().toISOString(),
 			...(trace?.lastModifiedBy ? { lastModifiedBy: trace.lastModifiedBy } : {}),
-		}
+		})
 		return this.tasks[index]
 	}
 

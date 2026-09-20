@@ -1,0 +1,15 @@
+id: reference-use-zod
+name: Use Zod as the template validator
+description: Covers USE FOR use Zod.
+tags: [reference, trigger]
+inputs:
+  prompt: Confirm we use Zod as the app-wide validator in this reference stack.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

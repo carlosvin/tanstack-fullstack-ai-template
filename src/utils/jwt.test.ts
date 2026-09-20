@@ -55,6 +55,12 @@ describe('extractIdentityFromJwt', () => {
 		expect(result.groups).toEqual([])
 	})
 
+	it('returns empty identity when groups are not strings', () => {
+		const token = createTestJwt({ email: 'a@b.com', name: 'A', groups: [1, 2] })
+		const result = extractIdentityFromJwt(token)
+		expect(result).toEqual({ email: '', name: '', groups: [] })
+	})
+
 	it('returns empty identity for invalid token', () => {
 		const result = extractIdentityFromJwt('not-a-valid-token')
 		expect(result).toEqual({ email: '', name: '', groups: [] })

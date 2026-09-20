@@ -1,0 +1,17 @@
+id: observability-contract-overview
+name: Observability contract overview
+description: Covers the skill description tagline.
+tags: [observability, description]
+inputs:
+  prompt: >-
+    Set up centralized env parse, structured logging, and error-tracking
+    bootstrap behind ObservabilityService.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

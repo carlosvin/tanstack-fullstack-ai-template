@@ -288,9 +288,99 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				if (/as Promise<TaskRepo/.test(mongoRepo) || /as TaskRepo/.test(mongoRepo)) {
 					return fail('mongoRepository.server.ts must not cast Mongo results to TaskRepo')
 				}
-				if (!/parseTaskRepo/.test(mongoRepo) || !/parseUserProfileRepoOrNull/.test(mongoRepo)) {
-					return fail('mongoRepository.server.ts must use parseTaskRepo / parseUserProfileRepoOrNull')
+				if (!/parseTaskRepoList/.test(mongoRepo) || !/parseUserProfileRepoOrNull/.test(mongoRepo)) {
+					return fail('mongoRepository.server.ts must use parseTaskRepoList / parseUserProfileRepoOrNull')
 				}
+				if (!/parseDistinctValues/.test(mongoRepo)) {
+					return fail('mongoRepository.server.ts must parse distinct values with parseDistinctValues')
+				}
+				return pass()
+			},
+		},
+		{
+			id: 'architecture-trust-boundary-parse',
+			skill: 'tanstack-promptable-fullstack-app-template',
+			description:
+				'Untrusted I/O uses Schema.parse / validateSearch; no hand-rolled tuple .find parsers for closed vocabularies',
+			async run() {
+				const yamlPath = path.join(rootDir, 'skills/src/tanstack-promptable-fullstack-app-template.skill.yaml')
+				try {
+					await fs.access(yamlPath)
+				} catch {
+					return pass()
+				}
+				const yaml = await readText(yamlPath)
+				if (!/Trust boundaries/.test(yaml)) {
+					return fail('Architecture skill must document Trust boundaries')
+				}
+				if (!/validateSearch/.test(yaml) || !/Schema\.parse/.test(yaml)) {
+					return fail('Architecture skill must name validateSearch and Schema.parse at trust boundaries')
+				}
+				if (!/Array\.find/.test(yaml) && !/hand-rolled/.test(yaml)) {
+					return fail('Architecture skill must reject hand-rolled Array.find parsers')
+				}
+
+				const optionsPath = path.join(rootDir, 'src/constants/options.ts')
+				try {
+					const options = await readText(optionsPath)
+					if (/TASK_STATUSES\.find/.test(options) || /function parseTaskStatus/.test(options)) {
+						return fail('options.ts must not hand-roll status parsers; use schema .parse()')
+					}
+				} catch {
+					// App-only fixtures may omit constants.
+				}
+
+				const tasksPagePath = path.join(rootDir, 'src/components/TasksPage/TasksPage.tsx')
+				try {
+					const tasksPage = await readText(tasksPagePath)
+					if (
+						!/OptionalTaskStatusSchema\.parse/.test(tasksPage) ||
+						!/OptionalTaskPrioritySchema\.parse/.test(tasksPage)
+					) {
+						return fail(
+							'TasksPage must parse Select values with OptionalTaskStatusSchema.parse / OptionalTaskPrioritySchema.parse',
+						)
+					}
+				} catch {
+					// App-only fixtures may omit pages.
+				}
+
+				const seedPath = path.join(rootDir, 'src/services/repository/seedRepository.ts')
+				try {
+					const seed = await readText(seedPath)
+					if (!/parseTaskRepoList/.test(seed) || !/UserProfileRepoSchema\.array\(\)\.parse/.test(seed)) {
+						return fail('seedRepository must Schema.parse seed documents at the repository boundary')
+					}
+					if (!/parseDistinctValues/.test(seed)) {
+						return fail('seedRepository must Schema.parse distinct values at the repository boundary')
+					}
+				} catch {
+					// App-only fixtures may omit seed.
+				}
+
+				const jwtPath = path.join(rootDir, 'src/utils/jwt.server.ts')
+				try {
+					const jwt = await readText(jwtPath)
+					if (!/JwtIdentityClaimsSchema\.parse/.test(jwt) || !/UserIdentitySchema\.parse/.test(jwt)) {
+						return fail('jwt.server.ts must Schema.parse JWT claims into UserIdentity')
+					}
+					if (/as string\[\]/.test(jwt)) {
+						return fail('jwt.server.ts must not cast JWT groups with as string[]')
+					}
+				} catch {
+					// App-only fixtures may omit jwt helpers.
+				}
+
+				const taskFormPath = path.join(rootDir, 'src/components/TaskForm/TaskForm.tsx')
+				try {
+					const taskForm = await readText(taskFormPath)
+					if (!/TaskInputSchema\.parse/.test(taskForm)) {
+						return fail('TaskForm must Schema.parse submitted values with TaskInputSchema')
+					}
+				} catch {
+					// App-only fixtures may omit forms.
+				}
+
 				return pass()
 			},
 		},

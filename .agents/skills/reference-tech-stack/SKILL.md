@@ -1,17 +1,23 @@
 ---
 name: reference-tech-stack
-description: "Companion to tanstack-promptable-fullstack-app-template. Documents
-  this template's opinionated vendor choices — Zod, Mantine, lucide-react,
-  MongoDB + seed, jose JWT auth, OpenAI adapter, pino + Sentry, react-markdown,
-  Biome, Vitest, Playwright, Netlify — so agents implement against the reference
-  app without baking those choices into the architecture skill. Companion
-  skills: tanstack-promptable-fullstack-app-template (parent),
-  observability-and-env (companion). Install missing companions with npx skills
-  add carlosvin/tanstack-fullstack-ai-template --skill <id>. Project: TanStack
-  AI-Promptable Full-Stack Template. Triggers on \"reference tech stack\",
-  \"opinionated stack\", \"which UI library\", \"use Mantine\", \"use Zod\",
-  \"MongoDB repository\", \"lucide icons\", \"Biome lint\", \"Netlify deploy\",
-  \"template defaults\", \"stack choices\", \"AppShell\", \"Mantine navbar\"."
+description: >-
+  **UTILITY SKILL** - Opinionated vendor map for this template's reference app
+  (UI, validation, DB, auth, AI, observability, deploy).
+
+  USE FOR: reference tech stack, which UI library, use Zod, Netlify deploy,
+  template defaults.
+
+  DO NOT USE FOR: architecture invariants (use
+  tanstack-promptable-fullstack-app-template), env parse or logger factories
+  (use observability-and-env).
+
+  INVOKES: AGENTS.md operational sections and companion skills.
+
+  FOR SINGLE OPERATIONS: Look up one package in the Stack map; do not treat this
+  skill as the architecture contract.
+license: MIT
+metadata:
+  version: 1.2.1
 ---
 
 > This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.

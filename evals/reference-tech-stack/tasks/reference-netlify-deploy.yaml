@@ -1,0 +1,15 @@
+id: reference-netlify-deploy
+name: Netlify deploy defaults
+description: Covers USE FOR Netlify deploy and template defaults.
+tags: [reference, trigger]
+inputs:
+  prompt: What are the template defaults for Netlify deploy?
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

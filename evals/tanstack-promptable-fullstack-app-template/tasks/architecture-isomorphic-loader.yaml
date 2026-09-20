@@ -1,0 +1,17 @@
+id: architecture-isomorphic-loader
+name: Isomorphic loader boundary
+description: Covers USE FOR isomorphic loader.
+tags: [architecture, trigger]
+inputs:
+  prompt: >-
+    A route isomorphic loader is importing the database driver. Move the work
+    behind createServerFn in serverFns.ts.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

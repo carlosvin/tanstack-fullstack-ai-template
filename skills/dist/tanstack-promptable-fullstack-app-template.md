@@ -9,9 +9,9 @@
 - Documentation: https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/skills/README.md
 - Status: stable
 - Supported tools: Windsurf [native, tested], Cursor [copy, tested], Claude Code [copy, tested]
-- Capabilities: Interface-first boundaries with swappable implementations, Three schema layers with mandatory Schema.parse() at every boundary (tool→repo and repo→tool), Strong TypeScript in the typed flow — inference preserved via satisfies, unions, exhaustive switches; casts minimized, Loader-first routes and URL-driven state via validateSearch, Router config bundle (defaults + project Link wrapper preserving search params), Full AI tool coverage mirroring repository surface + client navigate/invalidate tools, Schema-first AI/UI metadata (.describe + optional .meta for unit/format/title), Promptable by default — getAIAvailability gating + browserContext + bounded agent loop, Auth ticket built in middleware via repository + TraceabilityContext on writes, Parent layout routes deduplicating shared beforeLoad and loaders, Optional patterns — overlay repo, bulk edit, distinct-values tools, dynamic route introspection, debounced free-text search, Mobile first by default — ask the developer if the app should follow a different UX pattern, TanStack Intent + CLI as doc-aligned guidance (not duplicated command manuals), Assistant chat renders Markdown (GFM) — lists, tables, code blocks; internal links stay navigable, Server/client execution boundaries — isomorphic loaders, *.server.ts, createServerOnlyFn, import protection, Request context — middleware-inferred ctx.context, parse-don't-validate inside handlers; env/shellSession invariants (setup in observability-and-env)
+- Capabilities: Interface-first boundaries with swappable implementations, Three schema layers with mandatory Schema.parse() at trust boundaries (DB/API I/O, tool↔repo) and validateSearch for URL params, Strong TypeScript in the typed flow — inference preserved via satisfies, unions, exhaustive switches; casts minimized, Loader-first routes and URL-driven state via validateSearch, Router config bundle (defaults + project Link wrapper preserving search params), Full AI tool coverage mirroring repository surface + client navigate/invalidate tools, Schema-first AI/UI metadata (.describe + optional .meta for unit/format/title), Promptable by default — getAIAvailability gating + browserContext + bounded agent loop, Auth ticket built in middleware via repository + TraceabilityContext on writes, Parent layout routes deduplicating shared beforeLoad and loaders, Optional patterns — overlay repo, bulk edit, distinct-values tools, dynamic route introspection, debounced free-text search, Mobile first by default — ask the developer if the app should follow a different UX pattern, TanStack Intent + CLI as doc-aligned guidance (not duplicated command manuals), Assistant chat renders Markdown (GFM) — lists, tables, code blocks; internal links stay navigable, Server/client execution boundaries — isomorphic loaders, *.server.ts, createServerOnlyFn, import protection, Request context — middleware-inferred ctx.context, parse-don't-validate inside handlers; env/shellSession invariants (setup in observability-and-env)
 - ID: `tanstack-promptable-fullstack-app-template`
-- Version: `1.29.0`
+- Version: `1.30.0`
 - Tags: tanstack-start, fullstack, architecture, interface-first, repository-pattern, ai-promptable
 
 ## Summary
@@ -85,8 +85,9 @@ Pick **one validator library** per app and use it consistently across router sea
 - **Repository schemas at the wrong edge:** importing repository-layer schemas into UI, tools, or AI tool inputs — use tools-layer schemas only.
 - **Server function without a tool:** adding `createServerFn` but skipping `toolDefinition` + `createSafeServerTool` for the same capability.
 - **Parse only half the boundary:** validating inbound tools input but returning raw repo rows to UI/AI without tools-layer `Schema.parse` on the way out.
+- **Hand-rolled boundary parsers:** `Array.find` on a const tuple, a homemade type guard, or `as` to turn DB/API/widget strings into domain unions instead of `Schema.parse()` (URL params: `validateSearch`).
 - **UI-only auth:** hiding buttons in components but skipping guards in server handlers.
-- **Type escape hatches:** `any`, loose `Record<string, unknown>`, or `as` after `Schema.parse` — narrow, guard, or fix types instead.
+- **Type escape hatches:** `any`, loose `Record<string, unknown>`, or `as` after `Schema.parse` — fix types instead of recasting.
 - **Duplicated parent work:** copying a parent layout’s `beforeLoad`, loader, or expensive read into each child route.
 - **Server logic in loaders:** `process.env` secrets, DB drivers, or repository imports inside a route `loader` or route file top-level imports.
 - **Wrong server primitive:** `createServerFn` for internal singletons that must never be RPC-callable — use `createServerOnlyFn` instead.
@@ -100,8 +101,12 @@ Pick **one validator library** per app and use it consistently across router sea
 
 1. **Interfaces:** Database, AI, observability (and other externals) sit behind interfaces; implementations are swappable.
 2. **Schemas as the type source:** Wire and tool shapes use a runtime validator (Zod, ArkType, Valibot, …) with **schema-inferred types**. Hand-written interfaces define **behavior** (`ReadRepository`, `AIAdapterService`, …), not ad-hoc JSON types.
-3. **Three schema layers:** **Repository** (DB-shaped), **tools / server-fn** (API-shaped, shared between `createServerFn` and `toolDefinition`), **router search** (URL-shaped). Translate with `Schema.parse()` at each boundary.
-4. **TypeScript inside the typed flow:** After schema boundaries, preserve **inferred types end-to-end** — prefer `satisfies`, discriminated unions, `as const` tuples, narrow **type guards**, and **exhaustive `switch`** (e.g. `default` branch calling `assertNever`) over `any`, broad `unknown` plumbing, or `as` casts (only use `as` at documented third-party/library seams per AGENTS.md).
+3. **Three schema layers + trust boundaries:** **Repository** (DB-shaped), **tools / server-fn** (API-shaped, shared between `createServerFn` and `toolDefinition`), **router search** (URL-shaped). Translate between layers with `Schema.parse()`. Untrusted values become typed **only** at trust boundaries, using the **chosen runtime validator** (`Schema.parse()` or equivalent — not parallel parsers):
+   - **Repository implementations:** documents/rows from a database and JSON from external APIs are parsed with the **repository-layer** schema before they enter the app.
+   - **URL search params:** TanStack Router `validateSearch` (the search schema is the validator).
+   - **Other untrusted edges:** `createServerFn` `.inputValidator`, AI `toolDefinition` inputSchema, env (companion `observability-and-env`), and third-party widgets that type values as bare `string` (parse with the **same** schema).
+   After a value has crossed a trust boundary, keep **schema-inferred types** through UI, handlers, and tools — do not widen back to `string` and re-parse with a helper that duplicates the schema.
+4. **TypeScript inside the typed flow:** After trust boundaries, preserve **inferred types end-to-end** — prefer `satisfies`, discriminated unions, `as const` tuples, and **exhaustive `switch`** (e.g. `default` branch calling `assertNever`) over `any`, broad `unknown` plumbing, or `as` casts (only use `as` at documented third-party/library seams per AGENTS.md). TypeScript narrows **already-typed** unions; it is not a substitute for `Schema.parse()` on untrusted input.
 5. **Repository vs tools:** Repository implementations use repository-layer schemas only. **Server functions and AI tools share the same tools-layer schemas** (`.inputValidator` / `toolDefinition` inputSchema + `Schema.parse`). UI and AI consume tools-layer types only — never import repository schemas at those edges.
 6. **Server functions:** GET queries throw on failure; POST mutations chain `.middleware([requireAuthMiddleware, invalidateMiddleware])`; handlers return data or throw `HttpError`; callers normalize with `processResponse` / `safeToolHandler` / `createSafeServerTool`.
 7. **Routes:** Thin route files (`createFileRoute`, `validateSearch`, `loaderDeps`, `loader`, `component`); page UI in `src/components/`. **Loaders** fetch via server functions — no `useEffect` data fetching for route data.
@@ -122,7 +127,8 @@ Scan before changing code:
 
 - **One tools-layer schema per wire shape:** `createServerFn` `.inputValidator(Schema)` and AI `toolDefinition({ inputSchema })` share the same schema — no duplicate hand-written wire types.
 - **Parse both directions:** tools → repository inputs and repository rows → tools/API outputs each end in the target layer’s `Schema.parse()` (pure mapper functions are fine if the final step is always `.parse()`).
-- **No type erasure:** after `Schema.parse`, carry **schema-inferred types** through server functions, repos, tools, and components — do not widen back to `Record<string, unknown>` / `any`.
+- **Trust boundaries use the validator:** repository implementations `Schema.parse` DB documents / API JSON; routes use `validateSearch`; untyped widget values use the same schema `.parse()` — no `Array.find` / homemade parsers that duplicate enums.
+- **No type erasure:** after `Schema.parse` / `validateSearch`, carry **schema-inferred types** through server functions, repos, tools, and components — do not widen back to `Record<string, unknown>` / `any`.
 - **Repository interfaces = repo-layer types only:** mapping lives beside schemas / mappers — not in React components.
 - **Auth ticket is repository-backed and server-enforced:** middleware builds the ticket (e.g. `getReadRepository().getUserAccess(email)`); guards run in **server handlers**, never UI-only.
 - **Writes use `TraceabilityContext`:** pass audit fields from the ticket (or stock `context.user.email`) through a single context object on `WritableRepository` mutations — avoid sprinkling raw `email` arguments. Repository implementations must **persist** `createdBy` / `lastModifiedBy` from that context onto the entity.
@@ -145,7 +151,7 @@ TanStack route **loaders are isomorphic** — they run during SSR **and** on cli
 
 ### Required pattern
 
-Define reads/writes in [`src/services/api/serverFns.ts`](src/services/api/serverFns.ts). Route loaders only invoke them:
+Define reads/writes in [`src/services/api/serverFns.ts`](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/src/services/api/serverFns.ts). Route loaders only invoke them:
 
 ```typescript
 // src/routes/tasks/index.tsx — thin route
@@ -189,7 +195,7 @@ Do **not** define new `createServerFn` inline in route files — keep RPC entry 
 
 ### Import protection (Vite)
 
-When adding node-only packages, extend [`vite.config.ts`](vite.config.ts):
+When adding node-only packages, extend [`vite.config.ts`](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/vite.config.ts):
 
 ```typescript
 tanstackStart({
@@ -263,7 +269,7 @@ export const ToolCategorySchema = z
 export type ToolCategory = z.infer<typeof ToolCategorySchema>
 ```
 
-**Layer 3 — Router search (URL-shaped):** local `validateSearch` schemas; fields are usually optional for partial URLs.
+**Layer 3 — Router search (URL-shaped):** local `validateSearch` schemas; fields are usually optional for partial URLs. TanStack Router runs this schema for you — that **is** the trust boundary for URL params.
 
 ```typescript
 const TasksSearchSchema = z.object({
@@ -277,6 +283,10 @@ export const Route = createFileRoute('/tasks/')({
   loader: ({ deps }) => getTasks({ data: deps }),
 })
 ```
+
+**Trust boundaries:** Untrusted data becomes typed **only** at the edges. Repository implementations parse DB rows / HTTP JSON with `RepoLayerSchema.parse(...)` (reference app: `parseTaskRepo`). Router search is already typed after `validateSearch` — page components receive inferred search types. Interior code (colors, labels, exhaustive switches) consumes those types; it does not re-implement the enum.
+
+Widget libraries often type `onChange` as `string | null`. That is still an untrusted edge — parse with the **same schema** (`OptionalStatusSchema.parse(value)`), not `STATUSES.find((s) => s === value)`.
 
 **Boundary mapping (mandatory):** layer switches happen only in mapper functions; **inbound** tool payloads become repo inputs with `RepoLayerSchema.parse(...)`, **outbound** repo documents become tools/API shapes with `ToolsLayerSchema.parse(...)`.
 
@@ -299,7 +309,7 @@ function toToolTask(row: TaskRepo): z.infer<typeof TaskToolSchema> {
 }
 ```
 
-**TypeScript discipline (complements runtime validation):** the validator checks **at boundaries**; TypeScript keeps the interior honest — narrow with guards instead of casting.
+**TypeScript discipline (complements runtime validation):** the validator (`Schema.parse` / `validateSearch`) checks **at trust boundaries**; TypeScript keeps the interior honest — exhaustive `switch`, `satisfies`, `assertNever`. Do **not** add a second parser (`Array.find`, ad-hoc guards) for the same closed vocabulary.
 
 ```typescript
 type TaskStatus = 'pending' | 'done'
@@ -411,7 +421,7 @@ interface WritableRepository {
 
 ## Implementation Flow
 
-1. **Schemas:** repo + tools layers; mappers with `Schema.parse()`.
+1. **Schemas:** repo + tools + search layers; repository I/O and mappers with `Schema.parse()`; URL state via `validateSearch`.
 2. **Repository:** interfaces in `types.ts`; seed + production implementations.
 3. **Server functions:** `serverFns.ts` — GET queries, POST mutations with shared validators.
 4. **AI tools:** each server function → `toolDefinition` + `createSafeServerTool`; wire client tools in the chat shell (see AGENTS.md §8).

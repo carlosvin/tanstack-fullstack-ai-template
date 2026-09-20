@@ -1,0 +1,15 @@
+id: observability-process-env-handler
+name: process.env in handler
+description: Covers USE FOR process.env in handler.
+tags: [observability, trigger]
+inputs:
+  prompt: There is process.env in handler code. Move the read into the env schema parse.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

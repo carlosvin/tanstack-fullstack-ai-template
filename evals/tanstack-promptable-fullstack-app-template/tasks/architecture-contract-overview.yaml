@@ -1,0 +1,17 @@
+id: architecture-contract-overview
+name: Architecture contract overview
+description: Covers the skill description tagline.
+tags: [architecture, description]
+inputs:
+  prompt: >-
+    Follow the architecture contract for TanStack Start apps — schemas,
+    repositories, loader-first routes, and AI-promptable tools.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

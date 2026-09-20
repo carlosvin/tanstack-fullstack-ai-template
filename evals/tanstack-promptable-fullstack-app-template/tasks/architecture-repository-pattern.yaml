@@ -1,0 +1,17 @@
+id: architecture-repository-pattern
+name: Add entity with repository pattern
+description: Covers USE FOR repository pattern.
+tags: [architecture, trigger]
+inputs:
+  prompt: >-
+    Add a domain entity using the repository pattern, three schema layers,
+    and AI tools. Do not invent a second wire type.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

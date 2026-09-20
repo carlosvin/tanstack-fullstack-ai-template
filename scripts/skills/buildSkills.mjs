@@ -61,12 +61,47 @@ export function renderCompanionSkillsBlock(skill) {
 	return lines.join('\n')
 }
 
+/** Agent Skills spec: description must be 1–1024 characters. */
+export const SKILL_DESCRIPTION_MAX_LENGTH = 1024
+
+function defaultWazaRouting(skill) {
+	const companions = skill.companionSkills ?? []
+	const companionIds = companions.map((companion) => companion.id)
+	return {
+		classification: 'WORKFLOW',
+		tagline: skill.summary,
+		useFor: skill.triggers.slice(0, 5),
+		doNotUseFor: companionIds.length
+			? companionIds.map((id) => `work that belongs in ${id}`)
+			: ['unrelated tasks outside this skill'],
+		invokes: 'companion skills and the repository, server-function, and route patterns in this template',
+		forSingleOperations: 'Load the companion named in Skill routing instead of stretching this skill',
+	}
+}
+
 export function toSkillDescription(skill) {
-	const companionText = skill.companionSkills?.length
-		? ` Companion skills: ${skill.companionSkills.map((companion) => `${companion.id} (${companion.relationship})`).join(', ')}. Install missing companions with npx skills add ${SKILLS_REPO} --skill <id>.`
-		: ''
-	const triggerText = skill.triggers.map((trigger) => `"${trigger}"`).join(', ')
-	return `${skill.summary}${companionText} Project: ${skill.projectName}. Triggers on ${triggerText}.`
+	const routing = { ...defaultWazaRouting(skill), ...skill.waza }
+	const useFor = routing.useFor.join(', ')
+	const doNotUseFor = routing.doNotUseFor.join(', ')
+	const description = [
+		`**${routing.classification} SKILL** - ${routing.tagline}`,
+		`USE FOR: ${useFor}.`,
+		`DO NOT USE FOR: ${doNotUseFor}.`,
+		`INVOKES: ${routing.invokes}.`,
+		`FOR SINGLE OPERATIONS: ${routing.forSingleOperations}.`,
+	].join('\n')
+
+	if (description.includes('<') || description.includes('>')) {
+		throw new Error(
+			`Generated description for ${skill.id} contains angle brackets (Waza spec-security). Rewrite waza.* fields without < or >.`,
+		)
+	}
+	if (description.length > SKILL_DESCRIPTION_MAX_LENGTH) {
+		throw new Error(
+			`Generated description for ${skill.id} is ${description.length} chars (max ${SKILL_DESCRIPTION_MAX_LENGTH}). Shorten waza.tagline / useFor / doNotUseFor.`,
+		)
+	}
+	return description
 }
 
 // Produces the agentskills.io standard SKILL.md format for .agents/skills/.
@@ -74,6 +109,10 @@ export function renderAgentSkill(skill) {
 	const frontmatterYaml = YAML.stringify({
 		name: skill.id,
 		description: toSkillDescription(skill),
+		license: skill.license,
+		metadata: {
+			version: skill.version,
+		},
 	}).trimEnd()
 	const frontmatter = [
 		'---',

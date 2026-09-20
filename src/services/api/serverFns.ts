@@ -11,6 +11,7 @@ import { createWriteTrace, updateWriteTrace } from '../repository/traceability'
 import { TaskRepoFilterSchema, TaskRepoInputSchema } from '../schemas/repository'
 import {
 	CurrentUserSchema,
+	DistinctValueListSchema,
 	DistinctValuesInputSchema,
 	TaskFilterSchema,
 	TaskIdInputSchema,
@@ -45,7 +46,10 @@ export const getTask = createServerFn({ method: 'GET' })
 export const getDistinctValues = createServerFn({ method: 'GET' })
 	.inputValidator(DistinctValuesInputSchema)
 	.handler(async ({ data }) => {
-		return getObservability({}).startSpan('getDistinctValues', () => getReadRepository().getDistinctValues(data.field))
+		const values = await getObservability({}).startSpan('getDistinctValues', () =>
+			getReadRepository().getDistinctValues(data.field),
+		)
+		return DistinctValueListSchema.parse(values)
 	})
 
 /** Fetch a user profile by email. */

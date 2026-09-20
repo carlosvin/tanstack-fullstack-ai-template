@@ -10,7 +10,7 @@ projectName: TanStack AI-Promptable Full-Stack Template
 projectSummary: >-
   A production-ready TanStack Start template designed to make internal tools AI
   promptable by default.
-version: 1.2.0
+version: 1.2.1
 author:
   name: Carlos Martin-Sanchez
   url: https://github.com/carlosvin
@@ -62,6 +62,22 @@ triggers:
   - stack choices
   - AppShell
   - Mantine navbar
+waza:
+  classification: UTILITY
+  tagline: >-
+    Opinionated vendor map for this template's reference app (UI, validation,
+    DB, auth, AI, observability, deploy).
+  useFor:
+    - reference tech stack
+    - which UI library
+    - use Zod
+    - Netlify deploy
+    - template defaults
+  doNotUseFor:
+    - architecture invariants (use tanstack-promptable-fullstack-app-template)
+    - env parse or logger factories (use observability-and-env)
+  invokes: AGENTS.md operational sections and companion skills
+  forSingleOperations: Look up one package in the Stack map; do not treat this skill as the architecture contract
 companionSkills:
   - id: tanstack-promptable-fullstack-app-template
     relationship: parent

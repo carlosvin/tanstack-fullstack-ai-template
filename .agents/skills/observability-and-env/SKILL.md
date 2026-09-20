@@ -1,23 +1,24 @@
 ---
 name: observability-and-env
-description: 'Companion to tanstack-promptable-fullstack-app-template. Use when
-  adding structured logging, centralized environment validation (runtime
-  schemas), error-tracking bootstrap, or fixing env/shellSession leaks in a
-  TanStack Start app. Teaches interface-first observability patterns: parse env
-  once, inject via middleware, project a browser-safe shellSession, and keep
-  process.env out of handlers. The reference app uses pino + Sentry behind
-  ObservabilityService — swap vendors without changing middleware or handler
-  contracts. Companion skills: tanstack-promptable-fullstack-app-template
-  (parent), reference-tech-stack (companion). Install missing companions with
-  npx skills add carlosvin/tanstack-fullstack-ai-template --skill <id>. Project:
-  TanStack AI-Promptable Full-Stack Template. Triggers on "add logging", "set up
-  logging", "structured logging", "pino logger", "sentry init", "error
-  tracking", "opentelemetry", "instrument server", "instrument.server.mts",
-  "instrument.server.mjs", "env schema", "environment validation", "centralize
-  observability", "createModuleLogger", "createServerLogger", "webEnv",
-  "webServerEnv", "shellSession", "getBrowserShellSession", "webEnvMiddleware",
-  "LOG_LEVEL", "SENTRY_DSN", "serverEnv leak", "window.__ENV__", "process.env in
-  handler", "process.env in application code".'
+description: >-
+  **WORKFLOW SKILL** - Centralized env parse, structured logging, and
+  error-tracking bootstrap behind ObservabilityService.
+
+  USE FOR: structured logging, env schema, sentry init, shellSession,
+  process.env in handler.
+
+  DO NOT USE FOR: new entities or routes (use
+  tanstack-promptable-fullstack-app-template), UI kit or validator lookup (use
+  reference-tech-stack).
+
+  INVOKES: env schemas, logger factories, instrument bootstrap, and companion
+  skills.
+
+  FOR SINGLE OPERATIONS: Load the parent architecture skill for routes and
+  tools; this skill is env and logging only.
+license: MIT
+metadata:
+  version: 1.7.2
 ---
 
 > This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.

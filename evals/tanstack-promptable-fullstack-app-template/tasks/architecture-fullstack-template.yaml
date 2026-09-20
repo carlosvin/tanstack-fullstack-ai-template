@@ -1,0 +1,17 @@
+id: architecture-fullstack-template
+name: Scaffold from fullstack template
+description: Covers USE FOR fullstack template and TanStack Start project.
+tags: [architecture, trigger]
+inputs:
+  prompt: >-
+    Follow the fullstack template for a new TanStack Start project.
+    Apply the architecture skill, not a one-off UI recipe.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"
