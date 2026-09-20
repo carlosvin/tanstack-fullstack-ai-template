@@ -110,7 +110,7 @@ If your team prefers [`@tabler/icons-react`](https://tabler.io/icons) (the Manti
 - **Server Components by Default**: Rely on Server Components; use `"use client"` only for hooks or browser APIs. Keep client components leaf-level.
 - **Functional Components**: Prefer functional components and hooks over class components.
 - **Type Reuse**: Import types from `src/types`. Do not redefine existing types.
-- **Architecture** (schema layers, URL-as-state, `loaderDeps`, `satisfies` over `as`, boundary parsing): follow the [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) **Core Contract** #3–5, #7–8 and **Schema Boundaries**. Tools-layer schemas: `src/services/schemas/schemas.ts`; repository-layer: `src/services/schemas/repository.ts`.
+- **Architecture** (schema layers, URL-as-state, `loaderDeps`, `satisfies` over `as`, trust-boundary `Schema.parse` / `validateSearch`): follow the [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) **Core Contract** #3–5, #7–8 and **Schema Boundaries**. Tools-layer schemas: `src/services/schemas/schemas.ts`; repository-layer: `src/services/schemas/repository.ts`. After data crosses a repository or `validateSearch` edge, keep schema-inferred types — parse untrusted widget strings with the same schema `.parse()`, not a tuple `.find()`.
 
 ## 5. Middleware and Auth
 

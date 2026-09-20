@@ -20,6 +20,20 @@ export const TaskStatusSchema = z.enum(TASK_STATUSES).describe('Current status o
 
 export const TaskPrioritySchema = z.enum(TASK_PRIORITIES).describe('Priority level of the task')
 
+export type TaskStatus = z.infer<typeof TaskStatusSchema>
+export type TaskPriority = z.infer<typeof TaskPrioritySchema>
+
+/** Widget empty values (`null`, `''`) become omitted optional enums. */
+function clearedSelectValue(value: unknown): unknown {
+	return value == null || value === '' ? undefined : value
+}
+
+/** Parse a status coming from an untyped widget (`string | null`). */
+export const OptionalTaskStatusSchema = z.preprocess(clearedSelectValue, TaskStatusSchema.optional())
+
+/** Parse a priority coming from an untyped widget (`string | null`). */
+export const OptionalTaskPrioritySchema = z.preprocess(clearedSelectValue, TaskPrioritySchema.optional())
+
 // ---------------------------------------------------------------------------
 // User Identity (extracted from JWT by auth middleware)
 // ---------------------------------------------------------------------------

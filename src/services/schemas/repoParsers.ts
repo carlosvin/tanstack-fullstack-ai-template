@@ -12,6 +12,11 @@ export function parseTaskRepo(doc: unknown): TaskRepo {
 	return TaskRepoSchema.parse(doc)
 }
 
+/** Query result set → repository-layer tasks (validated). */
+export function parseTaskRepoList(docs: unknown): TaskRepo[] {
+	return TaskRepoSchema.array().parse(docs)
+}
+
 export function parseTaskRepoOrNull(doc: unknown | null | undefined): TaskRepo | null {
 	return doc == null ? null : TaskRepoSchema.parse(doc)
 }

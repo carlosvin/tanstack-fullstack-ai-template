@@ -70,7 +70,7 @@ async function createMinimalWorkspace(overrides = {}) {
 		'src/services/api/serverFns.ts':
 			'export const x = () => toToolTask(); export const y = () => toToolUserProfile()\nconst trace = createWriteTrace(context.user.email)\nconst updateTrace = updateWriteTrace(context.user.email)\n',
 		'src/services/repository/mongoRepository.server.ts':
-			'import { parseTaskRepo, parseUserProfileRepoOrNull } from "../schemas/repoParsers"\nexport class MongoRepository { async getTasks() { return rows.map(parseTaskRepo) } async updateTask(_id, _input, trace) { return { lastModifiedBy: trace?.lastModifiedBy } } }\n',
+			'import { parseTaskRepoList, parseUserProfileRepoOrNull } from "../schemas/repoParsers"\nexport class MongoRepository { async getTasks() { return parseTaskRepoList(rows) } async updateTask(_id, _input, trace) { return { lastModifiedBy: trace?.lastModifiedBy } } }\n',
 		'src/services/repository/seedRepository.ts':
 			'export class SeedRepository { async updateTask(_id, _input, trace) { return { lastModifiedBy: trace?.lastModifiedBy } } }\n',
 		'src/services/schemas/repository.ts': 'export const TaskRepoSchema = { lastModifiedBy: true }\n',

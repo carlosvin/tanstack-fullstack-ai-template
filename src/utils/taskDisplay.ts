@@ -1,4 +1,4 @@
-import type { TaskPriority, TaskStatus } from '../constants/options'
+import type { TaskPriority, TaskStatus } from '../types'
 import { assertNever } from './assertNever'
 
 const STATUS_COLOR = {

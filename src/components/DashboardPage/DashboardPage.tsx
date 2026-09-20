@@ -1,7 +1,6 @@
 import { Badge, Card, Container, Group, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core'
 import { CheckCircle, Circle, Clock, ListTodo, type LucideIcon } from 'lucide-react'
-import type { TaskStatus } from '../../constants/options'
-import type { Task } from '../../types'
+import type { Task, TaskStatus } from '../../types'
 import { priorityColor, statusColor } from '../../utils/taskDisplay'
 import { Link } from '../Link/Link'
 
