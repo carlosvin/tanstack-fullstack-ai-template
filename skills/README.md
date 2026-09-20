@@ -77,6 +77,7 @@ After clone, the generated skill lives here (committed on purpose):
 - `.agents/skills/reference-tech-stack/SKILL.md` — opinionated stack map for this template
 - `skills/dist/<id>.md` — portable copies for docs or paste
 - `skills/registry.json` — machine-readable manifest
+- `evals/<id>/` — [Waza](https://microsoft.github.io/waza/) eval suites (CI via `pnpm skills:waza`)
 
 ## Other install options
 

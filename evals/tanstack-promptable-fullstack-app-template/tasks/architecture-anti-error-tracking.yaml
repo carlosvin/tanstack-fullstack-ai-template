@@ -1,0 +1,17 @@
+id: architecture-anti-error-tracking
+name: Do not use for error-tracking bootstrap
+description: Covers DO NOT USE FOR error-tracking bootstrap (use observability-and-env).
+tags: [architecture, anti-trigger]
+inputs:
+  prompt: >-
+    I need error-tracking bootstrap (use observability-and-env) rather than
+    the architecture skill.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

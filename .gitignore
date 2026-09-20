@@ -15,3 +15,7 @@ test-results/
 .netlify
 # Local skill plugin config (machine-specific)
 skills/plugin.local.json
+# Waza evaluation output
+results/
+transcripts/
+.waza-cache/

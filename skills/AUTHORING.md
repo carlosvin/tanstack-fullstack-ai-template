@@ -33,7 +33,18 @@ Tools that don't yet read `.agents/skills/` (for example Cursor, Claude Code) ca
 ```bash
 pnpm skills:build   # Validate + generate all outputs
 pnpm skills:check   # Validate + fail if generated files drift
+pnpm skills:waza    # Waza readiness + spec coverage + mock eval run
 ```
+
+`pnpm skills:waza` requires the [Waza](https://microsoft.github.io/waza/) CLI (`waza`). Install with:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/microsoft/waza/main/install.sh | bash
+```
+
+Generated `SKILL.md` descriptions follow [Waza](https://microsoft.github.io/waza/) / Agent Skills rules: `USE FOR`, `DO NOT USE FOR`, `INVOKES`, `FOR SINGLE OPERATIONS`, max 1024 characters, no angle brackets. Configure that routing in the canonical YAML `waza:` block. **Do not put commas inside `doNotUseFor` items** — Waza splits anti-triggers on commas.
+
+CI installs a pinned Waza release and runs this command in `.github/workflows/skills.yml`. Locally, if `waza` is missing the script skips unless `WAZA_REQUIRED=1` or `CI=true`.
 
 ## Workflow
 
@@ -65,6 +76,7 @@ When app and skill disagree, pick one:
 - [ ] Skill contract changed? → edit YAML, run `pnpm skills:build`, bump skill `version` if Core Contract / checklist changed
 - [ ] Example app updated to match (or roadmap exception documented)?
 - [ ] Skill eval added/updated for the new invariant?
+- [ ] Waza eval task covers new `USE FOR` / `DO NOT USE FOR` phrases (`pnpm skills:waza`)?
 - [ ] `AGENTS.md` roadmap status still accurate?
 - [ ] Generated artifacts committed?
 - [ ] `pnpm lint && pnpm test && pnpm build` green (`lint` includes `skills:check` + skill evals)

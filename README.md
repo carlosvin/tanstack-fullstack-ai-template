@@ -310,6 +310,7 @@ pnpm format     # Auto-format (Biome)
 # skill dev commands
 pnpm skills:build  # Generate Cursor + markdown skill artifacts
 pnpm skills:check  # Validate canonical skills and check for drift
+pnpm skills:waza   # Waza skill readiness, spec coverage, and mock evals
 ```
 
 ## Tech Stack

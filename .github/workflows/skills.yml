@@ -36,3 +36,31 @@ jobs:
 
             - name: Run skill evals against example app
               run: pnpm test:skill-evals
+
+            - name: Install Waza
+              env:
+                  WAZA_VERSION: "0.38.7"
+              run: |
+                  set -euo pipefail
+                  mkdir -p "$HOME/bin"
+                  curl -fsSL -o "$HOME/bin/waza" \
+                    "https://github.com/microsoft/waza/releases/download/v${WAZA_VERSION}/waza-linux-amd64"
+                  chmod +x "$HOME/bin/waza"
+                  echo "$HOME/bin" >> "$GITHUB_PATH"
+                  "$HOME/bin/waza" --version
+
+            - name: Validate skills with Waza
+              env:
+                  WAZA_REQUIRED: "1"
+              run: pnpm skills:waza
+
+            - name: Upload Waza results
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: waza-evaluation-results
+                  path: |
+                      results/
+                      transcripts/
+                  if-no-files-found: warn
+                  retention-days: 30

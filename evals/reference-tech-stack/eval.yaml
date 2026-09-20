@@ -1,0 +1,33 @@
+name: reference-tech-stack-eval
+description: CI eval suite for the reference stack companion skill. Mock executor; no model API keys.
+skill: reference-tech-stack
+schemaVersion: "1.0"
+version: "1.0"
+
+config:
+  trials_per_task: 1
+  timeout_seconds: 60
+  parallel: false
+  executor: mock
+  model: mock
+
+metrics:
+  - name: task_completion
+    weight: 1.0
+    threshold: 0.8
+    description: Mock executor produced graded output for the skill task.
+
+graders:
+  - type: code
+    name: has_output
+    config:
+      assertions:
+        - "len(output) > 10"
+  - type: text
+    name: no_errors
+    config:
+      regex_not_match:
+        - "(?i)fatal error|crashed|exception occurred"
+
+tasks:
+  - "tasks/*.yaml"

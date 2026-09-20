@@ -1,0 +1,17 @@
+id: reference-anti-architecture
+name: Do not use for architecture invariants
+description: Covers DO NOT USE FOR architecture invariants (use tanstack-promptable-fullstack-app-template).
+tags: [reference, anti-trigger]
+inputs:
+  prompt: >-
+    Explain architecture invariants (use tanstack-promptable-fullstack-app-template)
+    rather than the reference tech stack skill.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

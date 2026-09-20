@@ -1,23 +1,24 @@
 ---
 name: tanstack-promptable-fullstack-app-template
-description: "Use when scaffolding a new TanStack Start project, adding domain
-  entities, implementing the interface-first repository pattern with
-  AI-promptable tools, fixing nested layout routes that duplicate parent
-  beforeLoad/loaders, verifying TanStack Router/Start/AI against current docs,
-  or enforcing server/client execution boundaries (isomorphic loaders, import
-  protection, middleware-inferred request context). For logging, error tracking,
-  env schemas, or shellSession setup, load companion skill observability-and-env
-  instead. For this template's concrete package defaults, load companion skill
-  reference-tech-stack. Companion skills: observability-and-env (companion),
-  reference-tech-stack (companion). Install missing companions with npx skills
-  add carlosvin/tanstack-fullstack-ai-template --skill <id>. Project: TanStack
-  AI-Promptable Full-Stack Template. Triggers on \"fullstack template\",
-  \"TanStack Start project\", \"repository pattern\", \"interface-first\", \"new
-  app scaffold\", \"nested routes\", \"layout route\", \"beforeLoad\",
-  \"tanstack cli\", \"tanstack intent\", \"package skills\", \"client bundle
-  leak\", \"server-only\", \"isomorphic loader\", \"process.env in loader\",
-  \"import protection\", \"request context\", \"middleware context\",
-  \"debounced search\", \"search input\", \"mobile first\"."
+description: >-
+  **WORKFLOW SKILL** - Architecture contract for TanStack Start apps — schemas,
+  repositories, loader-first routes, and AI-promptable tools.
+
+  USE FOR: fullstack template, TanStack Start project, repository pattern,
+  nested routes, isomorphic loader.
+
+  DO NOT USE FOR: logging or env schemas (use observability-and-env),
+  error-tracking bootstrap (use observability-and-env), picking this template
+  concrete packages (use reference-tech-stack).
+
+  INVOKES: TanStack Start server functions, repository interfaces, and companion
+  skills.
+
+  FOR SINGLE OPERATIONS: Load the companion named in Skill routing instead of
+  stretching this skill.
+license: MIT
+metadata:
+  version: 1.29.1
 ---
 
 > This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.
@@ -140,7 +141,7 @@ TanStack route **loaders are isomorphic** — they run during SSR **and** on cli
 
 ### Required pattern
 
-Define reads/writes in [`src/services/api/serverFns.ts`](src/services/api/serverFns.ts). Route loaders only invoke them:
+Define reads/writes in [`src/services/api/serverFns.ts`](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/src/services/api/serverFns.ts). Route loaders only invoke them:
 
 ```typescript
 // src/routes/tasks/index.tsx — thin route
@@ -184,7 +185,7 @@ Do **not** define new `createServerFn` inline in route files — keep RPC entry 
 
 ### Import protection (Vite)
 
-When adding node-only packages, extend [`vite.config.ts`](vite.config.ts):
+When adding node-only packages, extend [`vite.config.ts`](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/vite.config.ts):
 
 ```typescript
 tanstackStart({

@@ -100,12 +100,14 @@ describe('buildSkills', () => {
 		await expect(buildSkills({ rootDir })).rejects.toThrow(/Duplicate skill IDs found/)
 	})
 
-	it('renders companion install blocks and description hints', () => {
+	it('renders companion install blocks and Waza-compliant descriptions', () => {
 		const skill = {
 			id: 'example-skill',
 			summary: 'Example summary for testing.',
 			projectName: 'Example Project',
-			triggers: ['example'],
+			license: 'MIT',
+			version: '1.0.0',
+			triggers: ['example trigger', 'second trigger', 'third trigger'],
 			companionSkills: [
 				{
 					id: 'other-skill',
@@ -113,13 +115,45 @@ describe('buildSkills', () => {
 					summary: 'Companion skill for cross-cutting concerns.',
 				},
 			],
+			waza: {
+				classification: 'WORKFLOW',
+				tagline: 'Example tagline for Waza routing.',
+				useFor: ['example trigger', 'second trigger', 'third trigger'],
+				doNotUseFor: ['work that belongs in other-skill'],
+				invokes: 'companion skills and example tools',
+				forSingleOperations: 'Load the companion named in Skill routing',
+			},
 		}
 
-		expect(toSkillDescription(skill)).toContain('other-skill (companion)')
+		const description = toSkillDescription(skill)
+		expect(description).toContain('**WORKFLOW SKILL**')
+		expect(description).toContain('USE FOR:')
+		expect(description).toContain('DO NOT USE FOR:')
+		expect(description).toContain('INVOKES:')
+		expect(description).toContain('other-skill')
+		expect(description.length).toBeLessThanOrEqual(1024)
+		expect(description).not.toMatch(/[<>]/)
 		expect(renderCompanionSkillsBlock(skill)).toContain('## Companion skills (install if missing)')
 		expect(renderCompanionSkillsBlock(skill)).toContain(
 			'npx skills add carlosvin/tanstack-fullstack-ai-template --skill other-skill',
 		)
+	})
+
+	it('rejects generated descriptions that exceed the Agent Skills length limit', () => {
+		const skill = {
+			id: 'too-long',
+			summary: 'x'.repeat(50),
+			triggers: ['a', 'b', 'c'],
+			waza: {
+				classification: 'UTILITY',
+				tagline: 'x'.repeat(200),
+				useFor: ['one', 'two', 'three'],
+				doNotUseFor: ['y'.repeat(160), 'z'.repeat(160), 'w'.repeat(160)],
+				invokes: 'a'.repeat(200),
+				forSingleOperations: 'b'.repeat(200),
+			},
+		}
+		expect(() => toSkillDescription(skill)).toThrow(/1024/)
 	})
 
 	it('detects drift in check mode', async () => {

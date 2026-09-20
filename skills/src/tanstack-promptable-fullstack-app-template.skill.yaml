@@ -13,7 +13,7 @@ projectName: TanStack AI-Promptable Full-Stack Template
 projectSummary: >-
   A production-ready TanStack Start template designed to make internal tools AI
   promptable by default.
-version: 1.29.0
+version: 1.29.1
 author:
   name: Carlos Martin-Sanchez
   url: https://github.com/carlosvin
@@ -84,6 +84,23 @@ triggers:
   - debounced search
   - search input
   - mobile first
+waza:
+  classification: WORKFLOW
+  tagline: >-
+    Architecture contract for TanStack Start apps — schemas, repositories,
+    loader-first routes, and AI-promptable tools.
+  useFor:
+    - fullstack template
+    - TanStack Start project
+    - repository pattern
+    - nested routes
+    - isomorphic loader
+  doNotUseFor:
+    - logging or env schemas (use observability-and-env)
+    - error-tracking bootstrap (use observability-and-env)
+    - picking this template concrete packages (use reference-tech-stack)
+  invokes: TanStack Start server functions, repository interfaces, and companion skills
+  forSingleOperations: Load the companion named in Skill routing instead of stretching this skill
 companionSkills:
   - id: observability-and-env
     relationship: companion
@@ -250,7 +267,7 @@ content: |
 
   ### Required pattern
 
-  Define reads/writes in [`src/services/api/serverFns.ts`](src/services/api/serverFns.ts). Route loaders only invoke them:
+  Define reads/writes in [`src/services/api/serverFns.ts`](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/src/services/api/serverFns.ts). Route loaders only invoke them:
 
   ```typescript
   // src/routes/tasks/index.tsx — thin route
@@ -294,7 +311,7 @@ content: |
 
   ### Import protection (Vite)
 
-  When adding node-only packages, extend [`vite.config.ts`](vite.config.ts):
+  When adding node-only packages, extend [`vite.config.ts`](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/vite.config.ts):
 
   ```typescript
   tanstackStart({

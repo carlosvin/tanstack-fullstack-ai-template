@@ -1,0 +1,17 @@
+id: observability-anti-ui-kit
+name: Do not use for UI kit lookup
+description: Covers DO NOT USE FOR UI kit or validator lookup (use reference-tech-stack).
+tags: [observability, anti-trigger]
+inputs:
+  prompt: >-
+    I need UI kit or validator lookup (use reference-tech-stack) rather than
+    observability-and-env.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"
