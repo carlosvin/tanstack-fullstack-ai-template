@@ -17,19 +17,18 @@ async function createWorkspace(skills: Record<string, string>) {
 	return rootDir
 }
 
-function skillMd(name: string, extraBody = '', extras: { description?: string; extraFrontmatter?: string } = {}) {
-	const description =
-		extras.description ??
-		`**WORKFLOW SKILL** - Fixture for ${name}. USE FOR: ${name} tasks. DO NOT USE FOR: unrelated work. INVOKES: companion skills. FOR SINGLE OPERATIONS: Load the matching companion instead.`
+function skillMd(name: string, extraBody = '') {
 	return `---
 name: ${name}
-description: ${JSON.stringify(description)}
+description: Fixture for ${name}.
 license: MIT
-${extras.extraFrontmatter ?? ''}---
+---
 
 ## Companion skills (install if missing)
 
 ${extraBody}
+
+## Skill routing
 `
 }
 
@@ -57,72 +56,10 @@ const reciprocalPair = {
 }
 
 describe('validateSkills', () => {
-	it('accepts agentskills.io SKILL.md folders', async () => {
+	it('accepts reciprocal Agent Skills with npx skills install commands', async () => {
 		const rootDir = await createWorkspace(reciprocalPair)
 		const skills = await validateSkills({ rootDir, logger: { log() {} } })
 		expect(skills.map((skill) => skill.id).sort()).toEqual(['alpha-skill', 'beta-skill'])
-	})
-
-	it('rejects unknown frontmatter fields', () => {
-		expect(() =>
-			parseSkillMarkdown(
-				`---
-name: example-skill
-description: A valid description for the example skill used in tests.
-id: example-skill
----
-
-Body
-`,
-				{ directoryName: 'example-skill', relativePath: '.agents/skills/example-skill/SKILL.md' },
-			),
-		).toThrow(/unknown frontmatter field/)
-	})
-
-	it('rejects descriptions longer than 1024 characters', () => {
-		const description = 'x'.repeat(1025)
-		expect(() =>
-			parseSkillMarkdown(
-				`---
-name: example-skill
-description: "${description}"
----
-
-Body
-`,
-				{ directoryName: 'example-skill', relativePath: '.agents/skills/example-skill/SKILL.md' },
-			),
-		).toThrow(/exceeds 1024 characters/)
-	})
-
-	it('rejects a non-string description', () => {
-		expect(() =>
-			parseSkillMarkdown(
-				`---
-name: example-skill
-description: 123
----
-
-Body
-`,
-				{ directoryName: 'example-skill', relativePath: '.agents/skills/example-skill/SKILL.md' },
-			),
-		).toThrow(/must be a string/)
-	})
-
-	it('rejects descriptions that omit Waza routing phrases', () => {
-		expect(() =>
-			parseSkillMarkdown(
-				`---
-name: example-skill
-description: A valid description for the example skill used in tests.
----
-
-Body
-`,
-				{ directoryName: 'example-skill', relativePath: '.agents/skills/example-skill/SKILL.md' },
-			),
-		).toThrow(/must include "USE FOR:"/)
 	})
 
 	it('rejects a name that does not match the directory', () => {
@@ -130,7 +67,7 @@ Body
 			parseSkillMarkdown(
 				`---
 name: other-name
-description: A valid description for the example skill used in tests.
+description: Fixture.
 ---
 
 Body
@@ -162,6 +99,5 @@ Body
 		expect(formatCompanionInstallCommand('reference-tech-stack')).toBe(
 			'npx skills add carlosvin/tanstack-fullstack-ai-template --skill reference-tech-stack',
 		)
-		expect(formatCompanionInstallCommand('reference-tech-stack', { global: true })).toContain(' -g')
 	})
 })

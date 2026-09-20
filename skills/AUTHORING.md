@@ -19,8 +19,8 @@ Install instructions for consumers belong in the skill body (**Companion skills 
 ## Commands
 
 ```bash
-pnpm skills:check   # Validate .agents/skills/*/SKILL.md against agentskills.io
-pnpm skills:waza    # Waza readiness + spec coverage + mock eval run
+pnpm skills:check   # Companion reciprocity, Skill routing, npx skills install commands
+pnpm skills:waza    # Agent Skills spec, token budget, USE FOR coverage, mock evals
 ```
 
 `pnpm lint` runs `skills:check` and the skill evals.

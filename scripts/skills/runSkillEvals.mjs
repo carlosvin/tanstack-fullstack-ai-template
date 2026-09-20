@@ -2,12 +2,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import {
-	findMissingCompanionReciprocity,
-	formatCompanionInstallCommand,
-	getSkillPaths,
-	loadSkills,
-} from './validateSkills.mjs'
+import { getSkillPaths } from './validateSkills.mjs'
 
 const defaultRootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
@@ -506,56 +501,6 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				if (!/importProtection/.test(viteConfig) || !/behavior:\s*['"]error['"]/.test(viteConfig)) {
 					return fail('vite.config.ts must enable tanstackStart importProtection with behavior error')
 				}
-				return pass()
-			},
-		},
-		{
-			id: 'skills-companion-and-routing',
-			skill: 'tanstack-promptable-fullstack-app-template',
-			description:
-				'Agent Skills companions are reciprocal; each SKILL.md has routing + npx skills companion install commands',
-			async run() {
-				const { agentSkillsDir } = getSkillPaths(rootDir)
-				try {
-					await fs.access(agentSkillsDir)
-				} catch {
-					return pass()
-				}
-
-				let skills
-				try {
-					skills = await loadSkills({ agentSkillsDir, rootDir })
-				} catch (error) {
-					return fail(error instanceof Error ? error.message : String(error))
-				}
-
-				if (skills.length === 0) {
-					return fail('No Agent Skills found in .agents/skills/')
-				}
-
-				const missing = findMissingCompanionReciprocity(skills)
-				if (missing.length > 0) {
-					return fail(
-						'Companion skills must be reciprocal in .agents/skills SKILL.md files',
-						missing.map((entry) => `${entry.skillId} → ${entry.companionId}: ${entry.reason}`),
-					)
-				}
-
-				for (const skill of skills) {
-					if (!/## Skill routing/.test(skill.body)) {
-						return fail(`SKILL.md for ${skill.id} missing Skill routing section`)
-					}
-					if (!/## Companion skills \(install if missing\)/.test(skill.body)) {
-						return fail(`SKILL.md for ${skill.id} missing companion install section`)
-					}
-					for (const companion of skill.companionSkills ?? []) {
-						const installCmd = formatCompanionInstallCommand(companion.id)
-						if (!skill.body.includes(installCmd)) {
-							return fail(`SKILL.md for ${skill.id} missing install command for ${companion.id}`)
-						}
-					}
-				}
-
 				return pass()
 			},
 		},

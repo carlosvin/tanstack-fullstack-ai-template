@@ -18,7 +18,7 @@ npx skills add carlosvin/tanstack-fullstack-ai-template --skill <id>
 
 This document is the default agent and contributor guide for projects built from this template. It covers project structure, conventions, tooling, and operational detail.
 
-The **architectural contract** lives in the [TanStack Promptable Fullstack App Template skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) ([agentskills.io](https://agentskills.io) `SKILL.md`; validate with `pnpm skills:check`). Opinionated package choices for *this* template (Zod, Mantine, MongoDB, pino, Sentry, …) live in the [reference-tech-stack skill](.agents/skills/reference-tech-stack/SKILL.md). **This handbook** covers project layout, UI kit, auth wiring, AI adapter setup, observability recipes, and validation commands — not alternate architecture.
+The **architectural contract** lives in the [TanStack Promptable Fullstack App Template skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) ([agentskills.io](https://agentskills.io) `SKILL.md`; companions via `pnpm skills:check`, spec via `pnpm skills:waza`). Opinionated package choices for *this* template (Zod, Mantine, MongoDB, pino, Sentry, …) live in the [reference-tech-stack skill](.agents/skills/reference-tech-stack/SKILL.md). **This handbook** covers project layout, UI kit, auth wiring, AI adapter setup, observability recipes, and validation commands — not alternate architecture.
 
 Before non-trivial changes: read the skill **Core Contract** and run the **Architecture Checklist**.
 

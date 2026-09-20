@@ -321,7 +321,7 @@ pnpm lint       # Lint + typecheck (Biome)
 pnpm format     # Auto-format (Biome)
 
 # skill authoring
-pnpm skills:check  # Validate Agent Skills (agentskills.io SKILL.md)
+pnpm skills:check  # Companion reciprocity + npx skills install commands
 pnpm skills:waza   # Waza skill readiness, spec coverage, and mock evals
 ```
 

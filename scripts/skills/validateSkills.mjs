@@ -1,6 +1,5 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
-import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import YAML from 'yaml'
 
@@ -8,16 +7,9 @@ const defaultRootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 
 export const SKILLS_REPO = 'carlosvin/tanstack-fullstack-ai-template'
 
-const NAME_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
-const ALLOWED_FRONTMATTER_KEYS = new Set([
-	'name',
-	'description',
-	'license',
-	'compatibility',
-	'metadata',
-	'allowed-tools',
-])
 const COMPANION_PATTERN = /\*\*`([a-z0-9-]+)`\*\*\s*\((companion|parent|child)\)/g
+const COMPANION_HEADING = '## Companion skills (install if missing)'
+const ROUTING_HEADING = '## Skill routing'
 
 export function getSkillPaths(rootDir = defaultRootDir) {
 	return {
@@ -26,17 +18,8 @@ export function getSkillPaths(rootDir = defaultRootDir) {
 	}
 }
 
-export function formatCompanionInstallCommand(skillId, { global = false } = {}) {
-	const globalFlag = global ? ' -g' : ''
-	return `npx skills add ${SKILLS_REPO} --skill ${skillId}${globalFlag}`
-}
-
-function isNonEmptyString(value) {
-	return typeof value === 'string' && value.trim().length > 0
-}
-
-function flattenDescription(value) {
-	return String(value).replace(/\s+/g, ' ').trim()
+export function formatCompanionInstallCommand(skillId) {
+	return `npx skills add ${SKILLS_REPO} --skill ${skillId}`
 }
 
 export function parseSkillMarkdown(raw, { directoryName, relativePath }) {
@@ -63,78 +46,12 @@ export function parseSkillMarkdown(raw, { directoryName, relativePath }) {
 		throw new Error(`${relativePath}: frontmatter must be a YAML mapping`)
 	}
 
-	const extras = Object.keys(frontmatter).filter((key) => !ALLOWED_FRONTMATTER_KEYS.has(key))
-	if (extras.length > 0) {
-		throw new Error(
-			`${relativePath}: unknown frontmatter field(s) ${extras.join(', ')} — agentskills.io allows only name, description, license, compatibility, metadata, allowed-tools`,
-		)
-	}
-
 	const name = frontmatter.name
-	if (!isNonEmptyString(name)) {
+	if (typeof name !== 'string' || !name.trim()) {
 		throw new Error(`${relativePath}: frontmatter.name is required`)
-	}
-	if (name.length > 64) {
-		throw new Error(`${relativePath}: frontmatter.name exceeds 64 characters`)
-	}
-	if (!NAME_PATTERN.test(name)) {
-		throw new Error(
-			`${relativePath}: frontmatter.name must be lowercase alphanumeric with single hyphens (no leading, trailing, or consecutive hyphens)`,
-		)
 	}
 	if (name !== directoryName) {
 		throw new Error(`${relativePath}: frontmatter.name "${name}" must match the parent directory "${directoryName}"`)
-	}
-
-	if (typeof frontmatter.description !== 'string') {
-		throw new Error(`${relativePath}: frontmatter.description is required and must be a string`)
-	}
-	const description = flattenDescription(frontmatter.description)
-	if (!description) {
-		throw new Error(`${relativePath}: frontmatter.description is required`)
-	}
-	if (description.length > 1024) {
-		throw new Error(`${relativePath}: frontmatter.description exceeds 1024 characters (${description.length})`)
-	}
-	if (description.includes('<') || description.includes('>')) {
-		throw new Error(`${relativePath}: frontmatter.description must not contain angle brackets`)
-	}
-	for (const phrase of ['USE FOR:', 'DO NOT USE FOR:', 'INVOKES:', 'FOR SINGLE OPERATIONS:']) {
-		if (!description.includes(phrase)) {
-			throw new Error(`${relativePath}: frontmatter.description must include "${phrase}" (Waza routing)`)
-		}
-	}
-
-	if (frontmatter.license !== undefined && !isNonEmptyString(frontmatter.license)) {
-		throw new Error(`${relativePath}: frontmatter.license must be a non-empty string when present`)
-	}
-
-	if (frontmatter.compatibility !== undefined) {
-		if (!isNonEmptyString(frontmatter.compatibility)) {
-			throw new Error(`${relativePath}: frontmatter.compatibility must be a non-empty string when present`)
-		}
-		if (frontmatter.compatibility.length > 500) {
-			throw new Error(`${relativePath}: frontmatter.compatibility exceeds 500 characters`)
-		}
-	}
-
-	if (frontmatter.metadata !== undefined) {
-		if (
-			frontmatter.metadata === null ||
-			typeof frontmatter.metadata !== 'object' ||
-			Array.isArray(frontmatter.metadata)
-		) {
-			throw new Error(`${relativePath}: frontmatter.metadata must be a string-to-string map`)
-		}
-		for (const [key, value] of Object.entries(frontmatter.metadata)) {
-			if (typeof value !== 'string') {
-				throw new Error(`${relativePath}: frontmatter.metadata.${key} must be a string`)
-			}
-		}
-	}
-
-	if (frontmatter['allowed-tools'] !== undefined && !isNonEmptyString(frontmatter['allowed-tools'])) {
-		throw new Error(`${relativePath}: frontmatter.allowed-tools must be a space-separated string when present`)
 	}
 
 	const companionSkills = []
@@ -142,18 +59,7 @@ export function parseSkillMarkdown(raw, { directoryName, relativePath }) {
 		companionSkills.push({ id: match[1], relationship: match[2] })
 	}
 
-	return {
-		id: name,
-		name,
-		description,
-		license: frontmatter.license,
-		compatibility: frontmatter.compatibility,
-		metadata: frontmatter.metadata,
-		allowedTools: frontmatter['allowed-tools'],
-		companionSkills,
-		body,
-		relativePath,
-	}
+	return { id: name, companionSkills, body, relativePath }
 }
 
 export async function readSkillDirectories(agentSkillsDir) {
@@ -195,16 +101,7 @@ export async function loadSkills({ agentSkillsDir, rootDir = defaultRootDir } = 
 			throw error
 		}
 
-		if (raw.charCodeAt(0) === 0xfeff) {
-			throw new Error(`${relativePath}: SKILL.md must not start with a BOM`)
-		}
-
 		skills.push(parseSkillMarkdown(raw, { directoryName, relativePath }))
-	}
-
-	const duplicateSkillIds = findDuplicateSkillIds(skills)
-	if (duplicateSkillIds.length > 0) {
-		throw new Error(`Duplicate skill IDs found: ${duplicateSkillIds.join(', ')}`)
 	}
 
 	const missingCompanions = findMissingCompanionReciprocity(skills)
@@ -218,12 +115,12 @@ export async function loadSkills({ agentSkillsDir, rootDir = defaultRootDir } = 
 	return skills
 }
 
-export function findMissingCompanionReciprocity(skills) {
+function findMissingCompanionReciprocity(skills) {
 	const byId = new Map(skills.map((skill) => [skill.id, skill]))
 	const missing = []
 
 	for (const skill of skills) {
-		for (const companion of skill.companionSkills ?? []) {
+		for (const companion of skill.companionSkills) {
 			const other = byId.get(companion.id)
 			if (!other) {
 				missing.push({
@@ -233,7 +130,7 @@ export function findMissingCompanionReciprocity(skills) {
 				})
 				continue
 			}
-			const reciprocal = (other.companionSkills ?? []).some((entry) => entry.id === skill.id)
+			const reciprocal = other.companionSkills.some((entry) => entry.id === skill.id)
 			if (!reciprocal) {
 				missing.push({
 					skillId: skill.id,
@@ -247,45 +144,33 @@ export function findMissingCompanionReciprocity(skills) {
 	return missing
 }
 
-export function findDuplicateSkillIds(skills) {
-	const counts = new Map()
-	for (const skill of skills) {
-		counts.set(skill.id, (counts.get(skill.id) ?? 0) + 1)
-	}
-	return [...counts.entries()].filter(([, count]) => count > 1).map(([id]) => id)
-}
-
-export function assertCompanionInstallCommands(skill) {
-	const missing = []
-	for (const companion of skill.companionSkills ?? []) {
-		const command = formatCompanionInstallCommand(companion.id)
-		if (!skill.body.includes(command)) {
-			missing.push(companion.id)
-		}
-	}
-	return missing
-}
-
 export async function validateSkills({ rootDir = defaultRootDir, logger = console } = {}) {
 	const { agentSkillsDir } = getSkillPaths(rootDir)
 	const skills = await loadSkills({ agentSkillsDir, rootDir })
 
-	const installErrors = []
+	const bodyErrors = []
 	for (const skill of skills) {
-		const missingInstall = assertCompanionInstallCommands(skill)
-		if (missingInstall.length > 0) {
-			installErrors.push(`${skill.id} missing npx skills install command for: ${missingInstall.join(', ')}`)
+		if (!skill.body.includes(COMPANION_HEADING)) {
+			bodyErrors.push(`${skill.id} missing "${COMPANION_HEADING}" section`)
 		}
-		if (!/## Companion skills \(install if missing\)/.test(skill.body)) {
-			installErrors.push(`${skill.id} missing "## Companion skills (install if missing)" section`)
+		if (!skill.body.includes(ROUTING_HEADING)) {
+			bodyErrors.push(`${skill.id} missing "${ROUTING_HEADING}" section`)
+		}
+		for (const companion of skill.companionSkills) {
+			const command = formatCompanionInstallCommand(companion.id)
+			if (!skill.body.includes(command)) {
+				bodyErrors.push(`${skill.id} missing npx skills install command for: ${companion.id}`)
+			}
 		}
 	}
 
-	if (installErrors.length > 0) {
-		throw new Error(installErrors.join('\n'))
+	if (bodyErrors.length > 0) {
+		throw new Error(bodyErrors.join('\n'))
 	}
 
-	logger.log(`Validated ${skills.length} Agent Skill(s) against the agentskills.io spec.`)
+	logger.log(
+		`Validated ${skills.length} Agent Skill(s): companion reciprocity, routing, and npx skills install commands.`,
+	)
 	return skills
 }
 

@@ -46,7 +46,7 @@ CI runs this in `.github/workflows/skills.yml` with a pinned `waza` binary. Conf
 - AGENTS.md does not claim chat UI always renders
 - Bounded agent loop in `chat.ts`
 - `importProtection` in `vite.config.ts`
-- Agent Skills: reciprocal companions, Skill routing, `npx skills` companion install commands
+- Agent Skills companion reciprocity and `npx skills` install commands (`pnpm skills:check`)
 - Architecture skill documents **Fixed vs swappable stack** and stays vendor-agnostic in prose
 
 ### `reference-tech-stack`

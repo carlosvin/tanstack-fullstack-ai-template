@@ -169,8 +169,4 @@ describe('runSkillEvals', () => {
 		})
 		await expect(runSkillEvals({ rootDir, logger: { log() {} } })).rejects.toThrow(/Skill evals failed/)
 	})
-
-	it('uses shared companion install command helper', () => {
-		expect(formatCompanionInstallCommand('reference-tech-stack')).toContain('--skill reference-tech-stack')
-	})
 })
