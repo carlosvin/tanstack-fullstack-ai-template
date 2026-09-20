@@ -179,7 +179,7 @@ export const myMutation = createServerFn({ method: 'POST' })
   .inputValidator(MyInputSchema)
   .handler(async ({ data, context }) => {
     const trace = createWriteTrace(context.accessTicket.identity.email)
-    return getWritableRepository().doSomething(data, trace)
+    return getRepository().doSomething(data, trace)
   })
 
 const result = await processResponse(() => myMutation({ data: input }))

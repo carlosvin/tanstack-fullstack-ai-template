@@ -2,7 +2,7 @@ import { createMiddleware } from '@tanstack/react-start'
 import { getCookie, setCookie } from '@tanstack/react-start/server'
 import { webServerEnv } from '../env/webEnv.server'
 import { type AccessTicket, buildAccessTicket } from '../services/auth/accessTicket'
-import { getReadRepository } from '../services/repository/getRepository.server'
+import { getRepository } from '../services/repository/getRepository.server'
 import type { UserIdentity } from '../types'
 import { extractIdentityFromJwt } from '../utils/jwt.server'
 import { createServerLogger } from '../utils/serverLogger'
@@ -77,7 +77,7 @@ export const authMiddleware = createMiddleware().server(async ({ next, request }
 	const { user, isTestUser } = ticket
 
 	// Test users are ephemeral and never stored in the repository — skip the lookup.
-	const profile = user.email && !isTestUser ? await getReadRepository().getUserProfile(user.email) : null
+	const profile = user.email && !isTestUser ? await getRepository().getUserProfile(user.email) : null
 
 	return next({
 		context: {

@@ -177,7 +177,7 @@ flowchart TB
 
 | Layer | Interface | Default | Alternatives |
 |-------|-----------|---------|-------------|
-| **Database** | `ReadRepository` / `WritableRepository` | [MongoDB](https://www.mongodb.com/) | [Postgres](https://www.postgresql.org/), [DynamoDB](https://aws.amazon.com/dynamodb/), [Supabase](https://supabase.com/), in-memory |
+| **Database** | `Repository` | [MongoDB](https://www.mongodb.com/) | [Postgres](https://www.postgresql.org/), [DynamoDB](https://aws.amazon.com/dynamodb/), [Supabase](https://supabase.com/), in-memory |
 | **AI Provider** | `AIAdapterService` | [OpenAI](https://platform.openai.com/) (Azure) | [Anthropic](https://www.anthropic.com/), [Gemini](https://ai.google.dev/), [Ollama](https://ollama.com/), any OpenAI-compatible |
 | **Observability** | `ObservabilityService` | [Sentry](https://sentry.io/) | [Datadog](https://www.datadoghq.com/), [OpenTelemetry](https://opentelemetry.io/), no-op |
 | **UI Library** | — (component layer) | [Mantine](https://mantine.dev/) | [MongoDB.design](https://www.mongodb.design/), [shadcn/ui](https://ui.shadcn.com/), [Chakra](https://chakra-ui.com/), [Ant Design](https://ant.design/), [Radix](https://www.radix-ui.com/) |
@@ -260,7 +260,7 @@ See [`.env.example`](.env.example) for the full list with documentation.
 ### Adding a New Entity (End-to-End)
 
 1. **Schema**: Add Zod schemas in `src/services/schemas/schemas.ts` with `.describe()` on every field.
-2. **Repository**: Add methods to the `ReadRepository` and/or `WritableRepository` interfaces in `types.ts`. Implement in both `seedRepository.ts` and `mongoRepository.server.ts`.
+2. **Repository**: Add methods to the `Repository` interface in `types.ts`. Implement in both `seedRepository.ts` and `mongoRepository.server.ts`.
 3. **Server Functions**: Add `createServerFn` wrappers in `src/services/api/serverFns.ts`. Chain `.middleware([invalidateMiddleware])` on mutations.
 4. **AI Tools**: Expose methods as tools in `src/services/ai/tools.ts` that call your server functions through `createSafeServerTool()`. Update the system prompt.
    - Keep `src/services/ai/navigationManifest.ts` aligned with routes (including dynamic segments like `/tasks/$taskId`).
@@ -354,7 +354,7 @@ pnpm dev                   # Works immediately with seed data
 Then follow the end-to-end workflow:
 
 1. Define your domain schemas in `src/services/schemas/schemas.ts` (Zod schemas with `.describe()` on every field, types inferred via `z.infer<>`)
-2. Define your repository interface in `src/services/repository/types.ts` (`ReadRepository` + `WritableRepository`)
+2. Define your repository interface in `src/services/repository/types.ts` (`Repository`)
 3. Implement the seed repository in `seedRepository.ts` (in-memory data for development)
 4. Add server functions in `src/services/api/serverFns.ts` (GET for loaders, POST with `invalidateMiddleware` for mutations)
 5. Expose methods as AI tools in `src/services/ai/tools.ts` that call your server functions through `createSafeServerTool()`
@@ -370,7 +370,7 @@ See **[Use the Agent Skill](#use-the-agent-skill)** above for install commands, 
 You don't need to adopt the whole pattern at once. Each layer is independently valuable:
 
 1. **Schema layer** — Move types to a centralized schema file with `.describe()` metadata
-2. **Repository interface** — Extract data access behind `ReadRepository`/`WritableRepository`
+2. **Repository interface** — Extract data access behind `Repository`
 3. **Server functions** — Wrap repository calls with `createServerFn` and `processResponse()`
 4. **Auth middleware** — Add global JWT extraction and typed `AuthContext`
 5. **Observability interface** — Put monitoring behind `ObservabilityService`

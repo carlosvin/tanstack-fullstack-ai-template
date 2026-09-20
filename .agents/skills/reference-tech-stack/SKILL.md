@@ -18,7 +18,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.2.1"
+  version: "1.3.0"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -81,7 +81,7 @@ coupling into the architecture skill.
 | Deploy | **Netlify** | `@netlify/vite-plugin-tanstack-start`; Git deploy previews | AGENTS.md CI/CD; `netlify.toml` |
 | Package manager | **pnpm** | Lockfile committed | AGENTS.md §12 / §15 |
 
-**Fixed (not listed as choices):** TanStack **Start**, **Router**, **AI**, Intent, and CLI — owned by the architecture skill.
+**Fixed (not listed as choices):** TanStack **Start**, **Router**, **AI**, and CLI — owned by the architecture skill.
 
 ## How to use these defaults
 
