@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assertWazaReady } from './runWazaCheck.mjs'
+import { assertWazaReady, requireWazaSuccess } from './runWazaCheck.mjs'
 
 describe('assertWazaReady', () => {
 	it('accepts a report where every skill is ready', () => {
@@ -26,5 +26,17 @@ describe('assertWazaReady', () => {
 				],
 			}),
 		).toThrow(/not ready/)
+	})
+})
+
+describe('requireWazaSuccess', () => {
+	it('accepts a zero exit status', () => {
+		expect(() => requireWazaSuccess({ status: 0, stdout: '{}' }, 'waza check')).not.toThrow()
+	})
+
+	it('fails on a non-zero exit even when stdout is present', () => {
+		expect(() => requireWazaSuccess({ status: 2, stdout: '{"skills":[]}', stderr: 'not ready' }, 'waza check')).toThrow(
+			/waza check failed \(exit 2\)/,
+		)
 	})
 })

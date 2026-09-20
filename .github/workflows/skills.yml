@@ -40,12 +40,16 @@ jobs:
             - name: Install Waza
               env:
                   WAZA_VERSION: "0.38.7"
+                  WAZA_LINUX_AMD64_SHA256: "e227cd884173de796bc28c6cb1828498f250297e0e606a4e4504d14465ff879f"
               run: |
                   set -euo pipefail
                   mkdir -p "$HOME/bin"
-                  curl -fsSL -o "$HOME/bin/waza" \
+                  tmpdir="$(mktemp -d)"
+                  trap 'rm -rf "$tmpdir"' EXIT
+                  curl -fsSL -o "$tmpdir/waza-linux-amd64" \
                     "https://github.com/microsoft/waza/releases/download/v${WAZA_VERSION}/waza-linux-amd64"
-                  chmod +x "$HOME/bin/waza"
+                  echo "${WAZA_LINUX_AMD64_SHA256}  $tmpdir/waza-linux-amd64" | sha256sum -c -
+                  install -m 0755 "$tmpdir/waza-linux-amd64" "$HOME/bin/waza"
                   echo "$HOME/bin" >> "$GITHUB_PATH"
                   "$HOME/bin/waza" --version
 

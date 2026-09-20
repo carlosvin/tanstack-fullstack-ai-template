@@ -54,6 +54,12 @@ function runWaza(wazaBin, args, { capture = false, cwd } = {}) {
 	return result
 }
 
+export function requireWazaSuccess(result, command) {
+	if (result.status === 0) return
+	const detail = result.stderr || result.stdout || result.error?.message || ''
+	throw new Error(`${command} failed (exit ${result.status})${detail ? `: ${detail}` : ''}`)
+}
+
 export function runWazaValidation({ rootDir = defaultRootDir, wazaBin = resolveWazaBin() } = {}) {
 	const version = runWaza(wazaBin, ['--version'], { capture: true, cwd: rootDir })
 	if (version.status !== 0) {
@@ -70,9 +76,7 @@ export function runWazaValidation({ rootDir = defaultRootDir, wazaBin = resolveW
 	console.log(`Using ${String(version.stdout || version.stderr).trim()}`)
 
 	const check = runWaza(wazaBin, ['check', '--format', 'json'], { capture: true, cwd: rootDir })
-	if (check.status !== 0 && !check.stdout) {
-		throw new Error(`waza check failed: ${check.stderr || check.error?.message}`)
-	}
+	requireWazaSuccess(check, 'waza check')
 
 	let report
 	try {
