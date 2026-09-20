@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { existsSync, readdirSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -102,7 +102,9 @@ export function runWazaValidation({ rootDir = defaultRootDir, wazaBin = resolveW
 		}
 	}
 
-	const run = runWaza(wazaBin, ['run', '--output', path.join(rootDir, 'results', 'waza-ci.json')], {
+	const resultsDir = path.join(rootDir, 'results')
+	mkdirSync(resultsDir, { recursive: true })
+	const run = runWaza(wazaBin, ['run', '--output', path.join(resultsDir, 'waza-ci.json')], {
 		capture: false,
 		cwd: rootDir,
 	})
