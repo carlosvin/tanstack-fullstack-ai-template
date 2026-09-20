@@ -14,7 +14,7 @@ import {
 } from '@mantine/core'
 import { useDebouncedCallback } from '@mantine/hooks'
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
-import { TASK_PRIORITIES, TASK_STATUSES } from '../../constants/options'
+import { parseTaskPriority, parseTaskStatus, TASK_PRIORITIES, TASK_STATUSES } from '../../constants/options'
 import type { Task, TaskFilter } from '../../types'
 import { priorityColor, statusColor } from '../../utils/taskDisplay'
 import { Link } from '../Link/Link'
@@ -75,7 +75,7 @@ export function TasksPage({ tasks, search, isAuth, currentUserEmail, onUpdateSea
 						clearable
 						data={TASK_STATUSES.map((s) => ({ value: s, label: s }))}
 						value={search.status ?? null}
-						onChange={(val) => onUpdateSearch({ status: (val as (typeof TASK_STATUSES)[number]) || undefined })}
+						onChange={(val) => onUpdateSearch({ status: parseTaskStatus(val) })}
 						w={{ base: '100%', sm: 150 }}
 					/>
 					<Select
@@ -83,7 +83,7 @@ export function TasksPage({ tasks, search, isAuth, currentUserEmail, onUpdateSea
 						clearable
 						data={TASK_PRIORITIES.map((p) => ({ value: p, label: p }))}
 						value={search.priority ?? null}
-						onChange={(val) => onUpdateSearch({ priority: (val as (typeof TASK_PRIORITIES)[number]) || undefined })}
+						onChange={(val) => onUpdateSearch({ priority: parseTaskPriority(val) })}
 						w={{ base: '100%', sm: 150 }}
 					/>
 				</Flex>

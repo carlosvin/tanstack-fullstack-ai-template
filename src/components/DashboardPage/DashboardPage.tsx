@@ -1,6 +1,6 @@
 import { Badge, Card, Container, Group, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core'
 import { CheckCircle, Circle, Clock, ListTodo, type LucideIcon } from 'lucide-react'
-import type { TASK_STATUSES } from '../../constants/options'
+import type { TaskStatus } from '../../constants/options'
 import type { Task } from '../../types'
 import { priorityColor, statusColor } from '../../utils/taskDisplay'
 import { Link } from '../Link/Link'
@@ -9,7 +9,7 @@ interface DashboardStat {
 	label: string
 	value: number
 	icon: LucideIcon
-	status?: (typeof TASK_STATUSES)[number]
+	status?: TaskStatus
 	filterLabel: string
 }
 
@@ -20,7 +20,7 @@ export interface DashboardPageProps {
 	env?: string
 }
 
-function statusCount(tasks: Task[], status: string) {
+function statusCount(tasks: Task[], status: TaskStatus) {
 	return tasks.filter((t) => t.status === status).length
 }
 
