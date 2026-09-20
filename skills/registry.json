@@ -183,7 +183,7 @@
       "summary": "Companion to tanstack-promptable-fullstack-app-template. Documents this template's opinionated vendor choices — Zod, Mantine, lucide-react, MongoDB + seed, jose JWT auth, OpenAI adapter, pino + Sentry, react-markdown, Biome, Vitest, Playwright, Netlify — so agents implement against the reference app without baking those choices into the architecture skill.",
       "projectName": "TanStack AI-Promptable Full-Stack Template",
       "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
-      "version": "1.2.1",
+      "version": "1.3.0",
       "author": {
         "name": "Carlos Martin-Sanchez",
         "url": "https://github.com/carlosvin"
@@ -277,7 +277,7 @@
         },
         {
           "input": "Where is MongoDB wired?",
-          "output": "Behind ReadRepository / WritableRepository — Mongo + seed implementations in src/services/repository/; factory in getRepository.server.ts."
+          "output": "Behind Repository — Mongo + seed implementations in src/services/repository/; factory in getRepository.server.ts."
         },
         {
           "input": "Make the header work on small screens in this template",
@@ -308,7 +308,7 @@
       "summary": "Use when scaffolding a new TanStack Start project, adding domain entities, implementing the interface-first repository pattern with AI-promptable tools, fixing nested layout routes that duplicate parent beforeLoad/loaders, verifying TanStack Router/Start/AI against current docs, or enforcing server/client execution boundaries (isomorphic loaders, import protection, middleware-inferred request context). For logging, error tracking, env schemas, or shellSession setup, load companion skill observability-and-env instead. For this template's concrete package defaults, load companion skill reference-tech-stack.",
       "projectName": "TanStack AI-Promptable Full-Stack Template",
       "projectSummary": "A production-ready TanStack Start template designed to make internal tools AI promptable by default.",
-      "version": "1.30.0",
+      "version": "1.31.0",
       "author": {
         "name": "Carlos Martin-Sanchez",
         "url": "https://github.com/carlosvin"
@@ -413,7 +413,7 @@
         "Prefer schema and router introspection over hand-maintained AI manifests; export JSON Schema from your validator when the UI needs it (reference — `z.toJSONSchema()` with Zod)",
         "Shared route gates and expensive reads live on the parent layout route; use a project Link that preserves search params by default",
         "Router defaults bundle — defaultStaleTime, defaultPreload 'intent', defaultPreloadStaleTime 0, scrollRestoration, notFoundComponent — ship together",
-        "Auth middleware enriches ctx.context with a repository-built ticket (e.g. getReadRepository().getUserAccess(email)); WritableRepository writes accept a TraceabilityContext built from that ticket",
+        "Auth middleware enriches ctx.context with a repository-built ticket (e.g. getRepository().getUserAccess(email)); Repository writes accept a TraceabilityContext built from that ticket",
         "Promptable by default — root loader checks getAIAvailability(); chat input includes browserContext (timezone, locale, path); chat() uses agentLoopStrategy maxIterations(N)",
         "Verify TanStack Router/Start/AI APIs with npx @tanstack/cli against current docs; use TanStack Intent for package skills — do not add them as project deps unless the app needs them as tooling",
         "Operational detail — UI library, chat Markdown rendering (implementation in AGENTS.md §8), logging, error tracking, testing, env bridge — follows repo AGENTS.md",

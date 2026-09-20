@@ -10,7 +10,7 @@ projectName: TanStack AI-Promptable Full-Stack Template
 projectSummary: >-
   A production-ready TanStack Start template designed to make internal tools AI
   promptable by default.
-version: 1.2.1
+version: 1.3.0
 author:
   name: Carlos Martin-Sanchez
   url: https://github.com/carlosvin
@@ -113,7 +113,7 @@ examples:
     output: Architecture allows it; this reference stack uses Zod. To switch, pick
       one validator app-wide, update schemas, and revise this skill / AGENTS.md.
   - input: Where is MongoDB wired?
-    output: Behind ReadRepository / WritableRepository — Mongo + seed implementations
+    output: Behind Repository — Mongo + seed implementations
       in src/services/repository/; factory in getRepository.server.ts.
   - input: Make the header work on small screens in this template
     output: Apply mobile first by default with Mantine — `base` then larger breakpoints,

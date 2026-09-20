@@ -11,7 +11,7 @@
 - Supported tools: Windsurf [native, tested], Cursor [copy, tested], Claude Code [copy, tested]
 - Capabilities: Opinionated vendor map for this template (UI, validation, DB, auth, AI, observability, tooling), Pointers to AGENTS.md sections for operational how-to, Clear separation from the architecture skill (patterns) and observability-and-env (env/logging recipes), Guidance for forking teams that want to swap a vendor without rewriting architecture
 - ID: `reference-tech-stack`
-- Version: `1.2.1`
+- Version: `1.3.0`
 - Tags: reference-stack, opinionated, mantine, zod, mongodb, netlify, tanstack-start
 
 ## Summary

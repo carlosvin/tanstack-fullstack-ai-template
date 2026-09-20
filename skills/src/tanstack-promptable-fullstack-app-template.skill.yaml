@@ -13,7 +13,7 @@ projectName: TanStack AI-Promptable Full-Stack Template
 projectSummary: >-
   A production-ready TanStack Start template designed to make internal tools AI
   promptable by default.
-version: 1.30.0
+version: 1.31.0
 author:
   name: Carlos Martin-Sanchez
   url: https://github.com/carlosvin
@@ -140,7 +140,7 @@ constraints:
   - Prefer schema and router introspection over hand-maintained AI manifests; export JSON Schema from your validator when the UI needs it (reference — `z.toJSONSchema()` with Zod)
   - Shared route gates and expensive reads live on the parent layout route; use a project Link that preserves search params by default
   - "Router defaults bundle — defaultStaleTime, defaultPreload 'intent', defaultPreloadStaleTime 0, scrollRestoration, notFoundComponent — ship together"
-  - Auth middleware enriches ctx.context with a repository-built ticket (e.g. getReadRepository().getUserAccess(email)); WritableRepository writes accept a TraceabilityContext built from that ticket
+  - Auth middleware enriches ctx.context with a repository-built ticket (e.g. getRepository().getUserAccess(email)); Repository writes accept a TraceabilityContext built from that ticket
   - "Promptable by default — root loader checks getAIAvailability(); chat input includes browserContext (timezone, locale, path); chat() uses agentLoopStrategy maxIterations(N)"
   - Verify TanStack Router/Start/AI APIs with npx @tanstack/cli against current docs; use TanStack Intent for package skills — do not add them as project deps unless the app needs them as tooling
   - Operational detail — UI library, chat Markdown rendering (implementation in AGENTS.md §8), logging, error tracking, testing, env bridge — follows repo AGENTS.md
@@ -227,7 +227,7 @@ content: |
   ## Core Contract
 
   1. **Interfaces:** Database, AI, observability (and other externals) sit behind interfaces; implementations are swappable.
-  2. **Schemas as the type source:** Wire and tool shapes use a runtime validator (Zod, ArkType, Valibot, …) with **schema-inferred types**. Hand-written interfaces define **behavior** (`ReadRepository`, `AIAdapterService`, …), not ad-hoc JSON types.
+  2. **Schemas as the type source:** Wire and tool shapes use a runtime validator (Zod, ArkType, Valibot, …) with **schema-inferred types**. Hand-written interfaces define **behavior** (`Repository`, `AIAdapterService`, …), not ad-hoc JSON types.
   3. **Three schema layers + trust boundaries:** **Repository** (DB-shaped), **tools / server-fn** (API-shaped, shared between `createServerFn` and `toolDefinition`), **router search** (URL-shaped). Translate between layers with `Schema.parse()`. Untrusted values become typed **only** at trust boundaries, using the **chosen runtime validator** (`Schema.parse()` or equivalent — not parallel parsers):
      - **Repository implementations:** documents/rows from a database and JSON from external APIs are parsed with the **repository-layer** schema before they enter the app.
      - **URL search params:** TanStack Router `validateSearch` (the search schema is the validator).
@@ -239,7 +239,7 @@ content: |
   7. **Routes:** Thin route files (`createFileRoute`, `validateSearch`, `loaderDeps`, `loader`, `component`); page UI in `src/components/`. **Loaders** fetch via server functions — no `useEffect` data fetching for route data.
   8. **URL-as-state:** Filters, tabs, selections in validated **search** params; use `loaderDeps` so only relevant search fields key the loader cache.
   9. **Router config bundle:** ship a project-local `Link` wrapper with `search: true` default (use it for every internal link) **and** these router defaults together: `defaultStaleTime`, `defaultPreload: 'intent'`, `defaultPreloadStaleTime: 0`, `scrollRestoration: true`, `notFoundComponent`.
-  10. **Auth ticket built in middleware:** auth middleware enriches `ctx.context` with a repository-built ticket (e.g. `getReadRepository().getUserAccess(email)`) carrying identity, roles, and guards; `WritableRepository` mutations accept a `TraceabilityContext` (`createdBy`, `lastModifiedBy`, …) constructed from that ticket so writes are attributed consistently across UI and AI.
+  10. **Auth ticket built in middleware:** auth middleware enriches `ctx.context` with a repository-built ticket (e.g. `getRepository().getUserAccess(email)`) carrying identity, roles, and guards; `Repository` mutations accept a `TraceabilityContext` (`createdBy`, `lastModifiedBy`, …) constructed from that ticket so writes are attributed consistently across UI and AI.
   11. **AI tool coverage:** expose **every** repository method as a server AI tool via `createSafeServerTool`; add **distinct-values** tools for enum-ish filters; expose `navigate` and `invalidateRouter` as client tools.
   12. **Promptable by default:** root loader checks `getAIAvailability()` and only mounts chat UI when configured (no disabled state). Chat input includes a `browserContext` (timezone, locale, path) consumed by `buildSystemPrompt` alongside the auth ticket.
   13. **Bound the agent loop:** every `chat()` call sets `agentLoopStrategy: maxIterations(N)` explicitly (default `N=10`); tune after measuring — do not rely on the framework default.
@@ -257,8 +257,8 @@ content: |
   - **Trust boundaries use the validator:** repository implementations `Schema.parse` DB documents / API JSON; routes use `validateSearch`; untyped widget values use the same schema `.parse()` — no `Array.find` / homemade parsers that duplicate enums.
   - **No type erasure:** after `Schema.parse` / `validateSearch`, carry **schema-inferred types** through server functions, repos, tools, and components — do not widen back to `Record<string, unknown>` / `any`.
   - **Repository interfaces = repo-layer types only:** mapping lives beside schemas / mappers — not in React components.
-  - **Auth ticket is repository-backed and server-enforced:** middleware builds the ticket (e.g. `getReadRepository().getUserAccess(email)`); guards run in **server handlers**, never UI-only.
-  - **Writes use `TraceabilityContext`:** pass audit fields from the ticket (or stock `context.user.email`) through a single context object on `WritableRepository` mutations — avoid sprinkling raw `email` arguments. Repository implementations must **persist** `createdBy` / `lastModifiedBy` from that context onto the entity.
+  - **Auth ticket is repository-backed and server-enforced:** middleware builds the ticket (e.g. `getRepository().getUserAccess(email)`); guards run in **server handlers**, never UI-only.
+  - **Writes use `TraceabilityContext`:** pass audit fields from the ticket (or stock `context.user.email`) through a single context object on `Repository` mutations — avoid sprinkling raw `email` arguments. Repository implementations must **persist** `createdBy` / `lastModifiedBy` from that context onto the entity.
   - **Navigation is one decision:** ship the **router defaults bundle** and the **project `Link` wrapper** (`search: true`) together so URL state survives navigation.
   - **AI stack is complete:** every repo method → server tool + safe handler; client **`navigate`** / **`invalidateRouter`**; root **`getAIAvailability()`**; chat payload includes **`browserContext`**; **`chat({ agentLoopStrategy: maxIterations(N) })`**.
   - **Routes:** **`validateSearch`** + **`loaderDeps`**; duplicate **`beforeLoad`** / shared loaders only on **parent** layouts.
@@ -295,7 +295,7 @@ content: |
     .inputValidator(TaskFilterSchema.optional())
     .handler(async ({ data: filter }) => {
       const repoFilter = filter ? TaskRepoFilterSchema.parse(filter) : undefined
-      return getReadRepository().getTasks(repoFilter)
+      return getRepository().getTasks(repoFilter)
     })
   ```
 
@@ -496,7 +496,7 @@ content: |
     .handler(async ({ data, context }) => {
       context.accessTicket.requireTaskEditor(data.taskId)
       const repoPatch = TaskRepoPatchSchema.parse(mapToolUpdateToRepo(data))
-      return getWritableRepository().updateTask(data.taskId, repoPatch, {
+      return getRepository().updateTask(data.taskId, repoPatch, {
         lastModifiedBy: context.accessTicket.identity.email,
       })
     })
@@ -508,7 +508,7 @@ content: |
   .handler(async ({ data, context }) => {
     const repoPatch = TaskRepoPatchSchema.parse(mapToolUpdateToRepo(data))
     const trace = updateWriteTrace(context.accessTicket.identity.email)
-    return getWritableRepository().updateTask(data.taskId, repoPatch, trace)
+    return getRepository().updateTask(data.taskId, repoPatch, trace)
   })
   ```
 
@@ -519,9 +519,11 @@ content: |
 
   ## Interface Contracts
 
-  Repository interfaces reference **repository-layer types** only. **`WritableRepository`** mutations take an optional **`TraceabilityContext`** built from the auth ticket (stock template: helpers such as `createWriteTrace` / `updateWriteTrace` from `context.accessTicket.identity.email`) — not ad-hoc optional email parameters at each call site.
+  Repository interfaces reference **repository-layer types** only. **`Repository`** mutations take an optional **`TraceabilityContext`** built from the auth ticket (stock template: helpers such as `createWriteTrace` / `updateWriteTrace` from `context.accessTicket.identity.email`) — not ad-hoc optional email parameters at each call site.
 
   Implementations must **persist** audit fields from the trace onto the entity (`createdBy` on create, `lastModifiedBy` on update). Ignoring the `trace` argument is a contract violation.
+
+  Auth for writes lives on **POST server functions** (`requireAuthMiddleware`), not on a second repository type.
 
   ```typescript
   interface TraceabilityContext {
@@ -529,13 +531,12 @@ content: |
     lastModifiedBy?: string
   }
 
-  interface ReadRepository {
+  interface Repository {
     getTasks(filter?: TaskRepoFilter): Promise<TaskRepoOutput[]>
     getTask(id: string): Promise<TaskRepoOutput | null>
     getDistinctValues(field: string): Promise<string[]>
     getUserProfile(email: string): Promise<UserProfile | null>
-  }
-  interface WritableRepository {
+    getUserAccess(email: string): Promise<UserAccessRepo | null>
     createTask(input: TaskRepoInput, trace?: TraceabilityContext): Promise<TaskRepoOutput>
     updateTask(
       id: string,
@@ -558,7 +559,7 @@ content: |
 
   ## Special Patterns (use when the feature applies)
 
-  - **Overlay repository:** read-only upstream source + sparse user overrides; pure `applyOverrides`; writes only to overrides.
+  - **Overlay repository:** a `Repository` decorator over a read-only upstream plus sparse user overrides; pure `applyOverrides`; writes only to overrides. This is optional composition — not a Core Contract read/write factory split.
   - **URL bulk edit:** selection and category tabs in search params; batched mutation; per-row auth.
   - **Debounced free-text search (URL-as-state):** Keep filters in validated search params + `loaderDeps`, but do **not** control free-text search from the URL on every keystroke. Use an uncontrolled text input (`defaultValue` from the current search param) and a debounced callback — your UI library's debounce hook, `@tanstack/pacer`, or a small local helper — to `navigate({ replace: true, search })` only after the user pauses. Discrete filters (dropdowns, tabs, segmented controls) may navigate immediately. Call `navigate` from the debounce callback — do not watch a debounced value in `useEffect` just to navigate. **UI-agnostic:** this skill does not prescribe a component library; follow the project's UI kit in **AGENTS.md §3** for concrete input/select components.
 

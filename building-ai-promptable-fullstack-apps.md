@@ -42,18 +42,15 @@ The core principle is simple: **every external service is accessed through an in
 
 ### The Repository Pattern
 
-All data access goes through a `ReadRepository` + `WritableRepository` interface:
+All data access goes through a `Repository` interface:
 
 ```typescript
-export interface ReadRepository {
+export interface Repository {
   getTasks(filter?: TaskFilter): Promise<Task[]>
   getTask(taskId: string): Promise<Task | null>
   getAssignees(): Promise<string[]>
-}
-
-export interface WritableRepository {
-  createTask(input: TaskInput, createdBy?: string): Promise<Task>
-  updateTask(taskId: string, input: Partial<TaskInput>): Promise<Task | null>
+  createTask(input: TaskInput, trace?: TraceabilityContext): Promise<Task>
+  updateTask(taskId: string, input: Partial<TaskInput>, trace?: TraceabilityContext): Promise<Task | null>
   deleteTask(taskId: string): Promise<boolean>
 }
 ```
@@ -80,7 +77,7 @@ export const authMiddleware = createMiddleware().server(async ({ next, request }
 
   let userProfile = null
   if (user.email) {
-    userProfile = await getReadRepository().getUserProfile(user.email)
+    userProfile = await getRepository().getUserProfile(user.email)
   }
 
   return next({ context: { user, userProfile } })
@@ -210,7 +207,7 @@ Adding a new domain entity is a six-step process:
 5. **Routes** for the UI pages
 6. **Tests** for the seed repository, new utilities, and E2E flows (Playwright runs against seed data)
 
-Because every layer follows the same pattern, adding a new entity takes minutes, not hours. The database, AI provider, and observability layer are behind interfaces; to swap one, implement the interface and update the factory (e.g. `getRepository.ts` for the repository, the AI adapter factory, or the observability factory in the repo).
+Because every layer follows the same pattern, adding a new entity takes minutes, not hours. The database, AI provider, and observability layer are behind interfaces; to swap one, implement the interface and update the factory (e.g. `getRepository.server.ts` for the repository), the AI adapter factory, or the observability factory in the repo).
 
 ## Conclusion
 
