@@ -95,6 +95,21 @@ Body
 		).toThrow(/exceeds 1024 characters/)
 	})
 
+	it('rejects a non-string description', () => {
+		expect(() =>
+			parseSkillMarkdown(
+				`---
+name: example-skill
+description: 123
+---
+
+Body
+`,
+				{ directoryName: 'example-skill', relativePath: '.agents/skills/example-skill/SKILL.md' },
+			),
+		).toThrow(/must be a string/)
+	})
+
 	it('rejects descriptions that omit Waza routing phrases', () => {
 		expect(() =>
 			parseSkillMarkdown(

@@ -86,7 +86,10 @@ export function parseSkillMarkdown(raw, { directoryName, relativePath }) {
 		throw new Error(`${relativePath}: frontmatter.name "${name}" must match the parent directory "${directoryName}"`)
 	}
 
-	const description = flattenDescription(frontmatter.description ?? '')
+	if (typeof frontmatter.description !== 'string') {
+		throw new Error(`${relativePath}: frontmatter.description is required and must be a string`)
+	}
+	const description = flattenDescription(frontmatter.description)
 	if (!description) {
 		throw new Error(`${relativePath}: frontmatter.description is required`)
 	}
