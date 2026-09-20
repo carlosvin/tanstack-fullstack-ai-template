@@ -2,8 +2,8 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { formatCompanionInstallCommand, renderCompanionSkillsBlock } from './buildSkills.mjs'
 import { createSkillEvals, runSkillEvals } from './runSkillEvals.mjs'
+import { formatCompanionInstallCommand } from './validateSkills.mjs'
 
 const createdDirs: string[] = []
 
@@ -40,7 +40,30 @@ const FIXTURE_SKILLS = [
 ] as const
 
 function fixtureSkillMd(skill: (typeof FIXTURE_SKILLS)[number], extraSections = '') {
-	return `## Skill routing\n${renderCompanionSkillsBlock(skill)}${extraSections}`
+	const companions = skill.companionSkills
+		.map(
+			(companion) =>
+				`- **\`${companion.id}\`** (${companion.relationship}) — ${companion.summary}
+  \`\`\`bash
+  ${formatCompanionInstallCommand(companion.id)}
+  \`\`\`
+`,
+		)
+		.join('\n')
+
+	return `---
+name: ${skill.id}
+description: Fixture skill for ${skill.id} used in Agent Skills evals. Install with npx skills add carlosvin/tanstack-fullstack-ai-template --skill ${skill.id}.
+license: MIT
+---
+
+## Companion skills (install if missing)
+
+${companions}
+
+## Skill routing
+
+${extraSections}`
 }
 
 async function createMinimalWorkspace(overrides = {}) {
@@ -81,7 +104,6 @@ async function createMinimalWorkspace(overrides = {}) {
 		'src/routes/api/chat.ts': 'chat({ agentLoopStrategy: maxIterations(10) })\n',
 		'vite.config.ts': "tanstackStart({ importProtection: { behavior: 'error' } })\n",
 		...skillFiles,
-		'skills/registry.json': JSON.stringify({ skills: FIXTURE_SKILLS }),
 		'instrument.env.shared.mts': 'export const DeploymentEnvSchema = {}\n',
 		'instrument.env.mts': 'export function resolveSentryBootstrapEnv() {}\n',
 		'instrument.shared.mts': 'export function initSentry() {}\n',

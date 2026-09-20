@@ -10,13 +10,25 @@ Built with [TanStack Start](https://tanstack.com/start) — with every external 
 
 ## Use the Agent Skill
 
+This repo publishes **[Agent Skills](https://agentskills.io)** in `.agents/skills/*/SKILL.md` (the only skill format).
+
+Install them into your coding agent with [`npx skills`](https://github.com/vercel-labs/skills):
+
+```bash
+npx skills add carlosvin/tanstack-fullstack-ai-template
+```
+
+Or install one skill at a time:
+
 ```bash
 npx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-promptable-fullstack-app-template
 npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env
 npx skills add carlosvin/tanstack-fullstack-ai-template --skill reference-tech-stack
 ```
 
-Install details, skill roles, and global flags: **[skills/README.md](./skills/README.md)**. **[AGENTS.md](./AGENTS.md)** is the ops handbook; the architecture skill is the contract agents must not break.
+Similar: `gh skill install carlosvin/tanstack-fullstack-ai-template`.
+
+Install details, skill roles, and global/`--agent` flags: **[skills/README.md](./skills/README.md)**. **[AGENTS.md](./AGENTS.md)** is the ops handbook; the architecture skill is the contract agents must not break.
 
 **Why it helps:** fewer regressions when scaffolding features, migrating code, or refactoring routes — agents follow the same non-obvious invariants the template depends on.
 
@@ -24,12 +36,13 @@ Install details, skill roles, and global flags: **[skills/README.md](./skills/RE
 
 ### Other ways to install
 
-- **Shell installer** (Cursor / Windsurf / Claude Code global dirs):  
+- **GitHub CLI:** `gh skill install carlosvin/tanstack-fullstack-ai-template`
+- **Manual copy:** copy `.agents/skills/<id>/` to `~/.cursor/skills/`, `~/.claude/skills/`, or your editor’s documented skills path.
+- **Using this repo as-is:** agents that read `.agents/skills/` already see the skills — no extra step.
+- **Shell fallback** (only if `npx skills` / `gh skill` are unavailable):  
   `curl -sL https://raw.githubusercontent.com/carlosvin/tanstack-fullstack-ai-template/main/scripts/skills/install.sh | bash -s -- --force`
-- **Manual copy:** copy `.agents/skills/tanstack-promptable-fullstack-app-template/` to `~/.cursor/skills/`, `~/.claude/skills/`, or your editor’s documented skills path.
-- **Using this repo as-is:** Windsurf and compatible tools can read `.agents/skills/` directly — no extra step.
 
-More user-focused detail: **[skills/README.md](./skills/README.md)** · Editing/regenerating the skill (YAML, CI): **[skills/AUTHORING.md](./skills/AUTHORING.md)**.
+More user-focused detail: **[skills/README.md](./skills/README.md)** · Editing/validating skills: **[skills/AUTHORING.md](./skills/AUTHORING.md)**.
 
 ### Try it
 
@@ -307,9 +320,8 @@ pnpm test:e2e   # Run E2E tests (Playwright, uses seed data)
 pnpm lint       # Lint + typecheck (Biome)
 pnpm format     # Auto-format (Biome)
 
-# skill dev commands
-pnpm skills:build  # Generate Cursor + markdown skill artifacts
-pnpm skills:check  # Validate canonical skills and check for drift
+# skill authoring
+pnpm skills:check  # Validate Agent Skills (agentskills.io SKILL.md)
 ```
 
 ## Tech Stack
@@ -350,7 +362,7 @@ Then follow the end-to-end workflow:
 
 ### Option B: AI-assisted (skill)
 
-See **[Use the Agent Skill](#use-the-agent-skill)** above for install commands, quick prompts, and what the skill enforces. Contributor workflow (edit YAML, regenerate): **[skills/AUTHORING.md](./skills/AUTHORING.md)**.
+See **[Use the Agent Skill](#use-the-agent-skill)** above for install commands, quick prompts, and what the skill enforces. Contributor workflow: **[skills/AUTHORING.md](./skills/AUTHORING.md)**.
 
 ### Option C: Adopt Incrementally (Existing Project)
 

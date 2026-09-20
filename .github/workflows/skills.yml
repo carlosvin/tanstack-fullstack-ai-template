@@ -28,10 +28,10 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
-            - name: Validate generated skill outputs
+            - name: Validate Agent Skills
               run: pnpm skills:check
 
-            - name: Run skill builder tests
+            - name: Run Agent Skills validator tests
               run: pnpm test:skills
 
             - name: Run skill evals against example app

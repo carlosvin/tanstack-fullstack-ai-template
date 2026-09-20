@@ -1,20 +1,13 @@
 ---
 name: reference-tech-stack
-description: "Companion to tanstack-promptable-fullstack-app-template. Documents
-  this template's opinionated vendor choices — Zod, Mantine, lucide-react,
-  MongoDB + seed, jose JWT auth, OpenAI adapter, pino + Sentry, react-markdown,
-  Biome, Vitest, Playwright, Netlify — so agents implement against the reference
-  app without baking those choices into the architecture skill. Companion
-  skills: tanstack-promptable-fullstack-app-template (parent),
-  observability-and-env (companion). Install missing companions with npx skills
-  add carlosvin/tanstack-fullstack-ai-template --skill <id>. Project: TanStack
-  AI-Promptable Full-Stack Template. Triggers on \"reference tech stack\",
-  \"opinionated stack\", \"which UI library\", \"use Mantine\", \"use Zod\",
-  \"MongoDB repository\", \"lucide icons\", \"Biome lint\", \"Netlify deploy\",
-  \"template defaults\", \"stack choices\", \"AppShell\", \"Mantine navbar\"."
+description: "Documents this template's opinionated vendor choices — Zod, Mantine, lucide-react, MongoDB + seed, jose JWT, OpenAI adapter, pino + Sentry, react-markdown, Biome, Vitest, Playwright, Netlify. Use when matching the reference app stack. Parent skill: tanstack-promptable-fullstack-app-template. Install with npx skills add carlosvin/tanstack-fullstack-ai-template --skill reference-tech-stack."
+license: MIT
+compatibility: Agents that load Agent Skills (agentskills.io) from .agents/skills.
+metadata:
+  author: Carlos Martin-Sanchez
+  version: "1.30.0"
+  repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
-
-> This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.
 
 ## Companion skills (install if missing)
 
@@ -94,4 +87,4 @@ should follow a different UX pattern.
 
 ## Verification
 
-After stack-affecting changes: `pnpm skills:build`, `pnpm skills:check`, and AGENTS.md §15.
+After stack-affecting changes: update this `SKILL.md`, run `pnpm skills:check`, and follow AGENTS.md §15.

@@ -1,26 +1,13 @@
 ---
 name: observability-and-env
-description: 'Companion to tanstack-promptable-fullstack-app-template. Use when
-  adding structured logging, centralized environment validation (runtime
-  schemas), error-tracking bootstrap, or fixing env/shellSession leaks in a
-  TanStack Start app. Teaches interface-first observability patterns: parse env
-  once, inject via middleware, project a browser-safe shellSession, and keep
-  process.env out of handlers. The reference app uses pino + Sentry behind
-  ObservabilityService — swap vendors without changing middleware or handler
-  contracts. Companion skills: tanstack-promptable-fullstack-app-template
-  (parent), reference-tech-stack (companion). Install missing companions with
-  npx skills add carlosvin/tanstack-fullstack-ai-template --skill <id>. Project:
-  TanStack AI-Promptable Full-Stack Template. Triggers on "add logging", "set up
-  logging", "structured logging", "pino logger", "sentry init", "error
-  tracking", "opentelemetry", "instrument server", "instrument.server.mts",
-  "instrument.server.mjs", "env schema", "environment validation", "centralize
-  observability", "createModuleLogger", "createServerLogger", "webEnv",
-  "webServerEnv", "shellSession", "getBrowserShellSession", "webEnvMiddleware",
-  "LOG_LEVEL", "SENTRY_DSN", "serverEnv leak", "window.__ENV__", "process.env in
-  handler", "process.env in application code".'
+description: "Use when adding structured logging, centralized environment validation, error-tracking bootstrap, or fixing env/shellSession leaks in a TanStack Start app. Parse env once, inject via middleware, project a browser-safe shellSession, and keep process.env out of handlers. Parent skill: tanstack-promptable-fullstack-app-template. Install with npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env."
+license: MIT
+compatibility: Agents that load Agent Skills (agentskills.io) from .agents/skills.
+metadata:
+  author: Carlos Martin-Sanchez
+  version: "1.30.0"
+  repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
-
-> This file is generated from `skills/src/*.skill.yaml`. Do not edit manually.
 
 ## Companion skills (install if missing)
 

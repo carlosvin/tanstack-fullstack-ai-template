@@ -1,6 +1,6 @@
 # Skill evals
 
-Automated static checks that validate the **example app** against the generated skills. Run locally or in CI via `pnpm test:skill-evals`.
+Automated static checks that validate the **example app** against the Agent Skills in `.agents/skills/`. Run locally or in CI via `pnpm test:skill-evals`.
 
 ## Commands
 
@@ -36,12 +36,12 @@ pnpm test:skill-evals -- --skill reference-tech-stack
 - AGENTS.md does not claim chat UI always renders
 - Bounded agent loop in `chat.ts`
 - `importProtection` in `vite.config.ts`
-- Generated skills: reciprocal companions, Skill routing, companion install commands
+- Agent Skills: reciprocal companions, Skill routing, `npx skills` companion install commands
 - Architecture skill documents **Fixed vs swappable stack** and stays vendor-agnostic in prose
 
 ### `reference-tech-stack`
 
-- Generated skill includes a **Stack map** section
+- `SKILL.md` includes a **Stack map** section
 
 ## Manual pressure scenarios
 

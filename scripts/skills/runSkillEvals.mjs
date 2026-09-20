@@ -2,7 +2,12 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { findMissingCompanionReciprocity, formatCompanionInstallCommand, getSkillPaths } from './buildSkills.mjs'
+import {
+	findMissingCompanionReciprocity,
+	formatCompanionInstallCommand,
+	getSkillPaths,
+	loadSkills,
+} from './validateSkills.mjs'
 
 const defaultRootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
@@ -417,47 +422,44 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 			id: 'skills-companion-and-routing',
 			skill: 'tanstack-promptable-fullstack-app-template',
 			description:
-				'registry companions are reciprocal; each generated SKILL.md has routing + companion install commands',
+				'Agent Skills companions are reciprocal; each SKILL.md has routing + npx skills companion install commands',
 			async run() {
-				const { registryPath, agentSkillsDir } = getSkillPaths(rootDir)
+				const { agentSkillsDir } = getSkillPaths(rootDir)
 				try {
-					await fs.access(registryPath)
+					await fs.access(agentSkillsDir)
 				} catch {
-					// App-only fixtures may omit the registry; skip metadata checks.
 					return pass()
 				}
 
-				const registry = JSON.parse(await readText(registryPath))
-				const skills = registry.skills ?? []
+				let skills
+				try {
+					skills = await loadSkills({ agentSkillsDir, rootDir })
+				} catch (error) {
+					return fail(error instanceof Error ? error.message : String(error))
+				}
+
 				if (skills.length === 0) {
-					return fail('registry.json has no skills')
+					return fail('No Agent Skills found in .agents/skills/')
 				}
 
 				const missing = findMissingCompanionReciprocity(skills)
 				if (missing.length > 0) {
 					return fail(
-						'Companion skills must be reciprocal in registry.json',
+						'Companion skills must be reciprocal in .agents/skills SKILL.md files',
 						missing.map((entry) => `${entry.skillId} → ${entry.companionId}: ${entry.reason}`),
 					)
 				}
 
 				for (const skill of skills) {
-					const skillMdPath = path.join(agentSkillsDir, skill.id, 'SKILL.md')
-					try {
-						await fs.access(skillMdPath)
-					} catch {
-						return fail(`Missing SKILL.md for ${skill.id}`)
-					}
-					const skillMd = await readText(skillMdPath)
-					if (!/## Skill routing/.test(skillMd)) {
+					if (!/## Skill routing/.test(skill.body)) {
 						return fail(`SKILL.md for ${skill.id} missing Skill routing section`)
 					}
-					if (!/## Companion skills \(install if missing\)/.test(skillMd)) {
+					if (!/## Companion skills \(install if missing\)/.test(skill.body)) {
 						return fail(`SKILL.md for ${skill.id} missing companion install section`)
 					}
 					for (const companion of skill.companionSkills ?? []) {
 						const installCmd = formatCompanionInstallCommand(companion.id)
-						if (!skillMd.includes(installCmd)) {
+						if (!skill.body.includes(installCmd)) {
 							return fail(`SKILL.md for ${skill.id} missing install command for ${companion.id}`)
 						}
 					}
