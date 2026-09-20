@@ -100,4 +100,4 @@ should follow a different UX pattern.
 
 ## Verification
 
-After stack-affecting changes: update this `SKILL.md`, run `pnpm skills:check`, and follow AGENTS.md §15.
+After stack-affecting changes: update this `SKILL.md`, run `pnpm skills:check` and `pnpm skills:waza`, and follow AGENTS.md §15.

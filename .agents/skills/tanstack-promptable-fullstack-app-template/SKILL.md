@@ -481,6 +481,6 @@ interface Repository {
 
 ## Verification
 
-**This template repo (skill authors):** edit `.agents/skills/<id>/SKILL.md`, then run `pnpm skills:check`.
+**This template repo (skill authors):** edit `.agents/skills/<id>/SKILL.md`, then run `pnpm skills:check` (companions / install commands) and `pnpm skills:waza` (Agent Skills spec; required in CI).
 
 **Apps built from the template:** follow **AGENTS.md** §15 — e.g. `pnpm format && pnpm lint && pnpm test && pnpm build`; smoke with dev server and `/api/health` when configuration allows.
