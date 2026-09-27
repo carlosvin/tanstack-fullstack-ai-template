@@ -19,7 +19,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.31.0"
+  version: "1.32.0"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -84,6 +84,7 @@ Pick **one validator library** per app and use it consistently across router sea
 - **Hand-rolled boundary parsers:** `Array.find` on a const tuple, a homemade type guard, or `as` to turn DB/API/widget strings into domain unions instead of `Schema.parse()` (URL params: `validateSearch`).
 - **UI-only auth:** hiding buttons in components but skipping guards in server handlers.
 - **Type escape hatches:** `any`, loose `Record<string, unknown>`, or `as` after `Schema.parse` — fix types instead of recasting.
+- **Switch on a closed union:** a `switch` that maps a schema-inferred union to a label, color, or handler. Use `as const satisfies Record<Union, Value>` and index the map so a missing key is a type error.
 - **Duplicated parent work:** copying a parent layout’s `beforeLoad`, loader, or expensive read into each child route.
 - **Server logic in loaders:** `process.env` secrets, DB drivers, or repository imports inside a route `loader` or route file top-level imports.
 - **Wrong server primitive:** `createServerFn` for internal singletons that must never be RPC-callable — use `createServerOnlyFn` instead.
@@ -102,7 +103,7 @@ Pick **one validator library** per app and use it consistently across router sea
    - **URL search params:** TanStack Router `validateSearch` (the search schema is the validator).
    - **Other untrusted edges:** `createServerFn` `.inputValidator`, AI `toolDefinition` inputSchema, env (companion `observability-and-env`), and third-party widgets that type values as bare `string` (parse with the **same** schema).
    After a value has crossed a trust boundary, keep **schema-inferred types** through UI, handlers, and tools — do not widen back to `string` and re-parse with a helper that duplicates the schema.
-4. **TypeScript inside the typed flow:** After trust boundaries, preserve **inferred types end-to-end** — prefer `satisfies`, discriminated unions, `as const` tuples, and **exhaustive `switch`** (e.g. `default` branch calling `assertNever`) over `any`, broad `unknown` plumbing, or `as` casts (only use `as` at documented third-party/library seams per AGENTS.md). TypeScript narrows **already-typed** unions; it is not a substitute for `Schema.parse()` on untrusted input.
+4. **TypeScript inside the typed flow:** After trust boundaries, preserve **inferred types end-to-end** — prefer `satisfies`, discriminated unions, `as const` tuples, and a **strongly typed map** (`as const satisfies Record<Union, Value>`, then `MAP[key]`) over `any`, broad `unknown` plumbing, or `as` casts (only use `as` at documented third-party/library seams per AGENTS.md). A missing map key is a type error. TypeScript narrows **already-typed** unions; it is not a substitute for `Schema.parse()` on untrusted input.
 5. **Repository vs tools:** Repository implementations use repository-layer schemas only. **Server functions and AI tools share the same tools-layer schemas** (`.inputValidator` / `toolDefinition` inputSchema + `Schema.parse`). UI and AI consume tools-layer types only — never import repository schemas at those edges.
 6. **Server functions:** GET queries throw on failure; POST mutations chain `.middleware([requireAuthMiddleware, invalidateMiddleware])`; handlers return data or throw `HttpError`; callers normalize with `processResponse` / `safeToolHandler` / `createSafeServerTool`.
 7. **Routes:** Thin route files (`createFileRoute`, `validateSearch`, `loaderDeps`, `loader`, `component`); page UI in `src/components/`. **Loaders** fetch via server functions — no `useEffect` data fetching for route data.
@@ -125,6 +126,7 @@ Scan before changing code:
 - **Parse both directions:** tools → repository inputs and repository rows → tools/API outputs each end in the target layer’s `Schema.parse()` (pure mapper functions are fine if the final step is always `.parse()`).
 - **Trust boundaries use the validator:** repository implementations `Schema.parse` DB documents / API JSON; routes use `validateSearch`; untyped widget values use the same schema `.parse()` — no `Array.find` / homemade parsers that duplicate enums.
 - **No type erasure:** after `Schema.parse` / `validateSearch`, carry **schema-inferred types** through server functions, repos, tools, and components — do not widen back to `Record<string, unknown>` / `any`.
+- **Closed lookups are typed maps:** labels, colors, and per-variant handlers are `as const satisfies Record<Union, Value>` and indexed by the union (`MAP[key]`). A missing key fails typecheck. Reference: `src/utils/taskDisplay.ts`.
 - **Repository interfaces = repo-layer types only:** mapping lives beside schemas / mappers — not in React components.
 - **Auth ticket is repository-backed and server-enforced:** middleware builds the ticket (e.g. `getRepository().getUserAccess(email)`); guards run in **server handlers**, never UI-only.
 - **Writes use `TraceabilityContext`:** pass audit fields from the ticket (or stock `context.user.email`) through a single context object on `Repository` mutations — avoid sprinkling raw `email` arguments. Repository implementations must **persist** `createdBy` / `lastModifiedBy` from that context onto the entity.
@@ -280,7 +282,7 @@ export const Route = createFileRoute('/tasks/')({
 })
 ```
 
-**Trust boundaries:** Untrusted data becomes typed **only** at the edges. Repository implementations parse DB rows / HTTP JSON with `RepoLayerSchema.parse(...)` (reference app: `parseTaskRepo`). Router search is already typed after `validateSearch` — page components receive inferred search types. Interior code (colors, labels, exhaustive switches) consumes those types; it does not re-implement the enum.
+**Trust boundaries:** Untrusted data becomes typed **only** at the edges. Repository implementations parse DB rows / HTTP JSON with `RepoLayerSchema.parse(...)` (reference app: `parseTaskRepo`). Router search is already typed after `validateSearch` — page components receive inferred search types. Interior code (colors, labels, per-variant handlers) consumes those types through a strongly typed `Record`; it does not re-implement the enum.
 
 Widget libraries often type `onChange` as `string | null`. That is still an untrusted edge — parse with the **same schema** (`OptionalStatusSchema.parse(value)`), not `STATUSES.find((s) => s === value)`.
 
@@ -305,7 +307,7 @@ function toToolTask(row: TaskRepo): z.infer<typeof TaskToolSchema> {
 }
 ```
 
-**TypeScript discipline (complements runtime validation):** the validator (`Schema.parse` / `validateSearch`) checks **at trust boundaries**; TypeScript keeps the interior honest — exhaustive `switch`, `satisfies`, `assertNever`. Do **not** add a second parser (`Array.find`, ad-hoc guards) for the same closed vocabulary.
+**TypeScript discipline (complements runtime validation):** the validator (`Schema.parse` / `validateSearch`) checks **at trust boundaries**; TypeScript keeps the interior honest with `satisfies` and a closed `Record`. Do **not** add a second parser (`Array.find`, ad-hoc guards) for the same closed vocabulary.
 
 ```typescript
 type TaskStatus = 'pending' | 'done'
@@ -315,21 +317,12 @@ const STATUS_LABEL = {
   done: 'Done',
 } as const satisfies Record<TaskStatus, string>
 
-function assertNever(x: never): never {
-  throw new Error(`Unexpected ${String(x)}`)
-}
-
 function labelForStatus(status: TaskStatus): string {
-  switch (status) {
-    case 'pending':
-      return STATUS_LABEL.pending
-    case 'done':
-      return STATUS_LABEL.done
-    default:
-      return assertNever(status)
-  }
+  return STATUS_LABEL[status]
 }
 ```
+
+When each variant needs different behavior, store a function in the same map (`satisfies Record<TaskStatus, () => string>`) and call `HANDLERS[status]()`. Adding a union member without a map entry is a type error. Reference app: `statusColor` / `priorityColor` in `src/utils/taskDisplay.ts`.
 
 **Virtual / computed fields:** If semantics cannot live in schema metadata, keep a small registry next to the derivation and expose `explainField` — do not duplicate fields already described by schemas.
 

@@ -386,6 +386,46 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 			},
 		},
 		{
+			id: 'architecture-typed-lookup-map',
+			skill: 'tanstack-promptable-fullstack-app-template',
+			description: 'Closed unions use a strongly typed Record; the skill does not prescribe switch + assertNever',
+			async run() {
+				const { agentSkillsDir } = getSkillPaths(rootDir)
+				const skillMdPath = path.join(agentSkillsDir, 'tanstack-promptable-fullstack-app-template', 'SKILL.md')
+				try {
+					await fs.access(skillMdPath)
+				} catch {
+					return pass()
+				}
+				const skillMd = await readText(skillMdPath)
+				if (/assertNever/.test(skillMd)) {
+					return fail('Architecture skill must not prescribe assertNever; use a typed Record lookup')
+				}
+				const core = skillMd.split('## Core Contract')[1]?.split('## Architecture Checklist')[0] ?? ''
+				if (!/strongly typed map/.test(core) || !/satisfies Record<Union, Value>/.test(core)) {
+					return fail('Core Contract must prefer a strongly typed map (satisfies Record<Union, Value>)')
+				}
+				if (!/as const satisfies Record<TaskStatus, string>/.test(skillMd) || !/STATUS_LABEL\[status\]/.test(skillMd)) {
+					return fail('Architecture skill must show a Record lookup (STATUS_LABEL[status])')
+				}
+
+				const taskDisplayPath = path.join(rootDir, 'src/utils/taskDisplay.ts')
+				try {
+					const taskDisplay = await readText(taskDisplayPath)
+					if (/assertNever/.test(taskDisplay) || /switch\s*\(/.test(taskDisplay)) {
+						return fail('taskDisplay.ts must look up colors via a typed Record, not switch or assertNever')
+					}
+					if (!/satisfies Record<TaskStatus/.test(taskDisplay) || !/satisfies Record<TaskPriority/.test(taskDisplay)) {
+						return fail('taskDisplay.ts must type color maps with satisfies Record')
+					}
+				} catch {
+					// App-only fixtures may omit display helpers.
+				}
+
+				return pass()
+			},
+		},
+		{
 			id: 'architecture-outbound-tool-mapping',
 			skill: 'tanstack-promptable-fullstack-app-template',
 			description: 'serverFns maps repository rows through toToolTask / toToolUserProfile',
