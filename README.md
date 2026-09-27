@@ -59,7 +59,7 @@ Ask your agent:
 - **POST mutations** use auth + invalidation middleware; callers normalize errors consistently for UI and AI.
 - **AI:** expose repository capabilities as tools; client **navigate** / **invalidateRouter**; gate chat on availability; bounded agent loop in `chat()`.
 - **Parent layouts** own shared guards and expensive reads; children read parent loader data instead of duplicating work.
-- **TypeScript** after parsing: preserve inference — prefer `satisfies` and a strongly typed `Record` (indexed by the union) over `any` and loose `as` casts.
+- **TypeScript** after parsing: preserve inference — prefer `satisfies`, exhaustive handling, and guards over `any` and loose `as` casts.
 
 ## Architecture
 
