@@ -20,7 +20,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.0.0"
+  version: "1.1.0"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -49,7 +49,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 Use this skill when application or pipeline code reaches into database collections, HTTP clients, or other external systems directly, or when a large repository needs smaller, cohesive collection-level responsibilities.
 
-The examples are **language-agnostic patterns shown in TypeScript** (MongoDB driver + a runtime schema library). They are illustrative, not a required dependency. Translate them to the project's language, driver, and validation library. Resource lifetime uses the same ownership rules in Java (`AutoCloseable` / try-with-resources), Python (context-manager magic methods), and other runtimes with deterministic cleanup.
+The repository structure is shown in TypeScript with a MongoDB-shaped driver. That driver is illustrative. Boundary checks and resource lifetime are restated for other languages. This template's concrete validator package is named in **`reference-tech-stack`**; this skill does not require it.
 
 In this TanStack template, schema layers, server functions, and AI tools stay in the parent skill **`tanstack-promptable-fullstack-app-template`**. This skill owns how repository classes are split, injected, indexed, cleaned up, and disposed.
 
@@ -88,7 +88,7 @@ UI / pipeline steps / CLI / AI tools
 
 ## Contracts and data safety
 
-- Accept immutable inputs (`readonly T[]`, `Readonly<Options>`, readonly properties) and return domain shapes rather than driver documents. Define serializable shapes with the project's runtime schema system when available and validate at inbound/external boundaries.
+- Accept immutable inputs (`readonly T[]`, `Readonly<Options>`, readonly properties, frozen models) and return domain shapes rather than driver documents. Validate untrusted payloads once, at the inbound boundary, before they reach repository methods. See **Boundary validation**.
 - Bind each collection once as a private constructor property. Only implementation modules and small implementation-private bulk helpers should use driver primitives.
 - Each owner defines its own `createIndexes()` alongside the queries requiring those indexes. The composition root invokes initialization; a domain facade delegates to its children. Index creation must be safe to repeat. Do not copy index specifications into CLI scripts or pipeline steps.
 - Put inserts, upserts, deletes, run-window filters, and stale-record cleanup in the owning repository. A step determines *when* a complete refresh has succeeded; the repository determines *how* records are swept. Scope destructive cleanup to the intended source and refresh window; never sweep after a failed, partial, or invalid extraction. Test the guard as well as the filter.
@@ -98,19 +98,17 @@ UI / pipeline steps / CLI / AI tools
 
 ```ts
 import type { Collection, Db } from 'mongodb'
-import { z } from 'zod'
 
 interface IndexableRepository {
   createIndexes(): Promise<void>
 }
 
-const SnapshotSchema = z.object({
-  key: z.string().describe('Stable key within a source and period'),
-  source: z.string().describe('Origin of the refreshed data'),
-  period: z.string().describe('Refreshed reporting period'),
-  sourceRunId: z.string().describe('Run that last wrote this snapshot'),
-}).describe('Snapshot persisted by a full-refresh sync')
-type Snapshot = z.infer<typeof SnapshotSchema>
+interface Snapshot {
+  readonly key: string
+  readonly source: string
+  readonly period: string
+  readonly sourceRunId: string
+}
 type CleanupScope = Readonly<Pick<Snapshot, 'source' | 'period' | 'sourceRunId'>>
 
 interface SnapshotRepository extends IndexableRepository {
@@ -170,9 +168,52 @@ class MongoInventoryRepository implements InventoryRepository {
 }
 ```
 
-The caller invokes `cleanupStale` only after successfully fetching, validating, and upserting the *complete* source/period. Validate external rows with the snapshot schema (`parse` or `safeParse`) at the ingestion boundary; index and sweep predicates must agree on the source/period partition.
+The caller invokes `cleanupStale` only after successfully fetching, validating, and upserting the *complete* source/period. Index and sweep predicates must agree on the source/period partition.
 
 **Avoid:** `loader.collection('snapshots').drop()`, `db.collection('snapshots').createIndex(...)` in a pipeline step, or a facade that forwards `getCollection()` to callers.
+
+## Boundary validation
+
+Repository methods take domain values. Untrusted payloads — HTTP bodies, driver documents, files, queue messages — become those values once, at the ingestion boundary. A failed check fails the extract. An empty successful extract and a failed extract stay distinct.
+
+- **Runtime validators** are the usual tool where the type system does not observe external data. TypeScript types are erased at runtime. Python annotations are not enforced unless something checks them. Parse with one library and keep the parsed value. TypeScript examples: Zod, Valibot, ArkType (`parse` / `safeParse`). Python examples: Pydantic (`model_validate`), msgspec. One library per program.
+- In **strongly typed languages**, the domain type is usually the contract inside the program. A parallel schema library is less common once a value has been decoded. Decode bytes into that type at the boundary; a failed decode fails the extract. Put invariants the compiler cannot see (non-blank keys, closed enums, ranges) in the constructor or decoder. Add a runtime validator only for constraints the type still cannot express — Jakarta Bean Validation on Java, JSON Schema, or the language's equivalent.
+
+```ts
+// TypeScript. Types are erased, so the boundary needs a runtime validator.
+// Zod: SnapshotSchema.parse(row). Valibot: v.parse(SnapshotSchema, row). ArkType: snapshotType(row).
+const snapshot: Snapshot = parseSnapshot(untrustedRow)
+```
+
+```python
+# Python. Pydantic checks the payload at runtime. A type checker does not.
+from pydantic import BaseModel, ConfigDict
+
+class Snapshot(BaseModel):
+    model_config = ConfigDict(frozen=True)
+    key: str
+    source: str
+    period: str
+    source_run_id: str
+
+snapshot = Snapshot.model_validate(untrusted_row)
+```
+
+```java
+// Java. The record is the contract. Jackson, another decoder, or a hand-written
+// parser is the boundary. Bean Validation is optional, for rules the type cannot state.
+public record Snapshot(String key, String source, String period, String sourceRunId) {
+  public Snapshot {
+    if (key == null || key.isBlank()) {
+      throw new IllegalArgumentException("key");
+    }
+  }
+}
+
+Snapshot snapshot = mapper.readValue(json, Snapshot.class);
+```
+
+The same decode-into-the-type idea is `serde` in Rust, `encoding/json` into a struct in Go, and `System.Text.Json` into a `record` in C#. After `parseSnapshot`, `model_validate`, or `readValue` succeeds, pass that value to `upsert`. Parse again inside the repository only when the repository itself reads the untrusted driver document.
 
 ## Resource lifetime is not data cleanup
 

@@ -56,7 +56,7 @@ CI runs this in `.github/workflows/skills.yml` with a pinned `waza` binary. Conf
 
 ### `repository-architecture`
 
-- Skill documents boundary ownership, that disposers release resources, that `cleanupStale` sweeps rows, Java `AutoCloseable`, and Python `__aexit__`
+- Skill documents boundary ownership, runtime validators (including Pydantic) and decode-into-the-type for strongly typed languages, that disposers release resources, that `cleanupStale` sweeps rows, Java `AutoCloseable`, and Python `__aexit__`
 - Parent architecture skill lists `repository-architecture` as a companion
 - Database driver imports stay in `src/services/db/` and `src/services/repository/`
 

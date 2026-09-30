@@ -597,6 +597,10 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				}
 				const required = [
 					['## Boundary and ownership', 'Boundary and ownership section'],
+					['## Boundary validation', 'Boundary validation section'],
+					['runtime validator', 'Runtime validators for erased or dynamic types'],
+					['Pydantic', 'Python Pydantic example'],
+					['strongly typed', 'Strongly typed languages decode into the domain type'],
 					['## Resource lifetime is not data cleanup', 'Resource lifetime section'],
 					['Symbol.asyncDispose', 'TypeScript AsyncDisposable ownership'],
 					['AutoCloseable', 'Java AutoCloseable equivalent'],

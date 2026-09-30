@@ -397,7 +397,7 @@ Stock template equivalent — same rules; `requireAuthMiddleware` chains auth so
 
 Repository interfaces reference **repository-layer types** only. **`Repository`** mutations take an optional **`TraceabilityContext`** built from the auth ticket (stock template: helpers such as `createWriteTrace` / `updateWriteTrace` from `context.accessTicket.identity.email`) — not ad-hoc optional email parameters at each call site.
 
-Collection-level ownership (indexes, queries, stale-data cleanup) and resource lifetime (`AsyncDisposable`, Java `AutoCloseable`, Python context managers) live in companion skill **`repository-architecture`**. This section keeps the TanStack contract: tools-layer versus repository-layer types, and `TraceabilityContext` on writes.
+Collection-level ownership (indexes, queries, stale-data cleanup), boundary parsing across languages (runtime validators such as Zod or Pydantic, or a decode into the domain type in strongly typed languages), and resource lifetime (`AsyncDisposable`, Java `AutoCloseable`, Python context managers) live in companion skill **`repository-architecture`**. This section keeps the TanStack contract: tools-layer versus repository-layer types, and `TraceabilityContext` on writes.
 
 Implementations must **persist** audit fields from the trace onto the entity (`createdBy` on create, `lastModifiedBy` on update). Ignoring the `trace` argument is a contract violation.
 
