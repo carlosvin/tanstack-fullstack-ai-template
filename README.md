@@ -24,6 +24,7 @@ Or install one skill at a time:
 npx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-promptable-fullstack-app-template
 npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env
 npx skills add carlosvin/tanstack-fullstack-ai-template --skill reference-tech-stack
+npx skills add carlosvin/tanstack-fullstack-ai-template --skill repository-architecture
 ```
 
 Similar: `gh skill install carlosvin/tanstack-fullstack-ai-template`.

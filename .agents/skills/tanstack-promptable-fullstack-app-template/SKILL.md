@@ -9,7 +9,8 @@ description: >-
 
   DO NOT USE FOR: logging or env schemas (use observability-and-env),
   error-tracking bootstrap (use observability-and-env), picking this template
-  concrete packages (use reference-tech-stack).
+  concrete packages (use reference-tech-stack), collection repository lifetime
+  (use repository-architecture).
 
   INVOKES: TanStack Start server functions, repository interfaces, and companion
   skills.
@@ -19,7 +20,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.31.0"
+  version: "1.32.0"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -35,6 +36,11 @@ This template publishes **multiple** skills. If only **this** skill is installed
 - **`reference-tech-stack`** (companion) — Opinionated vendor map for this template's reference app. Install when implementing against the demo stack defaults (UI kit, validator, DB, deploy).
   ```bash
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill reference-tech-stack
+  ```
+
+- **`repository-architecture`** (companion) — Language-agnostic repository architecture: injected collection owners, indexes, stale-data cleanup, and resource lifetime. Install when designing or refactoring repository contracts.
+  ```bash
+  npx skills add carlosvin/tanstack-fullstack-ai-template --skill repository-architecture
   ```
 
 Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --list`
@@ -54,6 +60,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 | New entity, routes, schemas, AI tools, auth, server boundaries | **This skill** |
 | Logging, error tracking, `instrument.*.mts`, `src/env/`, `shellSession`, env leaks | **`observability-and-env`** |
 | "Which package does this template use?" / match the demo app stack | **`reference-tech-stack`** |
+| Collection repositories, indexes, stale-data cleanup, resource lifetime | **`repository-architecture`** |
 | Architecture + env/logging | **This skill** + **`observability-and-env`** |
 | Scaffolding this template as-is | **This skill** + **`reference-tech-stack`** (+ observability when touching env) |
 
@@ -62,7 +69,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 1. Read **Core Contract** first — it is the non-negotiable architecture.
 2. Run the **Architecture Checklist** before every non-trivial change.
 3. Jump to **Server execution boundaries**, **Schema Boundaries**, **Request Context**, or **Special Patterns** only when that concern applies. Special Patterns are not Core Contract. **Mobile first** is the default layout stance — ask before choosing a different UX pattern.
-4. Use **[AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md)** for operational how-to — not for inventing alternate architecture. **This skill is vendor-agnostic** for UI kits and observability SDKs. Concrete packages for *this* template live in companion skill **`reference-tech-stack`**; env/logging setup lives in **`observability-and-env`**.
+4. Use **[AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md)** for operational how-to — not for inventing alternate architecture. **This skill is vendor-agnostic** for UI kits and observability SDKs. Concrete packages for *this* template live in companion skill **`reference-tech-stack`**; env/logging setup lives in **`observability-and-env`**. Collection ownership, indexes, stale-data cleanup, and resource lifetime live in **`repository-architecture`**.
 
 ## Fixed vs swappable stack
 
@@ -390,6 +397,8 @@ Stock template equivalent — same rules; `requireAuthMiddleware` chains auth so
 
 Repository interfaces reference **repository-layer types** only. **`Repository`** mutations take an optional **`TraceabilityContext`** built from the auth ticket (stock template: helpers such as `createWriteTrace` / `updateWriteTrace` from `context.accessTicket.identity.email`) — not ad-hoc optional email parameters at each call site.
 
+Collection-level ownership (indexes, queries, stale-data cleanup) and resource lifetime (`AsyncDisposable`, Java `AutoCloseable`, Python context managers) live in companion skill **`repository-architecture`**. This section keeps the TanStack contract: tools-layer versus repository-layer types, and `TraceabilityContext` on writes.
+
 Implementations must **persist** audit fields from the trace onto the entity (`createdBy` on create, `lastModifiedBy` on update). Ignoring the `trace` argument is a contract violation.
 
 Auth for writes lives on **POST server functions** (`requireAuthMiddleware`), not on a second repository type.
@@ -478,6 +487,7 @@ interface Repository {
 | Full validation checklist (format, lint, test, build) | §15 |
 | Public runtime config (`shellSession`, not `window.__ENV__`) | §13 + **`observability-and-env`** |
 | Opinionated package map for this template | **`reference-tech-stack`** |
+| Repository ownership, indexes, stale cleanup, resource lifetime | **`repository-architecture`** |
 
 ## Verification
 

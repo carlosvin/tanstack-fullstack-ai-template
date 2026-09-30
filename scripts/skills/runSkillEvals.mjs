@@ -582,6 +582,73 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				return pass()
 			},
 		},
+		{
+			id: 'repository-architecture-skill-contract',
+			skill: 'repository-architecture',
+			description: 'Repository architecture skill documents ownership, resource lifetime, and Java/Python equivalents',
+			async run() {
+				const { agentSkillsDir } = getSkillPaths(rootDir)
+				const skillMdPath = path.join(agentSkillsDir, 'repository-architecture', 'SKILL.md')
+				let skillMd
+				try {
+					skillMd = await readText(skillMdPath)
+				} catch {
+					return pass()
+				}
+				const required = [
+					['## Boundary and ownership', 'Boundary and ownership section'],
+					['## Resource lifetime is not data cleanup', 'Resource lifetime section'],
+					['Symbol.asyncDispose', 'TypeScript AsyncDisposable ownership'],
+					['AutoCloseable', 'Java AutoCloseable equivalent'],
+					['__aexit__', 'Python async context-manager magic method'],
+					['Never perform stale-data deletion in a disposer', 'Disposer must not sweep stale data'],
+					['## Migration and verification workflow', 'Migration workflow'],
+				]
+				const missing = required.filter(([needle]) => !skillMd.includes(needle)).map(([, label]) => label)
+				if (missing.length > 0) {
+					return fail('repository-architecture skill is missing required contract text', missing)
+				}
+
+				const parentPath = path.join(agentSkillsDir, 'tanstack-promptable-fullstack-app-template', 'SKILL.md')
+				try {
+					const parent = await readText(parentPath)
+					if (!/\*\*`repository-architecture`\*\*\s*\(companion\)/.test(parent)) {
+						return fail('Parent architecture skill must list repository-architecture as a companion')
+					}
+				} catch {
+					// Partial fixtures may omit the parent skill.
+				}
+				return pass()
+			},
+		},
+		{
+			id: 'repository-driver-confined',
+			skill: 'repository-architecture',
+			description: 'Database driver imports stay in the composition root and repository implementations',
+			async run() {
+				let srcFiles
+				try {
+					srcFiles = await walkFiles(path.join(rootDir, 'src'), { extensions: ['.ts', '.tsx', '.mts'] })
+				} catch {
+					return pass()
+				}
+				const allowedPrefixes = ['src/services/db/', 'src/services/repository/']
+				const driverImport = /from\s+['"]mongodb['"]|new MongoClient\b|\.collection\s*(?:<[^>]+>)?\(/
+				const violations = []
+				for (const filePath of srcFiles) {
+					const rel = relative(rootDir, filePath)
+					if (rel.endsWith('.test.ts') || rel.endsWith('.test.tsx')) continue
+					if (allowedPrefixes.some((prefix) => rel.startsWith(prefix))) continue
+					const content = await readText(filePath)
+					if (driverImport.test(content)) {
+						violations.push(rel)
+					}
+				}
+				return violations.length === 0
+					? pass()
+					: fail('Database driver access must stay in src/services/db and src/services/repository', violations)
+			},
+		},
 	]
 }
 

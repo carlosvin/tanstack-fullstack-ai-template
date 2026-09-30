@@ -5,6 +5,7 @@ This repo ships **[Agent Skills](https://agentskills.io)** — one `SKILL.md` pe
 - **`tanstack-promptable-fullstack-app-template`** — **architecture contract**: interface-first services, three schema layers, loader-first routes, URL-as-state, AI tool coverage, server/client boundaries, middleware-inferred request context. **Vendor-agnostic** for UI kits and observability SDKs. **Mobile first** by default; ask the developer if the app should follow a different UX pattern.
 - **`observability-and-env`** — **companion recipe**: centralized env parsing, structured logging + error-tracking bootstrap behind `ObservabilityService`, `webEnvMiddleware`, and `getBrowserShellSession` (no `window.__ENV__`).
 - **`reference-tech-stack`** — **opinionated defaults** for *this* template: Zod, Mantine, lucide-react, MongoDB + seed, jose JWT, OpenAI adapter, pino + Sentry, react-markdown, Biome, Vitest, Playwright, Netlify.
+- **`repository-architecture`** — **language-agnostic repository architecture**: injected collection owners, indexes, stale-data cleanup, and resource lifetime (TypeScript `AsyncDisposable`, Java `AutoCloseable`, Python context-manager magic methods).
 
 Operational how-to (file paths, snippets, validation commands) still lives in **[AGENTS.md](../AGENTS.md)**.
 
@@ -15,9 +16,10 @@ Operational how-to (file paths, snippets, validation commands) still lives in **
 | New entity, routes, schemas, AI tools, auth, import protection | `tanstack-promptable-fullstack-app-template` |
 | Logging, error tracking, `instrument.*.mts`, `src/env/`, env leaks, `shellSession` | `observability-and-env` |
 | "Which package does this template use?" / match the demo app | `reference-tech-stack` |
-| Scaffolding this template as-is | Architecture + `reference-tech-stack` (+ observability when touching env) |
+| Collection repositories, indexes, stale-data cleanup, resource lifetime | `repository-architecture` |
+| Scaffolding this template as-is | Architecture + `reference-tech-stack` (+ observability when touching env; repository-architecture when splitting repositories) |
 
-Keep them **separate**. The parent skill states architecture **invariants** and which stack pieces are **swappable**; `reference-tech-stack` names this repo's vendors; `observability-and-env` owns the env/logging setup recipe; AGENTS.md owns day-to-day ops.
+Keep them **separate**. The parent skill states architecture **invariants** and which stack pieces are **swappable**; `reference-tech-stack` names this repo's vendors; `observability-and-env` owns the env/logging setup recipe; `repository-architecture` owns how repositories are split, indexed, cleaned up, and disposed; AGENTS.md owns day-to-day ops.
 
 **Use them when** you scaffold or extend a TanStack Start app from this pattern, migrate an existing app, or need agents to follow current TanStack docs instead of guessing.
 
@@ -37,6 +39,7 @@ Or install one skill:
 npx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-promptable-fullstack-app-template
 npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env
 npx skills add carlosvin/tanstack-fullstack-ai-template --skill reference-tech-stack
+npx skills add carlosvin/tanstack-fullstack-ai-template --skill repository-architecture
 ```
 
 List what this repo publishes:
@@ -73,6 +76,7 @@ Author and commit these files — they are the contract, not generated output:
 - `.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md`
 - `.agents/skills/observability-and-env/SKILL.md`
 - `.agents/skills/reference-tech-stack/SKILL.md`
+- `.agents/skills/repository-architecture/SKILL.md`
 - `evals/<id>/` — [Waza](https://microsoft.github.io/waza/) eval suites (CI via `pnpm skills:waza`)
 
 Format: [agentskills.io specification](https://agentskills.io/specification) (`name` + `description` frontmatter; directory name matches `name`).
@@ -84,6 +88,7 @@ Paste one of these into your agent after install:
 - "Follow this repo's TanStack fullstack skill: what are the core contract items I must not violate?"
 - "Add a new domain entity using the template's schema layers, repository, server functions, routes, and AI tools."
 - "What UI library and validator does the reference tech stack skill pick for this template?"
+- "How should a repository own indexes, stale-data cleanup, and connection lifetime?"
 - "Review my nested routes: shared `beforeLoad` / loaders should live on the parent layout — what should move?"
 
 ## Contributors

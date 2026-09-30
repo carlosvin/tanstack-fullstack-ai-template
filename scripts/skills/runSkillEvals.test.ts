@@ -127,12 +127,13 @@ afterEach(async () => {
 })
 
 describe('runSkillEvals', () => {
-	it('exposes architecture, observability, and reference-stack eval suites', () => {
+	it('exposes architecture, observability, reference-stack, and repository eval suites', () => {
 		const evals = createSkillEvals()
 		expect(evals.length).toBeGreaterThanOrEqual(10)
 		expect(evals.some((evalDef) => evalDef.skill === 'observability-and-env')).toBe(true)
 		expect(evals.some((evalDef) => evalDef.skill === 'tanstack-promptable-fullstack-app-template')).toBe(true)
 		expect(evals.some((evalDef) => evalDef.skill === 'reference-tech-stack')).toBe(true)
+		expect(evals.some((evalDef) => evalDef.skill === 'repository-architecture')).toBe(true)
 	})
 
 	it('passes on the real workspace', async () => {
@@ -161,6 +162,17 @@ describe('runSkillEvals', () => {
 		expect(evalDef).toBeDefined()
 		const result = await evalDef.run()
 		expect(result.pass).toBe(true)
+	})
+
+	it('fails when application code imports the database driver outside repository implementations', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'src/services/api/rawDriver.ts': "import { MongoClient } from 'mongodb'\n",
+		})
+		const evalDef = createSkillEvals(rootDir).find((entry) => entry.id === 'repository-driver-confined')
+		expect(evalDef).toBeDefined()
+		const result = await evalDef?.run()
+		expect(result?.pass).toBe(false)
+		expect(result?.files).toContain('src/services/api/rawDriver.ts')
 	})
 
 	it('fails when mongo repository casts TaskRepo results', async () => {
