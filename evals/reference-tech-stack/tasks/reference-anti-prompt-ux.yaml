@@ -1,0 +1,19 @@
+id: reference-anti-prompt-ux
+name: Do not use for prompt concepts
+description: >-
+  Covers DO NOT USE FOR prompt concepts or mobile first layout (use
+  promptable-ux).
+tags: [reference, anti-trigger]
+inputs:
+  prompt: >-
+    Define prompt concepts or mobile first layout (use promptable-ux) rather
+    than the reference tech stack.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

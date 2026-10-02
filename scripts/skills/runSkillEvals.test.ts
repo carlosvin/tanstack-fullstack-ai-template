@@ -127,13 +127,14 @@ afterEach(async () => {
 })
 
 describe('runSkillEvals', () => {
-	it('exposes architecture, observability, reference-stack, and repository eval suites', () => {
+	it('exposes architecture, observability, reference-stack, repository, and promptable-ux eval suites', () => {
 		const evals = createSkillEvals()
 		expect(evals.length).toBeGreaterThanOrEqual(10)
 		expect(evals.some((evalDef) => evalDef.skill === 'observability-and-env')).toBe(true)
 		expect(evals.some((evalDef) => evalDef.skill === 'tanstack-promptable-fullstack-app-template')).toBe(true)
 		expect(evals.some((evalDef) => evalDef.skill === 'reference-tech-stack')).toBe(true)
 		expect(evals.some((evalDef) => evalDef.skill === 'repository-architecture')).toBe(true)
+		expect(evals.some((evalDef) => evalDef.skill === 'promptable-ux')).toBe(true)
 	})
 
 	it('passes on the real workspace', async () => {

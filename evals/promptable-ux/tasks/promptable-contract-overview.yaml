@@ -1,0 +1,17 @@
+id: promptable-contract-overview
+name: Promptable UX overview
+description: Covers the skill description tagline.
+tags: [ux, description]
+inputs:
+  prompt: >-
+    Shared promptable UX plus two concepts: a hidden side or bottom panel, and
+    a prompt-first layout.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

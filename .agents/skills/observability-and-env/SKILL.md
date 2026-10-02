@@ -19,7 +19,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.7.3"
+  version: "1.8.0"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -42,6 +42,11 @@ This template publishes **multiple** skills. If only **this** skill is installed
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill repository-architecture
   ```
 
+- **`promptable-ux`** (companion) — Shared promptable UX foundations plus the two chat UX variants (side panel vs prompt-first). Install when work touches chat placement or layout alongside env/logging.
+  ```bash
+  npx skills add carlosvin/tanstack-fullstack-ai-template --skill promptable-ux
+  ```
+
 Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --list`
 
 # Observability and Environment Setup
@@ -62,7 +67,7 @@ arguments and calls an **`ObservabilityService` interface**, not a specific SDK.
 > Load **this skill additionally** when work touches logging, env schemas,
 > error-tracking bootstrap, or `shellSession` / `getBrowserShellSession` plumbing.
 >
-> **Handbook:** [AGENTS.md §9](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) — file map and usage in this repo.
+> **Handbook:** [AGENTS.md §9](https://raw.githubusercontent.com/carlosvin/tanstack-fullstack-ai-template/main/AGENTS.md) — file map and usage in this repo.
 
 ## Design principle — interface first
 
@@ -79,6 +84,7 @@ arguments and calls an **`ObservabilityService` interface**, not a specific SDK.
 | Concrete package choices for this template (Zod, Mantine, pino, …) | **`reference-tech-stack`** |
 | New routes, entities, AI tools, repository pattern, import protection | **`tanstack-promptable-fullstack-app-template`** |
 | Collection repositories, indexes, stale-data cleanup, resource lifetime | **`repository-architecture`** |
+| Chat placement, prompt variants, markdown/layout UX | **`promptable-ux`** |
 | Server fn that logs and uses `context.serverEnv` | **This skill** + architecture |
 
 ## Key invariants (do not violate)

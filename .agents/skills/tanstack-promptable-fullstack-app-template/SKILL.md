@@ -10,7 +10,8 @@ description: >-
   DO NOT USE FOR: logging or env schemas (use observability-and-env),
   error-tracking bootstrap (use observability-and-env), picking this template
   concrete packages (use reference-tech-stack), collection repository lifetime
-  (use repository-architecture).
+  (use repository-architecture), prompt chrome or layout concepts (use
+  promptable-ux).
 
   INVOKES: TanStack Start server functions, repository interfaces, and companion
   skills.
@@ -20,7 +21,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.32.2"
+  version: "1.33.0"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -43,13 +44,18 @@ This template publishes **multiple** skills. If only **this** skill is installed
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill repository-architecture
   ```
 
+- **`promptable-ux`** (companion) — Shared UX for both prompt concepts (hidden side or bottom panel, and prompt-first). Install when placing the prompt, choosing a layout concept, or rendering assistant markdown.
+  ```bash
+  npx skills add carlosvin/tanstack-fullstack-ai-template --skill promptable-ux
+  ```
+
 Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --list`
 
 # TanStack Fullstack Pattern
 
 **Purpose:** Capture the **interface-first, schema-layered, AI-promptable** contract for TanStack Start apps from this template. Day-to-day conventions (UI kit, chat wiring, logging, tests) live in the repo’s **AGENTS.md** — use this skill for **architecture**, AGENTS.md for **operations**.
 
-> **Companion handbook:** [AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) — structure, styling, auth snippets, lint/test tooling, validation checklist, AI chat setup.
+> **Companion handbook:** [AGENTS.md](https://raw.githubusercontent.com/carlosvin/tanstack-fullstack-ai-template/main/AGENTS.md) — structure, styling, auth snippets, lint/test tooling, validation checklist, AI chat setup.
 >
 > **Companion skill:** `observability-and-env` — env schemas, browser shell session, logging/error-tracking bootstrap. Load it for observability work; this skill keeps only the architecture invariants (no vendor-specific logging or APM choices).
 
@@ -61,15 +67,16 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 | Logging, error tracking, `instrument.*.mts`, `src/env/`, `shellSession`, env leaks | **`observability-and-env`** |
 | "Which package does this template use?" / match the demo app stack | **`reference-tech-stack`** |
 | Collection repositories, indexes, stale-data cleanup, resource lifetime | **`repository-architecture`** |
+| Prompt chrome, mobile first, assistant markdown | **`promptable-ux`** |
 | Architecture + env/logging | **This skill** + **`observability-and-env`** |
-| Scaffolding this template as-is | **This skill** + **`reference-tech-stack`** (+ observability when touching env) |
+| Scaffolding this template as-is | **This skill** + **`reference-tech-stack`** + **`promptable-ux`** (+ observability when touching env) |
 
 ## How to use this skill
 
 1. Read **Core Contract** first — it is the non-negotiable architecture.
 2. Run the **Architecture Checklist** before every non-trivial change.
-3. Jump to **Server execution boundaries**, **Schema Boundaries**, **Request Context**, or **Special Patterns** only when that concern applies. Special Patterns are not Core Contract. **Mobile first** is the default layout stance — ask before choosing a different UX pattern.
-4. Use **[AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md)** for operational how-to — not for inventing alternate architecture. **This skill is vendor-agnostic** for UI kits and observability SDKs. Concrete packages for *this* template live in companion skill **`reference-tech-stack`**; env/logging setup lives in **`observability-and-env`**. Collection ownership, indexes, stale-data cleanup, and resource lifetime live in **`repository-architecture`**.
+3. Jump to **Server execution boundaries**, **Schema Boundaries**, **Request Context**, or **Special Patterns** only when that concern applies. Special Patterns are not Core Contract. Prompt chrome and mobile first live in companion **`promptable-ux`**.
+4. Use **[AGENTS.md](https://raw.githubusercontent.com/carlosvin/tanstack-fullstack-ai-template/main/AGENTS.md)** for operational how-to — not for inventing alternate architecture. **This skill is vendor-agnostic** for UI kits and observability SDKs. Concrete packages for *this* template live in companion skill **`reference-tech-stack`**; env/logging setup lives in **`observability-and-env`**. Collection ownership, indexes, stale-data cleanup, and resource lifetime live in **`repository-architecture`**. Prompt concepts live in **`promptable-ux`**.
 
 ## Fixed vs swappable stack
 
@@ -98,7 +105,7 @@ Pick **one validator library** per app and use it consistently across router sea
 - **Runtime context guards:** `getShellAuthContext`, `getAccessTicket`, `accessTicketFrom`, or property-presence checks on middleware-assembled `context` — chain the middleware and read `ctx.context` directly (Start infers types).
 - **Context type bypasses:** `context as AuthContext`, `as unknown`, or `as any` on request context — chain middleware so TypeScript infers context.
 - **Secrets in the browser:** returning `serverEnv` or raw env to loaders/components — project through `shellSession` only.
-- **Desktop-first without asking:** designing for a wide viewport and only later squeezing it onto small screens. Default to mobile first; **ask the developer** if this app should follow a different UX pattern.
+- **Prompt chrome invented here:** choosing a drawer, a bottom panel, or a prompt-first page inside this skill. Load **`promptable-ux`** and follow the concept the app already declares (this template: Promptable UI (side)).
 
 ## Core Contract
 
@@ -117,7 +124,7 @@ Pick **one validator library** per app and use it consistently across router sea
 9. **Router config bundle:** ship a project-local `Link` wrapper with `search: true` default (use it for every internal link) **and** these router defaults together: `defaultStaleTime`, `defaultPreload: 'intent'`, `defaultPreloadStaleTime: 0`, `scrollRestoration: true`, `notFoundComponent`.
 10. **Auth ticket built in middleware:** auth middleware enriches `ctx.context` with a repository-built ticket (e.g. `context.repository.getUserAccess(email)`) carrying identity, roles, and guards; `Repository` mutations accept a `TraceabilityContext` (`createdBy`, `lastModifiedBy`, …) constructed from that ticket so writes are attributed consistently across UI and AI.
 11. **AI tool coverage:** expose **every** repository method as a server AI tool via `createSafeServerTool`; add **distinct-values** tools for enum-ish filters; expose `navigate` and `invalidateRouter` as client tools.
-12. **Promptable by default:** root loader checks `getAIAvailability()` and only mounts chat UI when configured (no disabled state). Chat input includes a `browserContext` (timezone, locale, path) consumed by `buildSystemPrompt` alongside the auth ticket.
+12. **Promptable by default:** root loader checks `getAIAvailability()` and only mounts the prompt UI when configured (no disabled state). Where that UI sits is companion **`promptable-ux`** (this template: hidden side panel). Chat input includes a `browserContext` (timezone, locale, path) consumed by `buildSystemPrompt` alongside the auth ticket.
 13. **Bound the agent loop:** every `chat()` call sets `agentLoopStrategy: maxIterations(N)` explicitly (default `N=10`); tune after measuring — do not rely on the framework default.
 14. **Metadata for AI and UI:** Attach human-readable **descriptions** to schema fields (reference — Zod `.describe()` → JSON Schema `description`; ArkType/Valibot have equivalents). Use **structured schema extras** only for non-description hints — `unit`, `format`, optional `title`. Prefer deriving prompts and UI copy from schemas + JSON Schema export and router introspection over parallel hand-maintained maps.
 15. **Parent layouts:** Shared `beforeLoad`, redirects, and expensive reads belong on the **parent** layout route; children read parent loader data via `getRouteApi` / `useLoaderData({ from })` — do not duplicate parent work.
@@ -154,7 +161,7 @@ TanStack route **loaders are isomorphic** — they run during SSR **and** on cli
 
 ### Required pattern
 
-Define reads/writes in [`src/services/api/serverFns.ts`](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/src/services/api/serverFns.ts). Route loaders only invoke them:
+Define reads/writes in [`src/services/api/serverFns.ts`](https://raw.githubusercontent.com/carlosvin/tanstack-fullstack-ai-template/main/src/services/api/serverFns.ts). Route loaders only invoke them:
 
 ```typescript
 // src/routes/tasks/index.tsx — thin route
@@ -201,7 +208,7 @@ Do **not** define new `createServerFn` inline in route files — keep RPC entry 
 
 ### Import protection (Vite)
 
-When adding node-only packages, extend [`vite.config.ts`](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/vite.config.ts):
+When adding node-only packages, extend [`vite.config.ts`](https://raw.githubusercontent.com/carlosvin/tanstack-fullstack-ai-template/main/vite.config.ts):
 
 ```typescript
 tanstackStart({
@@ -230,10 +237,6 @@ Add your DB driver and auth/crypto libraries when they are not isolated in `*.se
 | “Loader ran on SSR so it’s server-only” | Loaders re-run on client navigations. |
 | “Dynamic import in the loader is enough” | Route module static imports still enter the client graph. |
 | “One-line `process.env` read won’t matter” | Isomorphic code can expose env reads to the client bundle. |
-
-## Markdown assistant replies (UX contract)
-
-Assistant messages in the chat UI must **render as Markdown** (including GFM): lists, **tables**, fenced and inline code blocks, and links. Internal paths like `[Tasks](/tasks)` should remain **client-navigable** where the app implements markdown links (do not flatten assistant output to plain text for display). **Renderer choice is project-specific** — follow **AGENTS.md §8** for this repo's implementation.
 
 ## Schema Boundaries
 
@@ -433,10 +436,10 @@ interface Repository {
 1. **Schemas:** repo + tools + search layers; repository I/O and mappers with `Schema.parse()`; URL state via `validateSearch`.
 2. **Repository:** interfaces in `types.ts`; seed + production implementations. Collection owners, indexes, and client disposal: companion **`repository-architecture`**.
 3. **Server functions:** `serverFns.ts` — GET queries, POST mutations with shared validators.
-4. **AI tools:** each server function → `toolDefinition` + `createSafeServerTool`; wire client tools in the chat shell (see AGENTS.md §8).
+4. **AI tools:** each server function → `toolDefinition` + `createSafeServerTool`; wire client tools in the prompt shell (AGENTS.md §8). Prompt placement: companion **`promptable-ux`**.
 5. **Middleware:** `start.ts` — auth, invalidation, optional pre-auth `308` redirects for legacy paths.
 6. **Routes:** `validateSearch`, `loaderDeps`, loaders; parent layouts for shared `beforeLoad`/data.
-7. **Chat:** adapter, `chat()`, `buildSystemPrompt`, tool list — details in AGENTS.md §8.
+7. **Chat:** adapter, `chat()`, `buildSystemPrompt`, tool list — details in AGENTS.md §8. Concept (side panel vs prompt-first): companion **`promptable-ux`**.
 
 ## Special Patterns (use when the feature applies)
 
@@ -470,7 +473,7 @@ interface Repository {
 - **Help surface:** single `docs/help.md` can back `/help`, an AI tool, and suggested prompts (see AGENTS.md).
 - **Distinct values:** `getDistinctValues` → GET server fn → read-only AI tool so filters match real data.
 - **Dynamic AI navigation:** derive route/help context from `router.flatRoutes` + `validateSearch` introspection where possible.
-- **Mobile first (default):** [Progressive enhancement from small viewports up](https://developer.mozilla.org/en-US/docs/Glossary/Mobile_First) — create a usable layout at the narrowest width, then add richer layout as the viewport grows. This is the **default** layout stance for UI work, not Core Contract, not a particular widget (header, nav, drawer), and not a browser- or library-specific recipe. How you express it depends on the project's UI library (breakpoint tokens, `min-width` media queries, or equivalent). **Ask the developer** if this app's needs call for a different UX pattern (desktop-first, a specialized layout, and so on). Do not silently switch away from mobile first. Concrete library recipes for *this* template live in AGENTS.md §3 and companion **`reference-tech-stack`**.
+- **Prompt chrome and mobile first:** companion **`promptable-ux`**. Do not choose a layout concept in this skill.
 
 ## Agent Skills, TanStack CLI, and AI
 
@@ -483,8 +486,9 @@ interface Repository {
 | Need | Where |
 |------|--------|
 | UI kit and styling | §3 + **`reference-tech-stack`** |
+| Prompt concepts, mobile first, assistant markdown | **`promptable-ux`** + §3 and §8 |
 | Auth, middleware, guards | §5 |
-| AI adapters, chat client, tools, prompts, Markdown (GFM) rendering | §8 |
+| AI adapters, chat client, tools, prompts | §8 |
 | Observability and env bridge | §9 + **`observability-and-env`** |
 | Lint, unit/E2E test runners | §10–§11 + **`reference-tech-stack`** |
 | Full validation checklist (format, lint, test, build) | §15 |
