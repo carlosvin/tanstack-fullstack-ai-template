@@ -20,7 +20,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.32.0"
+  version: "1.32.1"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -115,7 +115,7 @@ Pick **one validator library** per app and use it consistently across router sea
 7. **Routes:** Thin route files (`createFileRoute`, `validateSearch`, `loaderDeps`, `loader`, `component`); page UI in `src/components/`. **Loaders** fetch via server functions — no `useEffect` data fetching for route data.
 8. **URL-as-state:** Filters, tabs, selections in validated **search** params; use `loaderDeps` so only relevant search fields key the loader cache.
 9. **Router config bundle:** ship a project-local `Link` wrapper with `search: true` default (use it for every internal link) **and** these router defaults together: `defaultStaleTime`, `defaultPreload: 'intent'`, `defaultPreloadStaleTime: 0`, `scrollRestoration: true`, `notFoundComponent`.
-10. **Auth ticket built in middleware:** auth middleware enriches `ctx.context` with a repository-built ticket (e.g. `getRepository().getUserAccess(email)`) carrying identity, roles, and guards; `Repository` mutations accept a `TraceabilityContext` (`createdBy`, `lastModifiedBy`, …) constructed from that ticket so writes are attributed consistently across UI and AI.
+10. **Auth ticket built in middleware:** auth middleware enriches `ctx.context` with a repository-built ticket (e.g. `(await getRepository()).getUserAccess(email)`) carrying identity, roles, and guards; `Repository` mutations accept a `TraceabilityContext` (`createdBy`, `lastModifiedBy`, …) constructed from that ticket so writes are attributed consistently across UI and AI.
 11. **AI tool coverage:** expose **every** repository method as a server AI tool via `createSafeServerTool`; add **distinct-values** tools for enum-ish filters; expose `navigate` and `invalidateRouter` as client tools.
 12. **Promptable by default:** root loader checks `getAIAvailability()` and only mounts chat UI when configured (no disabled state). Chat input includes a `browserContext` (timezone, locale, path) consumed by `buildSystemPrompt` alongside the auth ticket.
 13. **Bound the agent loop:** every `chat()` call sets `agentLoopStrategy: maxIterations(N)` explicitly (default `N=10`); tune after measuring — do not rely on the framework default.
@@ -133,7 +133,7 @@ Scan before changing code:
 - **Trust boundaries use the validator:** repository implementations `Schema.parse` DB documents / API JSON; routes use `validateSearch`; untyped widget values use the same schema `.parse()` — no `Array.find` / homemade parsers that duplicate enums.
 - **No type erasure:** after `Schema.parse` / `validateSearch`, carry **schema-inferred types** through server functions, repos, tools, and components — do not widen back to `Record<string, unknown>` / `any`.
 - **Repository interfaces = repo-layer types only:** mapping lives beside schemas / mappers — not in React components.
-- **Auth ticket is repository-backed and server-enforced:** middleware builds the ticket (e.g. `getRepository().getUserAccess(email)`); guards run in **server handlers**, never UI-only.
+- **Auth ticket is repository-backed and server-enforced:** middleware builds the ticket (e.g. `(await getRepository()).getUserAccess(email)`); guards run in **server handlers**, never UI-only.
 - **Writes use `TraceabilityContext`:** pass audit fields from the ticket (or stock `context.user.email`) through a single context object on `Repository` mutations — avoid sprinkling raw `email` arguments. Repository implementations must **persist** `createdBy` / `lastModifiedBy` from that context onto the entity.
 - **Navigation is one decision:** ship the **router defaults bundle** and the **project `Link` wrapper** (`search: true`) together so URL state survives navigation.
 - **AI stack is complete:** every repo method → server tool + safe handler; client **`navigate`** / **`invalidateRouter`**; root **`getAIAvailability()`**; chat payload includes **`browserContext`**; **`chat({ agentLoopStrategy: maxIterations(N) })`**.
@@ -148,7 +148,7 @@ TanStack route **loaders are isomorphic** — they run during SSR **and** on cli
 
 ### Forbidden in route files
 
-- Top-level imports of `getDb`, repositories, database drivers, `fs`, or other Node-only modules.
+- Top-level imports of `openMongoRepositoryScope`, repositories, database drivers, `fs`, or other Node-only modules.
 - `process.env` for secrets inside `loader` bodies.
 - Inline DB queries or repository calls inside `loader`.
 
@@ -171,7 +171,8 @@ export const getTasks = createServerFn({ method: 'GET' })
   .inputValidator(TaskFilterSchema.optional())
   .handler(async ({ data: filter }) => {
     const repoFilter = filter ? TaskRepoFilterSchema.parse(filter) : undefined
-    return getRepository().getTasks(repoFilter)
+    const repository = await getRepository()
+    return repository.getTasks(repoFilter)
   })
 ```
 
@@ -189,9 +190,12 @@ export const getTasks = createServerFn({ method: 'GET' })
 
 ```typescript
 import { createServerOnlyFn } from '@tanstack/react-start'
-import { getDb } from '../db/mongoClient.server'
+import { getRepository } from '../repository/getRepository.server'
 
-export const getDbConnection = createServerOnlyFn(async () => getDb())
+export const readTasks = createServerOnlyFn(async () => {
+  const repository = await getRepository()
+  return repository.getTasks()
+})
 ```
 
 Do **not** define new `createServerFn` inline in route files — keep RPC entry points centralized in `serverFns.ts`.
@@ -372,7 +376,8 @@ export const updateTask = createServerFn({ method: 'POST' })
   .handler(async ({ data, context }) => {
     context.accessTicket.requireTaskEditor(data.taskId)
     const repoPatch = TaskRepoPatchSchema.parse(mapToolUpdateToRepo(data))
-    return getRepository().updateTask(data.taskId, repoPatch, {
+    const repository = await getRepository()
+    return repository.updateTask(data.taskId, repoPatch, {
       lastModifiedBy: context.accessTicket.identity.email,
     })
   })
@@ -384,7 +389,8 @@ Stock template equivalent — same rules; `requireAuthMiddleware` chains auth so
 .handler(async ({ data, context }) => {
   const repoPatch = TaskRepoPatchSchema.parse(mapToolUpdateToRepo(data))
   const trace = updateWriteTrace(context.accessTicket.identity.email)
-  return getRepository().updateTask(data.taskId, repoPatch, trace)
+  const repository = await getRepository()
+  return repository.updateTask(data.taskId, repoPatch, trace)
 })
 ```
 
@@ -428,7 +434,7 @@ interface Repository {
 ## Implementation Flow
 
 1. **Schemas:** repo + tools + search layers; repository I/O and mappers with `Schema.parse()`; URL state via `validateSearch`.
-2. **Repository:** interfaces in `types.ts`; seed + production implementations.
+2. **Repository:** interfaces in `types.ts`; seed + production implementations. Collection owners, indexes, and client disposal: companion **`repository-architecture`**.
 3. **Server functions:** `serverFns.ts` — GET queries, POST mutations with shared validators.
 4. **AI tools:** each server function → `toolDefinition` + `createSafeServerTool`; wire client tools in the chat shell (see AGENTS.md §8).
 5. **Middleware:** `start.ts` — auth, invalidation, optional pre-auth `308` redirects for legacy paths.

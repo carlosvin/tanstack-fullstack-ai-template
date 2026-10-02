@@ -77,7 +77,8 @@ export const authMiddleware = createMiddleware().server(async ({ next, request }
 	const { user, isTestUser } = ticket
 
 	// Test users are ephemeral and never stored in the repository — skip the lookup.
-	const profile = user.email && !isTestUser ? await getRepository().getUserProfile(user.email) : null
+	const repository = user.email && !isTestUser ? await getRepository() : null
+	const profile = repository ? await repository.getUserProfile(user.email) : null
 
 	return next({
 		context: {

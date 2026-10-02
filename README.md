@@ -261,7 +261,7 @@ See [`.env.example`](.env.example) for the full list with documentation.
 ### Adding a New Entity (End-to-End)
 
 1. **Schema**: Add Zod schemas in `src/services/schemas/schemas.ts` with `.describe()` on every field.
-2. **Repository**: Add methods to the `Repository` interface in `types.ts`. Implement in both `seedRepository.ts` and `mongoRepository.server.ts`.
+2. **Repository**: Add methods to the `Repository` interface in `types.ts`. Implement them in `seedRepository.ts` and in the owning Mongo collection repository (`mongoTaskRepository.server.ts` or `mongoUserRepository.server.ts`). Delegate from `mongoRepository.server.ts`. Declare any new index in that collection owner's `createIndexes()`.
 3. **Server Functions**: Add `createServerFn` wrappers in `src/services/api/serverFns.ts`. Chain `.middleware([invalidateMiddleware])` on mutations.
 4. **AI Tools**: Expose methods as tools in `src/services/ai/tools.ts` that call your server functions through `createSafeServerTool()`. Update the system prompt.
    - Keep `src/services/ai/navigationManifest.ts` aligned with routes (including dynamic segments like `/tasks/$taskId`).
@@ -271,7 +271,7 @@ See [`.env.example`](.env.example) for the full list with documentation.
 
 ### Swapping the Database
 
-Replace `mongoRepository.server.ts` with your implementation of the `Repository` interface. Update the factory in `getRepository.server.ts`.
+Implement `Repository` for the new driver. Construct it from `getRepository.server.ts`. Keep the client inside a scope that closes on dispose, and keep collection access inside collection repositories.
 
 ### Swapping the AI Provider
 

@@ -59,6 +59,7 @@ CI runs this in `.github/workflows/skills.yml` with a pinned `waza` binary. Conf
 - Skill documents boundary ownership, runtime validators (including Pydantic) and decode-into-the-type for strongly typed languages, that disposers release resources, that `cleanupStale` sweeps rows, Java `AutoCloseable`, and Python `__aexit__`
 - Parent architecture skill lists `repository-architecture` as a companion
 - Database driver imports stay in `src/services/db/` and `src/services/repository/`
+- Task and user collections are private owners with their own indexes; the Mongo scope disposes the client and does not sweep rows
 
 ## Manual pressure scenarios
 

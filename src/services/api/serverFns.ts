@@ -30,7 +30,8 @@ export const getTasks = createServerFn({ method: 'GET' })
 	.inputValidator(TaskFilterSchema.optional())
 	.handler(async ({ data: filter }) => {
 		const repoFilter = filter ? TaskRepoFilterSchema.parse(filter) : undefined
-		const rows = await getObservability({}).startSpan('getTasks', () => getRepository().getTasks(repoFilter))
+		const repository = await getRepository()
+		const rows = await getObservability({}).startSpan('getTasks', () => repository.getTasks(repoFilter))
 		return rows.map(toToolTask)
 	})
 
@@ -38,7 +39,8 @@ export const getTasks = createServerFn({ method: 'GET' })
 export const getTask = createServerFn({ method: 'GET' })
 	.inputValidator(TaskIdInputSchema)
 	.handler(async ({ data }) => {
-		const row = await getObservability({}).startSpan('getTask', () => getRepository().getTask(data.taskId))
+		const repository = await getRepository()
+		const row = await getObservability({}).startSpan('getTask', () => repository.getTask(data.taskId))
 		return row ? toToolTask(row) : null
 	})
 
@@ -46,8 +48,9 @@ export const getTask = createServerFn({ method: 'GET' })
 export const getDistinctValues = createServerFn({ method: 'GET' })
 	.inputValidator(DistinctValuesInputSchema)
 	.handler(async ({ data }) => {
+		const repository = await getRepository()
 		const values = await getObservability({}).startSpan('getDistinctValues', () =>
-			getRepository().getDistinctValues(data.field),
+			repository.getDistinctValues(data.field),
 		)
 		return DistinctValueListSchema.parse(values)
 	})
@@ -56,7 +59,8 @@ export const getDistinctValues = createServerFn({ method: 'GET' })
 export const getUserProfile = createServerFn({ method: 'GET' })
 	.inputValidator(UserProfileByEmailSchema)
 	.handler(async ({ data }) => {
-		const row = await getObservability({}).startSpan('getUserProfile', () => getRepository().getUserProfile(data.email))
+		const repository = await getRepository()
+		const row = await getObservability({}).startSpan('getUserProfile', () => repository.getUserProfile(data.email))
 		return row ? toToolUserProfile(row) : null
 	})
 
@@ -64,7 +68,8 @@ export const getUserProfile = createServerFn({ method: 'GET' })
 export const getUserAccess = createServerFn({ method: 'GET' })
 	.inputValidator(UserProfileByEmailSchema)
 	.handler(async ({ data }) => {
-		const row = await getObservability({}).startSpan('getUserAccess', () => getRepository().getUserAccess(data.email))
+		const repository = await getRepository()
+		const row = await getObservability({}).startSpan('getUserAccess', () => repository.getUserAccess(data.email))
 		return row ? toToolUserAccess(row) : null
 	})
 
@@ -109,7 +114,8 @@ export const createTask = createServerFn({ method: 'POST' })
 	.handler(async ({ data, context }) => {
 		const repoInput = TaskRepoInputSchema.parse(data)
 		const trace = createWriteTrace(context.accessTicket.identity.email)
-		const row = await getObservability({}).startSpan('createTask', () => getRepository().createTask(repoInput, trace))
+		const repository = await getRepository()
+		const row = await getObservability({}).startSpan('createTask', () => repository.createTask(repoInput, trace))
 		return toToolTask(row)
 	})
 
@@ -118,13 +124,14 @@ export const updateTask = createServerFn({ method: 'POST' })
 	.middleware([requireAuthMiddleware, invalidateMiddleware])
 	.inputValidator(UpdateTaskInputSchema)
 	.handler(async ({ data, context }) => {
-		const task = await getRepository().getTask(data.taskId)
+		const repository = await getRepository()
+		const task = await repository.getTask(data.taskId)
 		if (!task) throw new HttpError(404, 'Task not found')
 		context.accessTicket.requireTaskCreator(task)
 		const repoUpdates = TaskRepoInputSchema.partial().parse(data.updates)
 		const trace = updateWriteTrace(context.accessTicket.identity.email)
 		const row = await getObservability({}).startSpan('updateTask', () =>
-			getRepository().updateTask(data.taskId, repoUpdates, trace),
+			repository.updateTask(data.taskId, repoUpdates, trace),
 		)
 		return row ? toToolTask(row) : null
 	})
@@ -134,8 +141,9 @@ export const deleteTask = createServerFn({ method: 'POST' })
 	.middleware([requireAuthMiddleware, invalidateMiddleware])
 	.inputValidator(TaskIdInputSchema)
 	.handler(async ({ data, context }) => {
-		const task = await getRepository().getTask(data.taskId)
+		const repository = await getRepository()
+		const task = await repository.getTask(data.taskId)
 		if (!task) throw new HttpError(404, 'Task not found')
 		context.accessTicket.requireTaskCreator(task)
-		return getObservability({}).startSpan('deleteTask', () => getRepository().deleteTask(data.taskId))
+		return getObservability({}).startSpan('deleteTask', () => repository.deleteTask(data.taskId))
 	})

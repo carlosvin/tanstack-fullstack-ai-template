@@ -161,7 +161,7 @@ Full-stack TanStack Start — no separate backend API. Architecture (layering, i
 Route Loader → serverFns.ts → Repository → Database / Seed Data
 ```
 
-How to split collection repositories, own indexes, sweep stale data, and dispose connections: [repository-architecture skill](.agents/skills/repository-architecture/SKILL.md). In this app the composition root is `src/services/db/mongoClient.server.ts`; collection access stays in `src/services/repository/`.
+How to split collection repositories, own indexes, and dispose connections: [repository-architecture skill](.agents/skills/repository-architecture/SKILL.md). In this app `getRepository()` opens `MongoRepositoryScope` in `src/services/db/mongoClient.server.ts`. That scope owns the client and closes it on dispose. `MongoRepository` delegates to `MongoTaskRepository` and `MongoUserRepository`, which bind their collections and declare indexes. This app has no refresh-window sweep, so disposal does not delete documents.
 
 | Concern | Where |
 |---------|--------|
@@ -181,7 +181,8 @@ export const myMutation = createServerFn({ method: 'POST' })
   .inputValidator(MyInputSchema)
   .handler(async ({ data, context }) => {
     const trace = createWriteTrace(context.accessTicket.identity.email)
-    return getRepository().doSomething(data, trace)
+    const repository = await getRepository()
+    return repository.doSomething(data, trace)
   })
 
 const result = await processResponse(() => myMutation({ data: input }))
