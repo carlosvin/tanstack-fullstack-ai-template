@@ -1,0 +1,15 @@
+id: prompt-bar
+name: Prompt bar placement
+description: Covers USE FOR prompt bar.
+tags: [ux, trigger]
+inputs:
+  prompt: Where should the prompt bar sit in a prompt-first app?
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

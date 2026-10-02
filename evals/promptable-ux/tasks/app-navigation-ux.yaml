@@ -1,0 +1,15 @@
+id: app-navigation-ux
+name: App navigation UX
+description: Covers USE FOR app navigation UX.
+tags: [ux, trigger]
+inputs:
+  prompt: How does app navigation UX stay in sync with the prompt?
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"
