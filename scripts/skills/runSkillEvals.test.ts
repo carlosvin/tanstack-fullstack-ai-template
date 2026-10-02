@@ -127,12 +127,14 @@ afterEach(async () => {
 })
 
 describe('runSkillEvals', () => {
-	it('exposes architecture, observability, and reference-stack eval suites', () => {
+	it('exposes architecture, observability, reference-stack, repository, and promptable-ux eval suites', () => {
 		const evals = createSkillEvals()
 		expect(evals.length).toBeGreaterThanOrEqual(10)
 		expect(evals.some((evalDef) => evalDef.skill === 'observability-and-env')).toBe(true)
 		expect(evals.some((evalDef) => evalDef.skill === 'tanstack-promptable-fullstack-app-template')).toBe(true)
 		expect(evals.some((evalDef) => evalDef.skill === 'reference-tech-stack')).toBe(true)
+		expect(evals.some((evalDef) => evalDef.skill === 'repository-architecture')).toBe(true)
+		expect(evals.some((evalDef) => evalDef.skill === 'promptable-ux')).toBe(true)
 	})
 
 	it('passes on the real workspace', async () => {
@@ -161,6 +163,40 @@ describe('runSkillEvals', () => {
 		expect(evalDef).toBeDefined()
 		const result = await evalDef.run()
 		expect(result.pass).toBe(true)
+	})
+
+	it('fails when application code imports the database driver outside repository implementations', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'src/services/api/rawDriver.ts': "import { MongoClient } from 'mongodb'\n",
+		})
+		const evalDef = createSkillEvals(rootDir).find((entry) => entry.id === 'repository-driver-confined')
+		expect(evalDef).toBeDefined()
+		const result = await evalDef?.run()
+		expect(result?.pass).toBe(false)
+		expect(result?.files).toContain('src/services/api/rawDriver.ts')
+	})
+
+	it('fails when repository consumer contracts import the database driver', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'src/services/repository/types.ts': "import type { Collection } from 'mongodb'\n",
+		})
+		const evalDef = createSkillEvals(rootDir).find((entry) => entry.id === 'repository-driver-confined')
+		expect(evalDef).toBeDefined()
+		const result = await evalDef?.run()
+		expect(result?.pass).toBe(false)
+		expect(result?.files).toContain('src/services/repository/types.ts')
+	})
+
+	it('fails when the mongo facade exists without both collection owners', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'src/services/repository/mongoRepository.server.ts': 'export class MongoRepository {}\n',
+			'src/services/db/mongoClient.server.ts': 'export const scope = { [Symbol.asyncDispose]: async () => {} }\n',
+		})
+		const evalDef = createSkillEvals(rootDir).find((entry) => entry.id === 'repository-collection-owners')
+		expect(evalDef).toBeDefined()
+		const result = await evalDef?.run()
+		expect(result?.pass).toBe(false)
+		expect(result?.files).toContain('mongoTaskRepository.server.ts')
 	})
 
 	it('fails when mongo repository casts TaskRepo results', async () => {

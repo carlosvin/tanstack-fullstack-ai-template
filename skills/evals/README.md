@@ -9,6 +9,8 @@ pnpm test:skill-evals          # all evals
 pnpm test:skill-evals -- --skill observability-and-env
 pnpm test:skill-evals -- --skill tanstack-promptable-fullstack-app-template
 pnpm test:skill-evals -- --skill reference-tech-stack
+pnpm test:skill-evals -- --skill repository-architecture
+pnpm test:skill-evals -- --skill promptable-ux
 ```
 
 `pnpm lint` also runs skill evals after `skills:check`.
@@ -53,6 +55,20 @@ CI runs this in `.github/workflows/skills.yml` with a pinned `waza` binary. Conf
 
 - `SKILL.md` includes a **Stack map** section
 
+### `repository-architecture`
+
+- Skill documents boundary ownership, runtime validators (including Pydantic) and decode-into-the-type for strongly typed languages, that disposers release resources, that `cleanupStale` sweeps rows, Java `AutoCloseable`, and Python `__aexit__`
+- Parent architecture skill lists `repository-architecture` as a companion
+- Database driver imports stay in `src/services/db/` and `src/services/repository/`
+- Task and user collections are private owners with their own indexes; the Mongo scope disposes the client and does not sweep rows
+
+### `promptable-ux`
+
+- Skill defines **Promptable UI (side)** and **Prompt-first**, with mobile first in the shared section
+- Architecture skill points at `promptable-ux` and does not own the mobile-first essay
+- `AppLayout` declares Promptable UI (side)
+- AGENTS.md names both concepts and still asks the developer before switching
+
 ## Manual pressure scenarios
 
-See also `tanstack-promptable-fullstack-app-template.md` for prompt-based review scenarios (entity scaffold, loader refactor, markdown surface, etc.).
+See also `tanstack-promptable-fullstack-app-template.md` for prompt-based review scenarios (entity scaffold, loader refactor, markdown surface, etc.) and `promptable-ux.md` for the two prompt concepts.

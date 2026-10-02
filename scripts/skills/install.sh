@@ -11,6 +11,8 @@ SKILLS=(
 	"tanstack-promptable-fullstack-app-template"
 	"observability-and-env"
 	"reference-tech-stack"
+	"repository-architecture"
+	"promptable-ux"
 )
 REPO="carlosvin/tanstack-fullstack-ai-template"
 BASE_RAW_URL="https://raw.githubusercontent.com/${REPO}/main/.agents/skills"

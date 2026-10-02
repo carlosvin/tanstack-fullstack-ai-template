@@ -1,119 +1,56 @@
-import type { Collection, Db, Filter } from 'mongodb'
-import { getDb } from '../db/mongoClient.server'
-import {
-	parseDistinctValues,
-	parseTaskRepo,
-	parseTaskRepoList,
-	parseTaskRepoOrNull,
-	parseUserProfileRepoOrNull,
-	toUserAccessRepo,
-} from '../schemas/repoParsers'
+import type { Db } from 'mongodb'
 import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserAccessRepo, UserProfileRepo } from '../schemas/repository'
-import { resolveCreateLastModifiedBy } from './traceability'
-import type { DistinctValueField, Repository, TraceabilityContext } from './types'
-
-const TASKS_COLLECTION = 'tasks'
-const USERS_COLLECTION = 'users'
+import { MongoTaskRepository } from './mongoTaskRepository.server'
+import { MongoUserRepository } from './mongoUserRepository.server'
+import type { DistinctValueField, IndexableRepository, Repository, TraceabilityContext } from './types'
 
 /**
- * MongoDB-backed repository implementation.
- * Uses the singleton database connection from db/mongoClient.server.ts.
+ * Domain facade over the task and user collection repositories.
+ * Delegates queries and writes; it does not touch the driver itself.
  */
-export class MongoRepository implements Repository {
-	private dbPromise: Promise<Db> | null = null
+export class MongoRepository implements Repository, IndexableRepository {
+	private readonly tasks: MongoTaskRepository
+	private readonly users: MongoUserRepository
 
-	private async db(): Promise<Db> {
-		if (!this.dbPromise) {
-			this.dbPromise = getDb()
-		}
-		return this.dbPromise
+	constructor(db: Db) {
+		this.tasks = new MongoTaskRepository(db)
+		this.users = new MongoUserRepository(db)
 	}
 
-	private async collection(): Promise<Collection<TaskRepo>> {
-		const db = await this.db()
-		return db.collection<TaskRepo>(TASKS_COLLECTION)
+	async createIndexes(): Promise<void> {
+		await this.tasks.createIndexes()
+		await this.users.createIndexes()
 	}
 
-	async getTasks(filter?: TaskRepoFilter): Promise<TaskRepo[]> {
-		const col = await this.collection()
-		const query: Filter<TaskRepo> = {}
-
-		if (filter?.status) query.status = filter.status
-		if (filter?.priority) query.priority = filter.priority
-		if (filter?.assignee) query.assignee = filter.assignee
-		if (filter?.search) {
-			query.$or = [
-				{ title: { $regex: filter.search, $options: 'i' } },
-				{ description: { $regex: filter.search, $options: 'i' } },
-			]
-		}
-
-		const rows = await col.find(query).sort({ updatedAt: -1 }).toArray()
-		return parseTaskRepoList(rows)
+	getTasks(filter?: TaskRepoFilter): Promise<TaskRepo[]> {
+		return this.tasks.getTasks(filter)
 	}
 
-	async getTask(taskId: string): Promise<TaskRepo | null> {
-		const col = await this.collection()
-		const row = await col.findOne({ id: taskId })
-		return parseTaskRepoOrNull(row)
+	getTask(taskId: string): Promise<TaskRepo | null> {
+		return this.tasks.getTask(taskId)
 	}
 
-	async getDistinctValues(field: DistinctValueField): Promise<string[]> {
-		const col = await this.collection()
-		const values = await col.distinct(field, { [field]: { $exists: true, $nin: [null, ''] } })
-		return parseDistinctValues(values)
+	getDistinctValues(field: DistinctValueField): Promise<string[]> {
+		return this.tasks.getDistinctValues(field)
 	}
 
-	async getUserProfile(email: string): Promise<UserProfileRepo | null> {
-		const db = await this.db()
-		const col = db.collection<UserProfileRepo>(USERS_COLLECTION)
-		const row = await col.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } })
-		return parseUserProfileRepoOrNull(row)
+	getUserProfile(email: string): Promise<UserProfileRepo | null> {
+		return this.users.getUserProfile(email)
 	}
 
-	async getUserAccess(email: string): Promise<UserAccessRepo | null> {
-		const profile = await this.getUserProfile(email)
-		return profile ? toUserAccessRepo(profile) : null
+	getUserAccess(email: string): Promise<UserAccessRepo | null> {
+		return this.users.getUserAccess(email)
 	}
 
-	async createTask(input: TaskRepoInput, trace?: TraceabilityContext): Promise<TaskRepo> {
-		const col = await this.collection()
-		const now = new Date().toISOString()
-		const task: TaskRepo = {
-			...input,
-			id: crypto.randomUUID(),
-			createdAt: now,
-			updatedAt: now,
-			createdBy: trace?.createdBy,
-			lastModifiedBy: resolveCreateLastModifiedBy(trace),
-		}
-		await col.insertOne(task)
-		return parseTaskRepo(task)
+	createTask(input: TaskRepoInput, trace?: TraceabilityContext): Promise<TaskRepo> {
+		return this.tasks.createTask(input, trace)
 	}
 
-	async updateTask(
-		taskId: string,
-		input: Partial<TaskRepoInput>,
-		trace?: TraceabilityContext,
-	): Promise<TaskRepo | null> {
-		const col = await this.collection()
-		const result = await col.findOneAndUpdate(
-			{ id: taskId },
-			{
-				$set: {
-					...input,
-					updatedAt: new Date().toISOString(),
-					...(trace?.lastModifiedBy ? { lastModifiedBy: trace.lastModifiedBy } : {}),
-				},
-			},
-			{ returnDocument: 'after' },
-		)
-		return parseTaskRepoOrNull(result)
+	updateTask(taskId: string, input: Partial<TaskRepoInput>, trace?: TraceabilityContext): Promise<TaskRepo | null> {
+		return this.tasks.updateTask(taskId, input, trace)
 	}
 
-	async deleteTask(taskId: string): Promise<boolean> {
-		const col = await this.collection()
-		const result = await col.deleteOne({ id: taskId })
-		return result.deletedCount > 0
+	deleteTask(taskId: string): Promise<boolean> {
+		return this.tasks.deleteTask(taskId)
 	}
 }

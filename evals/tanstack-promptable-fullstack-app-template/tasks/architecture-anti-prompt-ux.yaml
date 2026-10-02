@@ -1,0 +1,18 @@
+id: architecture-anti-prompt-ux
+name: Do not use for prompt chrome
+description: >-
+  Covers DO NOT USE FOR prompt chrome or layout concepts (use promptable-ux).
+tags: [architecture, anti-trigger]
+inputs:
+  prompt: >-
+    Choose prompt chrome or layout concepts (use promptable-ux) rather than
+    the architecture skill.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

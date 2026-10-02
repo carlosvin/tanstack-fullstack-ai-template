@@ -1,6 +1,6 @@
-name: promptable-ux-eval
-description: CI eval suite for the shared prompt UX skill. Mock executor; no model API keys.
-skill: promptable-ux
+name: repository-architecture-eval
+description: CI eval suite for the repository architecture companion skill. Mock executor; no model API keys.
+skill: repository-architecture
 schemaVersion: "1.0"
 version: "1.0"
 

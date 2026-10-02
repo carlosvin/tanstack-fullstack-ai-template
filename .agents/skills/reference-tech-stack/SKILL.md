@@ -9,7 +9,8 @@ description: >-
 
   DO NOT USE FOR: architecture invariants (use
   tanstack-promptable-fullstack-app-template), env parse or logger factories
-  (use observability-and-env).
+  (use observability-and-env), prompt concepts or mobile first layout (use
+  promptable-ux).
 
   INVOKES: AGENTS.md operational sections and companion skills.
 
@@ -36,7 +37,12 @@ This template publishes **multiple** skills. If only **this** skill is installed
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env
   ```
 
-- **`promptable-ux`** (companion) — Shared promptable UX foundations plus the two chat UX variants (side panel vs prompt-first). Install when work touches chat placement, markdown replies, or layout.
+- **`repository-architecture`** (companion) — Language-agnostic repository architecture: injected collection owners, indexes, stale-data cleanup, and resource lifetime. This stack skill names the database driver; that companion owns the pattern.
+  ```bash
+  npx skills add carlosvin/tanstack-fullstack-ai-template --skill repository-architecture
+  ```
+
+- **`promptable-ux`** (companion) — Shared UX for both prompt concepts. This stack skill names the UI kit; that companion owns where the prompt sits.
   ```bash
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill promptable-ux
   ```
@@ -65,7 +71,8 @@ coupling into the architecture skill.
 | "What does this template use for X?" / scaffold matching the demo app | **This skill** |
 | Architecture, schemas, routes, AI tools, server boundaries | **`tanstack-promptable-fullstack-app-template`** |
 | Env schemas, `shellSession`, logging/Sentry bootstrap | **`observability-and-env`** |
-| Chat placement, prompt variants, markdown/layout UX | **`promptable-ux`** |
+| Collection repositories, indexes, stale-data cleanup, resource lifetime | **`repository-architecture`** |
+| Prompt concepts, mobile first, assistant markdown | **`promptable-ux`** |
 | Day-to-day file paths and UI/auth/AI how-to | **AGENTS.md** |
 
 ## Stack map (this repository)
@@ -94,17 +101,11 @@ coupling into the architecture skill.
 1. Prefer the stack map when extending *this* repo or cloning the template as-is.
 2. Do not add a second library for the same concern unless you are intentionally migrating.
 3. Keep interfaces when swapping (repository, `AIAdapterService`, `ObservabilityService`); update this stack map and AGENTS.md; leave the architecture skill vendor-agnostic.
-4. UI and schema *how-to* live in AGENTS.md §3 / architecture skill — this skill only names packages.
+4. UI and schema *how-to* live in AGENTS.md §3 / the architecture skill — this skill only names packages. Prompt concepts live in **`promptable-ux`**.
 
-## Applying mobile first (default — owned by `promptable-ux`)
+## Expressing the UX concepts in this stack
 
-Architecture defaults to [mobile first](https://developer.mozilla.org/en-US/docs/Glossary/Mobile_First)
-— not a named widget. Full UX guidance (shared foundations + side panel vs
-prompt-first variants) lives in **`promptable-ux`**. In *this* template,
-express it with Mantine responsive props (`base`, then `sm` / `md` / `lg`).
-Navigation that must collapse on small viewports can use `AppShell` +
-`Burger` + `NavLink` (AGENTS.md §3). **Ask the developer** if this app
-should follow a different UX pattern.
+**`promptable-ux`** owns mobile first and the two prompt concepts. In *this* template, express mobile first with Mantine responsive props (`base`, then `sm` / `md` / `lg`). The reference app declares **Promptable UI (side)**: navigation that overflows a narrow header uses `AppShell` + `Burger` + `NavLink`, and the prompt is a right `Drawer` (AGENTS.md §3 and §8), not a permanent aside. Prompt-first would still use those responsive props; it would not add a second drawer.
 
 ## Verification
 

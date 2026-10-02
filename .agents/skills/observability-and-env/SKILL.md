@@ -37,6 +37,11 @@ This template publishes **multiple** skills. If only **this** skill is installed
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill reference-tech-stack
   ```
 
+- **`repository-architecture`** (companion) — Language-agnostic repository architecture: injected collection owners, indexes, stale-data cleanup, and resource lifetime.
+  ```bash
+  npx skills add carlosvin/tanstack-fullstack-ai-template --skill repository-architecture
+  ```
+
 - **`promptable-ux`** (companion) — Shared promptable UX foundations plus the two chat UX variants (side panel vs prompt-first). Install when work touches chat placement or layout alongside env/logging.
   ```bash
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill promptable-ux
@@ -78,6 +83,7 @@ arguments and calls an **`ObservabilityService` interface**, not a specific SDK.
 | Logging, error tracking, `instrument.*.mts`, `src/env/`, env leaks, `shellSession` | **This skill** |
 | Concrete package choices for this template (Zod, Mantine, pino, …) | **`reference-tech-stack`** |
 | New routes, entities, AI tools, repository pattern, import protection | **`tanstack-promptable-fullstack-app-template`** |
+| Collection repositories, indexes, stale-data cleanup, resource lifetime | **`repository-architecture`** |
 | Chat placement, prompt variants, markdown/layout UX | **`promptable-ux`** |
 | Server fn that logs and uses `context.serverEnv` | **This skill** + architecture |
 

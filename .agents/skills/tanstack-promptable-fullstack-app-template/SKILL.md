@@ -9,7 +9,9 @@ description: >-
 
   DO NOT USE FOR: logging or env schemas (use observability-and-env),
   error-tracking bootstrap (use observability-and-env), picking this template
-  concrete packages (use reference-tech-stack).
+  concrete packages (use reference-tech-stack), collection repository lifetime
+  (use repository-architecture), prompt chrome or layout concepts (use
+  promptable-ux).
 
   INVOKES: TanStack Start server functions, repository interfaces, and companion
   skills.
@@ -19,7 +21,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.32.0"
+  version: "1.33.0"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -37,7 +39,12 @@ This template publishes **multiple** skills. If only **this** skill is installed
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill reference-tech-stack
   ```
 
-- **`promptable-ux`** (companion) — Shared promptable UX foundations plus the two chat UX variants (side panel vs prompt-first). Install when work touches chat placement, prompt entry point, markdown replies, or layout.
+- **`repository-architecture`** (companion) — Language-agnostic repository architecture: injected collection owners, indexes, stale-data cleanup, and resource lifetime. Install when designing or refactoring repository contracts.
+  ```bash
+  npx skills add carlosvin/tanstack-fullstack-ai-template --skill repository-architecture
+  ```
+
+- **`promptable-ux`** (companion) — Shared UX for both prompt concepts (hidden side or bottom panel, and prompt-first). Install when placing the prompt, choosing a layout concept, or rendering assistant markdown.
   ```bash
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill promptable-ux
   ```
@@ -59,16 +66,17 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 | New entity, routes, schemas, AI tools, auth, server boundaries | **This skill** |
 | Logging, error tracking, `instrument.*.mts`, `src/env/`, `shellSession`, env leaks | **`observability-and-env`** |
 | "Which package does this template use?" / match the demo app stack | **`reference-tech-stack`** |
+| Collection repositories, indexes, stale-data cleanup, resource lifetime | **`repository-architecture`** |
+| Prompt chrome, mobile first, assistant markdown | **`promptable-ux`** |
 | Architecture + env/logging | **This skill** + **`observability-and-env`** |
-| Scaffolding this template as-is | **This skill** + **`reference-tech-stack`** (+ observability when touching env) |
-| Chat placement, prompt entry point, drawer vs prompt-first, markdown replies, layout | **`promptable-ux`** (+ **this skill** for routes/tools) |
+| Scaffolding this template as-is | **This skill** + **`reference-tech-stack`** + **`promptable-ux`** (+ observability when touching env) |
 
 ## How to use this skill
 
 1. Read **Core Contract** first — it is the non-negotiable architecture.
 2. Run the **Architecture Checklist** before every non-trivial change.
-3. Jump to **Server execution boundaries**, **Schema Boundaries**, **Request Context**, or **Special Patterns** only when that concern applies. Special Patterns are not Core Contract. Layout and chat presentation live in **`promptable-ux`** — **mobile first** stays the default there; ask before choosing a different UX pattern.
-4. Use **[AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md)** for operational how-to — not for inventing alternate architecture. **This skill is vendor-agnostic** for UI kits and observability SDKs. Concrete packages for *this* template live in companion skill **`reference-tech-stack`**; env/logging setup lives in **`observability-and-env`**.
+3. Jump to **Server execution boundaries**, **Schema Boundaries**, **Request Context**, or **Special Patterns** only when that concern applies. Special Patterns are not Core Contract. Prompt chrome and mobile first live in companion **`promptable-ux`**.
+4. Use **[AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md)** for operational how-to — not for inventing alternate architecture. **This skill is vendor-agnostic** for UI kits and observability SDKs. Concrete packages for *this* template live in companion skill **`reference-tech-stack`**; env/logging setup lives in **`observability-and-env`**. Collection ownership, indexes, stale-data cleanup, and resource lifetime live in **`repository-architecture`**. Prompt concepts live in **`promptable-ux`**.
 
 ## Fixed vs swappable stack
 
@@ -97,7 +105,7 @@ Pick **one validator library** per app and use it consistently across router sea
 - **Runtime context guards:** `getShellAuthContext`, `getAccessTicket`, `accessTicketFrom`, or property-presence checks on middleware-assembled `context` — chain the middleware and read `ctx.context` directly (Start infers types).
 - **Context type bypasses:** `context as AuthContext`, `as unknown`, or `as any` on request context — chain middleware so TypeScript infers context.
 - **Secrets in the browser:** returning `serverEnv` or raw env to loaders/components — project through `shellSession` only.
-- **Desktop-first without asking:** designing for a wide viewport and only later squeezing it onto small screens. Default to mobile first; **ask the developer** if this app should follow a different UX pattern.
+- **Prompt chrome invented here:** choosing a drawer, a bottom panel, or a prompt-first page inside this skill. Load **`promptable-ux`** and follow the concept the app already declares (this template: Promptable UI (side)).
 
 ## Core Contract
 
@@ -114,9 +122,9 @@ Pick **one validator library** per app and use it consistently across router sea
 7. **Routes:** Thin route files (`createFileRoute`, `validateSearch`, `loaderDeps`, `loader`, `component`); page UI in `src/components/`. **Loaders** fetch via server functions — no `useEffect` data fetching for route data.
 8. **URL-as-state:** Filters, tabs, selections in validated **search** params; use `loaderDeps` so only relevant search fields key the loader cache.
 9. **Router config bundle:** ship a project-local `Link` wrapper with `search: true` default (use it for every internal link) **and** these router defaults together: `defaultStaleTime`, `defaultPreload: 'intent'`, `defaultPreloadStaleTime: 0`, `scrollRestoration: true`, `notFoundComponent`.
-10. **Auth ticket built in middleware:** auth middleware enriches `ctx.context` with a repository-built ticket (e.g. `getRepository().getUserAccess(email)`) carrying identity, roles, and guards; `Repository` mutations accept a `TraceabilityContext` (`createdBy`, `lastModifiedBy`, …) constructed from that ticket so writes are attributed consistently across UI and AI.
+10. **Auth ticket built in middleware:** auth middleware enriches `ctx.context` with a repository-built ticket (e.g. `context.repository.getUserAccess(email)`) carrying identity, roles, and guards; `Repository` mutations accept a `TraceabilityContext` (`createdBy`, `lastModifiedBy`, …) constructed from that ticket so writes are attributed consistently across UI and AI.
 11. **AI tool coverage:** expose **every** repository method as a server AI tool via `createSafeServerTool`; add **distinct-values** tools for enum-ish filters; expose `navigate` and `invalidateRouter` as client tools.
-12. **Promptable by default:** root loader checks `getAIAvailability()` and only mounts chat UI when configured (no disabled state). Chat input includes a `browserContext` (timezone, locale, path) consumed by `buildSystemPrompt` alongside the auth ticket. Chat **placement and presentation** (side panel vs prompt-first, markdown rendering, layout) live in **`promptable-ux`** — this contract keeps only the tool/SSE/bounding invariants (#11, #13–14).
+12. **Promptable by default:** root loader checks `getAIAvailability()` and only mounts the prompt UI when configured (no disabled state). Where that UI sits is companion **`promptable-ux`** (this template: hidden side panel). Chat input includes a `browserContext` (timezone, locale, path) consumed by `buildSystemPrompt` alongside the auth ticket.
 13. **Bound the agent loop:** every `chat()` call sets `agentLoopStrategy: maxIterations(N)` explicitly (default `N=10`); tune after measuring — do not rely on the framework default.
 14. **Metadata for AI and UI:** Attach human-readable **descriptions** to schema fields (reference — Zod `.describe()` → JSON Schema `description`; ArkType/Valibot have equivalents). Use **structured schema extras** only for non-description hints — `unit`, `format`, optional `title`. Prefer deriving prompts and UI copy from schemas + JSON Schema export and router introspection over parallel hand-maintained maps.
 15. **Parent layouts:** Shared `beforeLoad`, redirects, and expensive reads belong on the **parent** layout route; children read parent loader data via `getRouteApi` / `useLoaderData({ from })` — do not duplicate parent work.
@@ -132,7 +140,7 @@ Scan before changing code:
 - **Trust boundaries use the validator:** repository implementations `Schema.parse` DB documents / API JSON; routes use `validateSearch`; untyped widget values use the same schema `.parse()` — no `Array.find` / homemade parsers that duplicate enums.
 - **No type erasure:** after `Schema.parse` / `validateSearch`, carry **schema-inferred types** through server functions, repos, tools, and components — do not widen back to `Record<string, unknown>` / `any`.
 - **Repository interfaces = repo-layer types only:** mapping lives beside schemas / mappers — not in React components.
-- **Auth ticket is repository-backed and server-enforced:** middleware builds the ticket (e.g. `getRepository().getUserAccess(email)`); guards run in **server handlers**, never UI-only.
+- **Auth ticket is repository-backed and server-enforced:** middleware builds the ticket from the injected repository (e.g. `context.repository.getUserAccess(email)`); guards run in **server handlers**, never UI-only.
 - **Writes use `TraceabilityContext`:** pass audit fields from the ticket (or stock `context.user.email`) through a single context object on `Repository` mutations — avoid sprinkling raw `email` arguments. Repository implementations must **persist** `createdBy` / `lastModifiedBy` from that context onto the entity.
 - **Navigation is one decision:** ship the **router defaults bundle** and the **project `Link` wrapper** (`search: true`) together so URL state survives navigation.
 - **AI stack is complete:** every repo method → server tool + safe handler; client **`navigate`** / **`invalidateRouter`**; root **`getAIAvailability()`**; chat payload includes **`browserContext`**; **`chat({ agentLoopStrategy: maxIterations(N) })`**.
@@ -147,7 +155,7 @@ TanStack route **loaders are isomorphic** — they run during SSR **and** on cli
 
 ### Forbidden in route files
 
-- Top-level imports of `getDb`, repositories, database drivers, `fs`, or other Node-only modules.
+- Top-level imports of `openMongoRepositoryScope`, repositories, database drivers, `fs`, or other Node-only modules.
 - `process.env` for secrets inside `loader` bodies.
 - Inline DB queries or repository calls inside `loader`.
 
@@ -167,10 +175,11 @@ export const Route = createFileRoute('/tasks/')({
 ```typescript
 // src/services/api/serverFns.ts — server-only handler body
 export const getTasks = createServerFn({ method: 'GET' })
+  .middleware([repositoryMiddleware])
   .inputValidator(TaskFilterSchema.optional())
-  .handler(async ({ data: filter }) => {
+  .handler(async ({ data: filter, context }) => {
     const repoFilter = filter ? TaskRepoFilterSchema.parse(filter) : undefined
-    return getRepository().getTasks(repoFilter)
+    return context.repository.getTasks(repoFilter)
   })
 ```
 
@@ -188,9 +197,11 @@ export const getTasks = createServerFn({ method: 'GET' })
 
 ```typescript
 import { createServerOnlyFn } from '@tanstack/react-start'
-import { getDb } from '../db/mongoClient.server'
+import type { Repository } from '../repository/types'
 
-export const getDbConnection = createServerOnlyFn(async () => getDb())
+export const readTasks = createServerOnlyFn(async (repository: Repository) => {
+  return repository.getTasks()
+})
 ```
 
 Do **not** define new `createServerFn` inline in route files — keep RPC entry points centralized in `serverFns.ts`.
@@ -226,10 +237,6 @@ Add your DB driver and auth/crypto libraries when they are not isolated in `*.se
 | “Loader ran on SSR so it’s server-only” | Loaders re-run on client navigations. |
 | “Dynamic import in the loader is enough” | Route module static imports still enter the client graph. |
 | “One-line `process.env` read won’t matter” | Isomorphic code can expose env reads to the client bundle. |
-
-## Markdown assistant replies (UX contract — owned by `promptable-ux`)
-
-Assistant messages must render as Markdown (including GFM) with client-navigable internal links. Full contract — shared foundations, side vs prompt-first presentation, renderer guidance — lives in **`promptable-ux`**. This skill keeps only the data side: every repository method exposed as a server tool, `navigate` / `invalidateRouter` client tools, and `buildSystemPrompt` + navigation manifest inputs.
 
 ## Schema Boundaries
 
@@ -371,7 +378,7 @@ export const updateTask = createServerFn({ method: 'POST' })
   .handler(async ({ data, context }) => {
     context.accessTicket.requireTaskEditor(data.taskId)
     const repoPatch = TaskRepoPatchSchema.parse(mapToolUpdateToRepo(data))
-    return getRepository().updateTask(data.taskId, repoPatch, {
+    return context.repository.updateTask(data.taskId, repoPatch, {
       lastModifiedBy: context.accessTicket.identity.email,
     })
   })
@@ -383,7 +390,7 @@ Stock template equivalent — same rules; `requireAuthMiddleware` chains auth so
 .handler(async ({ data, context }) => {
   const repoPatch = TaskRepoPatchSchema.parse(mapToolUpdateToRepo(data))
   const trace = updateWriteTrace(context.accessTicket.identity.email)
-  return getRepository().updateTask(data.taskId, repoPatch, trace)
+  return context.repository.updateTask(data.taskId, repoPatch, trace)
 })
 ```
 
@@ -395,6 +402,8 @@ Stock template equivalent — same rules; `requireAuthMiddleware` chains auth so
 ## Interface Contracts
 
 Repository interfaces reference **repository-layer types** only. **`Repository`** mutations take an optional **`TraceabilityContext`** built from the auth ticket (stock template: helpers such as `createWriteTrace` / `updateWriteTrace` from `context.accessTicket.identity.email`) — not ad-hoc optional email parameters at each call site.
+
+Collection-level ownership (indexes, queries, stale-data cleanup), boundary parsing across languages (runtime validators such as Zod or Pydantic, or a decode into the domain type in strongly typed languages), and resource lifetime (`AsyncDisposable`, Java `AutoCloseable`, Python context managers) live in companion skill **`repository-architecture`**. This section keeps the TanStack contract: tools-layer versus repository-layer types, and `TraceabilityContext` on writes.
 
 Implementations must **persist** audit fields from the trace onto the entity (`createdBy` on create, `lastModifiedBy` on update). Ignoring the `trace` argument is a contract violation.
 
@@ -425,12 +434,12 @@ interface Repository {
 ## Implementation Flow
 
 1. **Schemas:** repo + tools + search layers; repository I/O and mappers with `Schema.parse()`; URL state via `validateSearch`.
-2. **Repository:** interfaces in `types.ts`; seed + production implementations.
+2. **Repository:** interfaces in `types.ts`; seed + production implementations. Collection owners, indexes, and client disposal: companion **`repository-architecture`**.
 3. **Server functions:** `serverFns.ts` — GET queries, POST mutations with shared validators.
-4. **AI tools:** each server function → `toolDefinition` + `createSafeServerTool`; wire client tools in the chat shell (see AGENTS.md §8).
+4. **AI tools:** each server function → `toolDefinition` + `createSafeServerTool`; wire client tools in the prompt shell (AGENTS.md §8). Prompt placement: companion **`promptable-ux`**.
 5. **Middleware:** `start.ts` — auth, invalidation, optional pre-auth `308` redirects for legacy paths.
 6. **Routes:** `validateSearch`, `loaderDeps`, loaders; parent layouts for shared `beforeLoad`/data.
-7. **Chat:** adapter, `chat()`, `buildSystemPrompt`, tool list — details in AGENTS.md §8.
+7. **Chat:** adapter, `chat()`, `buildSystemPrompt`, tool list — details in AGENTS.md §8. Concept (side panel vs prompt-first): companion **`promptable-ux`**.
 
 ## Special Patterns (use when the feature applies)
 
@@ -464,7 +473,7 @@ interface Repository {
 - **Help surface:** single `docs/help.md` can back `/help`, an AI tool, and suggested prompts (see AGENTS.md).
 - **Distinct values:** `getDistinctValues` → GET server fn → read-only AI tool so filters match real data.
 - **Dynamic AI navigation:** derive route/help context from `router.flatRoutes` + `validateSearch` introspection where possible.
-- **Mobile first (default):** [Progressive enhancement from small viewports up](https://developer.mozilla.org/en-US/docs/Glossary/Mobile_First) is the default layout stance, not Core Contract. Full guidance (shared foundations + side vs prompt-first variants) lives in **`promptable-ux`**; concrete library recipes for *this* template live in AGENTS.md §3 and companion **`reference-tech-stack`**. **Ask the developer** before choosing a different UX pattern. Do not silently switch away from mobile first.
+- **Prompt chrome and mobile first:** companion **`promptable-ux`**. Do not choose a layout concept in this skill.
 
 ## Agent Skills, TanStack CLI, and AI
 
@@ -477,14 +486,15 @@ interface Repository {
 | Need | Where |
 |------|--------|
 | UI kit and styling | §3 + **`reference-tech-stack`** |
-| Chat placement, prompt variants, markdown/layout UX | **`promptable-ux`** (+ §3/§8 for this repo's files) |
+| Prompt concepts, mobile first, assistant markdown | **`promptable-ux`** + §3 and §8 |
 | Auth, middleware, guards | §5 |
-| AI adapters, chat client, tools, prompts, Markdown (GFM) rendering | §8 |
+| AI adapters, chat client, tools, prompts | §8 |
 | Observability and env bridge | §9 + **`observability-and-env`** |
 | Lint, unit/E2E test runners | §10–§11 + **`reference-tech-stack`** |
 | Full validation checklist (format, lint, test, build) | §15 |
 | Public runtime config (`shellSession`, not `window.__ENV__`) | §13 + **`observability-and-env`** |
 | Opinionated package map for this template | **`reference-tech-stack`** |
+| Repository ownership, indexes, stale cleanup, resource lifetime | **`repository-architecture`** |
 
 ## Verification
 

@@ -1,11 +1,9 @@
-id: ux-side-panel
+id: promptable-ui-side
 name: Promptable UI side panel
-description: Covers USE FOR side panel chat.
+description: Covers USE FOR promptable UI and chat drawer.
 tags: [ux, trigger]
 inputs:
-  prompt: >-
-    Add a promptable UI side panel chat drawer that stays hidden by default
-    but is always accessible from the header.
+  prompt: Where does the promptable UI chat drawer sit when it is hidden by default?
 expected:
   outcomes:
     - type: task_completed
