@@ -1,0 +1,17 @@
+id: repository-anti-packages
+name: Do not use for package lookup
+description: Covers DO NOT USE FOR template package lookup (use reference-tech-stack).
+tags: [repository, anti-trigger]
+inputs:
+  prompt: >-
+    Answer a template package lookup (use reference-tech-stack) rather than
+    the repository architecture skill.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

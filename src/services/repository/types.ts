@@ -9,9 +9,15 @@ export interface TraceabilityContext {
 	lastModifiedBy?: string
 }
 
+/** Collection owners and the domain facade declare the indexes their queries need. */
+export interface IndexableRepository {
+	createIndexes(): Promise<void>
+}
+
 /**
  * Swappable data access (seed, Mongo, …). Mutations are authorized in POST
  * server functions (`requireAuthMiddleware`), not by a write-only type.
+ * Index initialization stays on the composition root, not on this consumer contract.
  */
 export interface Repository {
 	getTasks(filter?: TaskRepoFilter): Promise<TaskRepo[]>

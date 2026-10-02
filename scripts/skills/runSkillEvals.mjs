@@ -284,14 +284,43 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 			skill: 'tanstack-promptable-fullstack-app-template',
 			description: 'MongoRepository validates outbound documents with repo parsers (no casts)',
 			async run() {
-				const mongoRepo = await readText(path.join(rootDir, 'src/services/repository/mongoRepository.server.ts'))
-				if (/as Promise<TaskRepo/.test(mongoRepo) || /as TaskRepo/.test(mongoRepo)) {
-					return fail('mongoRepository.server.ts must not cast Mongo results to TaskRepo')
+				const repoDir = path.join(rootDir, 'src/services/repository')
+				let files
+				try {
+					files = await walkFiles(repoDir, { extensions: ['.ts'] })
+				} catch {
+					return fail('Missing src/services/repository')
 				}
-				if (!/parseTaskRepoList/.test(mongoRepo) || !/parseUserProfileRepoOrNull/.test(mongoRepo)) {
+				const sources = new Map()
+				const castFiles = []
+				for (const filePath of files) {
+					const rel = relative(rootDir, filePath)
+					if (rel.endsWith('.test.ts') || rel.endsWith('.test.tsx')) continue
+					const content = await readText(filePath)
+					sources.set(rel, content)
+					if (/as Promise<TaskRepo/.test(content) || /as TaskRepo/.test(content)) {
+						castFiles.push(rel)
+					}
+				}
+				if (castFiles.length > 0) {
+					return fail('Mongo repository modules must not cast Mongo results to TaskRepo', castFiles)
+				}
+				const task = sources.get('src/services/repository/mongoTaskRepository.server.ts')
+				const user = sources.get('src/services/repository/mongoUserRepository.server.ts')
+				const legacy = sources.get('src/services/repository/mongoRepository.server.ts')
+				if (task && user) {
+					if (!/parseTaskRepoList/.test(task) || !/parseDistinctValues/.test(task)) {
+						return fail('mongoTaskRepository.server.ts must use parseTaskRepoList / parseDistinctValues')
+					}
+					if (!/parseUserProfileRepoOrNull/.test(user)) {
+						return fail('mongoUserRepository.server.ts must use parseUserProfileRepoOrNull')
+					}
+					return pass()
+				}
+				if (!legacy || !/parseTaskRepoList/.test(legacy) || !/parseUserProfileRepoOrNull/.test(legacy)) {
 					return fail('mongoRepository.server.ts must use parseTaskRepoList / parseUserProfileRepoOrNull')
 				}
-				if (!/parseDistinctValues/.test(mongoRepo)) {
+				if (!/parseDistinctValues/.test(legacy)) {
 					return fail('mongoRepository.server.ts must parse distinct values with parseDistinctValues')
 				}
 				return pass()
@@ -439,7 +468,14 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 			async run() {
 				const serverFns = await readText(path.join(rootDir, 'src/services/api/serverFns.ts'))
 				const seed = await readText(path.join(rootDir, 'src/services/repository/seedRepository.ts'))
-				const mongo = await readText(path.join(rootDir, 'src/services/repository/mongoRepository.server.ts'))
+				const taskRepoPath = path.join(rootDir, 'src/services/repository/mongoTaskRepository.server.ts')
+				const legacyRepoPath = path.join(rootDir, 'src/services/repository/mongoRepository.server.ts')
+				let mongo
+				try {
+					mongo = await readText(taskRepoPath)
+				} catch {
+					mongo = await readText(legacyRepoPath)
+				}
 				const repoSchema = await readText(path.join(rootDir, 'src/services/schemas/repository.ts'))
 				const toolsSchema = await readText(path.join(rootDir, 'src/services/schemas/schemas.ts'))
 				const mapper = await readText(path.join(rootDir, 'src/services/schemas/taskMappers.ts'))
@@ -580,6 +616,141 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 					return fail('reference-tech-stack SKILL.md must include a Stack map section')
 				}
 				return pass()
+			},
+		},
+		{
+			id: 'repository-architecture-skill-contract',
+			skill: 'repository-architecture',
+			description: 'Repository architecture skill documents ownership, resource lifetime, and Java/Python equivalents',
+			async run() {
+				const { agentSkillsDir } = getSkillPaths(rootDir)
+				const skillMdPath = path.join(agentSkillsDir, 'repository-architecture', 'SKILL.md')
+				let skillMd
+				try {
+					skillMd = await readText(skillMdPath)
+				} catch {
+					return pass()
+				}
+				const required = [
+					['## Boundary and ownership', 'Boundary and ownership section'],
+					['## Boundary validation', 'Boundary validation section'],
+					['runtime validator', 'Runtime validators for erased or dynamic types'],
+					['Pydantic', 'Python Pydantic example'],
+					['strongly typed', 'Strongly typed languages decode into the domain type'],
+					['## Resource lifetime is not data cleanup', 'Resource lifetime section'],
+					['Symbol.asyncDispose', 'TypeScript AsyncDisposable ownership'],
+					['AutoCloseable', 'Java AutoCloseable equivalent'],
+					['__aexit__', 'Python async context-manager magic method'],
+					['Never perform stale-data deletion in a disposer', 'Disposer must not sweep stale data'],
+					['## Migration and verification workflow', 'Migration workflow'],
+				]
+				const missing = required.filter(([needle]) => !skillMd.includes(needle)).map(([, label]) => label)
+				if (missing.length > 0) {
+					return fail('repository-architecture skill is missing required contract text', missing)
+				}
+
+				const parentPath = path.join(agentSkillsDir, 'tanstack-promptable-fullstack-app-template', 'SKILL.md')
+				try {
+					const parent = await readText(parentPath)
+					if (!/\*\*`repository-architecture`\*\*\s*\(companion\)/.test(parent)) {
+						return fail('Parent architecture skill must list repository-architecture as a companion')
+					}
+				} catch {
+					// Partial fixtures may omit the parent skill.
+				}
+				return pass()
+			},
+		},
+		{
+			id: 'repository-driver-confined',
+			skill: 'repository-architecture',
+			description: 'Database driver imports stay in the composition root and repository implementations',
+			async run() {
+				let srcFiles
+				try {
+					srcFiles = await walkFiles(path.join(rootDir, 'src'), { extensions: ['.ts', '.tsx', '.mts'] })
+				} catch {
+					return pass()
+				}
+				const driverImport = /from\s+['"]mongodb['"]|new MongoClient\b|\.collection\s*(?:<[^>]+>)?\(/
+				const violations = []
+				for (const filePath of srcFiles) {
+					const rel = relative(rootDir, filePath)
+					if (rel.endsWith('.test.ts') || rel.endsWith('.test.tsx')) continue
+					if (rel.startsWith('src/services/db/')) continue
+					if (rel.startsWith('src/services/repository/') && rel.endsWith('.server.ts')) continue
+					const content = await readText(filePath)
+					if (driverImport.test(content)) {
+						violations.push(rel)
+					}
+				}
+				return violations.length === 0
+					? pass()
+					: fail('Database driver access must stay in src/services/db and src/services/repository', violations)
+			},
+		},
+		{
+			id: 'repository-collection-owners',
+			skill: 'repository-architecture',
+			description: 'Mongo collection owners bind collections, declare indexes, and the scope only closes the client',
+			async run() {
+				const taskPath = path.join(rootDir, 'src/services/repository/mongoTaskRepository.server.ts')
+				const userPath = path.join(rootDir, 'src/services/repository/mongoUserRepository.server.ts')
+				const facadePath = path.join(rootDir, 'src/services/repository/mongoRepository.server.ts')
+				let _hasFacade = false
+				try {
+					await fs.access(facadePath)
+					_hasFacade = true
+				} catch {
+					return pass()
+				}
+				const hasTask = await fs
+					.access(taskPath)
+					.then(() => true)
+					.catch(() => false)
+				const hasUser = await fs
+					.access(userPath)
+					.then(() => true)
+					.catch(() => false)
+				if (!hasTask || !hasUser) {
+					const missing = []
+					if (!hasTask) missing.push('mongoTaskRepository.server.ts')
+					if (!hasUser) missing.push('mongoUserRepository.server.ts')
+					return fail('Mongo facade requires task and user collection owner modules', missing)
+				}
+				const task = await readText(taskPath)
+				const user = await readText(userPath)
+				const facade = await readText(facadePath)
+				const scope = await readText(path.join(rootDir, 'src/services/db/mongoClient.server.ts'))
+				const missing = []
+				if (!/private readonly collection/.test(task))
+					missing.push('task collection is not a private constructor field')
+				if (!/private readonly collection/.test(user))
+					missing.push('user collection is not a private constructor field')
+				if (!/createIndex\(\{ id: 1 \}/.test(task)) missing.push('task owner must declare the id index')
+				if (!/createIndex\(\{ email: 1 \}/.test(user)) missing.push('user owner must declare the email index')
+				if (!/this\.tasks\.createIndexes\(/.test(facade) || !/this\.users\.createIndexes\(/.test(facade)) {
+					missing.push('facade must delegate createIndexes to collection owners')
+				}
+				if (!/Symbol\.asyncDispose/.test(scope)) missing.push('scope must dispose the client')
+				if (/deleteMany|cleanupStale/.test(scope)) missing.push('scope dispose must not sweep persisted rows')
+				if (missing.length > 0) {
+					return fail('Mongo repositories must follow collection ownership and resource lifetime', missing)
+				}
+
+				const srcFiles = await walkFiles(path.join(rootDir, 'src'), { extensions: ['.ts', '.tsx'] })
+				const clientOwners = []
+				for (const filePath of srcFiles) {
+					const rel = relative(rootDir, filePath)
+					if (rel.endsWith('.test.ts') || rel.endsWith('.test.tsx')) continue
+					const content = await readText(filePath)
+					if (/new MongoClient\b/.test(content) && rel !== 'src/services/db/mongoClient.server.ts') {
+						clientOwners.push(rel)
+					}
+				}
+				return clientOwners.length === 0
+					? pass()
+					: fail('new MongoClient is owned by src/services/db/mongoClient.server.ts', clientOwners)
 			},
 		},
 	]

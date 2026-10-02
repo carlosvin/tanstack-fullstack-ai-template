@@ -1,27 +1,64 @@
-import { createServerOnlyFn } from '@tanstack/react-start'
 import { type Db, MongoClient } from 'mongodb'
-import { webServerEnv } from '../../env/webEnv.server'
+import { MongoRepository } from '../repository/mongoRepository.server'
+import type { Repository } from '../repository/types'
 
-let client: MongoClient | null = null
-let db: Db | null = null
+export type MongoConnector = (uri: string) => Promise<MongoClient>
 
 /**
- * Returns a singleton MongoDB database connection.
- * Lazily connects on first call. Never callable from the client.
+ * Process-scoped owner of the Mongo client.
+ * Disposal closes the client. It does not delete persisted documents.
  */
-export const getDb = createServerOnlyFn(async (): Promise<Db> => {
-	if (db) return db
+export class MongoRepositoryScope implements AsyncDisposable {
+	readonly repository: Repository
 
-	const uri = webServerEnv.MONGODB_URI
-	if (!uri) {
-		throw new Error('MONGODB_URI environment variable is required for MongoDB repository.')
+	constructor(
+		private readonly client: MongoClient,
+		repository: MongoRepository,
+	) {
+		this.repository = repository
 	}
 
-	const dbName = webServerEnv.MONGODB_DB_NAME ?? 'app-db'
+	async [Symbol.asyncDispose](): Promise<void> {
+		await this.client.close()
+	}
+}
 
-	client = new MongoClient(uri)
-	await client.connect()
-	console.info(`[db] Connected to MongoDB database: ${dbName}`)
-	db = client.db(dbName)
-	return db
-})
+async function closeQuietly(client: MongoClient): Promise<void> {
+	try {
+		await client.close()
+	} catch {
+		// Keep the original connection or initialization failure.
+	}
+}
+
+async function connectMongoClient(uri: string): Promise<MongoClient> {
+	const client = new MongoClient(uri)
+	try {
+		await client.connect()
+		return client
+	} catch (error) {
+		await closeQuietly(client)
+		throw error
+	}
+}
+
+/**
+ * Connects, constructs collection repositories, and creates indexes.
+ * Closes the client when initialization fails.
+ */
+export async function openMongoRepositoryScope(
+	uri: string,
+	dbName: string,
+	connect: MongoConnector = connectMongoClient,
+): Promise<MongoRepositoryScope> {
+	const client = await connect(uri)
+	try {
+		const db: Db = client.db(dbName)
+		const repository = new MongoRepository(db)
+		await repository.createIndexes()
+		return new MongoRepositoryScope(client, repository)
+	} catch (error) {
+		await closeQuietly(client)
+		throw error
+	}
+}

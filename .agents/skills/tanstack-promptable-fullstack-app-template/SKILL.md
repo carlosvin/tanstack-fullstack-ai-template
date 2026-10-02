@@ -9,7 +9,8 @@ description: >-
 
   DO NOT USE FOR: logging or env schemas (use observability-and-env),
   error-tracking bootstrap (use observability-and-env), picking this template
-  concrete packages (use reference-tech-stack).
+  concrete packages (use reference-tech-stack), collection repository lifetime
+  (use repository-architecture).
 
   INVOKES: TanStack Start server functions, repository interfaces, and companion
   skills.
@@ -19,7 +20,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.31.0"
+  version: "1.32.2"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -35,6 +36,11 @@ This template publishes **multiple** skills. If only **this** skill is installed
 - **`reference-tech-stack`** (companion) — Opinionated vendor map for this template's reference app. Install when implementing against the demo stack defaults (UI kit, validator, DB, deploy).
   ```bash
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill reference-tech-stack
+  ```
+
+- **`repository-architecture`** (companion) — Language-agnostic repository architecture: injected collection owners, indexes, stale-data cleanup, and resource lifetime. Install when designing or refactoring repository contracts.
+  ```bash
+  npx skills add carlosvin/tanstack-fullstack-ai-template --skill repository-architecture
   ```
 
 Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --list`
@@ -54,6 +60,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 | New entity, routes, schemas, AI tools, auth, server boundaries | **This skill** |
 | Logging, error tracking, `instrument.*.mts`, `src/env/`, `shellSession`, env leaks | **`observability-and-env`** |
 | "Which package does this template use?" / match the demo app stack | **`reference-tech-stack`** |
+| Collection repositories, indexes, stale-data cleanup, resource lifetime | **`repository-architecture`** |
 | Architecture + env/logging | **This skill** + **`observability-and-env`** |
 | Scaffolding this template as-is | **This skill** + **`reference-tech-stack`** (+ observability when touching env) |
 
@@ -62,7 +69,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 1. Read **Core Contract** first — it is the non-negotiable architecture.
 2. Run the **Architecture Checklist** before every non-trivial change.
 3. Jump to **Server execution boundaries**, **Schema Boundaries**, **Request Context**, or **Special Patterns** only when that concern applies. Special Patterns are not Core Contract. **Mobile first** is the default layout stance — ask before choosing a different UX pattern.
-4. Use **[AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md)** for operational how-to — not for inventing alternate architecture. **This skill is vendor-agnostic** for UI kits and observability SDKs. Concrete packages for *this* template live in companion skill **`reference-tech-stack`**; env/logging setup lives in **`observability-and-env`**.
+4. Use **[AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md)** for operational how-to — not for inventing alternate architecture. **This skill is vendor-agnostic** for UI kits and observability SDKs. Concrete packages for *this* template live in companion skill **`reference-tech-stack`**; env/logging setup lives in **`observability-and-env`**. Collection ownership, indexes, stale-data cleanup, and resource lifetime live in **`repository-architecture`**.
 
 ## Fixed vs swappable stack
 
@@ -108,7 +115,7 @@ Pick **one validator library** per app and use it consistently across router sea
 7. **Routes:** Thin route files (`createFileRoute`, `validateSearch`, `loaderDeps`, `loader`, `component`); page UI in `src/components/`. **Loaders** fetch via server functions — no `useEffect` data fetching for route data.
 8. **URL-as-state:** Filters, tabs, selections in validated **search** params; use `loaderDeps` so only relevant search fields key the loader cache.
 9. **Router config bundle:** ship a project-local `Link` wrapper with `search: true` default (use it for every internal link) **and** these router defaults together: `defaultStaleTime`, `defaultPreload: 'intent'`, `defaultPreloadStaleTime: 0`, `scrollRestoration: true`, `notFoundComponent`.
-10. **Auth ticket built in middleware:** auth middleware enriches `ctx.context` with a repository-built ticket (e.g. `getRepository().getUserAccess(email)`) carrying identity, roles, and guards; `Repository` mutations accept a `TraceabilityContext` (`createdBy`, `lastModifiedBy`, …) constructed from that ticket so writes are attributed consistently across UI and AI.
+10. **Auth ticket built in middleware:** auth middleware enriches `ctx.context` with a repository-built ticket (e.g. `context.repository.getUserAccess(email)`) carrying identity, roles, and guards; `Repository` mutations accept a `TraceabilityContext` (`createdBy`, `lastModifiedBy`, …) constructed from that ticket so writes are attributed consistently across UI and AI.
 11. **AI tool coverage:** expose **every** repository method as a server AI tool via `createSafeServerTool`; add **distinct-values** tools for enum-ish filters; expose `navigate` and `invalidateRouter` as client tools.
 12. **Promptable by default:** root loader checks `getAIAvailability()` and only mounts chat UI when configured (no disabled state). Chat input includes a `browserContext` (timezone, locale, path) consumed by `buildSystemPrompt` alongside the auth ticket.
 13. **Bound the agent loop:** every `chat()` call sets `agentLoopStrategy: maxIterations(N)` explicitly (default `N=10`); tune after measuring — do not rely on the framework default.
@@ -126,7 +133,7 @@ Scan before changing code:
 - **Trust boundaries use the validator:** repository implementations `Schema.parse` DB documents / API JSON; routes use `validateSearch`; untyped widget values use the same schema `.parse()` — no `Array.find` / homemade parsers that duplicate enums.
 - **No type erasure:** after `Schema.parse` / `validateSearch`, carry **schema-inferred types** through server functions, repos, tools, and components — do not widen back to `Record<string, unknown>` / `any`.
 - **Repository interfaces = repo-layer types only:** mapping lives beside schemas / mappers — not in React components.
-- **Auth ticket is repository-backed and server-enforced:** middleware builds the ticket (e.g. `getRepository().getUserAccess(email)`); guards run in **server handlers**, never UI-only.
+- **Auth ticket is repository-backed and server-enforced:** middleware builds the ticket from the injected repository (e.g. `context.repository.getUserAccess(email)`); guards run in **server handlers**, never UI-only.
 - **Writes use `TraceabilityContext`:** pass audit fields from the ticket (or stock `context.user.email`) through a single context object on `Repository` mutations — avoid sprinkling raw `email` arguments. Repository implementations must **persist** `createdBy` / `lastModifiedBy` from that context onto the entity.
 - **Navigation is one decision:** ship the **router defaults bundle** and the **project `Link` wrapper** (`search: true`) together so URL state survives navigation.
 - **AI stack is complete:** every repo method → server tool + safe handler; client **`navigate`** / **`invalidateRouter`**; root **`getAIAvailability()`**; chat payload includes **`browserContext`**; **`chat({ agentLoopStrategy: maxIterations(N) })`**.
@@ -141,7 +148,7 @@ TanStack route **loaders are isomorphic** — they run during SSR **and** on cli
 
 ### Forbidden in route files
 
-- Top-level imports of `getDb`, repositories, database drivers, `fs`, or other Node-only modules.
+- Top-level imports of `openMongoRepositoryScope`, repositories, database drivers, `fs`, or other Node-only modules.
 - `process.env` for secrets inside `loader` bodies.
 - Inline DB queries or repository calls inside `loader`.
 
@@ -161,10 +168,11 @@ export const Route = createFileRoute('/tasks/')({
 ```typescript
 // src/services/api/serverFns.ts — server-only handler body
 export const getTasks = createServerFn({ method: 'GET' })
+  .middleware([repositoryMiddleware])
   .inputValidator(TaskFilterSchema.optional())
-  .handler(async ({ data: filter }) => {
+  .handler(async ({ data: filter, context }) => {
     const repoFilter = filter ? TaskRepoFilterSchema.parse(filter) : undefined
-    return getRepository().getTasks(repoFilter)
+    return context.repository.getTasks(repoFilter)
   })
 ```
 
@@ -182,9 +190,11 @@ export const getTasks = createServerFn({ method: 'GET' })
 
 ```typescript
 import { createServerOnlyFn } from '@tanstack/react-start'
-import { getDb } from '../db/mongoClient.server'
+import type { Repository } from '../repository/types'
 
-export const getDbConnection = createServerOnlyFn(async () => getDb())
+export const readTasks = createServerOnlyFn(async (repository: Repository) => {
+  return repository.getTasks()
+})
 ```
 
 Do **not** define new `createServerFn` inline in route files — keep RPC entry points centralized in `serverFns.ts`.
@@ -365,7 +375,7 @@ export const updateTask = createServerFn({ method: 'POST' })
   .handler(async ({ data, context }) => {
     context.accessTicket.requireTaskEditor(data.taskId)
     const repoPatch = TaskRepoPatchSchema.parse(mapToolUpdateToRepo(data))
-    return getRepository().updateTask(data.taskId, repoPatch, {
+    return context.repository.updateTask(data.taskId, repoPatch, {
       lastModifiedBy: context.accessTicket.identity.email,
     })
   })
@@ -377,7 +387,7 @@ Stock template equivalent — same rules; `requireAuthMiddleware` chains auth so
 .handler(async ({ data, context }) => {
   const repoPatch = TaskRepoPatchSchema.parse(mapToolUpdateToRepo(data))
   const trace = updateWriteTrace(context.accessTicket.identity.email)
-  return getRepository().updateTask(data.taskId, repoPatch, trace)
+  return context.repository.updateTask(data.taskId, repoPatch, trace)
 })
 ```
 
@@ -389,6 +399,8 @@ Stock template equivalent — same rules; `requireAuthMiddleware` chains auth so
 ## Interface Contracts
 
 Repository interfaces reference **repository-layer types** only. **`Repository`** mutations take an optional **`TraceabilityContext`** built from the auth ticket (stock template: helpers such as `createWriteTrace` / `updateWriteTrace` from `context.accessTicket.identity.email`) — not ad-hoc optional email parameters at each call site.
+
+Collection-level ownership (indexes, queries, stale-data cleanup), boundary parsing across languages (runtime validators such as Zod or Pydantic, or a decode into the domain type in strongly typed languages), and resource lifetime (`AsyncDisposable`, Java `AutoCloseable`, Python context managers) live in companion skill **`repository-architecture`**. This section keeps the TanStack contract: tools-layer versus repository-layer types, and `TraceabilityContext` on writes.
 
 Implementations must **persist** audit fields from the trace onto the entity (`createdBy` on create, `lastModifiedBy` on update). Ignoring the `trace` argument is a contract violation.
 
@@ -419,7 +431,7 @@ interface Repository {
 ## Implementation Flow
 
 1. **Schemas:** repo + tools + search layers; repository I/O and mappers with `Schema.parse()`; URL state via `validateSearch`.
-2. **Repository:** interfaces in `types.ts`; seed + production implementations.
+2. **Repository:** interfaces in `types.ts`; seed + production implementations. Collection owners, indexes, and client disposal: companion **`repository-architecture`**.
 3. **Server functions:** `serverFns.ts` — GET queries, POST mutations with shared validators.
 4. **AI tools:** each server function → `toolDefinition` + `createSafeServerTool`; wire client tools in the chat shell (see AGENTS.md §8).
 5. **Middleware:** `start.ts` — auth, invalidation, optional pre-auth `308` redirects for legacy paths.
@@ -478,6 +490,7 @@ interface Repository {
 | Full validation checklist (format, lint, test, build) | §15 |
 | Public runtime config (`shellSession`, not `window.__ENV__`) | §13 + **`observability-and-env`** |
 | Opinionated package map for this template | **`reference-tech-stack`** |
+| Repository ownership, indexes, stale cleanup, resource lifetime | **`repository-architecture`** |
 
 ## Verification
 

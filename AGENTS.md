@@ -18,7 +18,7 @@ npx skills add carlosvin/tanstack-fullstack-ai-template --skill <id>
 
 This document is the default agent and contributor guide for projects built from this template. It covers project structure, conventions, tooling, and operational detail.
 
-The **architectural contract** lives in the [TanStack Promptable Fullstack App Template skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) ([agentskills.io](https://agentskills.io) `SKILL.md`; companions via `pnpm skills:check`, spec via `pnpm skills:waza`). Opinionated package choices for *this* template (Zod, Mantine, MongoDB, pino, Sentry, …) live in the [reference-tech-stack skill](.agents/skills/reference-tech-stack/SKILL.md). **This handbook** covers project layout, UI kit, auth wiring, AI adapter setup, observability recipes, and validation commands — not alternate architecture.
+The **architectural contract** lives in the [TanStack Promptable Fullstack App Template skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) ([agentskills.io](https://agentskills.io) `SKILL.md`; companions via `pnpm skills:check`, spec via `pnpm skills:waza`). Opinionated package choices for *this* template (Zod, Mantine, MongoDB, pino, Sentry, …) live in the [reference-tech-stack skill](.agents/skills/reference-tech-stack/SKILL.md). Language-agnostic repository ownership — collection repositories, indexes, stale-data cleanup, and resource lifetime — lives in the [repository-architecture skill](.agents/skills/repository-architecture/SKILL.md). **This handbook** covers project layout, UI kit, auth wiring, AI adapter setup, observability recipes, and validation commands — not alternate architecture.
 
 Before non-trivial changes: read the skill **Core Contract** and run the **Architecture Checklist**.
 
@@ -161,12 +161,15 @@ Full-stack TanStack Start — no separate backend API. Architecture (layering, i
 Route Loader → serverFns.ts → Repository → Database / Seed Data
 ```
 
+How to split collection repositories, own indexes, and dispose connections: [repository-architecture skill](.agents/skills/repository-architecture/SKILL.md). `ensureRepository()` in `getRepository.server.ts` is the composition root: it connects, then constructs `MongoRepository` with `new`. `repositoryMiddleware` injects that instance as `context.repository`. Handlers do not await a repository factory. `MongoRepository` delegates to `MongoTaskRepository` and `MongoUserRepository`, which bind their collections and declare indexes. This app has no refresh-window sweep, so disposal does not delete documents.
+
 | Concern | Where |
 |---------|--------|
 | RPC entry points | `src/services/api/serverFns.ts` — all `createServerFn` exports |
 | UI mutation errors | `src/services/api/processResponse.ts` |
 | AI tool errors | `src/services/ai/serverTool.ts` — `createSafeServerTool`, `safeToolHandler` |
-| Repository factory | `src/services/repository/getRepository.server.ts` |
+| Composition root | `src/services/repository/getRepository.server.ts` — `ensureRepository()` |
+| Request injection | `src/middleware/repository.ts` — `context.repository` |
 | Import protection | `vite.config.ts` → `tanstackStart({ importProtection })` |
 
 **Calling convention:** `getTasks({ data: filter })` — pass `{ data: … }` to server functions.
@@ -179,7 +182,7 @@ export const myMutation = createServerFn({ method: 'POST' })
   .inputValidator(MyInputSchema)
   .handler(async ({ data, context }) => {
     const trace = createWriteTrace(context.accessTicket.identity.email)
-    return getRepository().doSomething(data, trace)
+    return context.repository.doSomething(data, trace)
   })
 
 const result = await processResponse(() => myMutation({ data: input }))

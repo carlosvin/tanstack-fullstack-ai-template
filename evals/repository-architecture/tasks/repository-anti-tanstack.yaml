@@ -1,0 +1,20 @@
+id: repository-anti-tanstack
+name: Do not use for TanStack wiring
+description: >-
+  Covers DO NOT USE FOR TanStack routes schemas or AI tools (use
+  tanstack-promptable-fullstack-app-template).
+tags: [repository, anti-trigger]
+inputs:
+  prompt: >-
+    Add TanStack routes schemas or AI tools (use
+    tanstack-promptable-fullstack-app-template) rather than the repository
+    architecture skill.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"
