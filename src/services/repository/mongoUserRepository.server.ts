@@ -5,6 +5,9 @@ import type { IndexableRepository } from './types'
 
 const USERS_COLLECTION = 'users'
 
+/** Case-insensitive email uniqueness and lookup share the same collation. */
+const EMAIL_COLLATION = { locale: 'en', strength: 2 } as const
+
 export interface UserCollectionRepository extends IndexableRepository {
 	getUserProfile(email: string): Promise<UserProfileRepo | null>
 	getUserAccess(email: string): Promise<UserAccessRepo | null>
@@ -19,11 +22,11 @@ export class MongoUserRepository implements UserCollectionRepository {
 	}
 
 	async createIndexes(): Promise<void> {
-		await this.collection.createIndex({ email: 1 }, { unique: true })
+		await this.collection.createIndex({ email: 1 }, { unique: true, collation: EMAIL_COLLATION })
 	}
 
 	async getUserProfile(email: string): Promise<UserProfileRepo | null> {
-		const row = await this.collection.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } })
+		const row = await this.collection.findOne({ email }, { collation: EMAIL_COLLATION })
 		return parseUserProfileRepoOrNull(row)
 	}
 

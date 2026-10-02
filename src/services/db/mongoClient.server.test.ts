@@ -30,7 +30,11 @@ describe('openMongoRepositoryScope', () => {
 		expect(createIndex).toHaveBeenCalledTimes(2)
 		expect(indexes).toEqual([
 			{ name: 'tasks', key: { id: 1 }, options: { unique: true } },
-			{ name: 'users', key: { email: 1 }, options: { unique: true } },
+			{
+				name: 'users',
+				key: { email: 1 },
+				options: { unique: true, collation: { locale: 'en', strength: 2 } },
+			},
 		])
 		await scope[Symbol.asyncDispose]()
 		expect(close).toHaveBeenCalledOnce()

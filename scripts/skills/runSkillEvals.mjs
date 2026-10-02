@@ -672,13 +672,13 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				} catch {
 					return pass()
 				}
-				const allowedPrefixes = ['src/services/db/', 'src/services/repository/']
 				const driverImport = /from\s+['"]mongodb['"]|new MongoClient\b|\.collection\s*(?:<[^>]+>)?\(/
 				const violations = []
 				for (const filePath of srcFiles) {
 					const rel = relative(rootDir, filePath)
 					if (rel.endsWith('.test.ts') || rel.endsWith('.test.tsx')) continue
-					if (allowedPrefixes.some((prefix) => rel.startsWith(prefix))) continue
+					if (rel.startsWith('src/services/db/')) continue
+					if (rel.startsWith('src/services/repository/') && rel.endsWith('.server.ts')) continue
 					const content = await readText(filePath)
 					if (driverImport.test(content)) {
 						violations.push(rel)
@@ -695,14 +695,32 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 			description: 'Mongo collection owners bind collections, declare indexes, and the scope only closes the client',
 			async run() {
 				const taskPath = path.join(rootDir, 'src/services/repository/mongoTaskRepository.server.ts')
+				const userPath = path.join(rootDir, 'src/services/repository/mongoUserRepository.server.ts')
+				const facadePath = path.join(rootDir, 'src/services/repository/mongoRepository.server.ts')
+				let _hasFacade = false
 				try {
-					await fs.access(taskPath)
+					await fs.access(facadePath)
+					_hasFacade = true
 				} catch {
 					return pass()
 				}
+				const hasTask = await fs
+					.access(taskPath)
+					.then(() => true)
+					.catch(() => false)
+				const hasUser = await fs
+					.access(userPath)
+					.then(() => true)
+					.catch(() => false)
+				if (!hasTask || !hasUser) {
+					const missing = []
+					if (!hasTask) missing.push('mongoTaskRepository.server.ts')
+					if (!hasUser) missing.push('mongoUserRepository.server.ts')
+					return fail('Mongo facade requires task and user collection owner modules', missing)
+				}
 				const task = await readText(taskPath)
-				const user = await readText(path.join(rootDir, 'src/services/repository/mongoUserRepository.server.ts'))
-				const facade = await readText(path.join(rootDir, 'src/services/repository/mongoRepository.server.ts'))
+				const user = await readText(userPath)
+				const facade = await readText(facadePath)
 				const scope = await readText(path.join(rootDir, 'src/services/db/mongoClient.server.ts'))
 				const missing = []
 				if (!/private readonly collection/.test(task))
