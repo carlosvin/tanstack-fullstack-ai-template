@@ -564,37 +564,61 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 			},
 		},
 		{
-			id: 'architecture-mobile-first-default',
-			skill: 'tanstack-promptable-fullstack-app-template',
+			id: 'promptable-ux-concepts',
+			skill: 'promptable-ux',
 			description:
-				'Mobile first is the default layout stance; agents ask the developer before choosing a different UX pattern',
+				'Shared UX skill defines both prompt concepts; mobile first stays out of the architecture core contract',
 			async run() {
 				const { agentSkillsDir } = getSkillPaths(rootDir)
+				let skillMd
+				try {
+					skillMd = await readText(path.join(agentSkillsDir, 'promptable-ux', 'SKILL.md'))
+				} catch {
+					return fail('Missing .agents/skills/promptable-ux/SKILL.md')
+				}
+				const agents = await readText(path.join(rootDir, 'AGENTS.md'))
 				const templateSkill = await readText(
 					path.join(agentSkillsDir, 'tanstack-promptable-fullstack-app-template', 'SKILL.md'),
 				)
-				const agents = await readText(path.join(rootDir, 'AGENTS.md'))
-				const specialMatch = templateSkill.split('## Special Patterns')[1]
+				const layout = await readText(path.join(rootDir, 'src/components/AppLayout/AppLayout.tsx'))
+				const shared = skillMd.split('## Shared UX')[1]?.split('## Promptable UI (side)')[0] ?? ''
+				if (!/## Promptable UI \(side\)/.test(skillMd) || !/## Prompt-first/.test(skillMd)) {
+					return fail('promptable-ux must define Promptable UI (side) and Prompt-first')
+				}
+				if (!/Mobile first \(default\)/.test(shared)) {
+					return fail('Shared UX must include mobile first as the default')
+				}
+				if (!/Ask the developer/.test(skillMd)) {
+					return fail('promptable-ux must ask the developer before an undeclared concept or leaving mobile first')
+				}
+				if (!/developer\.mozilla\.org\/en-US\/docs\/Glossary\/Mobile_First/.test(shared)) {
+					return fail('Mobile first must cite the MDN glossary definition')
+				}
+				if (!/Promptable UI \(side\)/.test(layout)) {
+					return fail('AppLayout must declare Promptable UI (side)')
+				}
+				const specialMatch = templateSkill.split('## Special Patterns')[1] ?? ''
 				const coreMatch = templateSkill.split('## Core Contract')[1]?.split('## Architecture Checklist')[0] ?? ''
-				if (!specialMatch || !/Mobile first \(default\)/.test(specialMatch)) {
-					return fail('Architecture skill Special Patterns must include mobile first as the default')
+				if (
+					/Mobile first \(default\)/.test(specialMatch) ||
+					/developer\.mozilla\.org\/en-US\/docs\/Glossary\/Mobile_First/.test(specialMatch)
+				) {
+					return fail('Architecture skill must point at promptable-ux instead of owning the mobile-first essay')
 				}
-				if (!/Ask the developer/.test(specialMatch) || !/different UX pattern/.test(specialMatch)) {
-					return fail('Mobile first Special Pattern must ask the developer before choosing a different UX pattern')
-				}
-				if (!/developer\.mozilla\.org\/en-US\/docs\/Glossary\/Mobile_First/.test(specialMatch)) {
-					return fail('Mobile first Special Pattern must cite the MDN glossary definition')
-				}
-				if (/chrome/i.test(specialMatch) || /AppShell/.test(specialMatch) || /burger/i.test(specialMatch)) {
-					return fail('Architecture skill must not prescribe chrome widgets for mobile first')
+				if (/AppShell/.test(specialMatch) || /burger/i.test(specialMatch)) {
+					return fail('Architecture skill must not prescribe chrome widgets')
 				}
 				if (/mobile first/i.test(coreMatch) || /mobile-first/i.test(coreMatch)) {
 					return fail('Mobile first must not be listed in Core Contract')
 				}
+				if (!/\*\*`promptable-ux`\*\*\s*\(companion\)/.test(templateSkill)) {
+					return fail('Parent architecture skill must list promptable-ux as a companion')
+				}
 				if (!/Mobile first \(default\)/.test(agents) || !/Ask the developer/.test(agents)) {
-					return fail(
-						'AGENTS.md §3 must document mobile first as default and ask the developer about other UX patterns',
-					)
+					return fail('AGENTS.md must document mobile first as default and ask the developer')
+				}
+				if (!/Promptable UI \(side\)/.test(agents) || !/Prompt-first/.test(agents)) {
+					return fail('AGENTS.md must name both prompt concepts')
 				}
 				return pass()
 			},

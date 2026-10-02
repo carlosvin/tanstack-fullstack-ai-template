@@ -1,0 +1,15 @@
+id: assistant-markdown
+name: Assistant markdown
+description: Covers USE FOR assistant markdown.
+tags: [ux, trigger]
+inputs:
+  prompt: How should assistant markdown render tables, code, and internal links?
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

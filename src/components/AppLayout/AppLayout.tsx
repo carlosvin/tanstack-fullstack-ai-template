@@ -15,6 +15,10 @@ interface AppLayoutProps {
 	children: React.ReactNode
 }
 
+/**
+ * Prompt concept: Promptable UI (side).
+ * The prompt stays closed until the user opens the drawer. See the promptable-ux skill.
+ */
 export function AppLayout({ currentUser, shellSession, aiAvailable = false, children }: AppLayoutProps) {
 	const [chatOpened, { open: openChatDrawer, close: closeChat }] = useDisclosure(false)
 	const [navOpened, { toggle: toggleNav, close: closeNav }] = useDisclosure(false)

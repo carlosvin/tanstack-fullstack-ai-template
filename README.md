@@ -25,6 +25,7 @@ npx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-prompta
 npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env
 npx skills add carlosvin/tanstack-fullstack-ai-template --skill reference-tech-stack
 npx skills add carlosvin/tanstack-fullstack-ai-template --skill repository-architecture
+npx skills add carlosvin/tanstack-fullstack-ai-template --skill promptable-ux
 ```
 
 Similar: `gh skill install carlosvin/tanstack-fullstack-ai-template`.

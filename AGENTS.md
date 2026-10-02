@@ -18,7 +18,7 @@ npx skills add carlosvin/tanstack-fullstack-ai-template --skill <id>
 
 This document is the default agent and contributor guide for projects built from this template. It covers project structure, conventions, tooling, and operational detail.
 
-The **architectural contract** lives in the [TanStack Promptable Fullstack App Template skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) ([agentskills.io](https://agentskills.io) `SKILL.md`; companions via `pnpm skills:check`, spec via `pnpm skills:waza`). Opinionated package choices for *this* template (Zod, Mantine, MongoDB, pino, Sentry, …) live in the [reference-tech-stack skill](.agents/skills/reference-tech-stack/SKILL.md). Language-agnostic repository ownership — collection repositories, indexes, stale-data cleanup, and resource lifetime — lives in the [repository-architecture skill](.agents/skills/repository-architecture/SKILL.md). **This handbook** covers project layout, UI kit, auth wiring, AI adapter setup, observability recipes, and validation commands — not alternate architecture.
+The **architectural contract** lives in the [TanStack Promptable Fullstack App Template skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) ([agentskills.io](https://agentskills.io) `SKILL.md`; companions via `pnpm skills:check`, spec via `pnpm skills:waza`). Opinionated package choices for *this* template (Zod, Mantine, MongoDB, pino, Sentry, …) live in the [reference-tech-stack skill](.agents/skills/reference-tech-stack/SKILL.md). Language-agnostic repository ownership — collection repositories, indexes, stale-data cleanup, and resource lifetime — lives in the [repository-architecture skill](.agents/skills/repository-architecture/SKILL.md). Shared prompt UX — mobile first, assistant markdown, and the two prompt concepts — lives in the [promptable-ux skill](.agents/skills/promptable-ux/SKILL.md). **This handbook** covers project layout, UI kit, auth wiring, AI adapter setup, observability recipes, and validation commands — not alternate architecture.
 
 Before non-trivial changes: read the skill **Core Contract** and run the **Architecture Checklist**.
 
@@ -95,7 +95,7 @@ This project uses [Mantine](https://mantine.dev/) as the primary UI framework.
 - **Styling props**: Use Mantine's built-in props (`c`, `fw`, `size`, `variant`, etc.) instead of CSS.
 - **CSS Modules**: When custom CSS beyond Mantine is needed, use CSS Modules (`Component.module.css`).
 - **Responsive props**: Use Mantine's object syntax for mobile-first values: `<SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>` (`base` is the narrow viewport; larger keys enhance).
-- **Mobile first (default):** [Progressive enhancement from small viewports up](https://developer.mozilla.org/en-US/docs/Glossary/Mobile_First) — not a particular widget. Start from `base` styles and add `sm` / `md` / `lg`. For navigation that overflows a narrow header, Mantine `AppShell` + `Burger` (`hiddenFrom="sm"`) + `NavLink` (project `Link`) is the kit recipe; keep AI chat as a right `Drawer`, not `AppShell.Aside`. **Ask the developer** if this app should follow a different UX pattern.
+- **Mobile first (default):** [Progressive enhancement from small viewports up](https://developer.mozilla.org/en-US/docs/Glossary/Mobile_First) — not a particular widget. Start from `base` styles and add `sm` / `md` / `lg`. For navigation that overflows a narrow header, Mantine `AppShell` + `Burger` (`hiddenFrom="sm"`) + `NavLink` (project `Link`) is the kit recipe. **Ask the developer** which prompt concept to use when the app has not declared one; both stay mobile first. This app declares **Promptable UI (side)** from the [promptable-ux skill](.agents/skills/promptable-ux/SKILL.md): the prompt is a right `Drawer`, not `AppShell.Aside`. The other concept is **Prompt-first** (prompt always visible, overview then drill-down). Do not mix them.
 - **Theming**: Customize the theme in `__root.tsx`. Use Mantine CSS variables (`--mantine-color-*`) in CSS Modules.
 - **Avoid inline styles**: Use Mantine props or CSS Modules instead.
 - **Avoid `!important`**: Minimize its use.
@@ -200,7 +200,7 @@ Routes live in `src/routes/`; tree is auto-generated in `routeTree.gen.ts`. Rout
 
 ## 8. AI Chat and Tools
 
-**Architecture** (tool coverage, `browserContext`, bounded agent loop, prompt structure, virtual fields): [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) **Core Contract** #11–14 and **Implementation Flow** #4, #7. **This section:** adapter setup, file paths, chat UI wiring, navigation manifest maintenance.
+**Architecture** (tool coverage, `browserContext`, bounded agent loop, prompt structure, virtual fields): [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) **Core Contract** #11–14 and **Implementation Flow** #4, #7. **Prompt concept:** [promptable-ux skill](.agents/skills/promptable-ux/SKILL.md). This reference app implements **Promptable UI (side)** — the prompt is hidden until opened. **Prompt-first** is the other concept in that skill; do not add a second always-visible prompt beside this drawer. **This section:** adapter setup, file paths, chat UI wiring, navigation manifest maintenance.
 
 | File | Role |
 |------|------|
@@ -296,7 +296,7 @@ When adding dynamic route segments, add pattern-matching in `buildSystemPrompt()
 
 ### Chat Drawer Convention
 
-Unless the user specifies otherwise, the AI chat is rendered in a Mantine [`Drawer`](https://mantine.dev/core/drawer/) positioned on the **right** side (`position="right"`, `size="lg"`). The drawer is mounted at the root layout level (`AppLayout`) so messages persist across route navigation. The `useDisclosure` hook from `@mantine/hooks` controls open/close state.
+This is the **Promptable UI (side)** recipe. The AI chat is a Mantine [`Drawer`](https://mantine.dev/core/drawer/) on the **right** (`position="right"`, `size="lg"`, full viewport below `sm`). It stays closed until the user opens it from the header. The drawer mounts at the root layout (`AppLayout`) so messages persist across route navigation. `useDisclosure` from `@mantine/hooks` controls open/close. A bottom panel is the same concept; this app uses the side. **Prompt-first** does not use this drawer.
 
 ### Chat Drawer Rendering
 
@@ -376,7 +376,7 @@ Handled by the [observability-and-env skill](.agents/skills/observability-and-en
 
 ## 14. Special Patterns
 
-Bulk edit (URL multi-select), overlay repository, distinct-values tools, help surface, controlled components, debounced free-text search (uncontrolled input + `useDebouncedCallback`), [mobile first](https://developer.mozilla.org/en-US/docs/Glossary/Mobile_First) by default: [skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) **Special Patterns** and **Core Contract** #7–8. How you apply it depends on the UI library — Mantine recipe in §3. Ask the developer if the app should follow a different UX pattern.
+Bulk edit (URL multi-select), overlay repository, distinct-values tools, help surface, controlled components, debounced free-text search (uncontrolled input + `useDebouncedCallback`): [architecture skill](.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md) **Special Patterns** and **Core Contract** #7–8. [Mobile first](https://developer.mozilla.org/en-US/docs/Glossary/Mobile_First) and the two prompt concepts (**Promptable UI (side)**, **Prompt-first**): [promptable-ux skill](.agents/skills/promptable-ux/SKILL.md). This app uses the side concept. Mantine recipe in §3. **Ask the developer** before switching concepts.
 
 ## 15. Validate Changes
 
