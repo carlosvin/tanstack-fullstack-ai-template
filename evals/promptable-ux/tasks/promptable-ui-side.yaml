@@ -1,6 +1,6 @@
 id: promptable-ui-side
 name: Promptable UI side panel
-description: Covers USE FOR promptable UI and chat drawer.
+description: Covers USE FOR promptable UI, side panel chat, chat drawer, and app navigation UX.
 tags: [ux, trigger]
 inputs:
   prompt: Where does the promptable UI chat drawer sit when it is hidden by default?

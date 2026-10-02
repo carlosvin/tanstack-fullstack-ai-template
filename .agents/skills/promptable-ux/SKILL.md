@@ -1,24 +1,24 @@
 ---
 name: promptable-ux
 description: >-
-  **WORKFLOW SKILL** - Shared UX for promptable apps. One contract covers both
-  prompt concepts: a hidden side or bottom panel, and a prompt-first layout.
+  **WORKFLOW SKILL** - Shared promptable UX plus two concepts: a hidden side
+  or bottom panel, and a prompt-first layout.
 
-  USE FOR: promptable UI, prompt first app, chat drawer, mobile first layout,
-  assistant markdown.
+  USE FOR: promptable UI, side panel chat, prompt first app, chat drawer,
+  prompt bar, mobile first layout, assistant markdown, app navigation UX.
 
   DO NOT USE FOR: schema layers or server boundaries (use
   tanstack-promptable-fullstack-app-template), env parse or logging (use
   observability-and-env), which UI library (use reference-tech-stack).
 
-  INVOKES: prompt chrome, layout concepts, and companion skills.
+  INVOKES: prompt chrome, chat presentation, and companion skills.
 
   FOR SINGLE OPERATIONS: Load the architecture skill for routes and tools;
-  this skill is the UX contract only.
+  this skill is UX layout and chat presentation only.
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.0.0"
+  version: "1.1.0"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -40,17 +40,17 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 # Promptable UX
 
-**Purpose:** One UX contract for promptable apps. Shared rules (mobile first, markdown replies, one prompt, real routes) apply to every app. **Two concepts** differ only in where the prompt sits and what the user sees first.
+**Purpose:** One UX contract for promptable apps. Shared rules apply to every app. **Two concepts** differ only in where the prompt sits and what the user sees first.
 
 > **Parent skill:** `tanstack-promptable-fullstack-app-template` — tools, loaders, URL-as-state, `getAIAvailability()`, bounded `chat()`. Do not restate that contract here.
 >
-> **Kit recipes for this template:** [AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) §3 and §8, and companion **`reference-tech-stack`**.
+> **Kit recipes for this template:** [AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) §3 and §8, and companion **`reference-tech-stack`**. Widget names below are the reference app. Another kit keeps the concept and swaps the widget.
 
 ## Skill routing
 
 | Task | Load |
 |------|------|
-| Which prompt concept, chat chrome, mobile first, assistant markdown | **This skill** |
+| Which prompt concept, side panel chat, prompt bar, mobile first, assistant markdown, app navigation UX | **This skill** |
 | Schemas, routes, AI tools, server boundaries, availability gate | **`tanstack-promptable-fullstack-app-template`** |
 | Which UI library or markdown package this template uses | **`reference-tech-stack`** |
 | Widget snippets and file paths in this repo | **AGENTS.md** §3 and §8 |
@@ -58,87 +58,106 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 ## How to use this skill
 
-1. Read **Shared UX** — it applies to both concepts.
-2. Read **Choose a concept**. This template's reference app already declares **Promptable UI (side)**. Ask the developer before using the other concept or changing that declaration.
+1. Read **Shared UX**. It applies to both concepts.
+2. Read **Choose a concept**. This template's reference app already declares **Promptable UI (side)**. Ask the developer before using the other concept or changing that declaration. Record the choice so reviewers know which checklist applied.
 3. Implement only the chosen concept. Do not ship both prompt surfaces.
-4. Keep routes, tools, and loaders on the architecture skill. This skill changes composition, not the data model.
+4. Run the **UX checklist** before a UI change.
+5. Keep routes, tools, and loaders on the architecture skill. This skill changes composition, not the data model.
 
 ## Choose a concept
 
 | | Promptable UI (side) | Prompt-first |
 |--|----------------------|--------------|
 | What the user sees first | The domain screen (dashboard, list, detail) | The prompt |
-| Prompt visibility | Hidden until the user opens it | Always on screen |
-| Panel | Side drawer or bottom panel; may cover a narrow viewport | Not a panel. It is the top of the page |
-| How areas are reached | App navigation, plus the prompt once opened | Prompt, and a top-to-bottom overview the user drills into |
+| Prompt visibility | Hidden until the user opens it | Always on screen. It is the entry point |
+| Panel | Side drawer, or a bottom panel. May cover a narrow viewport | Not a panel. It is the top of the page |
+| How areas are reached | App navigation, plus the prompt once opened | The prompt, and a top-to-bottom overview the user drills into |
+| Best for | Data-dense apps where browsing is primary and the prompt assists | A clean overview the user drills into, with the prompt leading |
+| This template | **Declared default** | Opt-in. Not shipped here |
 
-**One concept per app.** A hidden drawer plus a second always-visible prompt is a mixed concept — do not build it.
+**One concept per app.** A hidden drawer plus a second always-visible prompt is a mixed concept. Do not build it.
 
-**Ask the developer** which concept to use when the app has not declared one. Do not silently switch an app that already declares a concept. This repository declares **Promptable UI (side)**.
+**Ask the developer** which concept to use when the app has not declared one. Do not silently switch an app that already declares a concept. When the preference is unclear, use **Promptable UI (side)** and say that prompt-first is available.
 
 ## Shared UX
 
-These rules apply to both concepts.
+These rules apply to both concepts. The prompt stack does not change between them.
 
-1. **Promptable when configured.** Mount the prompt only when `getAIAvailability()` is true (architecture Core Contract #12). No disabled placeholder.
-2. **One prompt surface.** Conversation state mounts at the root layout so it survives route changes. Closing a panel or scrolling the page must not wipe the thread.
-3. **Real routes.** Sections and views are router routes with loaders and URL search state. The prompt presents or switches them with the `navigate` client tool and markdown links. It does not invent a second app inside the transcript.
-4. **Direct access too.** Every area the prompt can open also has a visible control, so the app works before the model replies.
-5. **Mobile first (default).** [Progressive enhancement from small viewports up](https://developer.mozilla.org/en-US/docs/Glossary/Mobile_First): a usable layout at the narrowest width, then richer layout as the viewport grows. This is the layout stance, not a widget. **Ask the developer** before leaving mobile first (desktop-first, a specialized layout). Do not silently switch. Both concepts stay mobile first. Kit tokens for *this* template live in AGENTS.md §3 and **`reference-tech-stack`**.
-6. **Assistant markdown.** Render assistant messages as Markdown, including GFM: lists, tables, fenced and inline code, and links. Internal paths such as `[Tasks](/tasks)` stay client-navigable. Do not flatten assistant output to plain text. The renderer package is project-specific (this repo: AGENTS.md §8).
-7. **Both color schemes.** Every prompt surface and domain view works in light and dark.
-8. **Clean chrome.** No second chat, no duplicate navigation that exists only inside the model reply, no dense tables on an overview that exists to be scanned.
-9. **Filters stay URL state.** Free-text search follows the architecture debounced-search pattern. Do not bind each keystroke to `navigate`.
+1. **Promptable when configured.** Mount the prompt only when `getAIAvailability()` is true (architecture Core Contract #12). No disabled placeholder. When AI is off, the rest of the page stays; the prompt is absent.
+2. **One prompt stack.** Both concepts use the same `/api/chat` stream, `buildSystemPrompt` (base prompt, navigation manifest, current user, browser context), `browserContext`, `navigate` and `invalidateRouter`, and `maxIterations(N)`. Only the chrome moves.
+3. **One prompt surface, state at the root.** Conversation state mounts on the root layout so it survives route changes. Closing a panel or scrolling must not wipe the thread.
+4. **Real routes, same loaders.** Sections and views are router routes. Overview cards and drill-down pages call the same server functions as the rest of the app. No parallel data path for the prompt. The prompt presents or switches views with `navigate` and markdown links. It does not invent a screen that is missing from the navigation manifest. New capabilities still follow the architecture implementation flow: schema, repository, server function, tool, route.
+5. **Direct access too.** Every area the prompt can open also has a visible control, so the app works before the model replies.
+6. **URL and prompt describe the same view.** Filters, tabs, and selections stay in validated search params. Discrete filters may navigate immediately. Free-text search follows the architecture debounced-search pattern. Do not call `navigate` on every keystroke.
+7. **App navigation UX.** Route and help context in the prompt comes from router introspection (`routesById`, route descriptions, `.describe()` on search fields), not a hand-maintained map. A new user-facing route is missing until it is in that manifest. Dynamic segments need a current-location rule so "this task" resolves to the id on screen.
+8. **Mobile first (default).** [Progressive enhancement from small viewports up](https://developer.mozilla.org/en-US/docs/Glossary/Mobile_First): a usable layout at the narrowest width, then richer layout as the viewport grows. This is the layout stance, not a widget. **Ask the developer** before leaving mobile first (desktop-first, a specialized layout). Do not silently switch. Both concepts stay mobile first. Kit tokens for *this* template live in AGENTS.md §3 and **`reference-tech-stack`**.
+9. **Assistant markdown.** Render assistant messages as Markdown, including GFM: lists, tables, fenced and inline code, and links. Internal paths such as `[Tasks](/tasks)` stay client-navigable through the project `Link` (`search: true`, `preload="intent"`). Do not flatten assistant output to plain text. The renderer package is project-specific (this repo: AGENTS.md §8).
+10. **Prompt behavior.** Show tool activity as short status labels, a thinking state while the model runs, and errors in an alert. Enter sends; Shift+Enter inserts a newline. Offer stop while generating, and clear once messages exist. Suggested prompts may come from the single help document (`docs/help.md`), which can also back the help route and a help tool. Filter choices and the prompt offer distinct values from the data, not a hardcoded list.
+11. **Both color schemes.** Every prompt surface and domain view works in light and dark, using theme tokens. Keep one icon library.
+12. **Auth stays on the server.** Hiding a button is not a guard. Mutations stay behind the auth ticket. Chat affordances follow `aiAvailable`.
 
 ### Common failure modes
 
 - **Desktop-first without asking.** Designing a wide layout and only later squeezing it onto a small screen.
 - **Mixed concepts.** An always-visible prompt and a hidden drawer in the same shell.
 - **Chat-only views.** A section that exists only as markdown in the thread, with no route.
+- **A second data path.** Overview widgets that fetch beside the route loaders.
 - **Plain-text replies.** Stripping tables, code, and internal links from assistant messages.
 - **Disabled prompt.** Rendering a greyed-out chat when AI is not configured. Omit the prompt instead.
 
 ## Promptable UI (side)
 
-The domain UI is the product. The prompt is always reachable and hidden until the user asks for it.
+The domain UI is the product. The prompt is always reachable and hidden until the user asks for it. Use this when browsing, filtering, and detail pages are primary and the prompt assists what is already on screen. Extending this template as-is uses this concept.
 
 - The primary surface is the current route: overview, list, or detail.
-- The prompt starts closed. A persistent control on every screen opens it (in this template, a header action).
+- The prompt starts closed. A persistent control on every screen opens it, including when navigation collapses on a narrow header.
 - Use a **side panel** on wider viewports or a **bottom panel**. On the narrowest viewport the panel may cover the screen. Closing it returns to the same route and keeps the thread.
-- Do not dock the prompt as a permanent column beside the page. A column that is always there is the prompt-first concept.
-- Navigation that does not fit a narrow header collapses (this template: burger + nav). The prompt control stays available in that collapsed header.
+- Do not dock the prompt as a permanent column. A column that is always there is the prompt-first concept.
 - Opening the prompt must not navigate away or drop URL search state.
+- An internal link in an assistant message navigates without closing the panel or clearing the thread.
 
-**Reference app (this template):** `AppLayout` mounts `ChatDrawer` closed. The panel is a right-side drawer and becomes full viewport below the `sm` breakpoint. Recipe: AGENTS.md §3 and §8. Match that recipe when extending this repo. A different UI kit keeps the concept and swaps the widget.
+**Reference app (this template):** `AppLayout` mounts `ChatDrawer` closed. `Header` opens it (`aria-label="Open AI chat"`). The panel is a right-side drawer and becomes full viewport below the `sm` breakpoint. It is not an `AppShell.Aside`. Match that recipe when extending this repo. File paths and markdown CSS: AGENTS.md §3 and §8.
 
 ## Prompt-first
 
-The prompt is the entry point. The rest of the app is a high-level overview the user drills into, from top to bottom.
+The prompt is the entry point. The page is a high-level overview the user drills into, from top to bottom. Use this when the developer asks for a prompt-led app, or when scaffolding a new home surface. Do not retrofit every existing list page in one pass unless asked.
 
-Reading order on every screen:
+Reading order:
 
 1. **App bar** — identity, and a way back to the overview. Keep it short.
-2. **Prompt** — always visible. The thread scrolls; the input stays reachable without opening a panel.
-3. **Overview** — application areas as a short summary. Each area is one scannable entry (name, one-line status, link), not a full data table.
-4. **Drill-down** — the active area once the user enters it: filters, lists, detail, forms. This is a real route rendered below the overview, or the route the prompt navigated to, with the prompt still mounted above it.
+2. **Prompt bar** — always visible, above the fold, not behind an open action. The thread scrolls; the input stays reachable. On a drill-down route, keep this bar or a compact form of it so "this view" still resolves from the current location.
+3. **Overview** — application areas as a short summary (status, recent items, one card per area). Each entry is scannable, not a full data table, and links to its route. The same loaders feed these sections.
+4. **Drill-down** — the active area: filters, lists, detail, forms. A real route, below the overview or on its own URL, with the prompt still mounted above it. Child routes reuse parent loader data and URL search state.
 
 Rules that differ from the side concept:
 
 - The prompt is present on first paint. Do not hide it behind a drawer, a bottom sheet, or a disclosure.
-- The user can ask the prompt to open or present a section, and can also tap the overview. Both land on the same route.
-- Drill-down adds depth down the page (or onto that area's route). Do not replace the prompt with the detail view.
+- Asking the prompt to open a section and tapping the overview land on the same route.
+- Drill-down adds depth. Do not replace the prompt with the detail view.
 - On a narrow viewport, keep the same top-to-bottom order. Pin the prompt input; let the thread and the page scroll.
-- Do not add a side drawer "as well." One concept only.
+- Do not add a side drawer as well. One chat shell. If a migration temporarily has both, remove the drawer before calling it done.
+- When AI is not configured, render the static overview and omit the prompt bar.
 
-This template does not ship a prompt-first shell. Use this section when the developer chooses prompt-first for a new app or explicitly asks to switch. Reuse the same chat endpoint, tools, markdown rendering, and availability gate as the side concept.
+This template does not ship a prompt-first shell. A `PromptBar` (input, submit, stop, error, suggestions) plus an overview page is enough. Wire them to the same chat endpoint and client tools as the side panel.
 
-## What stays the same
+## UX checklist
+
+- Concept chosen with the developer. Side is the default; prompt-first is opt-in. This repo stays side unless asked.
+- `getAIAvailability()` gates the prompt. No disabled placeholder.
+- Chat state lives on the layout and survives navigation.
+- Assistant output is GFM markdown. Internal links use the project `Link`.
+- Navigation manifest covers every user-facing route, including "this item" on dynamic routes.
+- Filters and tabs use `validateSearch` and `loaderDeps`. Free-text search is debounced.
+- Overview and drill-down read the same loaders. No second fetch path.
+- Narrow layout and both color schemes checked.
+- Mutations stay server-guarded. `invalidateRouter` runs after writes.
+
+## What stays on other skills
 
 | Concern | Where it lives |
 |---------|----------------|
-| `getAIAvailability()` gate | Architecture Core Contract #12 |
-| Server tools, `navigate`, `invalidateRouter`, `browserContext` | Architecture Core Contract #11–#13; AGENTS.md §8 |
-| Routes, loaders, URL search | Architecture Core Contract #7–#8 |
+| `getAIAvailability()` gate, tool coverage, agent loop | Architecture Core Contract #11–#13 |
+| Routes, loaders, URL search, debounced search | Architecture Core Contract #7–#8 and Special Patterns |
 | Markdown package and CSS for this repo | AGENTS.md §8; **`reference-tech-stack`** |
 | Breakpoint props for this repo | AGENTS.md §3; **`reference-tech-stack`** |
 

@@ -4,8 +4,8 @@ description: Covers the skill description tagline.
 tags: [ux, description]
 inputs:
   prompt: >-
-    Follow the shared UX for promptable apps. One contract covers both prompt
-    concepts: a hidden side or bottom panel, and a prompt-first layout.
+    Shared promptable UX plus two concepts: a hidden side or bottom panel, and
+    a prompt-first layout.
 expected:
   outcomes:
     - type: task_completed
