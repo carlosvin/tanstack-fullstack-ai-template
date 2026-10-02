@@ -1,6 +1,6 @@
 id: prompt-first-app
 name: Prompt-first app
-description: Covers USE FOR prompt first app.
+description: Covers USE FOR prompt first app and prompt bar.
 tags: [ux, trigger]
 inputs:
   prompt: How should a prompt first app place the prompt and drill into sections?
