@@ -61,7 +61,7 @@ coupling into the architecture skill.
 > **Companion:** `observability-and-env` — env parse, pino factories, Sentry
 > bootstrap. This skill only records that we chose pino + Sentry.
 >
-> **Handbook:** [AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md)
+> **Handbook:** [AGENTS.md](https://raw.githubusercontent.com/carlosvin/tanstack-fullstack-ai-template/main/AGENTS.md)
 > — file layout, snippets, and validation commands.
 
 ## Skill routing

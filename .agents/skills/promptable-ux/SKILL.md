@@ -49,7 +49,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 > **Parent skill:** `tanstack-promptable-fullstack-app-template` — tools, loaders, URL-as-state, `getAIAvailability()`, bounded `chat()`. Do not restate that contract here.
 >
-> **Kit recipes for this template:** [AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) §3 and §8, and companion **`reference-tech-stack`**. Widget names below are the reference app. Another kit keeps the concept and swaps the widget.
+> **Kit recipes for this template:** [AGENTS.md](https://raw.githubusercontent.com/carlosvin/tanstack-fullstack-ai-template/main/AGENTS.md) §3 and §8, and companion **`reference-tech-stack`**. Widget names below are the reference app. Another kit keeps the concept and swaps the widget.
 
 ## Skill routing
 

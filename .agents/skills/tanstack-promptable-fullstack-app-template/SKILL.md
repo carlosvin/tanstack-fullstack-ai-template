@@ -55,7 +55,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 **Purpose:** Capture the **interface-first, schema-layered, AI-promptable** contract for TanStack Start apps from this template. Day-to-day conventions (UI kit, chat wiring, logging, tests) live in the repo’s **AGENTS.md** — use this skill for **architecture**, AGENTS.md for **operations**.
 
-> **Companion handbook:** [AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) — structure, styling, auth snippets, lint/test tooling, validation checklist, AI chat setup.
+> **Companion handbook:** [AGENTS.md](https://raw.githubusercontent.com/carlosvin/tanstack-fullstack-ai-template/main/AGENTS.md) — structure, styling, auth snippets, lint/test tooling, validation checklist, AI chat setup.
 >
 > **Companion skill:** `observability-and-env` — env schemas, browser shell session, logging/error-tracking bootstrap. Load it for observability work; this skill keeps only the architecture invariants (no vendor-specific logging or APM choices).
 
@@ -76,7 +76,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 1. Read **Core Contract** first — it is the non-negotiable architecture.
 2. Run the **Architecture Checklist** before every non-trivial change.
 3. Jump to **Server execution boundaries**, **Schema Boundaries**, **Request Context**, or **Special Patterns** only when that concern applies. Special Patterns are not Core Contract. Prompt chrome and mobile first live in companion **`promptable-ux`**.
-4. Use **[AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md)** for operational how-to — not for inventing alternate architecture. **This skill is vendor-agnostic** for UI kits and observability SDKs. Concrete packages for *this* template live in companion skill **`reference-tech-stack`**; env/logging setup lives in **`observability-and-env`**. Collection ownership, indexes, stale-data cleanup, and resource lifetime live in **`repository-architecture`**. Prompt concepts live in **`promptable-ux`**.
+4. Use **[AGENTS.md](https://raw.githubusercontent.com/carlosvin/tanstack-fullstack-ai-template/main/AGENTS.md)** for operational how-to — not for inventing alternate architecture. **This skill is vendor-agnostic** for UI kits and observability SDKs. Concrete packages for *this* template live in companion skill **`reference-tech-stack`**; env/logging setup lives in **`observability-and-env`**. Collection ownership, indexes, stale-data cleanup, and resource lifetime live in **`repository-architecture`**. Prompt concepts live in **`promptable-ux`**.
 
 ## Fixed vs swappable stack
 
@@ -161,7 +161,7 @@ TanStack route **loaders are isomorphic** — they run during SSR **and** on cli
 
 ### Required pattern
 
-Define reads/writes in [`src/services/api/serverFns.ts`](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/src/services/api/serverFns.ts). Route loaders only invoke them:
+Define reads/writes in [`src/services/api/serverFns.ts`](https://raw.githubusercontent.com/carlosvin/tanstack-fullstack-ai-template/main/src/services/api/serverFns.ts). Route loaders only invoke them:
 
 ```typescript
 // src/routes/tasks/index.tsx — thin route
@@ -208,7 +208,7 @@ Do **not** define new `createServerFn` inline in route files — keep RPC entry 
 
 ### Import protection (Vite)
 
-When adding node-only packages, extend [`vite.config.ts`](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/vite.config.ts):
+When adding node-only packages, extend [`vite.config.ts`](https://raw.githubusercontent.com/carlosvin/tanstack-fullstack-ai-template/main/vite.config.ts):
 
 ```typescript
 tanstackStart({

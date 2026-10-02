@@ -67,7 +67,7 @@ arguments and calls an **`ObservabilityService` interface**, not a specific SDK.
 > Load **this skill additionally** when work touches logging, env schemas,
 > error-tracking bootstrap, or `shellSession` / `getBrowserShellSession` plumbing.
 >
-> **Handbook:** [AGENTS.md §9](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md) — file map and usage in this repo.
+> **Handbook:** [AGENTS.md §9](https://raw.githubusercontent.com/carlosvin/tanstack-fullstack-ai-template/main/AGENTS.md) — file map and usage in this repo.
 
 ## Design principle — interface first
 
