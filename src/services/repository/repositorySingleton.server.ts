@@ -11,9 +11,32 @@ type RepositoryBundle = {
 	dispose: (() => Promise<void>) | null
 }
 
-let bundlePromise: Promise<RepositoryBundle> | null = null
+let opening: Promise<RepositoryBundle> | null = null
+let ready: RepositoryBundle | null = null
 
-async function openRepository(): Promise<RepositoryBundle> {
+/**
+ * Composition root. Connects when Mongo is selected, then constructs the
+ * repository with `new`. Callers receive the instance; they do not await a factory.
+ */
+export async function ensureRepository(): Promise<Repository> {
+	if (ready) return ready.repository
+	if (!opening) {
+		opening = constructRepository()
+			.then((bundle) => {
+				ready = bundle
+				opening = null
+				return bundle
+			})
+			.catch((error) => {
+				opening = null
+				throw error
+			})
+	}
+	const bundle = await opening
+	return bundle.repository
+}
+
+async function constructRepository(): Promise<RepositoryBundle> {
 	const type = webServerEnv.REPOSITORY_TYPE ?? (webServerEnv.MONGODB_URI ? 'mongo' : 'seed')
 	log.info({ repo: type }, 'Using repository')
 	if (type !== 'mongo') {
@@ -34,30 +57,19 @@ async function openRepository(): Promise<RepositoryBundle> {
 	}
 }
 
-/** Returns the singleton repository. Connects and initializes Mongo when selected. */
-export async function getRepositorySingleton(): Promise<Repository> {
-	if (!bundlePromise) {
-		bundlePromise = openRepository().catch((error) => {
-			bundlePromise = null
-			throw error
-		})
-	}
-	return bundlePromise.then((bundle) => bundle.repository)
-}
-
 /** Closes the owned Mongo client. Seed mode is a no-op. */
 export async function closeRepositorySingleton(): Promise<void> {
-	const pending = bundlePromise
-	if (!pending) return
+	const pending = opening
+	const current = pending ? await pending.catch(() => null) : ready
+	if (!current?.dispose) return
 
-	const bundle = await pending.catch(() => null)
-	if (!bundle?.dispose) return
-
-	bundlePromise = null
-	await bundle.dispose()
+	ready = null
+	opening = null
+	await current.dispose()
 }
 
 /** Test-only reset of module singleton state. */
 export function resetRepositorySingletonForTests(): void {
-	bundlePromise = null
+	opening = null
+	ready = null
 }

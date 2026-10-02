@@ -1,8 +1,8 @@
 import { createServerOnlyFn } from '@tanstack/react-start'
-import { closeRepositorySingleton, getRepositorySingleton } from './repositorySingleton.server'
+import { closeRepositorySingleton, ensureRepository as ensureRepositorySingleton } from './repositorySingleton.server'
 
-/** Returns the singleton repository. Connects and initializes Mongo when selected. */
-export const getRepository = createServerOnlyFn(getRepositorySingleton)
+/** Composition root. Constructs the repository once; inject the result via middleware. */
+export const ensureRepository = createServerOnlyFn(ensureRepositorySingleton)
 
 /** Closes the owned Mongo client. Seed mode is a no-op. */
 export const closeRepository = createServerOnlyFn(closeRepositorySingleton)

@@ -271,7 +271,7 @@ See [`.env.example`](.env.example) for the full list with documentation.
 
 ### Swapping the Database
 
-Implement `Repository` for the new driver. Construct it from `getRepository.server.ts`. Keep the client inside a scope that closes on dispose, and keep collection access inside collection repositories.
+Implement `Repository` for the new driver. Construct it with `new` inside `ensureRepository()` and inject it with `repositoryMiddleware`. Keep the client inside a scope that closes on dispose, and keep collection access inside collection repositories.
 
 ### Swapping the AI Provider
 

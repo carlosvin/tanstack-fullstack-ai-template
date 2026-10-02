@@ -20,7 +20,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.1.0"
+  version: "1.1.1"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -297,10 +297,9 @@ async with await create_repository_scope(config) as repositories:
 
 ## Migration and verification workflow
 
-1. Inventory every use of direct driver access, legacy loaders, index definitions, cleanup calls, and connection closure. Identify which system and collection owns each operation.
-2. Define focused interfaces and readonly inputs; implement collection owners, compose domain facades, and create a single composition root. Move index definitions and query/write/cleanup details behind the owning implementations.
-3. Inject interfaces into every caller (including CLI, tests, server functions, and AI-facing capabilities). Remove obsolete loaders, duplicate helpers, imports, union-type shims, and now-unused configuration. Keep external-system access out of route and AI-tool modules.
-4. Test repositories against representative database behavior: index initialization, upserts, filters, counts, safe stale sweeps, failure propagation, and owned-resource disposal including initialization failure. Test steps with typed in-memory/fake repositories rather than mocking cursor chains.
-5. Run targeted unit and type/lint checks, then the real pipeline or application flow with a safe test/local environment. Confirm the complete refresh, cleanup guards, error path, and UI/API behavior as relevant. Never publish environment files or credentials in examples or logs.
+1. Find driver, loader, index, cleanup, and connection-close call sites. Name the system and collection that owns each one.
+2. Add collection owners and one domain facade. The composition root constructs them with `new` and calls `createIndexes()`.
+3. Inject that interface into callers. Remove driver imports from routes and tools.
+4. Test indexes, writes, filters, failures, and disposal with an in-memory repository. Run the app locally. Do not commit credentials.
 
-Before finishing, search the changed feature for remaining direct `collection`, driver-client, raw HTTP client, and legacy-loader access outside repository implementations. Explain intentional exceptions (such as the composition root), and update the project's architectural instructions to reflect the actual boundaries.
+Search the change for leftover collection, driver, or raw client use outside repository modules. The composition root is the expected exception.

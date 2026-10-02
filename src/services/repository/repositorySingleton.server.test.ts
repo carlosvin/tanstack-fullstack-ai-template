@@ -33,8 +33,8 @@ describe('repositorySingleton', () => {
 				}),
 		)
 
-		const { getRepositorySingleton, closeRepositorySingleton } = await import('./repositorySingleton.server')
-		const repoPromise = getRepositorySingleton()
+		const { ensureRepository, closeRepositorySingleton } = await import('./repositorySingleton.server')
+		const repoPromise = ensureRepository()
 		const closePromise = closeRepositorySingleton()
 
 		resolveOpen?.({
@@ -53,14 +53,14 @@ describe('repositorySingleton', () => {
 			webServerEnv: { REPOSITORY_TYPE: 'seed' },
 		}))
 
-		const { getRepositorySingleton, closeRepositorySingleton, resetRepositorySingletonForTests } = await import(
+		const { ensureRepository, closeRepositorySingleton, resetRepositorySingletonForTests } = await import(
 			'./repositorySingleton.server'
 		)
 		resetRepositorySingletonForTests()
 
-		const first = await getRepositorySingleton()
+		const first = await ensureRepository()
 		await closeRepositorySingleton()
-		const second = await getRepositorySingleton()
+		const second = await ensureRepository()
 
 		expect(first).toBe(second)
 	})
