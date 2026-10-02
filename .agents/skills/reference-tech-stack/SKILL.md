@@ -18,7 +18,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.3.0"
+  version: "1.3.1"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -34,6 +34,11 @@ This template publishes **multiple** skills. If only **this** skill is installed
 - **`observability-and-env`** (companion) — Env parse, logger factories, and error-tracking bootstrap. This stack skill names pino + Sentry; that companion owns the setup recipe.
   ```bash
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env
+  ```
+
+- **`repository-architecture`** (companion) — Language-agnostic repository architecture: injected collection owners, indexes, stale-data cleanup, and resource lifetime. This stack skill names the database driver; that companion owns the pattern.
+  ```bash
+  npx skills add carlosvin/tanstack-fullstack-ai-template --skill repository-architecture
   ```
 
 Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --list`
@@ -60,6 +65,7 @@ coupling into the architecture skill.
 | "What does this template use for X?" / scaffold matching the demo app | **This skill** |
 | Architecture, schemas, routes, AI tools, server boundaries | **`tanstack-promptable-fullstack-app-template`** |
 | Env schemas, `shellSession`, logging/Sentry bootstrap | **`observability-and-env`** |
+| Collection repositories, indexes, stale-data cleanup, resource lifetime | **`repository-architecture`** |
 | Day-to-day file paths and UI/auth/AI how-to | **AGENTS.md** |
 
 ## Stack map (this repository)

@@ -77,7 +77,7 @@ export const authMiddleware = createMiddleware().server(async ({ next, request }
 
   let userProfile = null
   if (user.email) {
-    userProfile = await getRepository().getUserProfile(user.email)
+    userProfile = await context.repository.getUserProfile(user.email)
   }
 
   return next({ context: { user, userProfile } })

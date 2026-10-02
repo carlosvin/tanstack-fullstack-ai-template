@@ -2,11 +2,11 @@ import { createMiddleware } from '@tanstack/react-start'
 import { getCookie, setCookie } from '@tanstack/react-start/server'
 import { webServerEnv } from '../env/webEnv.server'
 import { type AccessTicket, buildAccessTicket } from '../services/auth/accessTicket'
-import { getRepository } from '../services/repository/getRepository.server'
 import type { UserIdentity } from '../types'
 import { extractIdentityFromJwt } from '../utils/jwt.server'
 import { createServerLogger } from '../utils/serverLogger'
 import { resolveAccessTicket, TEST_AUTH_COOKIE_NAME } from '../utils/testAuth.server'
+import { repositoryMiddleware } from './repository'
 
 const log = createServerLogger('auth')
 
@@ -50,38 +50,40 @@ export interface AuthContext {
  * - If a valid JWT is present in the auth header, the decoded identity is used.
  * - Otherwise a persistent test user is minted (or restored from the test-auth cookie).
  */
-export const authMiddleware = createMiddleware().server(async ({ next, request }) => {
-	const pathname = new URL(request.url).pathname
-	const authHeader = request.headers.get(AUTH_HEADER_NAME)
+export const authMiddleware = createMiddleware()
+	.middleware([repositoryMiddleware])
+	.server(async ({ next, request, context }) => {
+		const pathname = new URL(request.url).pathname
+		const authHeader = request.headers.get(AUTH_HEADER_NAME)
 
-	if (isPublicRoute(pathname)) {
-		const headerIdentity = extractIdentityFromJwt(authHeader)
-		const user = headerIdentity.email ? headerIdentity : ANONYMOUS_USER
-		log.debug({ pathname }, 'public route — skipped profile load')
+		if (isPublicRoute(pathname)) {
+			const headerIdentity = extractIdentityFromJwt(authHeader)
+			const user = headerIdentity.email ? headerIdentity : ANONYMOUS_USER
+			log.debug({ pathname }, 'public route — skipped profile load')
+			return next({
+				context: {
+					accessTicket: buildAccessTicket({ user, profile: null, isTestUser: false }),
+				},
+			})
+		}
+
+		const ticket = resolveAccessTicket(authHeader, getCookie(TEST_AUTH_COOKIE_NAME))
+
+		if (ticket.newTestAuthToken) {
+			setCookie(TEST_AUTH_COOKIE_NAME, ticket.newTestAuthToken, {
+				...TEST_AUTH_COOKIE_OPTIONS,
+				secure: new URL(request.url).protocol === 'https:',
+			})
+		}
+
+		const { user, isTestUser } = ticket
+
+		// Test users are ephemeral and never stored in the repository — skip the lookup.
+		const profile = user.email && !isTestUser ? await context.repository.getUserProfile(user.email) : null
+
 		return next({
 			context: {
-				accessTicket: buildAccessTicket({ user, profile: null, isTestUser: false }),
+				accessTicket: buildAccessTicket({ user, profile, isTestUser }),
 			},
 		})
-	}
-
-	const ticket = resolveAccessTicket(authHeader, getCookie(TEST_AUTH_COOKIE_NAME))
-
-	if (ticket.newTestAuthToken) {
-		setCookie(TEST_AUTH_COOKIE_NAME, ticket.newTestAuthToken, {
-			...TEST_AUTH_COOKIE_OPTIONS,
-			secure: new URL(request.url).protocol === 'https:',
-		})
-	}
-
-	const { user, isTestUser } = ticket
-
-	// Test users are ephemeral and never stored in the repository — skip the lookup.
-	const profile = user.email && !isTestUser ? await getRepository().getUserProfile(user.email) : null
-
-	return next({
-		context: {
-			accessTicket: buildAccessTicket({ user, profile, isTestUser }),
-		},
 	})
-})

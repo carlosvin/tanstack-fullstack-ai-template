@@ -1,12 +1,12 @@
 import { createServerFn } from '@tanstack/react-start'
 import { authMiddleware } from '../../middleware/auth'
 import { invalidateMiddleware } from '../../middleware/invalidate'
+import { repositoryMiddleware } from '../../middleware/repository'
 import { requireAuthMiddleware } from '../../middleware/requireAuth'
 import { webEnvMiddleware } from '../../middleware/webEnv'
 import { HttpError } from '../../utils/httpError'
 import { getAIAdapterService } from '../ai/adapter'
 import { getObservability } from '../observability'
-import { getRepository } from '../repository/getRepository.server'
 import { createWriteTrace, updateWriteTrace } from '../repository/traceability'
 import { TaskRepoFilterSchema, TaskRepoInputSchema } from '../schemas/repository'
 import {
@@ -27,44 +27,53 @@ import { toToolTask, toToolUserAccess, toToolUserProfile } from '../schemas/task
 
 /** Fetch tasks with optional filters. Maps tools-layer filter to repo-layer. */
 export const getTasks = createServerFn({ method: 'GET' })
+	.middleware([repositoryMiddleware])
 	.inputValidator(TaskFilterSchema.optional())
-	.handler(async ({ data: filter }) => {
+	.handler(async ({ data: filter, context }) => {
 		const repoFilter = filter ? TaskRepoFilterSchema.parse(filter) : undefined
-		const rows = await getObservability({}).startSpan('getTasks', () => getRepository().getTasks(repoFilter))
+		const rows = await getObservability({}).startSpan('getTasks', () => context.repository.getTasks(repoFilter))
 		return rows.map(toToolTask)
 	})
 
 /** Fetch a single task by ID. */
 export const getTask = createServerFn({ method: 'GET' })
+	.middleware([repositoryMiddleware])
 	.inputValidator(TaskIdInputSchema)
-	.handler(async ({ data }) => {
-		const row = await getObservability({}).startSpan('getTask', () => getRepository().getTask(data.taskId))
+	.handler(async ({ data, context }) => {
+		const row = await getObservability({}).startSpan('getTask', () => context.repository.getTask(data.taskId))
 		return row ? toToolTask(row) : null
 	})
 
 /** Fetch distinct values for a filterable task field (assignee, status, priority). */
 export const getDistinctValues = createServerFn({ method: 'GET' })
+	.middleware([repositoryMiddleware])
 	.inputValidator(DistinctValuesInputSchema)
-	.handler(async ({ data }) => {
+	.handler(async ({ data, context }) => {
 		const values = await getObservability({}).startSpan('getDistinctValues', () =>
-			getRepository().getDistinctValues(data.field),
+			context.repository.getDistinctValues(data.field),
 		)
 		return DistinctValueListSchema.parse(values)
 	})
 
 /** Fetch a user profile by email. */
 export const getUserProfile = createServerFn({ method: 'GET' })
+	.middleware([repositoryMiddleware])
 	.inputValidator(UserProfileByEmailSchema)
-	.handler(async ({ data }) => {
-		const row = await getObservability({}).startSpan('getUserProfile', () => getRepository().getUserProfile(data.email))
+	.handler(async ({ data, context }) => {
+		const row = await getObservability({}).startSpan('getUserProfile', () =>
+			context.repository.getUserProfile(data.email),
+		)
 		return row ? toToolUserProfile(row) : null
 	})
 
 /** Fetch repository-backed access roles for a user email. */
 export const getUserAccess = createServerFn({ method: 'GET' })
+	.middleware([repositoryMiddleware])
 	.inputValidator(UserProfileByEmailSchema)
-	.handler(async ({ data }) => {
-		const row = await getObservability({}).startSpan('getUserAccess', () => getRepository().getUserAccess(data.email))
+	.handler(async ({ data, context }) => {
+		const row = await getObservability({}).startSpan('getUserAccess', () =>
+			context.repository.getUserAccess(data.email),
+		)
 		return row ? toToolUserAccess(row) : null
 	})
 
@@ -109,7 +118,9 @@ export const createTask = createServerFn({ method: 'POST' })
 	.handler(async ({ data, context }) => {
 		const repoInput = TaskRepoInputSchema.parse(data)
 		const trace = createWriteTrace(context.accessTicket.identity.email)
-		const row = await getObservability({}).startSpan('createTask', () => getRepository().createTask(repoInput, trace))
+		const row = await getObservability({}).startSpan('createTask', () =>
+			context.repository.createTask(repoInput, trace),
+		)
 		return toToolTask(row)
 	})
 
@@ -118,13 +129,13 @@ export const updateTask = createServerFn({ method: 'POST' })
 	.middleware([requireAuthMiddleware, invalidateMiddleware])
 	.inputValidator(UpdateTaskInputSchema)
 	.handler(async ({ data, context }) => {
-		const task = await getRepository().getTask(data.taskId)
+		const task = await context.repository.getTask(data.taskId)
 		if (!task) throw new HttpError(404, 'Task not found')
 		context.accessTicket.requireTaskCreator(task)
 		const repoUpdates = TaskRepoInputSchema.partial().parse(data.updates)
 		const trace = updateWriteTrace(context.accessTicket.identity.email)
 		const row = await getObservability({}).startSpan('updateTask', () =>
-			getRepository().updateTask(data.taskId, repoUpdates, trace),
+			context.repository.updateTask(data.taskId, repoUpdates, trace),
 		)
 		return row ? toToolTask(row) : null
 	})
@@ -134,8 +145,8 @@ export const deleteTask = createServerFn({ method: 'POST' })
 	.middleware([requireAuthMiddleware, invalidateMiddleware])
 	.inputValidator(TaskIdInputSchema)
 	.handler(async ({ data, context }) => {
-		const task = await getRepository().getTask(data.taskId)
+		const task = await context.repository.getTask(data.taskId)
 		if (!task) throw new HttpError(404, 'Task not found')
 		context.accessTicket.requireTaskCreator(task)
-		return getObservability({}).startSpan('deleteTask', () => getRepository().deleteTask(data.taskId))
+		return getObservability({}).startSpan('deleteTask', () => context.repository.deleteTask(data.taskId))
 	})

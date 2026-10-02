@@ -19,7 +19,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.7.2"
+  version: "1.7.3"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -35,6 +35,11 @@ This template publishes **multiple** skills. If only **this** skill is installed
 - **`reference-tech-stack`** (companion) — Opinionated vendor map for this template's reference app. Install when matching the demo stack's concrete packages.
   ```bash
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill reference-tech-stack
+  ```
+
+- **`repository-architecture`** (companion) — Language-agnostic repository architecture: injected collection owners, indexes, stale-data cleanup, and resource lifetime.
+  ```bash
+  npx skills add carlosvin/tanstack-fullstack-ai-template --skill repository-architecture
   ```
 
 Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --list`
@@ -73,6 +78,7 @@ arguments and calls an **`ObservabilityService` interface**, not a specific SDK.
 | Logging, error tracking, `instrument.*.mts`, `src/env/`, env leaks, `shellSession` | **This skill** |
 | Concrete package choices for this template (Zod, Mantine, pino, …) | **`reference-tech-stack`** |
 | New routes, entities, AI tools, repository pattern, import protection | **`tanstack-promptable-fullstack-app-template`** |
+| Collection repositories, indexes, stale-data cleanup, resource lifetime | **`repository-architecture`** |
 | Server fn that logs and uses `context.serverEnv` | **This skill** + architecture |
 
 ## Key invariants (do not violate)

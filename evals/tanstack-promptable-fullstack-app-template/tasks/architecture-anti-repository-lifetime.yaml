@@ -1,0 +1,17 @@
+id: architecture-anti-repository-lifetime
+name: Do not use for collection repository lifetime
+description: Covers DO NOT USE FOR collection repository lifetime (use repository-architecture).
+tags: [architecture, anti-trigger]
+inputs:
+  prompt: >-
+    Explain collection repository lifetime (use repository-architecture)
+    rather than stretching the TanStack architecture skill.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

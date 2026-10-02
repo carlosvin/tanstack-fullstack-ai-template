@@ -1,0 +1,17 @@
+id: repository-injected-contract
+name: Inject a repository contract
+description: Covers USE FOR injected repository contract.
+tags: [repository, trigger]
+inputs:
+  prompt: >-
+    Replace the loader with an injected repository contract constructed at
+    the composition root.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

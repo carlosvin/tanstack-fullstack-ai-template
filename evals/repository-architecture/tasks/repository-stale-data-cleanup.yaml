@@ -1,0 +1,16 @@
+id: repository-stale-data-cleanup
+name: Sweep stale data after a refresh
+description: Covers USE FOR stale-data cleanup.
+tags: [repository, trigger]
+inputs:
+  prompt: >-
+    Add stale-data cleanup that runs only after a complete refresh succeeds.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

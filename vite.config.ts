@@ -43,8 +43,7 @@ export default defineConfig(({ command }) => ({
 					specifiers: ['mongodb', 'jose'],
 					files: [
 						'**/services/db/**',
-						'**/repository/mongoRepository.server.ts',
-						'**/repository/getRepository.server.ts',
+						'**/repository/*.server.ts',
 						// Server-only env modules (secret field schemas, dotenv,
 						// process.env) must never ship in the client bundle.
 						'**/env/**',
