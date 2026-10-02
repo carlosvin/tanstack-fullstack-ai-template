@@ -31,16 +31,16 @@ test.describe('Task CRUD (authenticated as Alice)', () => {
 
 		await page.getByRole('textbox', { name: 'Title' }).fill(CREATED_TASK_TITLE)
 		await page.getByRole('textbox', { name: 'Description' }).fill('Created by Playwright E2E test')
-		await selectMantineOption(page, 'Status', 'in-progress')
-		await selectMantineOption(page, 'Priority', 'high')
+		await selectMantineOption(page, 'Status', 'In Progress')
+		await selectMantineOption(page, 'Priority', 'High')
 		await page.getByRole('button', { name: 'Create' }).click()
 
 		await expect(page.getByText('Task created')).toBeVisible({ timeout: 10_000 })
 		await page.waitForURL(/\/tasks\/?$/, { timeout: 10_000 })
 
 		const createdCard = page.locator('[class*="Card"]').filter({ hasText: CREATED_TASK_TITLE }).first()
-		await expect(createdCard.getByText('high', { exact: true })).toBeVisible()
-		await expect(createdCard.getByText('in-progress', { exact: true })).toBeVisible()
+		await expect(createdCard.getByText('High', { exact: true })).toBeVisible()
+		await expect(createdCard.getByText('In Progress', { exact: true })).toBeVisible()
 
 		await page.getByText(CREATED_TASK_TITLE).first().click()
 		await page.waitForURL(/\/tasks\/task-/, { timeout: 10_000 })
@@ -58,8 +58,8 @@ test.describe('Task CRUD (authenticated as Alice)', () => {
 		await descriptionInput.clear()
 		await descriptionInput.fill('Updated description from E2E')
 
-		await selectMantineOption(page, 'Status', 'done')
-		await selectMantineOption(page, 'Priority', 'critical')
+		await selectMantineOption(page, 'Status', 'Done')
+		await selectMantineOption(page, 'Priority', 'Critical')
 		await page.getByRole('button', { name: 'Update' }).click()
 
 		await expect(page.getByText('Task updated')).toBeVisible({ timeout: 10_000 })
@@ -68,8 +68,8 @@ test.describe('Task CRUD (authenticated as Alice)', () => {
 		const detailCard = page.locator('[class*="Card"]').filter({ hasText: UPDATED_TASK_TITLE }).first()
 		await expect(page.getByRole('heading', { name: UPDATED_TASK_TITLE })).toBeVisible()
 		await expect(detailCard.getByText('Updated description from E2E')).toBeVisible()
-		await expect(detailCard.getByText('done', { exact: true })).toBeVisible()
-		await expect(detailCard.getByText('critical', { exact: true })).toBeVisible()
+		await expect(detailCard.getByText('Done', { exact: true })).toBeVisible()
+		await expect(detailCard.getByText('Critical', { exact: true })).toBeVisible()
 
 		await page.locator('main').getByRole('button', { name: 'Delete', exact: true }).click()
 		await confirmMantineDelete(page)

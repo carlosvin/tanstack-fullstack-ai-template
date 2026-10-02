@@ -2,9 +2,9 @@ import { Button, Select, Stack, Textarea, TextInput } from '@mantine/core'
 import { schemaResolver, useForm } from '@mantine/form'
 import { useEffect } from 'react'
 import { z } from 'zod'
-import { TASK_PRIORITIES, TASK_STATUSES } from '../../constants/options'
 import { TaskInputSchema } from '../../services/schemas/schemas'
 import type { TaskInput } from '../../types'
+import { prioritySelectOptions, statusSelectOptions } from '../../utils/taskDisplay'
 
 const taskFormSchema = TaskInputSchema.extend({
 	title: z.string().trim().min(1, { error: 'Title is required' }),
@@ -83,15 +83,10 @@ export function TaskForm({ initialValues, onSubmit, loading = false, submitLabel
 					key={form.key('description')}
 					{...form.getInputProps('description')}
 				/>
-				<Select
-					label="Status"
-					data={TASK_STATUSES.map((s) => ({ value: s, label: s }))}
-					key={form.key('status')}
-					{...form.getInputProps('status')}
-				/>
+				<Select label="Status" data={statusSelectOptions} key={form.key('status')} {...form.getInputProps('status')} />
 				<Select
 					label="Priority"
-					data={TASK_PRIORITIES.map((p) => ({ value: p, label: p }))}
+					data={prioritySelectOptions}
 					key={form.key('priority')}
 					{...form.getInputProps('priority')}
 				/>

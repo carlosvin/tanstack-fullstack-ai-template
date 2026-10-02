@@ -1,7 +1,7 @@
 import { Badge, Button, Card, Container, Group, Stack, Text, Title } from '@mantine/core'
 import { ArrowLeft, Calendar, Pencil, Trash2, User } from 'lucide-react'
 import type { Task } from '../../types'
-import { priorityColor, statusColor } from '../../utils/taskDisplay'
+import { priorityColor, priorityLabel, statusColor, statusLabel } from '../../utils/taskDisplay'
 import { Link } from '../Link/Link'
 
 export interface TaskDetailPageProps {
@@ -59,10 +59,10 @@ export function TaskDetailPage({ task, isCreator, onEdit, onDelete }: TaskDetail
 							</div>
 							<Group gap="sm">
 								<Badge variant="dot" color={statusColor(task.status)} size="lg">
-									{task.status}
+									{statusLabel(task.status)}
 								</Badge>
 								<Badge variant="light" color={priorityColor(task.priority)} size="lg">
-									{task.priority}
+									{priorityLabel(task.priority)}
 								</Badge>
 							</Group>
 						</Group>
