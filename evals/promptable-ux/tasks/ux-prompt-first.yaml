@@ -1,0 +1,17 @@
+id: ux-prompt-first
+name: Prompt-first app entry point
+description: Covers USE FOR prompt-first app.
+tags: [ux, trigger]
+inputs:
+  prompt: >-
+    Build a prompt-first app whose entry point is always the prompt, with a
+    top-to-bottom overview and drill-down into each application area.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

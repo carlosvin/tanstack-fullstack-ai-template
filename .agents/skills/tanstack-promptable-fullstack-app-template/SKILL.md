@@ -19,7 +19,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.31.0"
+  version: "1.32.0"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -35,6 +35,11 @@ This template publishes **multiple** skills. If only **this** skill is installed
 - **`reference-tech-stack`** (companion) — Opinionated vendor map for this template's reference app. Install when implementing against the demo stack defaults (UI kit, validator, DB, deploy).
   ```bash
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill reference-tech-stack
+  ```
+
+- **`promptable-ux`** (companion) — Shared promptable UX foundations plus the two chat UX variants (side panel vs prompt-first). Install when work touches chat placement, prompt entry point, markdown replies, or layout.
+  ```bash
+  npx skills add carlosvin/tanstack-fullstack-ai-template --skill promptable-ux
   ```
 
 Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --list`
@@ -56,12 +61,13 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 | "Which package does this template use?" / match the demo app stack | **`reference-tech-stack`** |
 | Architecture + env/logging | **This skill** + **`observability-and-env`** |
 | Scaffolding this template as-is | **This skill** + **`reference-tech-stack`** (+ observability when touching env) |
+| Chat placement, prompt entry point, drawer vs prompt-first, markdown replies, layout | **`promptable-ux`** (+ **this skill** for routes/tools) |
 
 ## How to use this skill
 
 1. Read **Core Contract** first — it is the non-negotiable architecture.
 2. Run the **Architecture Checklist** before every non-trivial change.
-3. Jump to **Server execution boundaries**, **Schema Boundaries**, **Request Context**, or **Special Patterns** only when that concern applies. Special Patterns are not Core Contract. **Mobile first** is the default layout stance — ask before choosing a different UX pattern.
+3. Jump to **Server execution boundaries**, **Schema Boundaries**, **Request Context**, or **Special Patterns** only when that concern applies. Special Patterns are not Core Contract. Layout and chat presentation live in **`promptable-ux`** — **mobile first** stays the default there; ask before choosing a different UX pattern.
 4. Use **[AGENTS.md](https://github.com/carlosvin/tanstack-fullstack-ai-template/blob/main/AGENTS.md)** for operational how-to — not for inventing alternate architecture. **This skill is vendor-agnostic** for UI kits and observability SDKs. Concrete packages for *this* template live in companion skill **`reference-tech-stack`**; env/logging setup lives in **`observability-and-env`**.
 
 ## Fixed vs swappable stack
@@ -110,7 +116,7 @@ Pick **one validator library** per app and use it consistently across router sea
 9. **Router config bundle:** ship a project-local `Link` wrapper with `search: true` default (use it for every internal link) **and** these router defaults together: `defaultStaleTime`, `defaultPreload: 'intent'`, `defaultPreloadStaleTime: 0`, `scrollRestoration: true`, `notFoundComponent`.
 10. **Auth ticket built in middleware:** auth middleware enriches `ctx.context` with a repository-built ticket (e.g. `getRepository().getUserAccess(email)`) carrying identity, roles, and guards; `Repository` mutations accept a `TraceabilityContext` (`createdBy`, `lastModifiedBy`, …) constructed from that ticket so writes are attributed consistently across UI and AI.
 11. **AI tool coverage:** expose **every** repository method as a server AI tool via `createSafeServerTool`; add **distinct-values** tools for enum-ish filters; expose `navigate` and `invalidateRouter` as client tools.
-12. **Promptable by default:** root loader checks `getAIAvailability()` and only mounts chat UI when configured (no disabled state). Chat input includes a `browserContext` (timezone, locale, path) consumed by `buildSystemPrompt` alongside the auth ticket.
+12. **Promptable by default:** root loader checks `getAIAvailability()` and only mounts chat UI when configured (no disabled state). Chat input includes a `browserContext` (timezone, locale, path) consumed by `buildSystemPrompt` alongside the auth ticket. Chat **placement and presentation** (side panel vs prompt-first, markdown rendering, layout) live in **`promptable-ux`** — this contract keeps only the tool/SSE/bounding invariants (#11, #13–14).
 13. **Bound the agent loop:** every `chat()` call sets `agentLoopStrategy: maxIterations(N)` explicitly (default `N=10`); tune after measuring — do not rely on the framework default.
 14. **Metadata for AI and UI:** Attach human-readable **descriptions** to schema fields (reference — Zod `.describe()` → JSON Schema `description`; ArkType/Valibot have equivalents). Use **structured schema extras** only for non-description hints — `unit`, `format`, optional `title`. Prefer deriving prompts and UI copy from schemas + JSON Schema export and router introspection over parallel hand-maintained maps.
 15. **Parent layouts:** Shared `beforeLoad`, redirects, and expensive reads belong on the **parent** layout route; children read parent loader data via `getRouteApi` / `useLoaderData({ from })` — do not duplicate parent work.
@@ -221,9 +227,9 @@ Add your DB driver and auth/crypto libraries when they are not isolated in `*.se
 | “Dynamic import in the loader is enough” | Route module static imports still enter the client graph. |
 | “One-line `process.env` read won’t matter” | Isomorphic code can expose env reads to the client bundle. |
 
-## Markdown assistant replies (UX contract)
+## Markdown assistant replies (UX contract — owned by `promptable-ux`)
 
-Assistant messages in the chat UI must **render as Markdown** (including GFM): lists, **tables**, fenced and inline code blocks, and links. Internal paths like `[Tasks](/tasks)` should remain **client-navigable** where the app implements markdown links (do not flatten assistant output to plain text for display). **Renderer choice is project-specific** — follow **AGENTS.md §8** for this repo's implementation.
+Assistant messages must render as Markdown (including GFM) with client-navigable internal links. Full contract — shared foundations, side vs prompt-first presentation, renderer guidance — lives in **`promptable-ux`**. This skill keeps only the data side: every repository method exposed as a server tool, `navigate` / `invalidateRouter` client tools, and `buildSystemPrompt` + navigation manifest inputs.
 
 ## Schema Boundaries
 
@@ -458,7 +464,7 @@ interface Repository {
 - **Help surface:** single `docs/help.md` can back `/help`, an AI tool, and suggested prompts (see AGENTS.md).
 - **Distinct values:** `getDistinctValues` → GET server fn → read-only AI tool so filters match real data.
 - **Dynamic AI navigation:** derive route/help context from `router.flatRoutes` + `validateSearch` introspection where possible.
-- **Mobile first (default):** [Progressive enhancement from small viewports up](https://developer.mozilla.org/en-US/docs/Glossary/Mobile_First) — create a usable layout at the narrowest width, then add richer layout as the viewport grows. This is the **default** layout stance for UI work, not Core Contract, not a particular widget (header, nav, drawer), and not a browser- or library-specific recipe. How you express it depends on the project's UI library (breakpoint tokens, `min-width` media queries, or equivalent). **Ask the developer** if this app's needs call for a different UX pattern (desktop-first, a specialized layout, and so on). Do not silently switch away from mobile first. Concrete library recipes for *this* template live in AGENTS.md §3 and companion **`reference-tech-stack`**.
+- **Mobile first (default):** [Progressive enhancement from small viewports up](https://developer.mozilla.org/en-US/docs/Glossary/Mobile_First) is the default layout stance, not Core Contract. Full guidance (shared foundations + side vs prompt-first variants) lives in **`promptable-ux`**; concrete library recipes for *this* template live in AGENTS.md §3 and companion **`reference-tech-stack`**. **Ask the developer** before choosing a different UX pattern. Do not silently switch away from mobile first.
 
 ## Agent Skills, TanStack CLI, and AI
 
@@ -471,6 +477,7 @@ interface Repository {
 | Need | Where |
 |------|--------|
 | UI kit and styling | §3 + **`reference-tech-stack`** |
+| Chat placement, prompt variants, markdown/layout UX | **`promptable-ux`** (+ §3/§8 for this repo's files) |
 | Auth, middleware, guards | §5 |
 | AI adapters, chat client, tools, prompts, Markdown (GFM) rendering | §8 |
 | Observability and env bridge | §9 + **`observability-and-env`** |

@@ -18,7 +18,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.3.0"
+  version: "1.4.0"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -34,6 +34,11 @@ This template publishes **multiple** skills. If only **this** skill is installed
 - **`observability-and-env`** (companion) — Env parse, logger factories, and error-tracking bootstrap. This stack skill names pino + Sentry; that companion owns the setup recipe.
   ```bash
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env
+  ```
+
+- **`promptable-ux`** (companion) — Shared promptable UX foundations plus the two chat UX variants (side panel vs prompt-first). Install when work touches chat placement, markdown replies, or layout.
+  ```bash
+  npx skills add carlosvin/tanstack-fullstack-ai-template --skill promptable-ux
   ```
 
 Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --list`
@@ -60,6 +65,7 @@ coupling into the architecture skill.
 | "What does this template use for X?" / scaffold matching the demo app | **This skill** |
 | Architecture, schemas, routes, AI tools, server boundaries | **`tanstack-promptable-fullstack-app-template`** |
 | Env schemas, `shellSession`, logging/Sentry bootstrap | **`observability-and-env`** |
+| Chat placement, prompt variants, markdown/layout UX | **`promptable-ux`** |
 | Day-to-day file paths and UI/auth/AI how-to | **AGENTS.md** |
 
 ## Stack map (this repository)
@@ -90,12 +96,14 @@ coupling into the architecture skill.
 3. Keep interfaces when swapping (repository, `AIAdapterService`, `ObservabilityService`); update this stack map and AGENTS.md; leave the architecture skill vendor-agnostic.
 4. UI and schema *how-to* live in AGENTS.md §3 / architecture skill — this skill only names packages.
 
-## Applying mobile first (default)
+## Applying mobile first (default — owned by `promptable-ux`)
 
 Architecture defaults to [mobile first](https://developer.mozilla.org/en-US/docs/Glossary/Mobile_First)
-— not a named widget. In *this* template, express it with Mantine responsive props
-(`base`, then `sm` / `md` / `lg`). Navigation that must collapse on small viewports can
-use `AppShell` + `Burger` + `NavLink` (AGENTS.md §3). **Ask the developer** if this app
+— not a named widget. Full UX guidance (shared foundations + side panel vs
+prompt-first variants) lives in **`promptable-ux`**. In *this* template,
+express it with Mantine responsive props (`base`, then `sm` / `md` / `lg`).
+Navigation that must collapse on small viewports can use `AppShell` +
+`Burger` + `NavLink` (AGENTS.md §3). **Ask the developer** if this app
 should follow a different UX pattern.
 
 ## Verification
