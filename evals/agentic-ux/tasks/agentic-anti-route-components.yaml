@@ -1,0 +1,17 @@
+id: agentic-anti-route-components
+name: Do not reuse route components
+description: Covers DO NOT USE FOR side panel chat and prompt-first layout.
+tags: [ux, anti-trigger]
+inputs:
+  prompt: >-
+    Explain side panel chat or prompt-first layout (use promptable-ux) rather
+    than the fully agentic shell.
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

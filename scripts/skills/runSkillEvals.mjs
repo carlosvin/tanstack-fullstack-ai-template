@@ -782,6 +782,40 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 					: fail('new MongoClient is owned by src/services/db/mongoClient.server.ts', clientOwners)
 			},
 		},
+		{
+			id: 'agentic-ux-shell-contract',
+			skill: 'agentic-ux',
+			description: 'Agentic skill defines the tool-only shell and sandbox rule without reusing route components',
+			async run() {
+				const { agentSkillsDir } = getSkillPaths(rootDir)
+				let skillMd
+				try {
+					skillMd = await readText(path.join(agentSkillsDir, 'agentic-ux', 'SKILL.md'))
+				} catch {
+					return fail('Missing .agents/skills/agentic-ux/SKILL.md')
+				}
+				const missing = []
+				if (!/## Shell/.test(skillMd)) missing.push('Shell section')
+				if (!/## MCP UI rendering/.test(skillMd)) missing.push('MCP UI rendering section')
+				if (!/## Security/.test(skillMd)) missing.push('Security section')
+				if (!/_meta\.ui\.resourceUri/.test(skillMd)) missing.push('_meta.ui.resourceUri link')
+				if (!/only inside the MCP UI iframe/.test(skillMd)) missing.push('iframe-only render rule')
+				if (!/No `ChatDrawer`, `PromptBar`, `AppNavbar`/.test(skillMd)) missing.push('no route-component reuse rule')
+				if (!/\*\*`agentic-ux`\*\*\s*\(companion\)/.test(skillMd) && !/agentic-ux/.test(skillMd)) {
+					missing.push('companion wiring')
+				}
+				if (missing.length > 0) {
+					return fail('agentic-ux skill is missing required contract text', missing)
+				}
+				const templateSkill = await readText(
+					path.join(agentSkillsDir, 'tanstack-promptable-fullstack-app-template', 'SKILL.md'),
+				)
+				if (!/\*\*`agentic-ux`\*\*\s*\(companion\)/.test(templateSkill)) {
+					return fail('Parent architecture skill must list agentic-ux as a companion')
+				}
+				return pass()
+			},
+		},
 	]
 }
 

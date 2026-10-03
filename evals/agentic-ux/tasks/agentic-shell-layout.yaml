@@ -1,0 +1,15 @@
+id: agentic-shell-layout
+name: Fully agentic shell layout
+description: Covers USE FOR fully agentic mode and agent shell.
+tags: [ux, trigger]
+inputs:
+  prompt: How should a fully agentic app place the prompt and render responses?
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

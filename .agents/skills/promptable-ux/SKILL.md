@@ -41,6 +41,11 @@ This template publishes **multiple** skills. If only **this** skill is installed
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env
   ```
 
+- **`agentic-ux`** (companion) — Fully agentic tool-only shell where views render as MCP UI resources. Install when the deployment has no domain screens.
+  ```bash
+  npx skills add carlosvin/tanstack-fullstack-ai-template --skill agentic-ux
+  ```
+
 Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --list`
 
 # Promptable UX
