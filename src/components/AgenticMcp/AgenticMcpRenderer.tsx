@@ -12,6 +12,7 @@ interface AgenticMcpRendererProps {
 	onPrompt: (text: string) => void
 	onNotify?: (text: string) => void
 	onToolAction?: (toolName: string, params: unknown) => void
+	onRetry?: () => void
 }
 
 type McpUiHostMessage = {
@@ -30,7 +31,7 @@ function isHostMessage(value: unknown): value is McpUiHostMessage {
  * The host document never injects tool HTML. Widget actions map to
  * tools or prompts — never to in-app routes.
  */
-export function AgenticMcpRenderer({ resource, onPrompt, onNotify, onToolAction }: AgenticMcpRendererProps) {
+export function AgenticMcpRenderer({ resource, onPrompt, onNotify, onToolAction, onRetry }: AgenticMcpRendererProps) {
 	const iframeRef = useRef<HTMLIFrameElement>(null)
 	const [loaded, setLoaded] = useState(false)
 	const [attempt, setAttempt] = useState(0)
@@ -76,6 +77,16 @@ export function AgenticMcpRenderer({ resource, onPrompt, onNotify, onToolAction 
 		return () => window.removeEventListener('message', handleMessage)
 	}, [handleMessage])
 
+	useEffect(() => {
+		setLoaded(false)
+	}, [])
+
+	const handleRetry = useCallback(() => {
+		if (onRetry) onRetry()
+		else onPrompt('Please show that view again')
+		setAttempt((n) => n + 1)
+	}, [onPrompt, onRetry])
+
 	if (!valid || html === null) {
 		return (
 			<Alert color="yellow" title="View unavailable">
@@ -83,7 +94,7 @@ export function AgenticMcpRenderer({ resource, onPrompt, onNotify, onToolAction 
 					<Text size="sm">
 						This interactive view failed validation and was not rendered. The text answer above still applies.
 					</Text>
-					<Button variant="light" size="compact-sm" onClick={() => setAttempt((n) => n + 1)}>
+					<Button variant="light" size="compact-sm" onClick={handleRetry}>
 						Retry
 					</Button>
 				</Stack>
@@ -92,7 +103,7 @@ export function AgenticMcpRenderer({ resource, onPrompt, onNotify, onToolAction 
 	}
 
 	return (
-		<Paper withBorder radius="md" p={0} style={{ overflow: 'hidden' }} key={attempt}>
+		<Paper withBorder radius="md" p={0} style={{ overflow: 'hidden' }} key={`${resource.uri}-${attempt}`}>
 			{!loaded ? <Skeleton height={240} /> : null}
 			{notice ? (
 				<Text size="xs" c="dimmed" px="sm" pt="xs">

@@ -1,5 +1,6 @@
 import { ActionIcon, AppShell, Container, Group, Stack, Text, Tooltip, useMantineColorScheme } from '@mantine/core'
 import { Moon, Sparkles, Sun } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import type { AppMeta } from '../../services/schemas/shellSession'
 import { AgenticComposer } from './AgenticComposer'
 import { AgenticThread } from './AgenticThread'
@@ -18,6 +19,24 @@ const AGENTIC_FOOTER_MIN_HEIGHT = 76
  */
 export function AgenticShell({ appMeta, aiAvailable }: AgenticShellProps) {
 	const { colorScheme, toggleColorScheme } = useMantineColorScheme()
+	const [footerHeight, setFooterHeight] = useState(AGENTIC_FOOTER_MIN_HEIGHT)
+	const footerMeasureRef = useRef<HTMLDivElement>(null)
+
+	useEffect(() => {
+		if (!aiAvailable) return
+		const el = footerMeasureRef.current
+		if (!el) return
+
+		const updateHeight = () => {
+			const measured = Math.ceil(el.getBoundingClientRect().height)
+			setFooterHeight(Math.max(AGENTIC_FOOTER_MIN_HEIGHT, measured))
+		}
+
+		updateHeight()
+		const observer = new ResizeObserver(updateHeight)
+		observer.observe(el)
+		return () => observer.disconnect()
+	}, [aiAvailable])
 
 	const threadScrollHeight =
 		'calc(100dvh - var(--app-shell-header-height) - var(--app-shell-footer-height) - var(--app-shell-padding) * 2)'
@@ -25,7 +44,7 @@ export function AgenticShell({ appMeta, aiAvailable }: AgenticShellProps) {
 	return (
 		<AppShell
 			header={{ height: 56 }}
-			footer={aiAvailable ? { height: AGENTIC_FOOTER_MIN_HEIGHT } : undefined}
+			footer={aiAvailable ? { height: footerHeight } : undefined}
 			padding={{ base: 'sm', sm: 'md' }}
 		>
 			<AppShell.Header>
@@ -64,7 +83,7 @@ export function AgenticShell({ appMeta, aiAvailable }: AgenticShellProps) {
 			</AppShell.Main>
 			{aiAvailable ? (
 				<AppShell.Footer p="xs" px={{ base: 'xs', sm: 'md' }}>
-					<Container size="md" p={0}>
+					<Container size="md" p={0} ref={footerMeasureRef}>
 						<AgenticComposer />
 					</Container>
 				</AppShell.Footer>

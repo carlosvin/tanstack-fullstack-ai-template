@@ -6,6 +6,7 @@ import { suggestedPrompts } from '../../utils/suggestedPrompts'
 import { useAgenticChat } from '../AgenticChat/AgenticChatContext'
 import { AgenticMcpRenderer } from '../AgenticMcp/AgenticMcpRenderer'
 import { MessageBubble } from '../PromptChat/MessageBubble'
+import { AgenticPromptMarkdownLink } from './AgenticPromptMarkdownLink'
 
 function messageResources(message: UIMessage): McpUiResource[] {
 	const found: McpUiResource[] = []
@@ -29,6 +30,15 @@ function messageResources(message: UIMessage): McpUiResource[] {
 		}
 	}
 	return found
+}
+
+function retryPromptForResourceUri(uri: string): string {
+	if (uri === 'ui://tasks/list') return 'Show my tasks'
+	if (uri.startsWith('ui://task/detail-')) {
+		const id = uri.slice('ui://task/detail-'.length)
+		if (id && id !== 'detail') return `Show task ${id}`
+	}
+	return 'Please show that view again'
 }
 
 function toolActionPrompt(toolName: string, params: unknown): string {
@@ -92,13 +102,17 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 					const resources = msg.role === 'user' ? [] : messageResources(msg)
 					return (
 						<Stack key={msg.id} gap="sm">
-							<MessageBubble message={msg} />
+							<MessageBubble
+								message={msg}
+								markdownLinkComponent={(props) => <AgenticPromptMarkdownLink {...props} onPrompt={sendMessage} />}
+							/>
 							{resources.map((resource) => (
 								<AgenticMcpRenderer
 									key={resource.resource.uri}
 									resource={resource.resource}
 									onPrompt={sendMessage}
 									onToolAction={handleToolAction}
+									onRetry={() => sendMessage(retryPromptForResourceUri(resource.resource.uri))}
 								/>
 							))}
 						</Stack>

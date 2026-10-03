@@ -1,4 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
+import { getShellSession } from '../../env/webEnv.server'
 import { authMiddleware } from '../../middleware/auth'
 import { invalidateMiddleware } from '../../middleware/invalidate'
 import { repositoryMiddleware } from '../../middleware/repository'
@@ -24,6 +25,17 @@ import { toToolTask, toToolUserAccess, toToolUserProfile } from '../schemas/task
 // ============================================================================
 // Queries (GET) — accessed from route loaders and AI tools
 // ============================================================================
+
+/** Home route tasks — skipped when the deployment is fully agentic (no dashboard). */
+export const getHomeRouteTasks = createServerFn({ method: 'GET' })
+	.middleware([repositoryMiddleware])
+	.handler(async ({ context }) => {
+		if (getShellSession().promptConcept === 'agentic') {
+			return []
+		}
+		const rows = await getObservability({}).startSpan('getHomeRouteTasks', () => context.repository.getTasks(undefined))
+		return rows.map(toToolTask)
+	})
 
 /** Fetch tasks with optional filters. Maps tools-layer filter to repo-layer. */
 export const getTasks = createServerFn({ method: 'GET' })

@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { Task } from '../schemas/schemas'
-import { decodeMcpUiHtml, findMcpUiResource, isAllowedMcpUiUri, isMcpUiResource } from './mcpUiResource'
-import { createTasksViewResource, createTaskViewResource } from './mcpUiResources'
+import {
+	decodeMcpUiHtml,
+	findMcpUiResource,
+	isAllowedMcpUiUri,
+	isMcpUiResource,
+	MAX_MCP_UI_HTML_CHARS,
+} from './mcpUiResource'
+import { assertMcpUiHtmlWithinCap, createTasksViewResource, createTaskViewResource } from './mcpUiResources'
 
 const task = {
 	id: 'abc123',
@@ -38,6 +44,11 @@ describe('mcpUiResource', () => {
 		const resource = createTaskViewResource(task)
 		expect(isMcpUiResource(resource)).toBe(true)
 		expect(resource.resource.uri).toBe('ui://task/detail-abc123')
+	})
+
+	it('rejects HTML payloads that exceed the size cap', () => {
+		const oversized = `<!doctype html><html><body>${'x'.repeat(MAX_MCP_UI_HTML_CHARS)}</body></html>`
+		expect(() => assertMcpUiHtmlWithinCap(oversized, 'ui://tasks/list')).toThrow(/exceeds/)
 	})
 
 	it('finds embedded resources in tool outputs and rejects bad MIME types', () => {

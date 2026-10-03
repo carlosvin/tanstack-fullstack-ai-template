@@ -1,11 +1,11 @@
 import { createFileRoute, useLoaderData } from '@tanstack/react-router'
 import { DashboardPage } from '../components/DashboardPage/DashboardPage'
 import { PromptFirstLanding } from '../components/PromptFirstLanding/PromptFirstLanding'
-import { getTasks } from '../services/api/serverFns'
+import { getHomeRouteTasks } from '../services/api/serverFns'
 
 export const Route = createFileRoute('/')({
 	staticData: { description: 'Home page' },
-	loader: () => getTasks({}),
+	loader: () => getHomeRouteTasks({}),
 	component: DashboardRoute,
 })
 

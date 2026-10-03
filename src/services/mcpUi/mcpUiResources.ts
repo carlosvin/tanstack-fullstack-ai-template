@@ -10,6 +10,13 @@ import type { Task } from '../schemas/schemas'
 import { isAllowedMcpUiUri, MAX_MCP_UI_HTML_CHARS, MCP_APP_MIME_TYPE, type McpUiResource } from './mcpUiResource'
 
 const MAX_TASKS_PER_VIEW = 20
+const MAX_TITLE_CHARS = 200
+const MAX_DESCRIPTION_CHARS = 2_000
+
+function truncatePlain(value: string, max: number): string {
+	if (value.length <= max) return value
+	return `${value.slice(0, max - 1)}…`
+}
 
 function escapeHtml(value: string): string {
 	return value
@@ -55,18 +62,26 @@ button + button { margin-left: 6px; }
 }
 
 function taskCard(task: Task, withDetailButton: boolean): string {
+	const title = escapeHtml(truncatePlain(task.title, MAX_TITLE_CHARS))
 	const detailButton = withDetailButton ? `<button data-prompt="Show task ${escapeHtml(task.id)}">Open</button>` : ''
-	return `<div class="card"><strong>${escapeHtml(task.title)}</strong><div class="muted">${escapeHtml(task.id)}</div><div><span class="badge">${escapeHtml(task.status)}</span><span class="badge">${escapeHtml(task.priority)}</span>${task.assignee ? `<span class="badge">${escapeHtml(task.assignee)}</span>` : ''}</div><div style="margin-top:8px">${detailButton}</div></div>`
+	return `<div class="card"><strong>${title}</strong><div class="muted">${escapeHtml(task.id)}</div><div><span class="badge">${escapeHtml(task.status)}</span><span class="badge">${escapeHtml(task.priority)}</span>${task.assignee ? `<span class="badge">${escapeHtml(task.assignee)}</span>` : ''}</div><div style="margin-top:8px">${detailButton}</div></div>`
+}
+
+/** @internal Used by unit tests to verify the HTML size cap. */
+export function assertMcpUiHtmlWithinCap(htmlString: string, uri: string): void {
+	if (htmlString.length > MAX_MCP_UI_HTML_CHARS) {
+		throw new Error(`MCP UI HTML exceeds ${MAX_MCP_UI_HTML_CHARS} characters for ${uri}`)
+	}
 }
 
 function toResource(uri: string, htmlString: string): McpUiResource {
 	if (!isAllowedMcpUiUri(uri)) {
 		throw new Error(`Refusing to build MCP UI resource for non-allowlisted URI: ${uri}`)
 	}
-	const bounded = htmlString.length > MAX_MCP_UI_HTML_CHARS ? htmlString.slice(0, MAX_MCP_UI_HTML_CHARS) : htmlString
+	assertMcpUiHtmlWithinCap(htmlString, uri)
 	return {
 		type: 'resource',
-		resource: { uri, mimeType: MCP_APP_MIME_TYPE, text: bounded },
+		resource: { uri, mimeType: MCP_APP_MIME_TYPE, text: htmlString },
 	}
 }
 
@@ -84,6 +99,8 @@ export function createTasksViewResource(tasks: Task[]): McpUiResource {
 
 /** Task detail view for the `showTaskView` tool. */
 export function createTaskViewResource(task: Task): McpUiResource {
-	const htmlString = `<!doctype html><html><body>${shellStyle()}<div class="card"><h3>${escapeHtml(task.title)}</h3><div class="muted">${escapeHtml(task.id)}</div><p>${escapeHtml(task.description ?? 'No description.')}</p><div><span class="badge">${escapeHtml(task.status)}</span><span class="badge">${escapeHtml(task.priority)}</span>${task.assignee ? `<span class="badge">${escapeHtml(task.assignee)}</span>` : ''}</div><div class="muted">Created ${escapeHtml(task.createdAt)} · Updated ${escapeHtml(task.updatedAt)}</div><div style="margin-top:8px"><button data-prompt="Show my tasks">Back to tasks</button></div></div>${postScript()}</body></html>`
+	const title = escapeHtml(truncatePlain(task.title, MAX_TITLE_CHARS))
+	const description = escapeHtml(truncatePlain(task.description ?? 'No description.', MAX_DESCRIPTION_CHARS))
+	const htmlString = `<!doctype html><html><body>${shellStyle()}<div class="card"><h3>${title}</h3><div class="muted">${escapeHtml(task.id)}</div><p>${description}</p><div><span class="badge">${escapeHtml(task.status)}</span><span class="badge">${escapeHtml(task.priority)}</span>${task.assignee ? `<span class="badge">${escapeHtml(task.assignee)}</span>` : ''}</div><div class="muted">Created ${escapeHtml(task.createdAt)} · Updated ${escapeHtml(task.updatedAt)}</div><div style="margin-top:8px"><button data-prompt="Show my tasks">Back to tasks</button></div></div>${postScript()}</body></html>`
 	return toResource(`ui://task/detail-${task.id}`, htmlString)
 }
