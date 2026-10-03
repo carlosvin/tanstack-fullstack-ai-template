@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Task view</title>
+		<style>
+			body {
+				font-family: system-ui, sans-serif;
+				margin: 0;
+				padding: 12px;
+				color: #1f2937;
+				background: #ffffff;
+			}
+			.card {
+				border: 1px solid #e5e7eb;
+				border-radius: 8px;
+				padding: 10px 12px;
+				margin-bottom: 8px;
+				background: #ffffff;
+			}
+			.badge {
+				display: inline-block;
+				font-size: 12px;
+				padding: 2px 8px;
+				border-radius: 999px;
+				background: #eef2ff;
+				color: #3730a3;
+				margin-right: 6px;
+			}
+			button {
+				font: inherit;
+				cursor: pointer;
+				border: 1px solid #c7d2fe;
+				background: #eef2ff;
+				color: #3730a3;
+				border-radius: 6px;
+				padding: 6px 10px;
+			}
+			button + button {
+				margin-left: 6px;
+			}
+			.muted {
+				color: #6b7280;
+				font-size: 13px;
+			}
+			@media (prefers-color-scheme: dark) {
+				body {
+					color: #e5e7eb;
+					background: #1f2937;
+				}
+				.card {
+					border-color: #374151;
+					background: #111827;
+				}
+				.badge {
+					background: #312e81;
+					color: #e0e7ff;
+				}
+				button {
+					border-color: #4f46e5;
+					background: #312e81;
+					color: #e0e7ff;
+				}
+				.muted {
+					color: #9ca3af;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div id="root"></div>
+		<script type="application/json" id="view-data">__VIEW_DATA__</script>
+		<script type="module" src="/mcp-task-view.js"></script>
+	</body>
+</html>

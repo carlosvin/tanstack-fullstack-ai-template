@@ -19,7 +19,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "0.2.0"
+  version: "0.2.1"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -109,7 +109,7 @@ Follow [TanStack AI MCP Apps](https://tanstack.com/ai/latest/docs/mcp/apps) and 
 Generate views with this recipe. The reference example (`showTasksView`, `showTaskView`, `AgenticMcpRenderer`) is that recipe:
 
 - `toolDefinition` sets `metadata._meta.ui.resourceUri` to an allowlisted `ui://` URI.
-- `createUIResource` builds the document. Escape repository fields, bound their length, and refuse a document over the size cap. Do not slice a finished document.
+- Load the view document from a file (`task-view.html`) and the guest script (`public/mcp-task-view.js`). Fill one JSON slot (`<` escaped so the payload cannot close the script). The guest writes repository text with `textContent`. Bound field length, and refuse a document over the size cap. `createUIResource` wraps that document. Do not slice a finished document.
 - The host renders that HTML only through `MCPAppResource` and `sandbox_proxy.html`. Show an error state whose retry re-requests the same view, and keep the markdown answer when the resource fails.
 - A capability that returns a UI resource does not also get a hand-built page.
 

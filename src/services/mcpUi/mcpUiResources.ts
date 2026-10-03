@@ -1,78 +1,70 @@
 /**
- * MCP UI view resources (rawHtml) for the agentic shell.
+ * MCP UI view resources for the agentic shell.
  *
- * Pure functions with no Node or server-only dependencies, so both the
- * server tool handlers and the client bundle may import this module.
- * Each builder escapes repository data, caps payload size, and links the
- * tool to its UI the MCP Apps way (`ui://` resource URI + `text/html;profile=mcp-app`).
+ * The document shell lives in `views/task-view.html`. Tool handlers fill
+ * `__VIEW_DATA__` with JSON and wrap the result with `createUIResource`.
+ * The guest writes repository text with `textContent`, so this module does
+ * not assemble HTML from task fields.
  */
+
 import { createUIResource } from '@mcp-ui/server'
+import type { ToolExecutionContext } from '@tanstack/ai'
 import type { Task } from '../schemas/schemas'
 import { isAllowedMcpUiUri, MAX_MCP_UI_HTML_CHARS, type McpUiResource } from './mcpUiResource'
+import taskViewHtml from './views/task-view.html?raw'
 
 const MAX_TASKS_PER_VIEW = 20
 const MAX_TITLE_CHARS = 200
 const MAX_DESCRIPTION_CHARS = 2_000
+const VIEW_DATA_SLOT = '__VIEW_DATA__'
+
+interface TaskCardData {
+	id: string
+	title: string
+	status: string
+	priority: string
+	assignee?: string
+}
+
+interface TasksViewData {
+	view: 'tasks'
+	total: number
+	tasks: TaskCardData[]
+}
+
+interface TaskDetailData extends TaskCardData {
+	description: string
+	createdAt: string
+	updatedAt: string
+}
+
+interface TaskViewData {
+	view: 'task'
+	task: TaskDetailData
+}
 
 function truncatePlain(value: string, max: number): string {
 	if (value.length <= max) return value
 	return `${value.slice(0, max - 1)}…`
 }
 
-function escapeHtml(value: string): string {
-	return value
-		.replaceAll('&', '&amp;')
-		.replaceAll('<', '&lt;')
-		.replaceAll('>', '&gt;')
-		.replaceAll('"', '&quot;')
-		.replaceAll("'", '&#39;')
+function cardData(task: Task): TaskCardData {
+	return {
+		id: task.id,
+		title: truncatePlain(task.title, MAX_TITLE_CHARS),
+		status: task.status,
+		priority: task.priority,
+		...(task.assignee ? { assignee: truncatePlain(task.assignee, MAX_TITLE_CHARS) } : {}),
+	}
 }
 
-function postScript(): string {
-	return `<script>
-import('/mcp-app.js').then(function (mod) {
-  var app = new mod.App({ name: 'task-view', version: '0.1.0' }, {});
-  return app.connect().then(function () {
-    document.addEventListener('click', function (event) {
-      var target = event.target;
-      var el = target && target.closest ? target.closest('[data-prompt], [data-link]') : null;
-      if (!el) return;
-      event.preventDefault();
-      if (el.hasAttribute('data-prompt')) {
-        var text = el.getAttribute('data-prompt');
-        if (text) app.sendMessage({ role: 'user', content: [{ type: 'text', text: text }] });
-      } else if (el.hasAttribute('data-link')) {
-        var url = el.getAttribute('data-link');
-        if (url) app.openLink({ url: url });
-      }
-    });
-  });
-}).catch(function (error) { console.error(error); });
-</script>`
-}
-
-function shellStyle(): string {
-	return `<style>
-body { font-family: system-ui, sans-serif; margin: 0; padding: 12px; color: #1f2937; background: #ffffff; }
-.card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; background: #ffffff; }
-.badge { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #eef2ff; color: #3730a3; margin-right: 6px; }
-button { font: inherit; cursor: pointer; border: 1px solid #c7d2fe; background: #eef2ff; color: #3730a3; border-radius: 6px; padding: 6px 10px; }
-button + button { margin-left: 6px; }
-.muted { color: #6b7280; font-size: 13px; }
-@media (prefers-color-scheme: dark) {
-  body { color: #e5e7eb; background: #1f2937; }
-  .card { border-color: #374151; background: #111827; }
-  .badge { background: #312e81; color: #e0e7ff; }
-  button { border-color: #4f46e5; background: #312e81; color: #e0e7ff; }
-  .muted { color: #9ca3af; }
-}
-</style>`
-}
-
-function taskCard(task: Task, withDetailButton: boolean): string {
-	const title = escapeHtml(truncatePlain(task.title, MAX_TITLE_CHARS))
-	const detailButton = withDetailButton ? `<button data-prompt="Show task ${escapeHtml(task.id)}">Open</button>` : ''
-	return `<div class="card"><strong>${title}</strong><div class="muted">${escapeHtml(task.id)}</div><div><span class="badge">${escapeHtml(task.status)}</span><span class="badge">${escapeHtml(task.priority)}</span>${task.assignee ? `<span class="badge">${escapeHtml(task.assignee)}</span>` : ''}</div><div style="margin-top:8px">${detailButton}</div></div>`
+/** JSON embedded in HTML. `<` is escaped so the payload cannot close the script. */
+function embedViewData(data: TasksViewData | TaskViewData): string {
+	const json = JSON.stringify(data).replaceAll('<', '\\u003c')
+	if (!taskViewHtml.includes(VIEW_DATA_SLOT)) {
+		throw new Error('Task view template is missing the view-data slot')
+	}
+	return taskViewHtml.replace(VIEW_DATA_SLOT, json)
 }
 
 /** @internal Used by unit tests to verify the HTML size cap. */
@@ -99,11 +91,12 @@ function toResource(uri: `ui://${string}`, htmlString: string): McpUiResource {
  * TanStack AI turns that event into a `UIResourcePart` on the assistant message.
  * The HTML stays out of the model-facing tool result.
  */
-export function emitMcpUiResource(context: unknown, toolName: string, resource: McpUiResource): void {
-	if (typeof context !== 'object' || context === null || !('emitCustomEvent' in context)) return
-	const emit = context.emitCustomEvent
-	if (typeof emit !== 'function') return
-	emit('ui-resource', {
+export function emitMcpUiResource(
+	context: ToolExecutionContext | undefined,
+	toolName: string,
+	resource: McpUiResource,
+): void {
+	context?.emitCustomEvent('ui-resource', {
 		resource: {
 			uri: resource.resource.uri,
 			mimeType: resource.resource.mimeType,
@@ -117,19 +110,24 @@ export function emitMcpUiResource(context: unknown, toolName: string, resource: 
 /** Task list view for the `showTasksView` tool. */
 export function createTasksViewResource(tasks: Task[]): McpUiResource {
 	const shown = tasks.slice(0, MAX_TASKS_PER_VIEW)
-	const cards = shown.map((task) => taskCard(task, true)).join('')
-	const overflow =
-		tasks.length > shown.length
-			? `<p class="muted">Showing ${shown.length} of ${tasks.length} tasks — ask for a filter to narrow down.</p>`
-			: ''
-	const htmlString = `<!doctype html><html><body>${shellStyle()}<h3>Tasks (${tasks.length})</h3>${cards || '<p class="muted">No tasks match.</p>'}${overflow}${postScript()}</body></html>`
+	const htmlString = embedViewData({
+		view: 'tasks',
+		total: tasks.length,
+		tasks: shown.map(cardData),
+	})
 	return toResource('ui://tasks/list', htmlString)
 }
 
 /** Task detail view for the `showTaskView` tool. */
 export function createTaskViewResource(task: Task): McpUiResource {
-	const title = escapeHtml(truncatePlain(task.title, MAX_TITLE_CHARS))
-	const description = escapeHtml(truncatePlain(task.description ?? 'No description.', MAX_DESCRIPTION_CHARS))
-	const htmlString = `<!doctype html><html><body>${shellStyle()}<div class="card"><h3>${title}</h3><div class="muted">${escapeHtml(task.id)}</div><p>${description}</p><div><span class="badge">${escapeHtml(task.status)}</span><span class="badge">${escapeHtml(task.priority)}</span>${task.assignee ? `<span class="badge">${escapeHtml(task.assignee)}</span>` : ''}</div><div class="muted">Created ${escapeHtml(task.createdAt)} · Updated ${escapeHtml(task.updatedAt)}</div><div style="margin-top:8px"><button data-prompt="Show my tasks">Back to tasks</button></div></div>${postScript()}</body></html>`
+	const htmlString = embedViewData({
+		view: 'task',
+		task: {
+			...cardData(task),
+			description: truncatePlain(task.description ?? 'No description.', MAX_DESCRIPTION_CHARS),
+			createdAt: task.createdAt,
+			updatedAt: task.updatedAt,
+		},
+	})
 	return toResource(`ui://task/detail-${task.id}`, htmlString)
 }

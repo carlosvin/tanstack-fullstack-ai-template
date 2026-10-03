@@ -1,5 +1,5 @@
 /**
- * MCP UI resource wire format — client-safe validators.
+ * MCP UI resource wire format — client-safe helpers.
  *
  * Mirrors the MCP Apps `UIResource` payload (`text/html;profile=mcp-app`)
  * without pulling server-only builders into the browser bundle.
@@ -25,31 +25,8 @@ export interface McpUiResource {
 }
 
 /** Allowlist for tool-linked UI resource URIs. */
-export function isAllowedMcpUiUri(uri: unknown): uri is string {
-	if (typeof uri !== 'string') return false
+export function isAllowedMcpUiUri(uri: string): boolean {
 	return ALLOWED_MCP_UI_URI_PREFIXES.some((prefix) => uri.startsWith(prefix))
-}
-
-/** Type guard for the MCP Apps UI resource wire shape. */
-export function isMcpUiResource(value: unknown): value is McpUiResource {
-	if (typeof value !== 'object' || value === null) return false
-	const record = value as Record<string, unknown>
-	if (record.type !== 'resource') return false
-	const resource = record.resource as Record<string, unknown> | undefined
-	if (typeof resource !== 'object' || resource === null) return false
-	if (!isAllowedMcpUiUri(resource.uri)) return false
-	if (resource.mimeType !== MCP_APP_MIME_TYPE) return false
-	return typeof resource.text === 'string' || typeof resource.blob === 'string'
-}
-
-/** Scan an unknown tool output for an embedded MCP UI resource. */
-export function findMcpUiResource(value: unknown): McpUiResource | null {
-	if (isMcpUiResource(value)) return value
-	if (typeof value !== 'object' || value === null) return null
-	for (const entry of Object.values(value as Record<string, unknown>)) {
-		if (isMcpUiResource(entry)) return entry
-	}
-	return null
 }
 
 /** Decode resource HTML from `text` or base64 `blob`. Returns null when oversized. */

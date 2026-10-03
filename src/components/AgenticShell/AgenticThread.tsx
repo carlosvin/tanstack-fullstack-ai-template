@@ -1,7 +1,7 @@
 import { Button, Group, Loader, ScrollArea, Stack, Text } from '@mantine/core'
 import type { UIResourcePart } from '@tanstack/ai'
 import type { UIMessage } from '@tanstack/ai-react'
-import { useCallback, useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { suggestedPrompts } from '../../utils/suggestedPrompts'
 import { useAgenticChat } from '../AgenticChat/AgenticChatContext'
 import { AgenticMcpRenderer } from '../AgenticMcp/AgenticMcpRenderer'
@@ -33,16 +33,12 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 	const { messages, isLoading, sendMessage } = useAgenticChat()
 	const viewportRef = useRef<HTMLDivElement>(null)
 
-	const scrollToBottom = useCallback(() => {
-		const el = viewportRef.current
-		if (el && typeof el.scrollTo === 'function') {
-			el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
-		}
-	}, [])
-
 	useEffect(() => {
-		scrollToBottom()
-	}, [scrollToBottom])
+		const el = viewportRef.current
+		if (!el || typeof el.scrollTo !== 'function') return
+		if (messages.length === 0 && !isLoading) return
+		el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+	}, [messages, isLoading])
 
 	return (
 		<ScrollArea h={scrollHeight} viewportRef={viewportRef} type="auto">

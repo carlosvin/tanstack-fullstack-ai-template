@@ -1,12 +1,8 @@
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { Task } from '../schemas/schemas'
-import {
-	decodeMcpUiHtml,
-	findMcpUiResource,
-	isAllowedMcpUiUri,
-	isMcpUiResource,
-	MAX_MCP_UI_HTML_CHARS,
-} from './mcpUiResource'
+import { decodeMcpUiHtml, isAllowedMcpUiUri, MAX_MCP_UI_HTML_CHARS } from './mcpUiResource'
 import {
 	assertMcpUiHtmlWithinCap,
 	createTasksViewResource,
@@ -32,27 +28,30 @@ describe('mcpUiResource', () => {
 		expect(isAllowedMcpUiUri('ui://task/detail-abc')).toBe(true)
 		expect(isAllowedMcpUiUri('https://example.com')).toBe(false)
 		expect(isAllowedMcpUiUri('ui://other/x')).toBe(false)
-		expect(isAllowedMcpUiUri(undefined)).toBe(false)
 	})
 
-	it('builds a tasks view resource with escaped HTML', () => {
+	it('builds a tasks view from the shared template and JSON task data', () => {
 		const resource = createTasksViewResource([task])
-		expect(isMcpUiResource(resource)).toBe(true)
+		expect(resource.type).toBe('resource')
 		expect(resource.resource.uri).toBe('ui://tasks/list')
 		expect(resource.resource.mimeType).toBe('text/html;profile=mcp-app')
 		const html = decodeMcpUiHtml(resource.resource)
-		expect(html).toContain('Write &lt;docs&gt;')
+		expect(html).toContain('id="view-data"')
+		expect(html).toContain('/mcp-task-view.js')
+		expect(html).toContain('Write \\u003cdocs>')
 		expect(html).not.toContain('Write <docs>')
-		expect(html).toContain('/mcp-app.js')
-		expect(html).toContain('sendMessage')
+		const guest = readFileSync(path.join(process.cwd(), 'public/mcp-task-view.js'), 'utf8')
+		expect(guest).toContain('/mcp-app.js')
+		expect(guest).toContain('sendMessage')
+		expect(guest).toContain('textContent')
 	})
 
 	it('emits a ui-resource event and skips a context that cannot emit', () => {
 		const resource = createTasksViewResource([task])
-		const events: unknown[] = []
+		const events: Array<{ name: string; value: unknown }> = []
 		emitMcpUiResource(
 			{
-				emitCustomEvent: (name: string, value: unknown) => {
+				emitCustomEvent: (name, value) => {
 					events.push({ name, value })
 				},
 			},
@@ -78,24 +77,14 @@ describe('mcpUiResource', () => {
 
 	it('builds a task detail resource with an allowlisted detail URI', () => {
 		const resource = createTaskViewResource(task)
-		expect(isMcpUiResource(resource)).toBe(true)
 		expect(resource.resource.uri).toBe('ui://task/detail-abc123')
+		const html = decodeMcpUiHtml(resource.resource)
+		expect(html).toContain('Details & more')
+		expect(html).toContain('"view":"task"')
 	})
 
 	it('rejects HTML payloads that exceed the size cap', () => {
 		const oversized = `<!doctype html><html><body>${'x'.repeat(MAX_MCP_UI_HTML_CHARS)}</body></html>`
 		expect(() => assertMcpUiHtmlWithinCap(oversized, 'ui://tasks/list')).toThrow(/exceeds/)
-	})
-
-	it('finds embedded resources in tool outputs and rejects bad MIME types', () => {
-		const resource = createTasksViewResource([task])
-		expect(findMcpUiResource({ tasks: [task], ui: resource })).toEqual(resource)
-		expect(findMcpUiResource({ tasks: [] })).toBeNull()
-		expect(
-			isMcpUiResource({
-				type: 'resource',
-				resource: { uri: 'ui://tasks/list', mimeType: 'text/html', text: '<p>x</p>' },
-			}),
-		).toBe(false)
 	})
 })
