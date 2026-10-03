@@ -1,7 +1,7 @@
 import { Badge, Card, Container, Group, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core'
 import { CheckCircle, Circle, Clock, ListTodo, type LucideIcon } from 'lucide-react'
 import type { Task, TaskStatus } from '../../types'
-import { priorityColor, statusColor } from '../../utils/taskDisplay'
+import { priorityColor, priorityLabel, statusColor, statusLabel } from '../../utils/taskDisplay'
 import { Link } from '../Link/Link'
 
 interface DashboardStat {
@@ -32,21 +32,21 @@ export function DashboardPage({ tasks, appName, appVersion, env }: DashboardPage
 			filterLabel: 'View all tasks',
 		},
 		{
-			label: 'Pending',
+			label: statusLabel('pending'),
 			value: statusCount(tasks, 'pending'),
 			icon: Circle,
 			status: 'pending',
 			filterLabel: 'Filter tasks by pending status',
 		},
 		{
-			label: 'In Progress',
+			label: statusLabel('in-progress'),
 			value: statusCount(tasks, 'in-progress'),
 			icon: Clock,
 			status: 'in-progress',
 			filterLabel: 'Filter tasks by in progress status',
 		},
 		{
-			label: 'Done',
+			label: statusLabel('done'),
 			value: statusCount(tasks, 'done'),
 			icon: CheckCircle,
 			status: 'done',
@@ -142,11 +142,11 @@ export function DashboardPage({ tasks, appName, appVersion, env }: DashboardPage
 												{task.title}
 											</Text>
 											<Badge size="sm" variant="light" color={priorityColor(task.priority)}>
-												{task.priority}
+												{priorityLabel(task.priority)}
 											</Badge>
 										</Group>
 										<Badge variant="dot" color={statusColor(task.status)}>
-											{task.status}
+											{statusLabel(task.status)}
 										</Badge>
 									</Group>
 								</Card>

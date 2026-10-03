@@ -14,10 +14,16 @@ import {
 } from '@mantine/core'
 import { useDebouncedCallback } from '@mantine/hooks'
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
-import { TASK_PRIORITIES, TASK_STATUSES } from '../../constants/options'
 import { OptionalTaskPrioritySchema, OptionalTaskStatusSchema } from '../../services/schemas/schemas'
 import type { Task, TaskFilter } from '../../types'
-import { priorityColor, statusColor } from '../../utils/taskDisplay'
+import {
+	priorityColor,
+	priorityLabel,
+	prioritySelectOptions,
+	statusColor,
+	statusLabel,
+	statusSelectOptions,
+} from '../../utils/taskDisplay'
 import { Link } from '../Link/Link'
 
 export interface TasksPageProps {
@@ -74,7 +80,7 @@ export function TasksPage({ tasks, search, isAuth, currentUserEmail, onUpdateSea
 					<Select
 						placeholder="Status"
 						clearable
-						data={TASK_STATUSES.map((s) => ({ value: s, label: s }))}
+						data={statusSelectOptions}
 						value={search.status ?? null}
 						onChange={(val) => onUpdateSearch({ status: OptionalTaskStatusSchema.parse(val) })}
 						w={{ base: '100%', sm: 150 }}
@@ -82,7 +88,7 @@ export function TasksPage({ tasks, search, isAuth, currentUserEmail, onUpdateSea
 					<Select
 						placeholder="Priority"
 						clearable
-						data={TASK_PRIORITIES.map((p) => ({ value: p, label: p }))}
+						data={prioritySelectOptions}
 						value={search.priority ?? null}
 						onChange={(val) => onUpdateSearch({ priority: OptionalTaskPrioritySchema.parse(val) })}
 						w={{ base: '100%', sm: 150 }}
@@ -112,7 +118,7 @@ export function TasksPage({ tasks, search, isAuth, currentUserEmail, onUpdateSea
 															{task.title}
 														</Text>
 														<Badge size="sm" variant="light" color={priorityColor(task.priority)}>
-															{task.priority}
+															{priorityLabel(task.priority)}
 														</Badge>
 													</Group>
 													{task.description && (
@@ -128,7 +134,7 @@ export function TasksPage({ tasks, search, isAuth, currentUserEmail, onUpdateSea
 														</Text>
 													)}
 													<Badge variant="dot" color={statusColor(task.status)}>
-														{task.status}
+														{statusLabel(task.status)}
 													</Badge>
 												</Group>
 											</Group>
