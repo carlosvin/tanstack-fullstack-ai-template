@@ -17,6 +17,8 @@ This repo ships **two prompt UX examples** from one codebase. Set `PROMPT_CONCEP
 
 Link a **second Netlify site** to the same repository (base directory `/`, same `pnpm build` as `netlify.toml`). Give each site its own `DISPLAY_NAME` and shared AI/observability env vars. Production on the default site stays on `main`; the prompt-first site uses `PROMPT_CONCEPT=prompt-first` in site settings.
 
+On pull requests, **each linked site** gets its own Netlify deploy preview (two checks / two URLs): side drawer on `fullstack-promptable-app-example`, prompt-first on `fullstack-promptable-prompt-first`. Enable **Deploy Previews** and disable **Branch deploys** in both projects’ Build & deploy settings.
+
 ## Use the Agent Skill
 
 This repo publishes **[Agent Skills](https://agentskills.io)** in `.agents/skills/*/SKILL.md` (the only skill format).
