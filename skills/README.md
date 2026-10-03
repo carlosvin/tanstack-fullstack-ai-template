@@ -7,7 +7,7 @@ This repo ships **[Agent Skills](https://agentskills.io)** — one `SKILL.md` pe
 - **`reference-tech-stack`** — **opinionated defaults** for *this* template: Zod, Mantine, lucide-react, MongoDB + seed, jose JWT, OpenAI adapter, pino + Sentry, react-markdown, Biome, Vitest, Playwright, Netlify.
 - **`repository-architecture`** — **language-agnostic repository architecture**: injected collection owners, indexes, stale-data cleanup, and resource lifetime (TypeScript `AsyncDisposable`, Java `AutoCloseable`, Python context-manager magic methods).
 - **`promptable-ux`** — **shared prompt UX**: mobile first, assistant markdown, and two concepts that differ only in prompt placement. **Promptable UI (side)** hides the prompt in a side or bottom panel (this reference app). **Prompt-first** keeps the prompt on screen and drills from an overview down the page.
-- **`agentic-ux`** — **fully agentic UX**: a thin prompt shell with no domain screens. Every view beyond text renders as a tool-linked MCP UI resource in a sandboxed iframe.
+- **`agentic-ux`** — **fully agentic UX**: a thin prompt shell with no domain screens. Every view beyond text renders as a tool-linked MCP Apps resource through `MCPAppResource` and `public/sandbox_proxy.html`.
 
 Operational how-to (file paths, snippets, validation commands) still lives in **[AGENTS.md](../AGENTS.md)**.
 

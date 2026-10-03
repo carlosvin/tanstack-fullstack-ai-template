@@ -7,7 +7,12 @@ import {
 	isMcpUiResource,
 	MAX_MCP_UI_HTML_CHARS,
 } from './mcpUiResource'
-import { assertMcpUiHtmlWithinCap, createTasksViewResource, createTaskViewResource } from './mcpUiResources'
+import {
+	assertMcpUiHtmlWithinCap,
+	createTasksViewResource,
+	createTaskViewResource,
+	emitMcpUiResource,
+} from './mcpUiResources'
 
 const task = {
 	id: 'abc123',
@@ -38,6 +43,37 @@ describe('mcpUiResource', () => {
 		const html = decodeMcpUiHtml(resource.resource)
 		expect(html).toContain('Write &lt;docs&gt;')
 		expect(html).not.toContain('Write <docs>')
+		expect(html).toContain('/mcp-app.js')
+		expect(html).toContain('sendMessage')
+	})
+
+	it('emits a ui-resource event and skips a context that cannot emit', () => {
+		const resource = createTasksViewResource([task])
+		const events: unknown[] = []
+		emitMcpUiResource(
+			{
+				emitCustomEvent: (name: string, value: unknown) => {
+					events.push({ name, value })
+				},
+			},
+			'showTasksView',
+			resource,
+		)
+		expect(events).toEqual([
+			{
+				name: 'ui-resource',
+				value: {
+					resource: {
+						uri: 'ui://tasks/list',
+						mimeType: 'text/html;profile=mcp-app',
+						text: resource.resource.text,
+						blob: resource.resource.blob,
+					},
+					toolName: 'showTasksView',
+				},
+			},
+		])
+		expect(() => emitMcpUiResource(undefined, 'showTasksView', resource)).not.toThrow()
 	})
 
 	it('builds a task detail resource with an allowlisted detail URI', () => {

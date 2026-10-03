@@ -1,85 +1,48 @@
-import { Alert, Button, Paper, Skeleton, Stack, Text } from '@mantine/core'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import {
-	decodeMcpUiHtml,
-	isAllowedMcpUiUri,
-	MCP_APP_MIME_TYPE,
-	type McpUiResourceContent,
-} from '../../services/mcpUi/mcpUiResource'
+import { Alert, Button, Paper, Stack, Text } from '@mantine/core'
+import type { UIResourcePart } from '@tanstack/ai'
+import { useMcpAppBridge } from '@tanstack/ai-react'
+import { MCPAppResource } from '@tanstack/ai-react/mcp-apps'
+import { useCallback, useMemo, useState } from 'react'
+import { decodeMcpUiHtml, isAllowedMcpUiUri, MCP_APP_MIME_TYPE } from '../../services/mcpUi/mcpUiResource'
+
+const MCP_APP_CALL_ENDPOINT = '/api/mcp-apps/call'
+const AGENTIC_THREAD_ID = 'agentic'
 
 interface AgenticMcpRendererProps {
-	resource: McpUiResourceContent
+	part: UIResourcePart
 	onPrompt: (text: string) => void
-	onNotify?: (text: string) => void
-	onToolAction?: (toolName: string, params: unknown) => void
 	onRetry?: () => void
 }
 
-type McpUiHostMessage = {
-	type: 'prompt' | 'link' | 'notify' | 'tool' | 'intent'
-	payload?: { text?: string; url?: string; message?: string; toolName?: string; params?: unknown }
-}
-
-function isHostMessage(value: unknown): value is McpUiHostMessage {
-	if (typeof value !== 'object' || value === null) return false
-	const type = (value as Record<string, unknown>).type
-	return type === 'prompt' || type === 'link' || type === 'notify' || type === 'tool' || type === 'intent'
+function sandboxUrl(): URL {
+	const origin = typeof window === 'undefined' ? 'http://localhost' : window.location.origin
+	return new URL('/sandbox_proxy.html', origin)
 }
 
 /**
- * MCP-UI-wire-compatible host renderer: sandboxed iframe only.
- * The host document never injects tool HTML. Widget actions map to
- * tools or prompts — never to in-app routes.
+ * Host renderer for a tool-linked MCP Apps view.
+ * `MCPAppResource` loads `public/sandbox_proxy.html` and renders the resource
+ * HTML inside that sandbox. Prompts and links go through `useMcpAppBridge`.
  */
-export function AgenticMcpRenderer({ resource, onPrompt, onNotify, onToolAction, onRetry }: AgenticMcpRendererProps) {
-	const iframeRef = useRef<HTMLIFrameElement>(null)
-	const [loaded, setLoaded] = useState(false)
+export function AgenticMcpRenderer({ part, onPrompt, onRetry }: AgenticMcpRendererProps) {
 	const [attempt, setAttempt] = useState(0)
-	const [notice, setNotice] = useState<string | null>(null)
-
+	const resource = part.resource
 	const valid = isAllowedMcpUiUri(resource.uri) && resource.mimeType === MCP_APP_MIME_TYPE
 	const html = valid ? decodeMcpUiHtml(resource) : null
+	const sandbox = useMemo(() => ({ url: sandboxUrl() }), [])
 
-	const handleMessage = useCallback(
-		(event: MessageEvent) => {
-			const frame = iframeRef.current
-			if (!frame || event.source !== frame.contentWindow) return
-			if (!isHostMessage(event.data)) return
-			const payload = event.data.payload ?? {}
-			switch (event.data.type) {
-				case 'prompt':
-					if (typeof payload.text === 'string' && payload.text.trim()) onPrompt(payload.text)
-					break
-				case 'link':
-					if (typeof payload.url === 'string') window.open(payload.url, '_blank', 'noopener,noreferrer')
-					break
-				case 'notify':
-					if (typeof payload.message === 'string') {
-						if (onNotify) onNotify(payload.message)
-						else setNotice(payload.message)
-					}
-					break
-				case 'tool':
-				case 'intent':
-					if (typeof payload.toolName === 'string' && onToolAction) {
-						onToolAction(payload.toolName, payload.params)
-					} else if (typeof payload.text === 'string' && payload.text.trim()) {
-						onPrompt(payload.text)
-					}
-					break
-			}
+	const bridge = useMcpAppBridge({
+		threadId: AGENTIC_THREAD_ID,
+		callEndpoint: MCP_APP_CALL_ENDPOINT,
+		chat: {
+			sendMessage: async (content) => {
+				onPrompt(content)
+			},
 		},
-		[onPrompt, onNotify, onToolAction],
-	)
-
-	useEffect(() => {
-		window.addEventListener('message', handleMessage)
-		return () => window.removeEventListener('message', handleMessage)
-	}, [handleMessage])
-
-	useEffect(() => {
-		setLoaded(false)
-	}, [])
+		onLink: (url) => {
+			window.open(url, '_blank', 'noopener,noreferrer')
+		},
+	})
 
 	const handleRetry = useCallback(() => {
 		if (onRetry) onRetry()
@@ -104,20 +67,7 @@ export function AgenticMcpRenderer({ resource, onPrompt, onNotify, onToolAction,
 
 	return (
 		<Paper withBorder radius="md" p={0} style={{ overflow: 'hidden' }} key={`${resource.uri}-${attempt}`}>
-			{!loaded ? <Skeleton height={240} /> : null}
-			{notice ? (
-				<Text size="xs" c="dimmed" px="sm" pt="xs">
-					{notice}
-				</Text>
-			) : null}
-			<iframe
-				ref={iframeRef}
-				title={`Interactive view ${resource.uri}`}
-				srcDoc={html}
-				sandbox="allow-scripts"
-				style={{ width: '100%', height: 360, border: 0, display: loaded ? 'block' : 'none' }}
-				onLoad={() => setLoaded(true)}
-			/>
+			<MCPAppResource part={{ ...part, resource: { ...resource, text: html } }} bridge={bridge} sandbox={sandbox} />
 		</Paper>
 	)
 }

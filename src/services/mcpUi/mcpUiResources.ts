@@ -6,8 +6,9 @@
  * Each builder escapes repository data, caps payload size, and links the
  * tool to its UI the MCP Apps way (`ui://` resource URI + `text/html;profile=mcp-app`).
  */
+import { createUIResource } from '@mcp-ui/server'
 import type { Task } from '../schemas/schemas'
-import { isAllowedMcpUiUri, MAX_MCP_UI_HTML_CHARS, MCP_APP_MIME_TYPE, type McpUiResource } from './mcpUiResource'
+import { isAllowedMcpUiUri, MAX_MCP_UI_HTML_CHARS, type McpUiResource } from './mcpUiResource'
 
 const MAX_TASKS_PER_VIEW = 20
 const MAX_TITLE_CHARS = 200
@@ -29,17 +30,24 @@ function escapeHtml(value: string): string {
 
 function postScript(): string {
 	return `<script>
-function send(type, payload) {
-  window.parent.postMessage({ type: type, payload: payload }, '*');
-}
-function askPrompt(text) { send('prompt', { text: text }); }
-function openLink(url) { send('link', { url: url }); }
-document.addEventListener('click', function (event) {
-  var el = event.target.closest('[data-prompt], [data-link]');
-  if (!el) return;
-  if (el.hasAttribute('data-prompt')) askPrompt(el.getAttribute('data-prompt'));
-  else if (el.hasAttribute('data-link')) openLink(el.getAttribute('data-link'));
-});
+import('/mcp-app.js').then(function (mod) {
+  var app = new mod.App({ name: 'task-view', version: '0.1.0' }, {});
+  return app.connect().then(function () {
+    document.addEventListener('click', function (event) {
+      var target = event.target;
+      var el = target && target.closest ? target.closest('[data-prompt], [data-link]') : null;
+      if (!el) return;
+      event.preventDefault();
+      if (el.hasAttribute('data-prompt')) {
+        var text = el.getAttribute('data-prompt');
+        if (text) app.sendMessage({ role: 'user', content: [{ type: 'text', text: text }] });
+      } else if (el.hasAttribute('data-link')) {
+        var url = el.getAttribute('data-link');
+        if (url) app.openLink({ url: url });
+      }
+    });
+  });
+}).catch(function (error) { console.error(error); });
 </script>`
 }
 
@@ -74,15 +82,36 @@ export function assertMcpUiHtmlWithinCap(htmlString: string, uri: string): void 
 	}
 }
 
-function toResource(uri: string, htmlString: string): McpUiResource {
+function toResource(uri: `ui://${string}`, htmlString: string): McpUiResource {
 	if (!isAllowedMcpUiUri(uri)) {
 		throw new Error(`Refusing to build MCP UI resource for non-allowlisted URI: ${uri}`)
 	}
 	assertMcpUiHtmlWithinCap(htmlString, uri)
-	return {
-		type: 'resource',
-		resource: { uri, mimeType: MCP_APP_MIME_TYPE, text: htmlString },
-	}
+	return createUIResource({
+		uri,
+		content: { type: 'rawHtml', htmlString },
+		encoding: 'text',
+	})
+}
+
+/**
+ * Emit the MCP Apps `ui-resource` custom event from a tool execute context.
+ * TanStack AI turns that event into a `UIResourcePart` on the assistant message.
+ * The HTML stays out of the model-facing tool result.
+ */
+export function emitMcpUiResource(context: unknown, toolName: string, resource: McpUiResource): void {
+	if (typeof context !== 'object' || context === null || !('emitCustomEvent' in context)) return
+	const emit = context.emitCustomEvent
+	if (typeof emit !== 'function') return
+	emit('ui-resource', {
+		resource: {
+			uri: resource.resource.uri,
+			mimeType: resource.resource.mimeType,
+			text: resource.resource.text,
+			blob: resource.resource.blob,
+		},
+		toolName,
+	})
 }
 
 /** Task list view for the `showTasksView` tool. */

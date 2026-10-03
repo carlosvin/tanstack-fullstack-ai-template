@@ -19,7 +19,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "0.1.0"
+  version: "0.2.0"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -95,27 +95,31 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 ### Docs alignment
 
-[MCP Apps](https://github.com/MCP-UI-Org/mcp-ui) links a view with `_meta.ui.resourceUri` and renders it with `@mcp-ui/client` `AppRenderer` (`onCallTool`, `onMessage`, `onOpenLink`). TanStack AI `toolDefinition` has `metadata` and no `_meta`, so this recipe cannot set `_meta.ui.resourceUri` and does not mount `AppRenderer`. Do not add `@mcp-ui/client` until TanStack AI can pass `_meta`. `AppRenderer` is that follow-up. Until then, `UIResourceRenderer` and its `onUIAction` callback are also out of scope.
+Follow [TanStack AI MCP Apps](https://tanstack.com/ai/latest/docs/mcp/apps) and the [MCP UI client walkthrough](https://mcpui.dev/guide/client/walkthrough):
+
+- Link a tool with `metadata._meta.ui.resourceUri` (TanStack forwards that as MCP `_meta.ui.resourceUri`).
+- Build the document with `@mcp-ui/server` `createUIResource` (`rawHtml`, `encoding: 'text'`). MIME type is `text/html;profile=mcp-app`.
+- Emit a `ui-resource` custom event from the tool execute context so the assistant message gains a `UIResourcePart`. The HTML does not go in the model-facing tool result. `chat()` auto-emits that part for MCP-discovered tools; in-process tools emit the same event themselves.
+- Render each `ui-resource` part with `MCPAppResource` from `@tanstack/ai-react/mcp-apps`. Pass `useMcpAppBridge` so prompts and links leave the iframe. `sandbox.url` is the hosted page `public/sandbox_proxy.html`.
+- The guest uses `@modelcontextprotocol/ext-apps` `App` (`sendMessage`, `openLink`) from `public/mcp-app.js`. Do not post `{ type: 'prompt' | 'link' | 'notify' | 'tool' | 'intent' }`. `AppRenderer` has no `onUIAction`. `UIResourceRenderer` is out of scope.
+- A separate MCP server plus `createMcpAppCallHandler` is the path when a widget calls tools itself. This shell's views send a follow-up prompt, and `POST /api/mcp-apps/call` refuses direct widget tool calls, so writes stay on the chat tools and the auth ticket.
 
 ### Recipe
 
 Generate views with this recipe. The reference example (`showTasksView`, `showTaskView`, `AgenticMcpRenderer`) is that recipe:
 
-- `toolDefinition` sets `metadata.ui.resourceUri` to an allowlisted `ui://` URI.
-- The tool result embeds the resource next to the data. MIME type is `text/html;profile=mcp-app`. HTML is `rawHtml` only. Escape repository fields, bound their length, and refuse a document over the size cap. Do not slice a finished document.
-- The host renders that HTML only in an iframe with `sandbox="allow-scripts"` and `srcDoc`. Show a loading placeholder, an error state whose retry re-requests the same view, and the markdown answer when the resource fails.
+- `toolDefinition` sets `metadata._meta.ui.resourceUri` to an allowlisted `ui://` URI.
+- `createUIResource` builds the document. Escape repository fields, bound their length, and refuse a document over the size cap. Do not slice a finished document.
+- The host renders that HTML only through `MCPAppResource` and `sandbox_proxy.html`. Show an error state whose retry re-requests the same view, and keep the markdown answer when the resource fails.
 - A capability that returns a UI resource does not also get a hand-built page.
 
 ## UI actions
 
-The iframe posts `{ type, payload }` to the host. Accept only messages whose `event.source` is that iframe. Map them to a prompt or the same server tool. Never to an in-app route.
+The guest `App` talks to the bridge. Map actions to a prompt. Never to an in-app route.
 
-- **prompt** — send `payload.text` as the next user message.
-- **link** — open `payload.url` externally.
-- **notify** — status in the thread.
-- **tool** and **intent** — turn `toolName` and `params` into the next user prompt that calls that tool (for example `showTasksView` → "Show my tasks"). Do not call server functions from the iframe.
-
-When `AppRenderer` becomes available, switch this host to `onCallTool`, `onMessage`, and `onOpenLink`. `AppRenderer` has no `onUIAction`. The five action names above stay the iframe message types until that switch.
+- **prompt** — `app.sendMessage` becomes the next user message through `useMcpAppBridge`.
+- **link** — `app.openLink`. The bridge allows only `http:`, `https:`, and `mailto:`.
+- **tool** — these views do not call tools from the iframe. The call endpoint refuses a direct widget tool call.
 
 ## Security
 

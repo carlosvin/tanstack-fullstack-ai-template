@@ -15,11 +15,11 @@ export type SafeToolResult<T> = T | ToolErrorResult
  * This lets the AI interpret failures (401, 403, 404) and respond helpfully.
  */
 export function safeToolHandler<TArgs, TResult>(
-	execute: (args: TArgs) => Promise<TResult> | TResult,
-): (args: TArgs) => Promise<SafeToolResult<TResult>> {
-	return async (args: TArgs) => {
+	execute: (args: TArgs, context?: unknown) => Promise<TResult> | TResult,
+): (args: TArgs, context?: unknown) => Promise<SafeToolResult<TResult>> {
+	return async (args: TArgs, context?: unknown) => {
 		try {
-			return await execute(args)
+			return await execute(args, context)
 		} catch (err) {
 			if (err instanceof HttpError) {
 				return { error: err.message, code: err.statusCode }
@@ -39,7 +39,7 @@ export function createSafeServerTool<TArgs, TServerTool>(
 	tool: {
 		server: (execute: (args: NoInfer<TArgs>) => Promise<unknown> | unknown) => TServerTool
 	},
-	execute: (args: TArgs) => Promise<unknown> | unknown,
+	execute: (args: TArgs, context?: unknown) => Promise<unknown> | unknown,
 ): TServerTool {
 	return tool.server(safeToolHandler(execute) as (args: NoInfer<TArgs>) => Promise<unknown> | unknown)
 }

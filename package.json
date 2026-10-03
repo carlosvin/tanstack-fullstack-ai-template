@@ -24,6 +24,8 @@
 		"@mantine/hooks": "^9.5.1",
 		"@mantine/modals": "^9.5.1",
 		"@mantine/notifications": "^9.5.1",
+		"@mcp-ui/client": "^7.1.1",
+		"@mcp-ui/server": "^6.1.0",
 		"@sentry/tanstackstart-react": "^10.48.0",
 		"@tanstack/ai": "^0.64.0",
 		"@tanstack/ai-client": "^0.36.1",

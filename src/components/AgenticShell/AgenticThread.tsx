@@ -1,33 +1,17 @@
 import { Button, Group, Loader, ScrollArea, Stack, Text } from '@mantine/core'
+import type { UIResourcePart } from '@tanstack/ai'
 import type { UIMessage } from '@tanstack/ai-react'
 import { useCallback, useEffect, useRef } from 'react'
-import { findMcpUiResource, type McpUiResource } from '../../services/mcpUi/mcpUiResource'
 import { suggestedPrompts } from '../../utils/suggestedPrompts'
 import { useAgenticChat } from '../AgenticChat/AgenticChatContext'
 import { AgenticMcpRenderer } from '../AgenticMcp/AgenticMcpRenderer'
 import { MessageBubble } from '../PromptChat/MessageBubble'
 import { AgenticPromptMarkdownLink } from './AgenticPromptMarkdownLink'
 
-function messageResources(message: UIMessage): McpUiResource[] {
-	const found: McpUiResource[] = []
+function messageUiResources(message: UIMessage): UIResourcePart[] {
+	const found: UIResourcePart[] = []
 	for (const part of message.parts) {
-		if (part.type === 'tool-call') {
-			const resource = findMcpUiResource((part as { output?: unknown }).output)
-			if (resource) found.push(resource)
-		} else if (part.type === 'tool-result') {
-			const content = (part as { content?: unknown }).content
-			if (typeof content === 'string') {
-				try {
-					const resource = findMcpUiResource(JSON.parse(content))
-					if (resource) found.push(resource)
-				} catch {
-					// Non-JSON tool content carries no UI resource.
-				}
-			} else {
-				const resource = findMcpUiResource(content)
-				if (resource) found.push(resource)
-			}
-		}
+		if (part.type === 'ui-resource') found.push(part)
 	}
 	return found
 }
@@ -39,15 +23,6 @@ function retryPromptForResourceUri(uri: string): string {
 		if (id && id !== 'detail') return `Show task ${id}`
 	}
 	return 'Please show that view again'
-}
-
-function toolActionPrompt(toolName: string, params: unknown): string {
-	if (toolName === 'showTasksView') return 'Show my tasks'
-	if (toolName === 'showTaskView') {
-		const taskId = (params as { taskId?: unknown } | null)?.taskId
-		if (typeof taskId === 'string' && taskId.trim()) return `Show task ${taskId}`
-	}
-	return `Run ${toolName}`
 }
 
 /**
@@ -68,13 +43,6 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 	useEffect(() => {
 		scrollToBottom()
 	}, [scrollToBottom])
-
-	const handleToolAction = useCallback(
-		(toolName: string, params: unknown) => {
-			sendMessage(toolActionPrompt(toolName, params))
-		},
-		[sendMessage],
-	)
 
 	return (
 		<ScrollArea h={scrollHeight} viewportRef={viewportRef} type="auto">
@@ -99,20 +67,19 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 					</Stack>
 				)}
 				{messages.map((msg) => {
-					const resources = msg.role === 'user' ? [] : messageResources(msg)
+					const resources = msg.role === 'user' ? [] : messageUiResources(msg)
 					return (
 						<Stack key={msg.id} gap="sm">
 							<MessageBubble
 								message={msg}
 								markdownLinkComponent={(props) => <AgenticPromptMarkdownLink {...props} onPrompt={sendMessage} />}
 							/>
-							{resources.map((resource) => (
+							{resources.map((part) => (
 								<AgenticMcpRenderer
-									key={resource.resource.uri}
-									resource={resource.resource}
+									key={`${part.toolCallId}-${part.resource.uri}`}
+									part={part}
 									onPrompt={sendMessage}
-									onToolAction={handleToolAction}
-									onRetry={() => sendMessage(retryPromptForResourceUri(resource.resource.uri))}
+									onRetry={() => sendMessage(retryPromptForResourceUri(part.resource.uri))}
 								/>
 							))}
 						</Stack>

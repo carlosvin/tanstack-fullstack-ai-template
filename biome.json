@@ -31,7 +31,7 @@
 	},
 	"overrides": [
 		{
-			"includes": ["src/routeTree.gen.ts"],
+			"includes": ["src/routeTree.gen.ts", "public/mcp-app.js"],
 			"linter": { "enabled": false },
 			"formatter": { "enabled": false },
 			"assist": { "enabled": false }
