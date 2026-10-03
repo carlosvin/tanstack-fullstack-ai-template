@@ -5,7 +5,7 @@
  *
  * 1. Google Gemini:
  *    - GEMINI_API_KEY        - API key (also accepts GOOGLE_API_KEY; Netlify gateway placeholder)
- *    - GEMINI_MODEL          - Model name (default: gemini-2.5-flash)
+ *    - GEMINI_MODEL          - Model name (default: gemini-3.1-flash-lite)
  *
  * 2. OpenAI / Netlify AI Gateway:
  *    - OPENAI_API_KEY        - API key (Netlify gateway auto-injects a placeholder)
@@ -45,7 +45,7 @@ class GeminiAdapterService implements AIAdapterService {
 		const apiKey = env.GEMINI_API_KEY || env.GOOGLE_API_KEY
 		if (!apiKey) return null
 
-		const model = (env.GEMINI_MODEL || 'gemini-2.5-flash') as GeminiTextModel
+		const model = (env.GEMINI_MODEL || 'gemini-3.1-flash-lite') as GeminiTextModel
 		return createGeminiChat(model, apiKey)
 	}
 }
