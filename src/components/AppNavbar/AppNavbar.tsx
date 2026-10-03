@@ -1,6 +1,6 @@
 import { AppShell, NavLink, ScrollArea, Text, Tooltip } from '@mantine/core'
-import { Code, LayoutDashboard, ListTodo } from 'lucide-react'
-import type { AppMeta } from '../../services/schemas/shellSession'
+import { Code, LayoutDashboard, ListTodo, Sparkles } from 'lucide-react'
+import type { AppMeta, PromptConcept } from '../../services/schemas/shellSession'
 import type { CurrentUser } from '../../types'
 import { Link } from '../Link/Link'
 
@@ -8,18 +8,21 @@ interface AppNavbarProps {
 	pathname: string
 	currentUser?: CurrentUser
 	appMeta: AppMeta
+	promptConcept?: PromptConcept
 	onNavigate?: () => void
 }
 
-export function AppNavbar({ pathname, currentUser, appMeta, onNavigate }: AppNavbarProps) {
+export function AppNavbar({ pathname, currentUser, appMeta, promptConcept = 'side', onNavigate }: AppNavbarProps) {
+	const isPromptFirst = promptConcept === 'prompt-first'
+
 	return (
 		<>
 			<AppShell.Section grow component={ScrollArea}>
 				<NavLink
 					component={Link}
 					to="/"
-					label="Dashboard"
-					leftSection={<LayoutDashboard size={18} />}
+					label={isPromptFirst ? 'AI Assistant' : 'Dashboard'}
+					leftSection={isPromptFirst ? <Sparkles size={18} /> : <LayoutDashboard size={18} />}
 					active={pathname === '/'}
 					onClick={onNavigate}
 				/>

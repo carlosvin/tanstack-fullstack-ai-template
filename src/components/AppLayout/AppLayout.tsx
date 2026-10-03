@@ -1,4 +1,4 @@
-import { AppShell, Stack } from '@mantine/core'
+import { AppShell, Container } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { useRouterState } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
@@ -20,7 +20,7 @@ interface AppLayoutProps {
 /**
  * Prompt concept from `shellSession.promptConcept` (promptable-ux skill):
  * - **Promptable UI (side)** (`side`) — ChatDrawer hidden until the header opens it
- * - **Prompt-first** (`prompt-first`) — always-visible PromptBar above page content
+ * - **Prompt-first** (`prompt-first`) — clean agentic conversation with bottom-pinned composer
  *
  * One chat shell per deployment; `PROMPT_CONCEPT` selects the branch.
  */
@@ -53,6 +53,7 @@ export function AppLayout({ currentUser, shellSession, aiAvailable = false, chil
 				breakpoint: 'sm',
 				collapsed: { mobile: !navOpened },
 			}}
+			footer={isPromptFirst && aiAvailable ? { height: 72 } : undefined}
 			padding={{ base: 'sm', sm: 'md' }}
 		>
 			<AppShell.Header>
@@ -66,14 +67,22 @@ export function AppLayout({ currentUser, shellSession, aiAvailable = false, chil
 				/>
 			</AppShell.Header>
 			<AppShell.Navbar p="md">
-				<AppNavbar pathname={pathname} currentUser={currentUser} appMeta={shellSession.app} onNavigate={closeNav} />
+				<AppNavbar
+					pathname={pathname}
+					currentUser={currentUser}
+					appMeta={shellSession.app}
+					promptConcept={promptConcept}
+					onNavigate={closeNav}
+				/>
 			</AppShell.Navbar>
-			<AppShell.Main>
-				<Stack gap="md">
-					{isPromptFirst && aiAvailable ? <PromptBar /> : null}
-					{children}
-				</Stack>
-			</AppShell.Main>
+			<AppShell.Main>{children}</AppShell.Main>
+			{isPromptFirst && aiAvailable ? (
+				<AppShell.Footer p="xs" px={{ base: 'xs', sm: 'md' }} style={{ height: 'auto', minHeight: 72 }}>
+					<Container size="md" p={0}>
+						<PromptBar />
+					</Container>
+				</AppShell.Footer>
+			) : null}
 			{isSideConcept && aiAvailable ? <ChatDrawer opened={chatOpened} onClose={closeChat} /> : null}
 		</AppShell>
 	)

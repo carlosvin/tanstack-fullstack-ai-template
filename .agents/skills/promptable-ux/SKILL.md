@@ -107,6 +107,7 @@ These rules apply to both concepts. The prompt stack does not change between the
 - **Mixed concepts.** An always-visible prompt and a hidden drawer in the same shell.
 - **Chat-only views.** A section that exists only as markdown in the thread, with no route.
 - **A second data path.** Overview widgets that fetch beside the route loaders.
+- **Dashboard stacked under prompt.** Dumping the entire traditional dashboard/table directly below a mid-page prompt input instead of giving the agentic conversation the main surface with bottom-pinned composer.
 - **Plain-text replies.** Stripping tables, code, and internal links from assistant messages.
 - **Disabled prompt.** Rendering a greyed-out chat when AI is not configured. Omit the prompt instead.
 
@@ -125,36 +126,34 @@ The domain UI is the product. The prompt is always reachable and hidden until th
 
 ## Prompt-first
 
-The prompt is the entry point. The page is a high-level overview the user drills into, from top to bottom. Use this when the developer asks for a prompt-led app, or when scaffolding a new home surface. Do not retrofit every existing list page in one pass unless asked.
+The prompt is the primary agentic entry point. In modern agentic UX, the conversation is front and center with the composer pinned at the bottom, not stacked above a traditional cluttered dashboard. Application areas and drill-down views are accessed seamlessly through the conversation (assistant links, navigate client tools) or dedicated route navigation.
 
-Reading order:
+Layout and hierarchy:
 
-1. **App bar** — identity, and a way back to the overview. Keep it short.
-2. **Prompt bar** — always visible, above the fold, not behind an open action. The thread scrolls; the input stays reachable. On a drill-down route, keep this bar or a compact form of it so "this view" still resolves from the current location.
-3. **Overview** — application areas as a short summary (status, recent items, one card per area). Each entry is scannable, not a full data table, and links to its route. The same loaders feed these sections.
-4. **Drill-down** — the active area: filters, lists, detail, forms. A real route, below the overview or on its own URL, with the prompt still mounted above it. Child routes reuse parent loader data and URL search state.
+1. **App bar** — identity, current location, and navigation. Keep it clean and minimal.
+2. **Conversation stage (main)** — the agentic interaction surface. When empty, renders a clean hero state with welcome text and suggested starter prompt chips. As conversation progresses, it displays a scrollable message thread with rich Markdown, tables, and internal route links.
+3. **Bottom-pinned composer (footer)** — the prompt input is pinned at the bottom of the viewport (e.g. `AppShell.Footer`), always accessible regardless of scroll position or thread length. Includes autosizing text input, send/stop button, and quick-action chips.
+4. **Dedicated drill-down surfaces** — task lists, detail views, and forms live on their dedicated routes (`/tasks`, `/tasks/$taskId`). When navigated, the user inspects or manipulates focused domain data with the prompt composer remaining pinned at the bottom (or accessible) for context-aware commands.
+5. **No stacked dashboard below prompt** — do NOT render the entire app/dashboard directly below the prompt bar on the home surface. That creates visual confusion and undermines the agentic experience. When AI is not configured, fallback gracefully to the standard overview dashboard.
 
 Rules that differ from the side concept:
 
-- The prompt is present on first paint. Do not hide it behind a drawer, a bottom sheet, or a disclosure.
-- Asking the prompt to open a section and tapping the overview land on the same route.
-- Drill-down adds depth. Do not replace the prompt with the detail view.
-- On a narrow viewport, keep the same top-to-bottom order. Pin the prompt input; let the thread and the page scroll.
-- Do not add a side drawer as well. One chat shell. If a migration temporarily has both, remove the drawer before calling it done.
-- When AI is not configured, render the static overview and omit the prompt bar.
+- The prompt is present on first paint. Do not hide it behind a drawer or modal button.
+- The prompt input is pinned to the bottom of the viewport, matching standard agentic UX patterns (ChatGPT, Claude, Cursor).
+- The thread scrolls freely in the main viewport area; the composer stays docked at the bottom.
+- Do not stack the rest of the application dashboard beneath the prompt input on the landing surface.
+- Drill-down routes (`/tasks`, etc.) remain full-fledged routes with shared loaders and navigation.
+- Do not add a side drawer when in prompt-first mode. One chat shell.
+- When AI is not configured, render the standard overview page gracefully.
 
-This template implements prompt-first when `PROMPT_CONCEPT=prompt-first` (see `shellSession.promptConcept`, `PromptBar`, shared `PromptChatProvider`). The home route overview plus task drill-down routes reuse existing loaders. Wire the bar to the same `/api/chat` endpoint and client tools as the side drawer.
+This template implements prompt-first when `PROMPT_CONCEPT=prompt-first` (see `shellSession.promptConcept`, `PromptBar`, shared `PromptChatProvider`). Wire the prompt composer and thread to the same `/api/chat` endpoint and client tools as the side drawer.
 
 ### Minimal file shape (adapt to the project)
 
-- `PromptBar` component: input + submit/stop + error + suggestion prompts
-  (suggestions may come from `docs/help.md`), wired to the same `/api/chat`
-  SSE endpoint and client tools as the drawer.
-- `PromptFirstPage` (or home route component): `PromptBar` on top, overview
-  sections below, each backed by loader data and linking to its full route.
-- One chat shell per app: no `Drawer` for chat in apps that commit to
-  prompt-first. If a migration needs both temporarily, say so explicitly and
-  remove the drawer before calling the migration done.
+- `PromptChatProvider` / shared hook: manages chat thread state across route changes.
+- `PromptBar` / `ChatComposer`: bottom-pinned input bar (typically in `AppShell.Footer`) with autosizing input, submit/stop, and suggestion chips.
+- `ChatThread` / `PromptThread`: full-height scrollable message thread with empty-state hero and suggestion chips.
+- One chat shell per app: no `Drawer` for chat in apps that commit to prompt-first. If a migration needs both temporarily, say so explicitly and remove the drawer before calling the migration done.
 
 ## UX checklist
 
