@@ -87,7 +87,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 **One concept per app.** A hidden drawer plus a second always-visible prompt is a mixed concept. Do not build it.
 
-**Ask the developer** which concept to use when the app has not declared one. Do not silently switch an app that already declares a concept. When the preference is unclear, use **Promptable UI (side)** and say that prompt-first is available.
+**Ask the developer** which concept to use when the app has not declared one. Do not silently switch an app that already declares a concept. When the preference is unclear, use **prompt-first**. This template's default site stays **Promptable UI (side)** (`PROMPT_CONCEPT=side` or unset). A second site uses `PROMPT_CONCEPT=prompt-first`. Do not change those env values from this question.
 
 ## Shared UX
 
@@ -162,7 +162,7 @@ This template implements prompt-first when `PROMPT_CONCEPT=prompt-first` (see `s
 
 ## UX checklist
 
-- Concept chosen with the developer. Side is the default; prompt-first is opt-in. This repo stays side unless asked.
+- Concept chosen with the developer. If they do not choose, use prompt-first. This repo's default site stays side unless asked.
 - `getAIAvailability()` gates the prompt. No disabled placeholder.
 - Chat state lives on the layout and survives navigation.
 - Assistant output is GFM markdown. Internal links use the project `Link`.

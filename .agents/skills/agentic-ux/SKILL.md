@@ -93,27 +93,29 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 ## MCP UI rendering
 
-- A tool that needs a view links it with `_meta.ui.resourceUri` (`ui://…`). The host reads the resource and renders it with `@mcp-ui/client` `AppRenderer`. MIME type is `text/html;profile=mcp-app`. The resource is built with `createUIResource` from the tool result.
-- v1 scope is `rawHtml` (plus `externalUrl` where needed). Defer `remote-dom`, component libraries, and host adapters.
-- Legacy `UIResourceRenderer` is fallback-only for tools that embed the resource directly in the result. Prefer `_meta.ui.resourceUri`.
-- A capability that returns a UI resource does not also get a hand-built page. No parallel component for the same view.
-- Resource states: loading placeholder while fetching, sandboxed render on success, error state with retry plus fallback to the markdown result when the resource fails.
+### Docs alignment
+
+[MCP Apps](https://github.com/MCP-UI-Org/mcp-ui) links a view with `_meta.ui.resourceUri` and renders it with `@mcp-ui/client` `AppRenderer` (`onCallTool`, `onMessage`, `onOpenLink`). TanStack AI `toolDefinition` has `metadata` and no `_meta`, so this recipe cannot set `_meta.ui.resourceUri` and does not mount `AppRenderer`. Do not add `@mcp-ui/client` until TanStack AI can pass `_meta`. `AppRenderer` is that follow-up. Until then, `UIResourceRenderer` and its `onUIAction` callback are also out of scope.
+
+### Recipe
+
+Generate views with this recipe. The reference example (`showTasksView`, `showTaskView`, `AgenticMcpRenderer`) is that recipe:
+
+- `toolDefinition` sets `metadata.ui.resourceUri` to an allowlisted `ui://` URI.
+- The tool result embeds the resource next to the data. MIME type is `text/html;profile=mcp-app`. HTML is `rawHtml` only. Escape repository fields, bound their length, and refuse a document over the size cap. Do not slice a finished document.
+- The host renders that HTML only in an iframe with `sandbox="allow-scripts"` and `srcDoc`. Show a loading placeholder, an error state whose retry re-requests the same view, and the markdown answer when the resource fails.
+- A capability that returns a UI resource does not also get a hand-built page.
 
 ## UI actions
 
-Preferred host is `@mcp-ui/client` `AppRenderer`. It has no `onUIAction`. Map guest requests to tools and prompts only, never to an in-app route:
+The iframe posts `{ type, payload }` to the host. Accept only messages whose `event.source` is that iframe. Map them to a prompt or the same server tool. Never to an in-app route.
 
-- `onCallTool` — run the same server tool with its input schema, append the result, render any new resource.
-- `onMessage` — send the text as the next user message, or show a status notice in the thread.
-- `onOpenLink` — open the URL externally.
-
-Legacy `UIResourceRenderer` is the only host that uses `onUIAction`. Keep those five action types on that fallback:
-
-- **tool** — same as `onCallTool`.
-- **prompt** — send the text as the next user message.
+- **prompt** — send `payload.text` as the next user message.
+- **link** — open `payload.url` externally.
 - **notify** — status in the thread.
-- **link** — same as `onOpenLink`.
-- **intent** — map to a tool call or a prompt. Never to an in-app route.
+- **tool** and **intent** — turn `toolName` and `params` into the next user prompt that calls that tool (for example `showTasksView` → "Show my tasks"). Do not call server functions from the iframe.
+
+When `AppRenderer` becomes available, switch this host to `onCallTool`, `onMessage`, and `onOpenLink`. `AppRenderer` has no `onUIAction`. The five action names above stay the iframe message types until that switch.
 
 ## Security
 

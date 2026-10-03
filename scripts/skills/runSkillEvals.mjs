@@ -785,7 +785,8 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 		{
 			id: 'agentic-ux-shell-contract',
 			skill: 'agentic-ux',
-			description: 'Agentic skill defines the tool-only shell and sandbox rule without reusing route components',
+			description:
+				'Agentic skill recipe matches the example shell: metadata.ui.resourceUri, sandboxed iframe, no route chrome',
 			async run() {
 				const { agentSkillsDir } = getSkillPaths(rootDir)
 				let skillMd
@@ -798,7 +799,9 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				if (!/## Shell/.test(skillMd)) missing.push('Shell section')
 				if (!/## MCP UI rendering/.test(skillMd)) missing.push('MCP UI rendering section')
 				if (!/## Security/.test(skillMd)) missing.push('Security section')
-				if (!/_meta\.ui\.resourceUri/.test(skillMd)) missing.push('_meta.ui.resourceUri link')
+				if (!/metadata\.ui\.resourceUri/.test(skillMd)) missing.push('metadata.ui.resourceUri recipe')
+				if (!/sandbox="allow-scripts"/.test(skillMd)) missing.push('sandboxed iframe recipe')
+				if (!/AppRenderer/.test(skillMd)) missing.push('AppRenderer follow-up')
 				if (!/only inside the MCP UI iframe/.test(skillMd)) missing.push('iframe-only render rule')
 				if (!/No `ChatDrawer`, `PromptBar`, `AppNavbar`/.test(skillMd)) missing.push('no route-component reuse rule')
 				if (!/\*\*`agentic-ux`\*\*\s*\(companion\)/.test(skillMd) && !/agentic-ux/.test(skillMd)) {
@@ -812,6 +815,25 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				)
 				if (!/\*\*`agentic-ux`\*\*\s*\(companion\)/.test(templateSkill)) {
 					return fail('Parent architecture skill must list agentic-ux as a companion')
+				}
+				if (!/## Choose a UX/.test(templateSkill) || !/prompt-first\*\* \(default\)/.test(templateSkill)) {
+					return fail('Parent architecture skill must ask which UX and default to prompt-first')
+				}
+				const tools = await readText(path.join(rootDir, 'src/services/ai/tools.ts'))
+				const renderer = await readText(path.join(rootDir, 'src/components/AgenticMcp/AgenticMcpRenderer.tsx'))
+				const shell = await readText(path.join(rootDir, 'src/components/AgenticShell/AgenticShell.tsx'))
+				const drift = []
+				if (!/metadata:\s*\{\s*ui:\s*\{\s*resourceUri:/.test(tools)) {
+					drift.push('tools.ts must set metadata.ui.resourceUri')
+				}
+				if (!/sandbox="allow-scripts"/.test(renderer)) {
+					drift.push('AgenticMcpRenderer must sandbox the iframe')
+				}
+				if (/ChatDrawer|PromptBar|AppNavbar/.test(shell)) {
+					drift.push('AgenticShell must not mount route-based prompt chrome')
+				}
+				if (drift.length > 0) {
+					return fail('Agentic example drifted from the agentic-ux recipe', drift)
 				}
 				return pass()
 			},
