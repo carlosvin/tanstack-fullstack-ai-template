@@ -7,6 +7,7 @@ import { AppLayout } from './AppLayout'
 
 const shellSession = {
 	app: { name: 'TaskHub', version: '1.0.0' },
+	promptConcept: 'side',
 } as ShellSession
 
 async function renderAppLayout() {

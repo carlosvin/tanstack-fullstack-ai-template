@@ -6,7 +6,18 @@ Built with [TanStack Start](https://tanstack.com/start) — with every external 
 
 **Default stack**: [Mantine](https://mantine.dev/) + [MongoDB](https://www.mongodb.com/) + [TanStack AI](https://tanstack.com/ai) (OpenAI) + [Sentry](https://sentry.io/). All swappable.
 
-**[Live Demo](https://fullstack-promptable-app-example.netlify.app)** | **[Blog Post](building-ai-promptable-fullstack-apps.md)**
+**[Live Demo — Promptable UI (side)](https://fullstack-promptable-app-example.netlify.app)** · **[Live Demo — Prompt-first](https://fullstack-promptable-prompt-first.netlify.app)** | **[Blog Post](building-ai-promptable-fullstack-apps.md)**
+
+This repo ships **two prompt UX examples** from one codebase. Set `PROMPT_CONCEPT` per Netlify site:
+
+| Demo | `PROMPT_CONCEPT` | `DISPLAY_NAME` (suggested) |
+|------|------------------|----------------------------|
+| Side drawer (default) | `side` | `TaskHub` |
+| Prompt-first bar | `prompt-first` | `TaskHub Prompt-first` |
+
+Link a **second Netlify site** to the same repository (base directory `/`, same `pnpm build` as `netlify.toml`). Give each site its own `DISPLAY_NAME` and shared AI/observability env vars. Production on the default site stays on `main`; the prompt-first site uses `PROMPT_CONCEPT=prompt-first` in site settings.
+
+On pull requests, **each linked site** gets its own Netlify deploy preview (two checks / two URLs): side drawer on `fullstack-promptable-app-example`, prompt-first on `fullstack-promptable-prompt-first`. Enable **Deploy Previews** and disable **Branch deploys** in both projects’ Build & deploy settings.
 
 ## Use the Agent Skill
 

@@ -12,7 +12,13 @@ import { config } from 'dotenv'
 import { z } from 'zod'
 import pkg from '../../package.json' with { type: 'json' }
 import { envStringToUndefined, OptionalTrimmedStringSchema } from '../services/schemas/runtimeEnv'
-import { type ShellSession, ShellSessionSchema, WebPublicEnvSchema } from '../services/schemas/shellSession'
+import {
+	type PromptConcept,
+	PromptConceptSchema,
+	type ShellSession,
+	ShellSessionSchema,
+	WebPublicEnvSchema,
+} from '../services/schemas/shellSession'
 
 /** Load local `.env` files before the one-time Zod parse (Vite also loads them during dev/build). */
 function loadLocalEnvFiles(): void {
@@ -29,6 +35,9 @@ export const WebServerEnvSchema = WebPublicEnvSchema.extend({
 	DISPLAY_NAME: z
 		.preprocess(envStringToUndefined, z.string().min(1).default('TaskHub'))
 		.describe('Human-readable application name shown in the header and page title.'),
+	PROMPT_CONCEPT: z
+		.preprocess(envStringToUndefined, PromptConceptSchema.default('side' satisfies PromptConcept))
+		.describe('Prompt UX: side (drawer) or prompt-first (always-visible bar).'),
 	AUTH_HEADER_NAME: OptionalTrimmedStringSchema.describe(
 		'HTTP header name for the JWT. Default: Authorization when unset or blank.',
 	),
@@ -77,6 +86,7 @@ export function getShellSession(): ShellSession {
 			LOG_LEVEL: env.LOG_LEVEL,
 			SENTRY_DSN: env.SENTRY_DSN,
 			app: { name: env.DISPLAY_NAME, version: pkg.version },
+			promptConcept: env.PROMPT_CONCEPT,
 		})
 	}
 	return cachedShellSession

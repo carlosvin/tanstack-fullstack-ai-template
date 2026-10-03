@@ -455,8 +455,13 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				if (!/getAIAvailability\s*\(/.test(root)) {
 					return fail('__root.tsx loader must call getAIAvailability()')
 				}
-				if (!/aiAvailable/.test(layout) || !/ChatDrawer/.test(layout)) {
-					return fail('AppLayout must gate ChatDrawer on aiAvailable')
+				if (!/aiAvailable/.test(layout)) {
+					return fail('AppLayout must gate prompt UI on aiAvailable')
+				}
+				if (!/PromptChatProvider/.test(layout) || !/ChatDrawer/.test(layout) || !/PromptBar/.test(layout)) {
+					return fail(
+						'AppLayout must mount PromptChatProvider and both side (ChatDrawer) and prompt-first (PromptBar) shells',
+					)
 				}
 				return pass()
 			},

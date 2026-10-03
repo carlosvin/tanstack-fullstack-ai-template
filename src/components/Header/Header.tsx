@@ -1,6 +1,6 @@
 import { ActionIcon, Burger, Group, Text, Tooltip, useMantineColorScheme } from '@mantine/core'
 import { CheckSquare, MessageCircle, Moon, Sun } from 'lucide-react'
-import type { AppMeta } from '../../services/schemas/shellSession'
+import type { AppMeta, PromptConcept } from '../../services/schemas/shellSession'
 import { Link } from '../Link/Link'
 
 interface HeaderProps {
@@ -8,10 +8,19 @@ interface HeaderProps {
 	onToggleNav: () => void
 	appMeta: AppMeta
 	aiAvailable?: boolean
+	promptConcept?: PromptConcept
 	onOpenChat?: () => void
 }
 
-export function Header({ navOpened, onToggleNav, appMeta, aiAvailable = false, onOpenChat }: HeaderProps) {
+export function Header({
+	navOpened,
+	onToggleNav,
+	appMeta,
+	aiAvailable = false,
+	promptConcept = 'side',
+	onOpenChat,
+}: HeaderProps) {
+	const showSideChatControl = aiAvailable && promptConcept === 'side'
 	const { colorScheme, toggleColorScheme } = useMantineColorScheme()
 
 	return (
@@ -37,7 +46,7 @@ export function Header({ navOpened, onToggleNav, appMeta, aiAvailable = false, o
 					</ActionIcon>
 				</Tooltip>
 
-				{aiAvailable ? (
+				{showSideChatControl ? (
 					<Tooltip label="Ask AI">
 						<ActionIcon
 							type="button"

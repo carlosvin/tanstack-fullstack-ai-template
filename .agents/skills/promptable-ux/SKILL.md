@@ -78,7 +78,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 | Panel | Side drawer, or a bottom panel. May cover a narrow viewport | Not a panel. It is the top of the page |
 | How areas are reached | App navigation, plus the prompt once opened | The prompt, and a top-to-bottom overview the user drills into |
 | Best for | Data-dense apps where browsing is primary and the prompt assists | A clean overview the user drills into, with the prompt leading |
-| This template | **Declared default** | Opt-in. Not shipped here |
+| This template | **Default** (`PROMPT_CONCEPT=side` or unset) | Second Netlify site with `PROMPT_CONCEPT=prompt-first` |
 
 **One concept per app.** A hidden drawer plus a second always-visible prompt is a mixed concept. Do not build it.
 
@@ -143,7 +143,7 @@ Rules that differ from the side concept:
 - Do not add a side drawer as well. One chat shell. If a migration temporarily has both, remove the drawer before calling it done.
 - When AI is not configured, render the static overview and omit the prompt bar.
 
-This template does not ship a prompt-first shell. A `PromptBar` (input, submit, stop, error, suggestions) plus an overview page is enough. Wire them to the same chat endpoint and client tools as the side panel.
+This template implements prompt-first when `PROMPT_CONCEPT=prompt-first` (see `shellSession.promptConcept`, `PromptBar`, shared `PromptChatProvider`). The home route overview plus task drill-down routes reuse existing loaders. Wire the bar to the same `/api/chat` endpoint and client tools as the side drawer.
 
 ### Minimal file shape (adapt to the project)
 

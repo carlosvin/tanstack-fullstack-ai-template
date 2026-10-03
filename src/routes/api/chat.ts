@@ -1,6 +1,7 @@
 import { chat, convertMessagesToModelMessages, maxIterations, toServerSentEventsResponse } from '@tanstack/ai'
 import { createFileRoute } from '@tanstack/react-router'
 import { getRouterInstance } from '@tanstack/react-start'
+import { getShellSession } from '../../env/webEnv.server'
 import { getAIAdapterService } from '../../services/ai/adapter'
 import {
 	buildAppNavigation,
@@ -23,6 +24,7 @@ import {
 } from '../../services/ai/tools'
 import { getObservability } from '../../services/observability'
 import { BrowserContextSchema } from '../../services/schemas/schemas'
+import type { PromptConcept } from '../../services/schemas/shellSession'
 import type { BrowserContext, UserIdentity, UserProfile } from '../../types'
 import { createServerLogger } from '../../utils/serverLogger'
 
@@ -72,14 +74,24 @@ Each task has:
 - When listing tasks, include their status and priority.
 - Be concise but thorough.`
 
+const PROMPT_FIRST_LAYOUT = `## Prompt-first layout
+This deployment uses the **prompt-first** concept: the user always sees the prompt bar at the top, then an overview on \`/\` and drill-down routes below.
+- Prefer markdown links and the **navigate** tool to open \`/tasks\`, filtered lists, and task detail pages.
+- The home dashboard summarizes counts — link to \`/tasks\` with \`search\` params rather than repeating full tables in chat.
+- After navigation, the prompt stays visible; "this task" resolves from Current Location on detail routes.`
+
 function buildSystemPrompt(
 	user: UserIdentity,
 	profile: UserProfile | null,
 	browserContext: BrowserContext | null,
 	isTestUser: boolean,
 	navigationSection: string,
+	promptConcept: PromptConcept,
 ): string {
 	const sections: string[] = [BASE_SYSTEM_PROMPT, navigationSection]
+	if (promptConcept === 'prompt-first') {
+		sections.push(PROMPT_FIRST_LAYOUT)
+	}
 
 	const displayName = profile?.name || user.name || 'Anonymous'
 	const role = profile?.role ?? 'User'
@@ -165,6 +177,7 @@ export const Route = createFileRoute('/api/chat')({
 					browserContext,
 					accessTicket.isTestUser,
 					getNavigationPromptSection(buildAppNavigation(router)),
+					getShellSession().promptConcept,
 				)
 				const tools = [
 					getTasksTool,

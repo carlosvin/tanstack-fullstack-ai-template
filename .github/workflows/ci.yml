@@ -34,3 +34,9 @@ jobs:
         run: pnpm build
         env:
           REPOSITORY_TYPE: seed
+
+      - name: Build (prompt-first)
+        run: pnpm build
+        env:
+          REPOSITORY_TYPE: seed
+          PROMPT_CONCEPT: prompt-first
