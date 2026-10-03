@@ -69,7 +69,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 ## How to use this skill
 
-1. Declare the mode. One mode per deployment. This shell never mounts beside a drawer, a prompt-first bar, an overview, or drill-down routes.
+1. Declare the mode. One mode per deployment. This shell never mounts beside a drawer, a prompt-first bar, an overview, or drill-down routes. This template's example ships as a third Netlify site with `PROMPT_CONCEPT=agentic` (see README).
 2. Reuse none of the route-based components. No `ChatDrawer`, `PromptBar`, `AppNavbar`, task pages, or navigation manifest. The shell is identity plus prompt plus thread. Everything visual beyond text comes from a tool resource.
 3. Implement the **Shell**, **Tool surface**, **MCP UI rendering**, **UI actions**, and **Security** sections below.
 4. Run the **UX checklist** before a shell change.

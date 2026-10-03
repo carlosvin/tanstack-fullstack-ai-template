@@ -21,12 +21,14 @@ import {
 	getUserProfile,
 	updateTask,
 } from '../api/serverFns'
+import { createTasksViewResource, createTaskViewResource } from '../mcpUi/mcpUiResources'
 import {
 	AppRuntimeInfoSchema,
 	DistinctValuesInputSchema,
 	TaskFilterSchema,
 	TaskIdInputSchema,
 	TaskInputSchema,
+	TaskSchema,
 	TasksListSearchSchema,
 	UpdateTaskInputSchema,
 	UserProfileByEmailSchema,
@@ -216,4 +218,41 @@ const deleteTaskToolDef = toolDefinition({
 export const deleteTaskTool = createSafeServerTool(deleteTaskToolDef, async (args) => {
 	await deleteTask({ data: TaskIdInputSchema.parse(args) })
 	return { message: 'Task deleted.' }
+})
+
+// ---------------------------------------------------------------------------
+// Agentic views — tool-linked MCP UI resources (no hand-built page)
+// ---------------------------------------------------------------------------
+
+const showTasksViewToolDef = toolDefinition({
+	name: 'showTasksView',
+	description:
+		'Show the task list as an interactive UI. Prefer this over getTasks when the user needs to see tasks. Returns tasks plus a linked MCP UI resource.',
+	inputSchema: TaskFilterSchema,
+	metadata: { ui: { resourceUri: 'ui://tasks/list' } },
+})
+
+/** AI server tool: task list data plus its linked MCP UI resource. */
+export const showTasksViewTool = createSafeServerTool(showTasksViewToolDef, async (args) => {
+	const filter = TaskFilterSchema.optional().parse(args ?? undefined)
+	const tasks = TaskSchema.array().parse(await getTasks({ data: filter }))
+	return { tasks, ui: createTasksViewResource(tasks) }
+})
+
+const showTaskViewToolDef = toolDefinition({
+	name: 'showTaskView',
+	description:
+		'Show a single task as an interactive UI. Prefer this over getTask when the user needs to see a task. Returns the task plus a linked MCP UI resource.',
+	inputSchema: TaskIdInputSchema,
+	metadata: { ui: { resourceUri: 'ui://task/detail' } },
+})
+
+/** AI server tool: task detail data plus its linked MCP UI resource. */
+export const showTaskViewTool = createSafeServerTool(showTaskViewToolDef, async (args) => {
+	const raw = await getTask({ data: TaskIdInputSchema.parse(args) })
+	if (!raw) {
+		return { error: 'Task not found.', code: 404 }
+	}
+	const task = TaskSchema.parse(raw)
+	return { task, ui: createTaskViewResource(task) }
 })

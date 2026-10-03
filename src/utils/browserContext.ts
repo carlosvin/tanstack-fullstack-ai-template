@@ -11,3 +11,12 @@ export function captureBrowserContext(): BrowserContext {
 		currentHref: window.location.href,
 	}
 }
+
+/** Location-free snapshot for the agentic shell: one route, nothing to resolve from a URL. */
+export function captureAgenticBrowserContext(): BrowserContext {
+	return {
+		timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+		locale: navigator.language,
+		currentTime: new Date().toISOString(),
+	}
+}

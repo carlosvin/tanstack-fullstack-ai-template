@@ -14,6 +14,10 @@ function DashboardRoute() {
 	const { shellSession, aiAvailable } = useLoaderData({ from: '__root__' })
 	const isPromptFirst = shellSession.promptConcept === 'prompt-first'
 
+	if (shellSession.promptConcept === 'agentic') {
+		return null
+	}
+
 	if (isPromptFirst && aiAvailable) {
 		return <PromptFirstLanding tasks={tasks} />
 	}

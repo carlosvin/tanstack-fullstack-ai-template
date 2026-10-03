@@ -20,6 +20,8 @@ import {
 	getUserProfileTool,
 	invalidateRouterToolDef,
 	navigateToolDef,
+	showTasksViewTool,
+	showTaskViewTool,
 	updateTaskTool,
 } from '../../services/ai/tools'
 import { getObservability } from '../../services/observability'
@@ -80,6 +82,12 @@ This deployment uses the **prompt-first** concept: the user always sees the prom
 - The home dashboard summarizes counts — link to \`/tasks\` with \`search\` params rather than repeating full tables in chat.
 - After navigation, the prompt stays visible; "this task" resolves from Current Location on detail routes.`
 
+const AGENTIC_LAYOUT = `## Fully agentic layout
+This deployment uses the **fully agentic** concept: a thin shell with a prompt and a response surface. There are no app pages, no navigation, and no overview dashboard.
+- When the user needs to see tasks, call **showTasksView** (not getTasks). When they need one task, call **showTaskView** (not getTask). Each returns data plus a linked MCP UI resource that renders inline.
+- Never link to \`/tasks\` or any in-app route. Never call **navigate** or **invalidateRouter** — they do not exist here. After a write, re-render from the new tool result.
+- Tool schemas are the map of what this app can do. There is no current page, so nothing resolves "this item" from a URL — always confirm which task the user means.`
+
 function buildSystemPrompt(
 	user: UserIdentity,
 	profile: UserProfile | null,
@@ -88,9 +96,15 @@ function buildSystemPrompt(
 	navigationSection: string,
 	promptConcept: PromptConcept,
 ): string {
-	const sections: string[] = [BASE_SYSTEM_PROMPT, navigationSection]
-	if (promptConcept === 'prompt-first') {
-		sections.push(PROMPT_FIRST_LAYOUT)
+	const isAgentic = promptConcept === 'agentic'
+	const sections: string[] = [BASE_SYSTEM_PROMPT]
+	if (isAgentic) {
+		sections.push(AGENTIC_LAYOUT)
+	} else {
+		sections.push(navigationSection)
+		if (promptConcept === 'prompt-first') {
+			sections.push(PROMPT_FIRST_LAYOUT)
+		}
 	}
 
 	const displayName = profile?.name || user.name || 'Anonymous'
@@ -171,28 +185,45 @@ export const Route = createFileRoute('/api/chat')({
 				const browserContext: BrowserContext | null = browserContextResult.success ? browserContextResult.data : null
 
 				const router = await getRouterInstance()
+				const promptConcept = getShellSession().promptConcept
 				const systemPrompt = buildSystemPrompt(
 					accessTicket.identity,
 					accessTicket.profile,
 					browserContext,
 					accessTicket.isTestUser,
 					getNavigationPromptSection(buildAppNavigation(router)),
-					getShellSession().promptConcept,
+					promptConcept,
 				)
-				const tools = [
-					getTasksTool,
-					getTaskTool,
-					getDistinctValuesTool,
-					getUserProfileTool,
-					getUserAccessTool,
-					getAppRuntimeInfoTool,
-					getCurrentUserContextTool,
-					createTaskTool,
-					updateTaskTool,
-					deleteTaskTool,
-					navigateToolDef,
-					invalidateRouterToolDef,
-				]
+				const tools =
+					promptConcept === 'agentic'
+						? [
+								getTasksTool,
+								getTaskTool,
+								getDistinctValuesTool,
+								getUserProfileTool,
+								getUserAccessTool,
+								getAppRuntimeInfoTool,
+								getCurrentUserContextTool,
+								createTaskTool,
+								updateTaskTool,
+								deleteTaskTool,
+								showTasksViewTool,
+								showTaskViewTool,
+							]
+						: [
+								getTasksTool,
+								getTaskTool,
+								getDistinctValuesTool,
+								getUserProfileTool,
+								getUserAccessTool,
+								getAppRuntimeInfoTool,
+								getCurrentUserContextTool,
+								createTaskTool,
+								updateTaskTool,
+								deleteTaskTool,
+								navigateToolDef,
+								invalidateRouterToolDef,
+							]
 
 				const stream = chat({
 					adapter,

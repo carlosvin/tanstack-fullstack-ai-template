@@ -15,10 +15,10 @@ export const AppMetaSchema = z.object({
 
 export type AppMeta = z.infer<typeof AppMetaSchema>
 
-/** Which prompt shell this deployment uses (see promptable-ux skill). */
+/** Which prompt shell this deployment uses (see promptable-ux and agentic-ux skills). */
 export const PromptConceptSchema = z
-	.enum(['side', 'prompt-first'])
-	.describe('Promptable UI (side) drawer vs always-visible prompt-first bar.')
+	.enum(['side', 'prompt-first', 'agentic'])
+	.describe('Promptable UI (side) drawer vs always-visible prompt-first bar vs fully agentic tool-only shell.')
 
 export type PromptConcept = z.infer<typeof PromptConceptSchema>
 

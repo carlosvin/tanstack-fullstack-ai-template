@@ -24,9 +24,10 @@ describe('webEnv', () => {
 		expect(parsed.DISPLAY_NAME).toBe('My App')
 	})
 
-	it('defaults PROMPT_CONCEPT to side and accepts prompt-first', () => {
+	it('defaults PROMPT_CONCEPT to side and accepts prompt-first and agentic', () => {
 		expect(WebServerEnvSchema.parse({}).PROMPT_CONCEPT).toBe('side')
 		expect(WebServerEnvSchema.parse({ PROMPT_CONCEPT: 'prompt-first' }).PROMPT_CONCEPT).toBe('prompt-first')
+		expect(WebServerEnvSchema.parse({ PROMPT_CONCEPT: 'agentic' }).PROMPT_CONCEPT).toBe('agentic')
 	})
 
 	it('only allowlists browser-safe fields', () => {

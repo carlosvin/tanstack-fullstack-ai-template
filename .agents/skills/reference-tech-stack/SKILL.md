@@ -97,6 +97,7 @@ coupling into the architecture skill.
 | Unit tests | **Vitest** + Testing Library | jsdom; `renderWithProviders` | AGENTS.md §10 |
 | E2E | **Playwright** | Chromium; seed repo; auth via JWT headers | AGENTS.md §10 |
 | Deploy | **Netlify** | `@netlify/vite-plugin-tanstack-start`; Git deploy previews | AGENTS.md CI/CD; `netlify.toml` |
+| Agentic UI | **MCP UI wire-compatible** | No new deps in v1 (`src/services/mcpUi/` + sandboxed iframe); `@mcp-ui/client` `AppRenderer` is the follow-up | **`agentic-ux`** |
 | Package manager | **pnpm** | Lockfile committed | AGENTS.md §12 / §15 |
 
 **Fixed (not listed as choices):** TanStack **Start**, **Router**, **AI**, and CLI — owned by the architecture skill.

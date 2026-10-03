@@ -40,3 +40,9 @@ jobs:
         env:
           REPOSITORY_TYPE: seed
           PROMPT_CONCEPT: prompt-first
+
+      - name: Build (agentic)
+        run: pnpm build
+        env:
+          REPOSITORY_TYPE: seed
+          PROMPT_CONCEPT: agentic
