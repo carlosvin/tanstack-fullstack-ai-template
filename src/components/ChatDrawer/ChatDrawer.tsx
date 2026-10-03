@@ -1,189 +1,17 @@
-import {
-	ActionIcon,
-	Badge,
-	Drawer,
-	Group,
-	Loader,
-	Paper,
-	ScrollArea,
-	Stack,
-	Text,
-	Textarea,
-	ThemeIcon,
-	Tooltip,
-	useMantineTheme,
-} from '@mantine/core'
+import { Drawer, Stack, useMantineTheme } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { clientTools, createChatClientOptions } from '@tanstack/ai-client'
-import type { UIMessage } from '@tanstack/ai-react'
-import { fetchServerSentEvents, useChat } from '@tanstack/ai-react'
-import { useRouter } from '@tanstack/react-router'
-import { Bot, Send, Square, Trash2 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import Markdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import { invalidateRouterToolDef, NavigateInputSchema, navigateToolDef } from '../../services/ai/tools'
-import { toInternalRouterLinkTarget } from '../../utils/internalLinks'
-import styles from './ChatDrawer.module.css'
-import { MarkdownLink } from './MarkdownLink'
+import { ChatComposer } from '../PromptChat/ChatComposer'
+import { ChatThread } from '../PromptChat/ChatThread'
 
 interface ChatDrawerProps {
 	opened: boolean
 	onClose: () => void
 }
 
-/** Maps tool call names to user-friendly loading labels. */
-function getToolLabel(toolName: string): string {
-	const labels: Record<string, string> = {
-		getTasks: 'searching tasks',
-		getTask: 'loading task details',
-		getDistinctValues: 'checking filter options',
-		navigate: 'opening page',
-		invalidateRouter: 'refreshing data',
-		getUserAccess: 'checking access roles',
-		getCurrentUserContext: 'checking permissions',
-		createTask: 'creating task',
-		updateTask: 'updating task',
-		deleteTask: 'deleting task',
-	}
-	return labels[toolName] ?? toolName
-}
-
-/** Renders a single chat message (user or assistant). */
-function MessageBubble({ message }: { message: UIMessage }) {
-	const isUser = message.role === 'user'
-
-	const textParts: string[] = []
-	const toolCallNames: string[] = []
-
-	for (const part of message.parts) {
-		if (part.type === 'text') {
-			textParts.push((part as unknown as { type: 'text'; content: string }).content)
-		} else if (part.type === 'tool-call') {
-			toolCallNames.push((part as unknown as { type: 'tool-call'; name: string }).name)
-		}
-	}
-
-	const textContent = textParts.join('')
-
-	return (
-		<div className={isUser ? styles.userMessage : styles.assistantMessage}>
-			{!isUser && (
-				<ThemeIcon size="sm" variant="light" radius="xl" mb={4}>
-					<Bot size={14} />
-				</ThemeIcon>
-			)}
-			{toolCallNames.length > 0 && (
-				<Group gap={4} mb={4}>
-					{/* Tool call list order is stable; index needed for duplicate tool names in same message */}
-					{toolCallNames.map((name, i) => (
-						<Badge key={`${message.id}-${name}-${String(i)}`} size="xs" variant="light">
-							{getToolLabel(name)}
-						</Badge>
-					))}
-				</Group>
-			)}
-			{textContent && (
-				<Paper
-					p="sm"
-					radius="md"
-					bg={isUser ? 'var(--mantine-primary-color-filled)' : 'var(--mantine-color-default)'}
-					c={isUser ? 'white' : undefined}
-				>
-					{isUser ? (
-						<Text size="sm">{textContent}</Text>
-					) : (
-						<div className={styles.markdown}>
-							<Markdown remarkPlugins={[remarkGfm]} components={{ a: MarkdownLink }}>
-								{textContent}
-							</Markdown>
-						</div>
-					)}
-				</Paper>
-			)}
-		</div>
-	)
-}
-
+/** Promptable UI (side): hidden drawer wired to shared PromptChatProvider. */
 export function ChatDrawer({ opened, onClose }: ChatDrawerProps) {
-	const viewport = useRef<HTMLDivElement>(null)
-	const [input, setInput] = useState('')
-	const router = useRouter()
 	const theme = useMantineTheme()
-	// Drawer `size` is not a responsive prop. Match AppShell `sm`; assume desktop on SSR.
 	const isSmUp = useMediaQuery(`(min-width: ${theme.breakpoints.sm})`, true)
-
-	const navigateClient = navigateToolDef.client((args) => {
-		const parsed = NavigateInputSchema.safeParse(args)
-		if (!parsed.success) return { success: false }
-		const navInput = parsed.data
-		const path = navInput.to.startsWith('/') ? navInput.to : `/${navInput.to}`
-		const params = new URLSearchParams()
-		if (navInput.search) {
-			for (const [key, value] of Object.entries(navInput.search)) {
-				if (value !== undefined) params.set(key, value)
-			}
-		}
-		const query = params.toString()
-		const href = query ? `${path}?${query}` : path
-		const linkTarget = toInternalRouterLinkTarget(href)
-		if (!linkTarget) return { success: false }
-		router.navigate({
-			to: linkTarget.to,
-			...(linkTarget.params ? { params: linkTarget.params } : {}),
-			...(linkTarget.search ? { search: linkTarget.search } : {}),
-		})
-		return { success: true }
-	})
-
-	const invalidateClient = invalidateRouterToolDef.client(() => {
-		router.invalidate()
-		return { success: true }
-	})
-
-	const tools = clientTools(navigateClient, invalidateClient)
-
-	const connection = useMemo(
-		() =>
-			fetchServerSentEvents('/api/chat', () => ({
-				body: {
-					browserContext: {
-						timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-						locale: navigator.language,
-						currentTime: new Date().toISOString(),
-						currentPathname: window.location.pathname,
-						currentSearch: window.location.search,
-						currentHref: window.location.href,
-					},
-				},
-			})),
-		[],
-	)
-
-	const chatOptions = createChatClientOptions({ connection, tools })
-
-	const { messages, sendMessage, isLoading, error, clear, stop } = useChat(chatOptions)
-
-	const scrollToBottom = useCallback(() => {
-		viewport.current?.scrollTo({ top: viewport.current.scrollHeight, behavior: 'smooth' })
-	}, [])
-
-	useEffect(() => {
-		scrollToBottom()
-	}, [scrollToBottom])
-
-	const handleSubmit = () => {
-		if (!input.trim() || isLoading) return
-		sendMessage(input)
-		setInput('')
-	}
-
-	const handleKeyDown = (e: React.KeyboardEvent) => {
-		if (e.key === 'Enter' && !e.shiftKey) {
-			e.preventDefault()
-			handleSubmit()
-		}
-	}
 
 	return (
 		<Drawer
@@ -195,72 +23,8 @@ export function ChatDrawer({ opened, onClose }: ChatDrawerProps) {
 			padding="md"
 		>
 			<Stack h="calc(100dvh - 120px)" justify="space-between">
-				<ScrollArea flex={1} viewportRef={viewport}>
-					<Stack gap="md" p="xs">
-						{messages.length === 0 && (
-							<Text c="dimmed" ta="center" size="sm" py="xl">
-								Ask me anything about your tasks!
-							</Text>
-						)}
-						{messages.map((msg) => (
-							<MessageBubble key={msg.id} message={msg} />
-						))}
-						{isLoading && messages[messages.length - 1]?.role === 'user' && (
-							<Group gap="xs">
-								<Loader size="xs" />
-								<Text size="xs" c="dimmed">
-									Thinking...
-								</Text>
-							</Group>
-						)}
-					</Stack>
-				</ScrollArea>
-
-				<Stack gap="xs">
-					{error ? (
-						<Text size="sm" c="red" role="alert">
-							{error.message}
-						</Text>
-					) : null}
-					<Group gap="xs">
-						<Textarea
-							flex={1}
-							placeholder="Type a message..."
-							value={input}
-							onChange={(e) => setInput(e.currentTarget.value)}
-							onKeyDown={handleKeyDown}
-							autosize
-							minRows={1}
-							maxRows={4}
-						/>
-						{isLoading ? (
-							<Tooltip label="Stop generating">
-								<ActionIcon variant="subtle" onClick={stop} size="lg" aria-label="Stop generating">
-									<Square size={18} />
-								</ActionIcon>
-							</Tooltip>
-						) : (
-							<Tooltip label="Send">
-								<ActionIcon
-									variant="filled"
-									onClick={handleSubmit}
-									disabled={!input.trim()}
-									size="lg"
-									aria-label="Send"
-								>
-									<Send size={18} />
-								</ActionIcon>
-							</Tooltip>
-						)}
-					</Group>
-					{messages.length > 0 && (
-						<Tooltip label="Clear conversation">
-							<ActionIcon variant="subtle" color="gray" onClick={clear} size="sm" ml="auto">
-								<Trash2 size={14} />
-							</ActionIcon>
-						</Tooltip>
-					)}
-				</Stack>
+				<ChatThread />
+				<ChatComposer />
 			</Stack>
 		</Drawer>
 	)

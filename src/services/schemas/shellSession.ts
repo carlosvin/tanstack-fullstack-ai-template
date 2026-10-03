@@ -15,6 +15,13 @@ export const AppMetaSchema = z.object({
 
 export type AppMeta = z.infer<typeof AppMetaSchema>
 
+/** Which prompt shell this deployment uses (see promptable-ux skill). */
+export const PromptConceptSchema = z
+	.enum(['side', 'prompt-first'])
+	.describe('Promptable UI (side) drawer vs always-visible prompt-first bar.')
+
+export type PromptConcept = z.infer<typeof PromptConceptSchema>
+
 /** Non-secret deployment fields safe for the browser. */
 export const WebPublicEnvSchema = z.object({
 	ENV: OptionalDeploymentEnvSchema.describe('Deployment name: development, staging, or production.'),
@@ -27,6 +34,7 @@ export type WebPublicEnv = z.infer<typeof WebPublicEnvSchema>
 /** Browser-safe startup config: public env fields + app identity. */
 export const ShellSessionSchema = WebPublicEnvSchema.extend({
 	app: AppMetaSchema.describe('Application name and version from package.json.'),
+	promptConcept: PromptConceptSchema.describe('Active prompt UX concept for this deployment.'),
 })
 
 export type ShellSession = z.infer<typeof ShellSessionSchema>

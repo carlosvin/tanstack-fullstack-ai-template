@@ -19,6 +19,21 @@ describe('Header', () => {
 		expect(screen.getByRole('button', { name: 'Open AI chat' })).toBeTruthy()
 	})
 
+	it('hides the Ask AI control for prompt-first even when aiAvailable is true', () => {
+		renderWithProviders(
+			<Header
+				navOpened={false}
+				onToggleNav={vi.fn()}
+				appMeta={appMeta}
+				aiAvailable
+				promptConcept="prompt-first"
+				onOpenChat={vi.fn()}
+			/>,
+		)
+
+		expect(screen.queryByRole('button', { name: 'Open AI chat' })).toBeNull()
+	})
+
 	it('hides the Ask AI control when aiAvailable is false', () => {
 		renderWithProviders(
 			<Header navOpened={false} onToggleNav={vi.fn()} appMeta={appMeta} aiAvailable={false} onOpenChat={vi.fn()} />,

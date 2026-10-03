@@ -24,9 +24,14 @@ describe('webEnv', () => {
 		expect(parsed.DISPLAY_NAME).toBe('My App')
 	})
 
+	it('defaults PROMPT_CONCEPT to side and accepts prompt-first', () => {
+		expect(WebServerEnvSchema.parse({}).PROMPT_CONCEPT).toBe('side')
+		expect(WebServerEnvSchema.parse({ PROMPT_CONCEPT: 'prompt-first' }).PROMPT_CONCEPT).toBe('prompt-first')
+	})
+
 	it('only allowlists browser-safe fields', () => {
 		const session = getShellSession()
-		expect(Object.keys(session).sort()).toEqual(['ENV', 'LOG_LEVEL', 'SENTRY_DSN', 'app'])
+		expect(Object.keys(session).sort()).toEqual(['ENV', 'LOG_LEVEL', 'SENTRY_DSN', 'app', 'promptConcept'])
 		expect(session).not.toHaveProperty('serverEnv')
 		expect(session).not.toHaveProperty('MONGODB_URI')
 	})
