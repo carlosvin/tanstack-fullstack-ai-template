@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import { MantineProvider } from '@mantine/core'
 import type { UIResourcePart } from '@tanstack/ai'
 import { render, screen } from '@testing-library/react'
@@ -30,6 +32,16 @@ function renderRenderer(ui: UIResourcePart = part) {
 }
 
 describe('AgenticMcpRenderer', () => {
+	it('keeps guest HTML in an inner iframe instead of replacing the proxy document', () => {
+		const proxy = readFileSync(path.join(process.cwd(), 'public/sandbox_proxy.html'), 'utf8')
+		const relay = readFileSync(path.join(process.cwd(), 'public/sandbox_proxy.js'), 'utf8')
+		expect(proxy).toContain('sandbox="allow-scripts allow-forms"')
+		expect(proxy).not.toContain('allow-same-origin')
+		expect(relay).toContain('ui/notifications/sandbox-resource-ready')
+		expect(relay).toContain('srcdoc')
+		expect(relay).not.toContain('document.write')
+	})
+
 	it('renders a valid resource through the sandbox proxy', () => {
 		const { container } = renderRenderer()
 		const iframe = container.querySelector('iframe')

@@ -21,8 +21,8 @@ function sandboxUrl(): URL {
 
 /**
  * Host renderer for a tool-linked MCP Apps view.
- * `MCPAppResource` loads `public/sandbox_proxy.html` and renders the resource
- * HTML inside that sandbox. Prompts and links go through `useMcpAppBridge`.
+ * `MCPAppResource` requires a sandbox proxy URL. It loads `public/sandbox_proxy.html`,
+ * which places the resource HTML in an inner iframe. Prompts and links go through `useMcpAppBridge`.
  */
 export function AgenticMcpRenderer({ part, onPrompt, onRetry }: AgenticMcpRendererProps) {
 	const [attempt, setAttempt] = useState(0)

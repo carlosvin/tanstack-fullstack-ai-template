@@ -19,7 +19,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "0.2.1"
+  version: "0.2.2"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -100,7 +100,7 @@ Follow [TanStack AI MCP Apps](https://tanstack.com/ai/latest/docs/mcp/apps) and 
 - Link a tool with `metadata._meta.ui.resourceUri` (TanStack forwards that as MCP `_meta.ui.resourceUri`).
 - Build the document with `@mcp-ui/server` `createUIResource` (`rawHtml`, `encoding: 'text'`). MIME type is `text/html;profile=mcp-app`.
 - Emit a `ui-resource` custom event from the tool execute context so the assistant message gains a `UIResourcePart`. The HTML does not go in the model-facing tool result. `chat()` auto-emits that part for MCP-discovered tools; in-process tools emit the same event themselves.
-- Render each `ui-resource` part with `MCPAppResource` from `@tanstack/ai-react/mcp-apps`. Pass `useMcpAppBridge` so prompts and links leave the iframe. `sandbox.url` is the hosted page `public/sandbox_proxy.html`.
+- Render each `ui-resource` part with `MCPAppResource` from `@tanstack/ai-react/mcp-apps`. Pass `useMcpAppBridge` so prompts and links leave the iframe. `sandbox.url` is required: it is the hosted proxy `public/sandbox_proxy.html`, not the widget. The proxy keeps the guest HTML in an inner iframe with no `allow-same-origin`.
 - The guest uses `@modelcontextprotocol/ext-apps` `App` (`sendMessage`, `openLink`) from `public/mcp-app.js`. Do not post `{ type: 'prompt' | 'link' | 'notify' | 'tool' | 'intent' }`. `AppRenderer` has no `onUIAction`. `UIResourceRenderer` is out of scope.
 - A separate MCP server plus `createMcpAppCallHandler` is the path when a widget calls tools itself. This shell's views send a follow-up prompt, and `POST /api/mcp-apps/call` refuses direct widget tool calls, so writes stay on the chat tools and the auth ticket.
 
@@ -110,7 +110,7 @@ Generate views with this recipe. The reference example (`showTasksView`, `showTa
 
 - `toolDefinition` sets `metadata._meta.ui.resourceUri` to an allowlisted `ui://` URI.
 - Load the view document from a file (`task-view.html`) and the guest script (`public/mcp-task-view.js`). Fill one JSON slot (`<` escaped so the payload cannot close the script). The guest writes repository text with `textContent`. Bound field length, and refuse a document over the size cap. `createUIResource` wraps that document. Do not slice a finished document.
-- The host renders that HTML only through `MCPAppResource` and `sandbox_proxy.html`. Show an error state whose retry re-requests the same view, and keep the markdown answer when the resource fails.
+- The host renders that HTML only through `MCPAppResource` and `sandbox_proxy.html`. The proxy does not replace its own document with the guest HTML. Show an error state whose retry re-requests the same view, and keep the markdown answer when the resource fails.
 - A capability that returns a UI resource does not also get a hand-built page.
 
 ## UI actions
