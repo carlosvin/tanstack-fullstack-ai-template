@@ -29,6 +29,7 @@ export default defineConfig(({ command }) => ({
 	},
 	plugins: [
 		{
+			// Same guest paths as the Netlify [[headers]] in netlify.toml.
 			name: 'mcp-guest-cors',
 			configureServer(server) {
 				server.middlewares.use((req, res, next) => {

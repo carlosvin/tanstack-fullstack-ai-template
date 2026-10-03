@@ -1,14 +1,8 @@
 /**
  * MCP Apps sandbox proxy.
  *
- * `MCPAppResource` (`@tanstack/ai-react/mcp-apps`) requires this page. It loads
- * the page in an iframe and posts `ui/notifications/sandbox-resource-ready`.
- * TanStack hosts the proxy on the app origin. The guest HTML goes in the inner
- * iframe, which has no `allow-same-origin`, so the view cannot read the host.
- * The proxy relays postMessage between the host and that iframe.
- *
- * A separate-origin proxy with CSP response headers is the ext-apps production
- * setup. This page is the same boundary for a single-site deploy.
+ * `MCPAppResource` loads this page and posts the resource HTML. The inner iframe
+ * has no `allow-same-origin`, so the guest cannot read the host.
  */
 
 const RESOURCE_READY = 'ui/notifications/sandbox-resource-ready'
