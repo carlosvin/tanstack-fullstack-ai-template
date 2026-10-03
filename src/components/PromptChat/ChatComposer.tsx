@@ -3,16 +3,17 @@ import { Send, Square, Trash2 } from 'lucide-react'
 import { usePromptChat } from './PromptChatContext'
 
 interface ChatComposerProps {
-	onBeforeSubmit?: () => void
+	/** Runs after the message is submitted (e.g. navigate home) so browser context is captured first. */
+	onAfterSubmit?: () => void
 }
 
-export function ChatComposer({ onBeforeSubmit }: ChatComposerProps = {}) {
+export function ChatComposer({ onAfterSubmit }: ChatComposerProps = {}) {
 	const { input, setInput, handleSubmit, isLoading, error, stop, clear, messages } = usePromptChat()
 
 	const onSubmit = () => {
 		if (!input.trim() || isLoading) return
-		onBeforeSubmit?.()
 		handleSubmit()
+		onAfterSubmit?.()
 	}
 
 	const handleKeyDown = (e: React.KeyboardEvent) => {

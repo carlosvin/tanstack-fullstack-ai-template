@@ -6,6 +6,8 @@ import { usePromptChat } from './PromptChatContext'
 
 interface ChatThreadProps {
 	emptyHint?: string
+	/** Definite viewport height for scrollable thread (prompt-first landing). */
+	scrollHeight?: string | number
 	maxHeight?: string | number
 	viewportRef?: React.RefObject<HTMLDivElement | null>
 	showSuggestions?: boolean
@@ -13,6 +15,7 @@ interface ChatThreadProps {
 
 export function ChatThread({
 	emptyHint = 'Ask me anything about your tasks!',
+	scrollHeight,
 	maxHeight,
 	viewportRef: externalViewportRef,
 	showSuggestions = true,
@@ -33,7 +36,13 @@ export function ChatThread({
 	}, [scrollToBottom])
 
 	return (
-		<ScrollArea flex={1} mah={maxHeight} viewportRef={viewportRef} type="auto">
+		<ScrollArea
+			flex={scrollHeight ? undefined : 1}
+			h={scrollHeight}
+			mah={scrollHeight ? undefined : maxHeight}
+			viewportRef={viewportRef}
+			type="auto"
+		>
 			<Stack gap="md" p="xs">
 				{messages.length === 0 && (
 					<Stack gap="sm" py="md">

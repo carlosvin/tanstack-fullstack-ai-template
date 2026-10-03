@@ -11,7 +11,7 @@ export function PromptBar() {
 	const pathname = useRouterState({ select: (s) => s.location.pathname })
 	const navigate = useNavigate()
 
-	const handleBeforeSubmit = () => {
+	const handleAfterSubmit = () => {
 		if (pathname !== '/') {
 			navigate({ to: '/' })
 		}
@@ -19,7 +19,7 @@ export function PromptBar() {
 
 	return (
 		<Box component="section" aria-label="AI assistant" w="100%">
-			<ChatComposer onBeforeSubmit={handleBeforeSubmit} />
+			<ChatComposer onAfterSubmit={handleAfterSubmit} />
 		</Box>
 	)
 }

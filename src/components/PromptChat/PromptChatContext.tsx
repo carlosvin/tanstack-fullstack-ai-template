@@ -2,8 +2,10 @@ import { clientTools, createChatClientOptions } from '@tanstack/ai-client'
 import type { UIMessage } from '@tanstack/ai-react'
 import { fetchServerSentEvents, useChat } from '@tanstack/ai-react'
 import { useRouter } from '@tanstack/react-router'
-import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react'
+import { createContext, type ReactNode, useCallback, useContext, useMemo, useRef, useState } from 'react'
 import { invalidateRouterToolDef, NavigateInputSchema, navigateToolDef } from '../../services/ai/tools'
+import type { BrowserContext } from '../../types'
+import { captureBrowserContext } from '../../utils/browserContext'
 import { toInternalRouterLinkTarget } from '../../utils/internalLinks'
 
 export interface PromptChatContextValue {
@@ -63,18 +65,13 @@ export function PromptChatProvider({ children }: { children: ReactNode }) {
 
 	const tools = clientTools(navigateClient, invalidateClient)
 
+	const browserContextRef = useRef<BrowserContext | null>(null)
+
 	const connection = useMemo(
 		() =>
 			fetchServerSentEvents('/api/chat', () => ({
 				body: {
-					browserContext: {
-						timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-						locale: navigator.language,
-						currentTime: new Date().toISOString(),
-						currentPathname: window.location.pathname,
-						currentSearch: window.location.search,
-						currentHref: window.location.href,
-					},
+					browserContext: browserContextRef.current ?? captureBrowserContext(),
 				},
 			})),
 		[],
@@ -86,14 +83,20 @@ export function PromptChatProvider({ children }: { children: ReactNode }) {
 
 	const handleSubmit = useCallback(() => {
 		if (!input.trim() || isLoading) return
-		sendMessage(input)
+		browserContextRef.current = captureBrowserContext()
+		void sendMessage(input).finally(() => {
+			browserContextRef.current = null
+		})
 		setInput('')
 	}, [input, isLoading, sendMessage])
 
 	const sendPrompt = useCallback(
 		(text: string) => {
 			if (!text.trim() || isLoading) return
-			sendMessage(text)
+			browserContextRef.current = captureBrowserContext()
+			void sendMessage(text).finally(() => {
+				browserContextRef.current = null
+			})
 		},
 		[isLoading, sendMessage],
 	)

@@ -15,9 +15,12 @@ export function PromptFirstLanding({ tasks }: PromptFirstLandingProps) {
 		return <PromptFirstHero tasks={tasks} />
 	}
 
+	const threadScrollHeight =
+		'calc(100dvh - var(--app-shell-header-height) - var(--app-shell-footer-height) - var(--app-shell-padding) * 2)'
+
 	return (
-		<Container size="md" h="100%" py="sm" px={{ base: 'xs', sm: 'md' }}>
-			<ChatThread maxHeight="calc(100dvh - 160px)" showSuggestions={false} />
+		<Container size="md" py="sm" px={{ base: 'xs', sm: 'md' }}>
+			<ChatThread scrollHeight={threadScrollHeight} showSuggestions={false} />
 		</Container>
 	)
 }
