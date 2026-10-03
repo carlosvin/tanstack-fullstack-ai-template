@@ -52,7 +52,7 @@ export const WebServerEnvSchema = WebPublicEnvSchema.extend({
 	AZURE_OPENAI_DEPLOYMENT: z.string().optional().describe('Azure OpenAI deployment name. Default: gpt-4o.'),
 	GEMINI_API_KEY: OptionalTrimmedStringSchema.describe('Google Gemini API key (or Netlify AI Gateway placeholder).'),
 	GOOGLE_API_KEY: OptionalTrimmedStringSchema.describe('Alternative Google API key for Gemini.'),
-	GEMINI_MODEL: z.string().optional().describe('Gemini model name. Default: gemini-2.5-flash.'),
+	GEMINI_MODEL: z.string().optional().describe('Gemini model name. Default: gemini-3.1-flash-lite.'),
 	OPENAI_API_KEY: OptionalTrimmedStringSchema.describe('OpenAI API key (or Netlify AI Gateway placeholder).'),
 	OPENAI_BASE_URL: OptionalTrimmedStringSchema.describe('OpenAI base URL (Netlify AI Gateway when set).'),
 	OPENAI_MODEL: z.string().optional().describe('OpenAI model name. Default: gpt-4o.'),
