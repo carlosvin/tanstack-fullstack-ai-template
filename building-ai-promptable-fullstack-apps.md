@@ -107,7 +107,7 @@ const getTasksToolDef = toolDefinition({
 
 export const getTasksTool = createSafeServerTool(
   getTasksToolDef,
-  async (args) => getTasks({ data: TaskFilterSchema.parse(args) }),
+  async (args) => getTasks({ data: args }),
 )
 ```
 

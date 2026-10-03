@@ -28,7 +28,6 @@ import {
 	TaskFilterSchema,
 	TaskIdInputSchema,
 	TaskInputSchema,
-	TaskSchema,
 	TasksListSearchSchema,
 	UpdateTaskInputSchema,
 	UserProfileByEmailSchema,
@@ -47,9 +46,7 @@ const getTasksToolDef = toolDefinition({
 })
 
 /** AI server tool: query tasks with optional filters. */
-export const getTasksTool = createSafeServerTool(getTasksToolDef, async (args) =>
-	getTasks({ data: TaskFilterSchema.parse(args) }),
-)
+export const getTasksTool = createSafeServerTool(getTasksToolDef, async (args) => getTasks({ data: args }))
 
 const getTaskToolDef = toolDefinition({
 	name: 'getTask',
@@ -58,9 +55,7 @@ const getTaskToolDef = toolDefinition({
 })
 
 /** AI server tool: fetch a single task by ID. */
-export const getTaskTool = createSafeServerTool(getTaskToolDef, async (args) =>
-	getTask({ data: TaskIdInputSchema.parse(args) }),
-)
+export const getTaskTool = createSafeServerTool(getTaskToolDef, async (args) => getTask({ data: args }))
 
 // ---------------------------------------------------------------------------
 // Filters / Discovery
@@ -75,7 +70,7 @@ const getDistinctValuesToolDef = toolDefinition({
 
 /** AI server tool: list distinct values for a task filter field. */
 export const getDistinctValuesTool = createSafeServerTool(getDistinctValuesToolDef, async (args) =>
-	getDistinctValues({ data: DistinctValuesInputSchema.parse(args) }),
+	getDistinctValues({ data: args }),
 )
 
 // ---------------------------------------------------------------------------
@@ -91,7 +86,7 @@ const getUserProfileToolDef = toolDefinition({
 
 /** AI server tool: resolve a user profile from an email address. */
 export const getUserProfileTool = createSafeServerTool(getUserProfileToolDef, async (args) =>
-	getUserProfile({ data: UserProfileByEmailSchema.parse(args) }),
+	getUserProfile({ data: args }),
 )
 
 const getUserAccessToolDef = toolDefinition({
@@ -103,7 +98,7 @@ const getUserAccessToolDef = toolDefinition({
 
 /** AI server tool: resolve access roles from an email address. */
 export const getUserAccessTool = createSafeServerTool(getUserAccessToolDef, async (args) =>
-	getUserAccess({ data: UserProfileByEmailSchema.parse(args) }),
+	getUserAccess({ data: args }),
 )
 
 // ---------------------------------------------------------------------------
@@ -190,7 +185,7 @@ const createTaskToolDef = toolDefinition({
 
 /** AI server tool: create a new task (requires auth). */
 export const createTaskTool = createSafeServerTool(createTaskToolDef, async (args) => {
-	const task = await createTask({ data: TaskInputSchema.parse(args) })
+	const task = await createTask({ data: args })
 	return { task, message: 'Task created.' }
 })
 
@@ -203,7 +198,7 @@ const updateTaskToolDef = toolDefinition({
 
 /** AI server tool: update an existing task (creator-only). */
 export const updateTaskTool = createSafeServerTool(updateTaskToolDef, async (args) => {
-	const task = await updateTask({ data: UpdateTaskInputSchema.parse(args) })
+	const task = await updateTask({ data: args })
 	return { task, message: 'Task updated.' }
 })
 
@@ -216,7 +211,7 @@ const deleteTaskToolDef = toolDefinition({
 
 /** AI server tool: delete a task (creator-only). */
 export const deleteTaskTool = createSafeServerTool(deleteTaskToolDef, async (args) => {
-	await deleteTask({ data: TaskIdInputSchema.parse(args) })
+	await deleteTask({ data: args })
 	return { message: 'Task deleted.' }
 })
 
@@ -234,8 +229,7 @@ const showTasksViewToolDef = toolDefinition({
 
 /** AI server tool: task list data plus a linked MCP Apps UI resource. */
 export const showTasksViewTool = createSafeServerTool(showTasksViewToolDef, async (args, context) => {
-	const filter = TaskFilterSchema.optional().parse(args ?? undefined)
-	const tasks = TaskSchema.array().parse(await getTasks({ data: filter }))
+	const tasks = await getTasks({ data: args })
 	emitMcpUiResource(context, 'showTasksView', createTasksViewResource(tasks))
 	return { tasks }
 })
@@ -250,11 +244,10 @@ const showTaskViewToolDef = toolDefinition({
 
 /** AI server tool: task detail data plus a linked MCP Apps UI resource. */
 export const showTaskViewTool = createSafeServerTool(showTaskViewToolDef, async (args, context) => {
-	const raw = await getTask({ data: TaskIdInputSchema.parse(args) })
-	if (!raw) {
+	const task = await getTask({ data: args })
+	if (!task) {
 		return { error: 'Task not found.', code: 404 }
 	}
-	const task = TaskSchema.parse(raw)
 	emitMcpUiResource(context, 'showTaskView', createTaskViewResource(task))
 	return { task }
 })

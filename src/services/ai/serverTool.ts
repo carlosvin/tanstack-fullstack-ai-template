@@ -37,9 +37,9 @@ export function safeToolHandler<TArgs, TResult>(
  */
 export function createSafeServerTool<TArgs, TServerTool>(
 	tool: {
-		server: (execute: (args: NoInfer<TArgs>) => Promise<unknown> | unknown) => TServerTool
+		server: (execute: (args: TArgs, context?: unknown) => Promise<unknown> | unknown) => TServerTool
 	},
 	execute: (args: TArgs, context?: unknown) => Promise<unknown> | unknown,
 ): TServerTool {
-	return tool.server(safeToolHandler(execute) as (args: NoInfer<TArgs>) => Promise<unknown> | unknown)
+	return tool.server(safeToolHandler(execute))
 }

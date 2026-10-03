@@ -135,7 +135,7 @@ Pick **one validator library** per app and use it consistently across router sea
    - **Other untrusted edges:** `createServerFn` `.inputValidator`, AI `toolDefinition` inputSchema, env (companion `observability-and-env`), and third-party widgets that type values as bare `string` (parse with the **same** schema).
    After a value has crossed a trust boundary, keep **schema-inferred types** through UI, handlers, and tools — do not widen back to `string` and re-parse with a helper that duplicates the schema.
 4. **TypeScript inside the typed flow:** After trust boundaries, preserve **inferred types end-to-end** — prefer `satisfies`, discriminated unions, `as const` tuples, and **exhaustive `switch`** (e.g. `default` branch calling `assertNever`) over `any`, broad `unknown` plumbing, or `as` casts (only use `as` at documented third-party/library seams per AGENTS.md). TypeScript narrows **already-typed** unions; it is not a substitute for `Schema.parse()` on untrusted input.
-5. **Repository vs tools:** Repository implementations use repository-layer schemas only. **Server functions and AI tools share the same tools-layer schemas** (`.inputValidator` / `toolDefinition` inputSchema + `Schema.parse`). UI and AI consume tools-layer types only — never import repository schemas at those edges.
+5. **Repository vs tools:** Repository implementations use repository-layer schemas only. **Server functions and AI tools share the same tools-layer schemas** (`.inputValidator` / `toolDefinition` inputSchema). TanStack AI parses tool arguments with `inputSchema` before `execute`, so the handler receives the parsed value. UI and AI consume tools-layer types only — never import repository schemas at those edges.
 6. **Server functions:** GET queries throw on failure; POST mutations chain `.middleware([requireAuthMiddleware, invalidateMiddleware])`; handlers return data or throw `HttpError`; callers normalize with `processResponse` / `safeToolHandler` / `createSafeServerTool`.
 7. **Routes:** Thin route files (`createFileRoute`, `validateSearch`, `loaderDeps`, `loader`, `component`); page UI in `src/components/`. **Loaders** fetch via server functions — no `useEffect` data fetching for route data.
 8. **URL-as-state:** Filters, tabs, selections in validated **search** params; use `loaderDeps` so only relevant search fields key the loader cache.
@@ -264,7 +264,7 @@ Add your DB driver and auth/crypto libraries when they are not isolated in `*.se
 
 **Layer 1 — Repository (DB-shaped):** define in `src/services/schemas/repository.ts` (target layout; today some apps still colocate in `schemas.ts`). No field descriptions required here. Infer types from your validator.
 
-**Layer 2 — Tools / server functions (API-shaped):** one schema for `.inputValidator(Schema)` and `toolDefinition({ inputSchema })`; parse args with `Schema.parse(args)`.
+**Layer 2 — Tools / server functions (API-shaped):** one schema for `.inputValidator(Schema)` and `toolDefinition({ inputSchema })`. Server functions parse at `.inputValidator`. Tool `execute` already receives the `inputSchema` parse, so pass those args through.
 
 *Reference implementation (Zod) — use ArkType or Valibot with TanStack adapters when preferred:*
 
