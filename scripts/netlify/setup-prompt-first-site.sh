@@ -6,7 +6,7 @@ set -euo pipefail
 SITE_NAME="${NETLIFY_SITE_NAME:-fullstack-promptable-prompt-first}"
 REPO="${NETLIFY_GIT_REPO:-carlosvin/tanstack-fullstack-ai-template}"
 
-if ! npx netlify status >/dev/null 2>&1; then
+if ! npx netlify sites:list --json >/dev/null 2>&1; then
 	echo "Not logged in. Run: netlify login" >&2
 	echo "Or set NETLIFY_AUTH_TOKEN from https://app.netlify.com/user/applications" >&2
 	exit 1

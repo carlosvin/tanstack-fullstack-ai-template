@@ -6,7 +6,7 @@ Built with [TanStack Start](https://tanstack.com/start) — with every external 
 
 **Default stack**: [Mantine](https://mantine.dev/) + [MongoDB](https://www.mongodb.com/) + [TanStack AI](https://tanstack.com/ai) (OpenAI) + [Sentry](https://sentry.io/). All swappable.
 
-**[Live Demo — Promptable UI (side)](https://fullstack-promptable-app-example.netlify.app)** | **[Blog Post](building-ai-promptable-fullstack-apps.md)**
+**[Live Demo — Promptable UI (side)](https://fullstack-promptable-app-example.netlify.app)** · **[Live Demo — Prompt-first](https://fullstack-promptable-prompt-first.netlify.app)** | **[Blog Post](building-ai-promptable-fullstack-apps.md)**
 
 This repo ships **two prompt UX examples** from one codebase. Set `PROMPT_CONCEPT` per Netlify site:
 
