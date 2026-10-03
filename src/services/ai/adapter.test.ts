@@ -12,6 +12,21 @@ describe('getAIAdapterService', () => {
 		expect(getAIAdapterService().isConfigured()).toBe(true)
 	})
 
+	it('defaults the Gemini chat model to gemini-3.1-flash-lite', async () => {
+		vi.stubEnv('GEMINI_API_KEY', 'test-key')
+		const { getAIAdapterService } = await import('./adapter')
+		const adapter = getAIAdapterService().getAdapter() as { model: string } | null
+		expect(adapter?.model).toBe('gemini-3.1-flash-lite')
+	})
+
+	it('uses GEMINI_MODEL when it is set', async () => {
+		vi.stubEnv('GEMINI_API_KEY', 'test-key')
+		vi.stubEnv('GEMINI_MODEL', 'gemini-2.5-flash')
+		const { getAIAdapterService } = await import('./adapter')
+		const adapter = getAIAdapterService().getAdapter() as { model: string } | null
+		expect(adapter?.model).toBe('gemini-2.5-flash')
+	})
+
 	it('reports configured when OpenAI env vars are present', async () => {
 		vi.stubEnv('OPENAI_API_KEY', 'openai-key')
 		vi.stubEnv('OPENAI_BASE_URL', 'https://gateway.example.com')
