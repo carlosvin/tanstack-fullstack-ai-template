@@ -1,0 +1,15 @@
+id: agentic-mcp-ui-render
+name: MCP UI resource render
+description: Covers USE FOR MCP UI host and sandboxed UI resource.
+tags: [ux, trigger]
+inputs:
+  prompt: How does a tool-linked MCP UI resource render in the agentic shell?
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

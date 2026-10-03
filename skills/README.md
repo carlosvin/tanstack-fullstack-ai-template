@@ -7,6 +7,7 @@ This repo ships **[Agent Skills](https://agentskills.io)** — one `SKILL.md` pe
 - **`reference-tech-stack`** — **opinionated defaults** for *this* template: Zod, Mantine, lucide-react, MongoDB + seed, jose JWT, OpenAI adapter, pino + Sentry, react-markdown, Biome, Vitest, Playwright, Netlify.
 - **`repository-architecture`** — **language-agnostic repository architecture**: injected collection owners, indexes, stale-data cleanup, and resource lifetime (TypeScript `AsyncDisposable`, Java `AutoCloseable`, Python context-manager magic methods).
 - **`promptable-ux`** — **shared prompt UX**: mobile first, assistant markdown, and two concepts that differ only in prompt placement. **Promptable UI (side)** hides the prompt in a side or bottom panel (this reference app). **Prompt-first** keeps the prompt on screen and drills from an overview down the page.
+- **`agentic-ux`** — **fully agentic UX**: a thin prompt shell with no domain screens. Every view beyond text renders as a tool-linked MCP Apps resource through `MCPAppResource` and the inner iframe in `public/sandbox_proxy.html`.
 
 Operational how-to (file paths, snippets, validation commands) still lives in **[AGENTS.md](../AGENTS.md)**.
 
@@ -19,6 +20,7 @@ Operational how-to (file paths, snippets, validation commands) still lives in **
 | "Which package does this template use?" / match the demo app | `reference-tech-stack` |
 | Collection repositories, indexes, stale-data cleanup, resource lifetime | `repository-architecture` |
 | Prompt chrome, mobile first, assistant markdown, prompt-first vs side panel | `promptable-ux` |
+| Fully agentic shell, MCP UI host, dynamic tool UI | `agentic-ux` |
 | Scaffolding this template as-is | Architecture + `reference-tech-stack` + `promptable-ux` (+ observability when touching env; repository-architecture when splitting repositories) |
 
 Keep them **separate**. The parent skill states architecture **invariants** and which stack pieces are **swappable**; `reference-tech-stack` names this repo's vendors; `observability-and-env` owns the env/logging setup recipe; `repository-architecture` owns how repositories are split, indexed, cleaned up, and disposed; `promptable-ux` owns shared layout rules and the two prompt concepts; AGENTS.md owns day-to-day ops.
@@ -43,6 +45,7 @@ npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-an
 npx skills add carlosvin/tanstack-fullstack-ai-template --skill reference-tech-stack
 npx skills add carlosvin/tanstack-fullstack-ai-template --skill repository-architecture
 npx skills add carlosvin/tanstack-fullstack-ai-template --skill promptable-ux
+npx skills add carlosvin/tanstack-fullstack-ai-template --skill agentic-ux
 ```
 
 List what this repo publishes:
@@ -81,6 +84,7 @@ Author and commit these files — they are the contract, not generated output:
 - `.agents/skills/reference-tech-stack/SKILL.md`
 - `.agents/skills/repository-architecture/SKILL.md`
 - `.agents/skills/promptable-ux/SKILL.md`
+- `.agents/skills/agentic-ux/SKILL.md`
 - `evals/<id>/` — [Waza](https://microsoft.github.io/waza/) eval suites (CI via `pnpm skills:waza`)
 
 Format: [agentskills.io specification](https://agentskills.io/specification) (`name` + `description` frontmatter; directory name matches `name`).

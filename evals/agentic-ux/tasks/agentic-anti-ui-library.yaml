@@ -1,0 +1,15 @@
+id: agentic-anti-ui-library
+name: Do not use for UI kit lookup
+description: Covers DO NOT USE FOR UI kit lookup (use reference-tech-stack).
+tags: [ux, anti-trigger]
+inputs:
+  prompt: UI kit lookup (use reference-tech-stack) for this template?
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

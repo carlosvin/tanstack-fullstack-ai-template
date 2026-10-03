@@ -11,3 +11,15 @@ command = "pnpm build"
 
 [context.deploy-preview.environment]
 REPOSITORY_TYPE = "seed"
+
+# Guest modules load from an opaque srcdoc iframe, so the browser treats them as cross-origin.
+# Dev serves the same paths from the mcp-guest-cors plugin in vite.config.ts.
+[[headers]]
+for = "/mcp-app.js"
+[headers.values]
+Access-Control-Allow-Origin = "*"
+
+[[headers]]
+for = "/mcp-task-view.js"
+[headers.values]
+Access-Control-Allow-Origin = "*"

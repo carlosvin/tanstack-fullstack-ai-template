@@ -7,7 +7,15 @@ import { MarkdownLink } from './MarkdownLink'
 import styles from './PromptChat.module.css'
 import { getToolLabel } from './toolLabels'
 
-export function MessageBubble({ message }: { message: UIMessage }) {
+type MarkdownLinkComponent = React.ComponentType<{ href?: string; children?: React.ReactNode }>
+
+export function MessageBubble({
+	message,
+	markdownLinkComponent,
+}: {
+	message: UIMessage
+	markdownLinkComponent?: MarkdownLinkComponent
+}) {
 	const isUser = message.role === 'user'
 
 	const textParts: string[] = []
@@ -50,7 +58,7 @@ export function MessageBubble({ message }: { message: UIMessage }) {
 						<Text size="sm">{textContent}</Text>
 					) : (
 						<div className={styles.markdown}>
-							<Markdown remarkPlugins={[remarkGfm]} components={{ a: MarkdownLink }}>
+							<Markdown remarkPlugins={[remarkGfm]} components={{ a: markdownLinkComponent ?? MarkdownLink }}>
 								{textContent}
 							</Markdown>
 						</div>
