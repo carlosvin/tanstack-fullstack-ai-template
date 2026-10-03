@@ -101,12 +101,18 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 ## UI actions
 
-The sandbox talks to the host through `onMessage` / `onUIAction`. Map actions to tools and prompts only:
+Preferred host is `@mcp-ui/client` `AppRenderer`. It has no `onUIAction`. Map guest requests to tools and prompts only, never to an in-app route:
 
-- **tool** — run the same server tool with its input schema, append the result, render any new resource.
+- `onCallTool` — run the same server tool with its input schema, append the result, render any new resource.
+- `onMessage` — send the text as the next user message, or show a status notice in the thread.
+- `onOpenLink` — open the URL externally.
+
+Legacy `UIResourceRenderer` is the only host that uses `onUIAction`. Keep those five action types on that fallback:
+
+- **tool** — same as `onCallTool`.
 - **prompt** — send the text as the next user message.
 - **notify** — status in the thread.
-- **link** — open externally.
+- **link** — same as `onOpenLink`.
 - **intent** — map to a tool call or a prompt. Never to an in-app route.
 
 ## Security
