@@ -26,10 +26,10 @@ fi
 echo "Site id: ${SITE_ID}"
 echo "Default URL: ${SITE_URL}"
 
-echo "Setting build env (production context)..."
-npx netlify env:set PROMPT_CONCEPT prompt-first --site "${SITE_ID}" --context production
-npx netlify env:set DISPLAY_NAME "TaskHub Prompt-first" --site "${SITE_ID}" --context production
-npx netlify env:set REPOSITORY_TYPE seed --site "${SITE_ID}" --context production
+echo "Setting build env (production + deploy-preview)..."
+npx netlify env:set PROMPT_CONCEPT prompt-first --site "${SITE_ID}" --context production deploy-preview
+npx netlify env:set DISPLAY_NAME "TaskHub Prompt-first" --site "${SITE_ID}" --context production deploy-preview
+npx netlify env:set REPOSITORY_TYPE seed --site "${SITE_ID}" --context production deploy-preview
 
 echo ""
 echo "Next: connect Git in the Netlify UI (required for continuous deploy from GitHub):"

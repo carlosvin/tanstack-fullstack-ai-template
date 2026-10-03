@@ -36,6 +36,13 @@ describe('AppNavbar', () => {
 		expect(screen.getByRole('link', { name: /tasks/i }).getAttribute('href')).toBe('/tasks')
 	})
 
+	it('renders AI Assistant and Tasks links in prompt-first mode', () => {
+		renderNavbar(<AppNavbar pathname="/" appMeta={appMeta} promptConcept="prompt-first" />)
+
+		expect(screen.getByRole('link', { name: /ai assistant/i }).getAttribute('href')).toBe('/')
+		expect(screen.getByRole('link', { name: /tasks/i }).getAttribute('href')).toBe('/tasks')
+	})
+
 	it('marks Dashboard as active on the home path', () => {
 		renderNavbar(<AppNavbar pathname="/" appMeta={appMeta} />)
 

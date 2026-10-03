@@ -1,7 +1,7 @@
-import { AppShell, Stack } from '@mantine/core'
+import { AppShell, Container } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { useRouterState } from '@tanstack/react-router'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ShellSession } from '../../services/schemas/shellSession'
 import type { CurrentUser } from '../../types'
 import { AppNavbar } from '../AppNavbar/AppNavbar'
@@ -17,10 +17,12 @@ interface AppLayoutProps {
 	children: React.ReactNode
 }
 
+const PROMPT_FIRST_FOOTER_MIN_HEIGHT = 72
+
 /**
  * Prompt concept from `shellSession.promptConcept` (promptable-ux skill):
  * - **Promptable UI (side)** (`side`) — ChatDrawer hidden until the header opens it
- * - **Prompt-first** (`prompt-first`) — always-visible PromptBar above page content
+ * - **Prompt-first** (`prompt-first`) — clean agentic conversation with bottom-pinned composer
  *
  * One chat shell per deployment; `PROMPT_CONCEPT` selects the branch.
  */
@@ -28,9 +30,12 @@ export function AppLayout({ currentUser, shellSession, aiAvailable = false, chil
 	const promptConcept = shellSession.promptConcept
 	const isSideConcept = promptConcept === 'side'
 	const isPromptFirst = promptConcept === 'prompt-first'
+	const showPromptFirstFooter = isPromptFirst && aiAvailable
 
 	const [chatOpened, { open: openChatDrawer, close: closeChat }] = useDisclosure(false)
 	const [navOpened, { toggle: toggleNav, close: closeNav }] = useDisclosure(false)
+	const [footerHeight, setFooterHeight] = useState(PROMPT_FIRST_FOOTER_MIN_HEIGHT)
+	const footerMeasureRef = useRef<HTMLDivElement>(null)
 	const pathname = useRouterState({ select: (s) => s.location.pathname })
 	const previousPathname = useRef(pathname)
 
@@ -39,6 +44,22 @@ export function AppLayout({ currentUser, shellSession, aiAvailable = false, chil
 		previousPathname.current = pathname
 		closeNav()
 	}, [pathname, closeNav])
+
+	useEffect(() => {
+		if (!showPromptFirstFooter) return
+		const el = footerMeasureRef.current
+		if (!el) return
+
+		const updateHeight = () => {
+			const measured = Math.ceil(el.getBoundingClientRect().height)
+			setFooterHeight(Math.max(PROMPT_FIRST_FOOTER_MIN_HEIGHT, measured))
+		}
+
+		updateHeight()
+		const observer = new ResizeObserver(updateHeight)
+		observer.observe(el)
+		return () => observer.disconnect()
+	}, [showPromptFirstFooter])
 
 	const openChat = () => {
 		closeNav()
@@ -53,6 +74,7 @@ export function AppLayout({ currentUser, shellSession, aiAvailable = false, chil
 				breakpoint: 'sm',
 				collapsed: { mobile: !navOpened },
 			}}
+			footer={showPromptFirstFooter ? { height: footerHeight } : undefined}
 			padding={{ base: 'sm', sm: 'md' }}
 		>
 			<AppShell.Header>
@@ -66,14 +88,24 @@ export function AppLayout({ currentUser, shellSession, aiAvailable = false, chil
 				/>
 			</AppShell.Header>
 			<AppShell.Navbar p="md">
-				<AppNavbar pathname={pathname} currentUser={currentUser} appMeta={shellSession.app} onNavigate={closeNav} />
+				<AppNavbar
+					pathname={pathname}
+					currentUser={currentUser}
+					appMeta={shellSession.app}
+					promptConcept={promptConcept}
+					onNavigate={closeNav}
+				/>
 			</AppShell.Navbar>
-			<AppShell.Main>
-				<Stack gap="md">
-					{isPromptFirst && aiAvailable ? <PromptBar /> : null}
-					{children}
-				</Stack>
-			</AppShell.Main>
+			<AppShell.Main>{children}</AppShell.Main>
+			{showPromptFirstFooter ? (
+				<AppShell.Footer p="xs" px={{ base: 'xs', sm: 'md' }}>
+					<div ref={footerMeasureRef}>
+						<Container size="md" p={0}>
+							<PromptBar />
+						</Container>
+					</div>
+				</AppShell.Footer>
+			) : null}
 			{isSideConcept && aiAvailable ? <ChatDrawer opened={chatOpened} onClose={closeChat} /> : null}
 		</AppShell>
 	)

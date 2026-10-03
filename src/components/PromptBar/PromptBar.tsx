@@ -1,29 +1,25 @@
-import { Paper, Stack, Text, Title, useMantineTheme } from '@mantine/core'
-import { useMediaQuery } from '@mantine/hooks'
+import { Box } from '@mantine/core'
+import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { ChatComposer } from '../PromptChat/ChatComposer'
-import { ChatThread } from '../PromptChat/ChatThread'
 
 /**
- * Prompt-first shell: always-visible prompt above page content.
+ * Prompt-first shell: bottom-pinned prompt input bar.
+ * Rendered in AppShell.Footer, always visible across routes.
  * Conversation state lives in PromptChatProvider on AppLayout.
  */
 export function PromptBar() {
-	const theme = useMantineTheme()
-	const isSmUp = useMediaQuery(`(min-width: ${theme.breakpoints.sm})`, true)
-	const threadMaxHeight = isSmUp ? 280 : 200
+	const pathname = useRouterState({ select: (s) => s.location.pathname })
+	const navigate = useNavigate()
+
+	const handleAfterSubmit = () => {
+		if (pathname !== '/') {
+			navigate({ to: '/' })
+		}
+	}
 
 	return (
-		<Paper withBorder radius="md" p="md" mb="md" component="section" aria-label="AI assistant">
-			<Stack gap="sm">
-				<div>
-					<Title order={4}>AI Assistant</Title>
-					<Text size="sm" c="dimmed">
-						Ask about tasks, open pages, or create updates — then drill into the sections below.
-					</Text>
-				</div>
-				<ChatThread maxHeight={threadMaxHeight} showSuggestions />
-				<ChatComposer />
-			</Stack>
-		</Paper>
+		<Box component="section" aria-label="AI assistant" w="100%">
+			<ChatComposer onAfterSubmit={handleAfterSubmit} />
+		</Box>
 	)
 }

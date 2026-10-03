@@ -45,6 +45,8 @@ This template is the reference app for the skill. **Already landed on `main`:** 
 
 See the skill **Implementation Flow** for the per-entity file checklist when adding domain entities.
 
+**Example-preview workflow (both prompt demos):** every change to the example app shell or a skill contract must load the matching skill(s) first, update `.agents/skills/*/SKILL.md` when the contract changes, and land via PR so **both** Netlify sites build deploy previews (side drawer + prompt-first). Smoke-test both preview URLs before merge — a UI change is not done when only one preview is checked.
+
 ## 1. General Principles
 
 - **SOLID, DRY, YAGNI, KISS**: Adhere to these fundamental software design principles.

@@ -1,5 +1,6 @@
 import { createFileRoute, useLoaderData } from '@tanstack/react-router'
 import { DashboardPage } from '../components/DashboardPage/DashboardPage'
+import { PromptFirstLanding } from '../components/PromptFirstLanding/PromptFirstLanding'
 import { getTasks } from '../services/api/serverFns'
 
 export const Route = createFileRoute('/')({
@@ -10,7 +11,12 @@ export const Route = createFileRoute('/')({
 
 function DashboardRoute() {
 	const tasks = Route.useLoaderData()
-	const { shellSession } = useLoaderData({ from: '__root__' })
+	const { shellSession, aiAvailable } = useLoaderData({ from: '__root__' })
+	const isPromptFirst = shellSession.promptConcept === 'prompt-first'
+
+	if (isPromptFirst && aiAvailable) {
+		return <PromptFirstLanding tasks={tasks} />
+	}
 
 	return (
 		<DashboardPage
