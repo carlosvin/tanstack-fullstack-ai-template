@@ -4,11 +4,34 @@ import { MantineProvider } from '@mantine/core'
 import type { UIResourcePart } from '@tanstack/ai'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { AgenticMcpRenderer } from './AgenticMcpRenderer'
+import { AgenticMcpRenderer, toMcpToolResult } from './AgenticMcpRenderer'
 
-vi.mock('@tanstack/ai-react/mcp-apps', () => ({
-	MCPAppResource: ({ part, sandbox }: { part: UIResourcePart; sandbox: { url: URL } }) => (
-		<iframe title={part.resource.uri} src={sandbox.url.href} data-html={part.resource.text} />
+vi.mock('@tanstack/ai-react', () => ({
+	useMcpAppBridge: () => ({
+		callTool: vi.fn(),
+		sendPrompt: vi.fn(),
+		openLink: vi.fn(),
+	}),
+}))
+
+vi.mock('@mcp-ui/client', () => ({
+	AppRenderer: ({
+		html,
+		sandbox,
+		toolResourceUri,
+		toolResult,
+	}: {
+		html?: string
+		sandbox: { url: URL }
+		toolResourceUri?: string
+		toolResult?: { structuredContent?: { tasks?: unknown } }
+	}) => (
+		<iframe
+			title={toolResourceUri}
+			src={sandbox.url.href}
+			data-html={html}
+			data-tasks={toolResult?.structuredContent?.tasks ? 'yes' : 'no'}
+		/>
 	),
 }))
 
@@ -23,10 +46,10 @@ const part: UIResourcePart = {
 	},
 }
 
-function renderRenderer(ui: UIResourcePart = part) {
+function renderRenderer(ui: UIResourcePart = part, toolResultText?: string) {
 	return render(
 		<MantineProvider>
-			<AgenticMcpRenderer part={ui} onPrompt={vi.fn()} />
+			<AgenticMcpRenderer part={ui} toolResultText={toolResultText} onPrompt={vi.fn()} />
 		</MantineProvider>,
 	)
 }
@@ -42,11 +65,19 @@ describe('AgenticMcpRenderer', () => {
 		expect(relay).not.toContain('document.write')
 	})
 
-	it('renders a valid resource through the sandbox proxy', () => {
-		const { container } = renderRenderer()
+	it('renders a registered resource and forwards the tool result', () => {
+		const { container } = renderRenderer(part, JSON.stringify({ tasks: [{ id: 'a' }] }))
 		const iframe = container.querySelector('iframe')
 		expect(iframe?.getAttribute('src')).toContain('/sandbox_proxy.html')
 		expect(iframe?.getAttribute('data-html')).toContain('Tasks')
+		expect(iframe?.getAttribute('data-tasks')).toBe('yes')
+	})
+
+	it('turns tool-result JSON into structured content', () => {
+		expect(toMcpToolResult(JSON.stringify({ task: { id: 'abc' } }), false).structuredContent).toEqual({
+			task: { id: 'abc' },
+		})
+		expect(toMcpToolResult(JSON.stringify({ error: 'Task not found.', code: 404 }), false).isError).toBe(true)
 	})
 
 	it('refuses resources with a bad MIME type or URI', () => {

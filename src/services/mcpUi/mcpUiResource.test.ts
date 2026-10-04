@@ -1,90 +1,51 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import type { Task } from '../schemas/schemas'
-import { decodeMcpUiHtml, isAllowedMcpUiUri, MAX_MCP_UI_HTML_CHARS } from './mcpUiResource'
 import {
-	assertMcpUiHtmlWithinCap,
-	createTasksViewResource,
-	createTaskViewResource,
-	emitMcpUiResource,
-} from './mcpUiResources'
-
-const task = {
-	id: 'abc123',
-	title: 'Write <docs>',
-	description: 'Details & more',
-	status: 'pending',
-	priority: 'high',
-	assignee: 'ada@example.com',
-	createdAt: '2026-01-01T00:00:00.000Z',
-	updatedAt: '2026-01-02T00:00:00.000Z',
-	createdBy: 'ada@example.com',
-} as Task
+	decodeMcpUiHtml,
+	isAllowedMcpUiUri,
+	MAX_MCP_UI_HTML_CHARS,
+	TASK_DETAIL_UI_URI,
+	TASKS_LIST_UI_URI,
+} from './mcpUiResource'
+import { assertMcpUiHtmlWithinCap, readMcpUiResource } from './mcpUiResources'
 
 describe('mcpUiResource', () => {
 	it('allowlists only ui:// task URIs', () => {
-		expect(isAllowedMcpUiUri('ui://tasks/list')).toBe(true)
-		expect(isAllowedMcpUiUri('ui://task/detail-abc')).toBe(true)
+		expect(isAllowedMcpUiUri(TASKS_LIST_UI_URI)).toBe(true)
+		expect(isAllowedMcpUiUri(TASK_DETAIL_UI_URI)).toBe(true)
 		expect(isAllowedMcpUiUri('https://example.com')).toBe(false)
 		expect(isAllowedMcpUiUri('ui://other/x')).toBe(false)
 	})
 
-	it('builds a tasks view from the shared template and JSON task data', () => {
-		const resource = createTasksViewResource([task])
-		expect(resource.type).toBe('resource')
-		expect(resource.resource.uri).toBe('ui://tasks/list')
-		expect(resource.resource.mimeType).toBe('text/html;profile=mcp-app')
-		const html = decodeMcpUiHtml(resource.resource)
-		expect(html).toContain('id="view-data"')
+	it('serves the static view shell from resources/read', async () => {
+		const result = await readMcpUiResource(TASKS_LIST_UI_URI)
+		expect(result.contents).toHaveLength(1)
+		const [content] = result.contents
+		expect(content?.uri).toBe(TASKS_LIST_UI_URI)
+		expect(content?.mimeType).toBe('text/html;profile=mcp-app')
+		const html =
+			content?.mimeType && content.text !== undefined
+				? decodeMcpUiHtml({ uri: content.uri, mimeType: content.mimeType, text: content.text, blob: content.blob })
+				: null
 		expect(html).toContain('/mcp-task-view.js')
-		expect(html).toContain('Write \\u003cdocs>')
-		expect(html).not.toContain('Write <docs>')
+		expect(html).not.toContain('__VIEW_DATA__')
+		expect(html).not.toContain('id="view-data"')
+
+		const detail = await readMcpUiResource(TASK_DETAIL_UI_URI)
+		expect(detail.contents[0]?.uri).toBe(TASK_DETAIL_UI_URI)
+		expect(await readMcpUiResource('ui://other/x')).toEqual({ contents: [] })
+
 		const guest = readFileSync(path.join(process.cwd(), 'public/mcp-task-view.js'), 'utf8')
 		expect(guest).toContain('/mcp-app.js')
+		expect(guest).toContain('ontoolresult')
 		expect(guest).toContain('sendMessage')
 		expect(guest).toContain('textContent')
-	})
-
-	it('emits a ui-resource event and skips a context that cannot emit', () => {
-		const resource = createTasksViewResource([task])
-		const events: Array<{ name: string; value: unknown }> = []
-		emitMcpUiResource(
-			{
-				emitCustomEvent: (name, value) => {
-					events.push({ name, value })
-				},
-			},
-			'showTasksView',
-			resource,
-		)
-		expect(events).toEqual([
-			{
-				name: 'ui-resource',
-				value: {
-					resource: {
-						uri: 'ui://tasks/list',
-						mimeType: 'text/html;profile=mcp-app',
-						text: resource.resource.text,
-						blob: resource.resource.blob,
-					},
-					toolName: 'showTasksView',
-				},
-			},
-		])
-		expect(() => emitMcpUiResource(undefined, 'showTasksView', resource)).not.toThrow()
-	})
-
-	it('builds a task detail resource with an allowlisted detail URI', () => {
-		const resource = createTaskViewResource(task)
-		expect(resource.resource.uri).toBe('ui://task/detail-abc123')
-		const html = decodeMcpUiHtml(resource.resource)
-		expect(html).toContain('Details & more')
-		expect(html).toContain('"view":"task"')
+		expect(guest).not.toContain('view-data')
 	})
 
 	it('rejects HTML payloads that exceed the size cap', () => {
 		const oversized = `<!doctype html><html><body>${'x'.repeat(MAX_MCP_UI_HTML_CHARS)}</body></html>`
-		expect(() => assertMcpUiHtmlWithinCap(oversized, 'ui://tasks/list')).toThrow(/exceeds/)
+		expect(() => assertMcpUiHtmlWithinCap(oversized, TASKS_LIST_UI_URI)).toThrow(/exceeds/)
 	})
 })

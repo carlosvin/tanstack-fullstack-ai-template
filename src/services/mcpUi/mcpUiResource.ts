@@ -10,6 +10,9 @@ export const MCP_APP_MIME_TYPE = 'text/html;profile=mcp-app'
 /** Upper bound for sandboxed HTML payloads (characters). */
 export const MAX_MCP_UI_HTML_CHARS = 60000
 
+export const TASKS_LIST_UI_URI = 'ui://tasks/list'
+export const TASK_DETAIL_UI_URI = 'ui://task/detail'
+
 const ALLOWED_MCP_UI_URI_PREFIXES = ['ui://tasks/', 'ui://task/'] as const
 
 export interface McpUiResourceContent {

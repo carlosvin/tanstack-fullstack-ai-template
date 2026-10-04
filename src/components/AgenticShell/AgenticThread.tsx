@@ -1,12 +1,17 @@
 import { Button, Group, Loader, ScrollArea, Stack, Text } from '@mantine/core'
-import type { UIResourcePart } from '@tanstack/ai'
+import type { ToolResultPart, UIResourcePart } from '@tanstack/ai'
 import type { UIMessage } from '@tanstack/ai-react'
 import { useEffect, useRef } from 'react'
+import { TASK_DETAIL_UI_URI, TASKS_LIST_UI_URI } from '../../services/mcpUi/mcpUiResource'
 import { suggestedPrompts } from '../../utils/suggestedPrompts'
 import { useAgenticChat } from '../AgenticChat/AgenticChatContext'
 import { AgenticMcpRenderer } from '../AgenticMcp/AgenticMcpRenderer'
 import { MessageBubble } from '../PromptChat/MessageBubble'
 import { AgenticPromptMarkdownLink } from './AgenticPromptMarkdownLink'
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
 
 function messageUiResources(message: UIMessage): UIResourcePart[] {
 	const found: UIResourcePart[] = []
@@ -16,11 +21,33 @@ function messageUiResources(message: UIMessage): UIResourcePart[] {
 	return found
 }
 
-function retryPromptForResourceUri(uri: string): string {
-	if (uri === 'ui://tasks/list') return 'Show my tasks'
-	if (uri.startsWith('ui://task/detail-')) {
-		const id = uri.slice('ui://task/detail-'.length)
-		if (id && id !== 'detail') return `Show task ${id}`
+function toolResultText(part: ToolResultPart): string {
+	if (typeof part.content === 'string') return part.content
+	return part.content.map((block) => (block.type === 'text' ? block.content : '')).join('')
+}
+
+function toolContext(message: UIMessage, toolCallId: string) {
+	let toolInput: Record<string, unknown> | undefined
+	let resultText: string | undefined
+	let toolFailed = false
+	for (const part of message.parts) {
+		if (part.type === 'tool-call' && part.id === toolCallId) {
+			const raw = part.input
+			if (isRecord(raw)) toolInput = raw
+		}
+		if (part.type === 'tool-result' && part.toolCallId === toolCallId) {
+			resultText = toolResultText(part)
+			toolFailed = part.state === 'error'
+		}
+	}
+	return { toolInput, resultText, toolFailed }
+}
+
+function retryPrompt(uri: string, toolInput: Record<string, unknown> | undefined): string {
+	if (uri === TASKS_LIST_UI_URI) return 'Show my tasks'
+	if (uri === TASK_DETAIL_UI_URI) {
+		const id = toolInput && typeof toolInput.id === 'string' ? toolInput.id : ''
+		if (id) return `Show task ${id}`
 	}
 	return 'Please show that view again'
 }
@@ -70,14 +97,20 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 								message={msg}
 								markdownLinkComponent={(props) => <AgenticPromptMarkdownLink {...props} onPrompt={sendMessage} />}
 							/>
-							{resources.map((part) => (
-								<AgenticMcpRenderer
-									key={`${part.toolCallId}-${part.resource.uri}`}
-									part={part}
-									onPrompt={sendMessage}
-									onRetry={() => sendMessage(retryPromptForResourceUri(part.resource.uri))}
-								/>
-							))}
+							{resources.map((part) => {
+								const context = toolContext(msg, part.toolCallId)
+								return (
+									<AgenticMcpRenderer
+										key={`${part.toolCallId}-${part.resource.uri}`}
+										part={part}
+										toolInput={context.toolInput}
+										toolResultText={context.resultText}
+										toolFailed={context.toolFailed}
+										onPrompt={sendMessage}
+										onRetry={() => sendMessage(retryPrompt(part.resource.uri, context.toolInput))}
+									/>
+								)
+							})}
 						</Stack>
 					)
 				})}

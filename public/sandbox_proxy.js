@@ -1,7 +1,7 @@
 /**
  * MCP Apps sandbox proxy.
  *
- * `MCPAppResource` loads this page and posts the resource HTML. The inner iframe
+ * `AppRenderer` loads this page and posts the resource HTML. The inner iframe
  * has no `allow-same-origin`, so the guest cannot read the host.
  */
 

@@ -21,7 +21,8 @@ import {
 	getUserProfile,
 	updateTask,
 } from '../api/serverFns'
-import { createTasksViewResource, createTaskViewResource, emitMcpUiResource } from '../mcpUi/mcpUiResources'
+import { TASK_DETAIL_UI_URI, TASKS_LIST_UI_URI } from '../mcpUi/mcpUiResource'
+import { mcpAppToolMetadata } from '../mcpUi/mcpUiResources'
 import {
 	AppRuntimeInfoSchema,
 	DistinctValuesInputSchema,
@@ -224,13 +225,12 @@ const showTasksViewToolDef = toolDefinition({
 	description:
 		'Show the task list as an interactive UI. Prefer this over getTasks when the user needs to see tasks. Returns tasks plus a linked MCP UI resource.',
 	inputSchema: TaskFilterSchema,
-	metadata: { _meta: { ui: { resourceUri: 'ui://tasks/list' } } },
+	metadata: mcpAppToolMetadata(TASKS_LIST_UI_URI, 'showTasksView'),
 })
 
-/** AI server tool: task list data plus a linked MCP Apps UI resource. */
-export const showTasksViewTool = createSafeServerTool(showTasksViewToolDef, async (args, context) => {
+/** AI server tool: task list data. The linked UI is served by `resources/read`. */
+export const showTasksViewTool = createSafeServerTool(showTasksViewToolDef, async (args) => {
 	const tasks = await getTasks({ data: args })
-	emitMcpUiResource(context, 'showTasksView', createTasksViewResource(tasks))
 	return { tasks }
 })
 
@@ -239,15 +239,14 @@ const showTaskViewToolDef = toolDefinition({
 	description:
 		'Show a single task as an interactive UI. Prefer this over getTask when the user needs to see a task. Returns the task plus a linked MCP UI resource.',
 	inputSchema: TaskIdInputSchema,
-	metadata: { _meta: { ui: { resourceUri: 'ui://task/detail' } } },
+	metadata: mcpAppToolMetadata(TASK_DETAIL_UI_URI, 'showTaskView'),
 })
 
-/** AI server tool: task detail data plus a linked MCP Apps UI resource. */
-export const showTaskViewTool = createSafeServerTool(showTaskViewToolDef, async (args, context) => {
+/** AI server tool: task detail data. The linked UI is served by `resources/read`. */
+export const showTaskViewTool = createSafeServerTool(showTaskViewToolDef, async (args) => {
 	const task = await getTask({ data: args })
 	if (!task) {
 		return { error: 'Task not found.', code: 404 }
 	}
-	emitMcpUiResource(context, 'showTaskView', createTaskViewResource(task))
 	return { task }
 })

@@ -786,7 +786,7 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 			id: 'agentic-ux-shell-contract',
 			skill: 'agentic-ux',
 			description:
-				'Agentic skill recipe matches the example shell: metadata._meta.ui.resourceUri, MCPAppResource, no route chrome',
+				'Agentic skill recipe matches the example shell: metadata._meta.ui.resourceUri, AppRenderer, no route chrome',
 			async run() {
 				const { agentSkillsDir } = getSkillPaths(rootDir)
 				let skillMd
@@ -801,7 +801,9 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				if (!/## Security/.test(skillMd)) missing.push('Security section')
 				if (!/metadata\._meta\.ui\.resourceUri/.test(skillMd)) missing.push('metadata._meta.ui.resourceUri recipe')
 				if (!/createUIResource/.test(skillMd)) missing.push('createUIResource recipe')
-				if (!/MCPAppResource/.test(skillMd)) missing.push('MCPAppResource recipe')
+				if (!/AppRenderer/.test(skillMd)) missing.push('AppRenderer recipe')
+				if (!/resources\/read/.test(skillMd)) missing.push('resources/read recipe')
+				if (!/toolResult/.test(skillMd)) missing.push('toolResult recipe')
 				if (!/sandbox_proxy\.html/.test(skillMd)) missing.push('sandbox proxy recipe')
 				if (!/only inside the MCP UI iframe/.test(skillMd)) missing.push('iframe-only render rule')
 				if (!/No `ChatDrawer`, `PromptBar`, `AppNavbar`/.test(skillMd)) missing.push('no route-component reuse rule')
@@ -825,14 +827,20 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				const resources = await readText(path.join(rootDir, 'src/services/mcpUi/mcpUiResources.ts'))
 				const shell = await readText(path.join(rootDir, 'src/components/AgenticShell/AgenticShell.tsx'))
 				const drift = []
-				if (!/metadata:\s*\{\s*_meta:\s*\{\s*ui:\s*\{\s*resourceUri:/.test(tools)) {
-					drift.push('tools.ts must set metadata._meta.ui.resourceUri')
+				if (!/_meta:\s*\{\s*ui:\s*\{\s*resourceUri:/.test(`${tools}\n${resources}`)) {
+					drift.push('view tools must set metadata._meta.ui.resourceUri')
 				}
-				if (!/MCPAppResource/.test(renderer) || !/sandbox_proxy\.html/.test(renderer)) {
-					drift.push('AgenticMcpRenderer must render MCPAppResource through sandbox_proxy.html')
+				if (!/AppRenderer/.test(renderer) || !/sandbox_proxy\.html/.test(renderer) || !/toolResult/.test(renderer)) {
+					drift.push('AgenticMcpRenderer must render AppRenderer through sandbox_proxy.html with toolResult')
 				}
-				if (!/createUIResource/.test(resources)) {
-					drift.push('mcpUiResources must build views with createUIResource')
+				if (!/createUIResource/.test(resources) || !/readMcpUiResource/.test(resources)) {
+					drift.push('mcpUiResources must register views with createUIResource and readMcpUiResource')
+				}
+				if (!/readMcpUiResource/.test(tools) && !/mcpAppToolMetadata/.test(tools)) {
+					drift.push('tools.ts must bind resources/read for view tools')
+				}
+				if (/emitMcpUiResource/.test(tools)) {
+					drift.push('tools.ts must not embed the view in the tool handler')
 				}
 				if (/ChatDrawer|PromptBar|AppNavbar/.test(shell)) {
 					drift.push('AgenticShell must not mount route-based prompt chrome')
