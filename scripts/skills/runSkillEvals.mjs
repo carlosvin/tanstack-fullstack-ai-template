@@ -835,7 +835,11 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				if (!/_meta:\s*\{\s*ui:\s*\{\s*resourceUri:/.test(mcpServer)) {
 					drift.push('view tools must set metadata._meta.ui.resourceUri')
 				}
-				if (!/createMCPServer/.test(mcpServer) || !/resourceDefinition/.test(mcpServer) || !/createMCPClient/.test(mcpServer)) {
+				if (
+					!/createMCPServer/.test(mcpServer) ||
+					!/resourceDefinition/.test(mcpServer) ||
+					!/createMCPClient/.test(mcpServer)
+				) {
 					drift.push('task views must be registered with createMCPServer and createMCPClient')
 				}
 				if (!/connectTaskViewsMcp/.test(chatRoute) || !/mcp:\s*\{\s*clients:/.test(chatRoute)) {
