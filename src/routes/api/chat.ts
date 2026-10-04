@@ -8,6 +8,7 @@ import {
 	getNavigationPromptSection,
 	matchUserFacingRoute,
 } from '../../services/ai/navigationManifest'
+import { connectTaskViewsMcp } from '../../services/ai/taskViewsMcp.server'
 import {
 	createTaskTool,
 	deleteTaskTool,
@@ -20,8 +21,6 @@ import {
 	getUserProfileTool,
 	invalidateRouterToolDef,
 	navigateToolDef,
-	showTasksViewTool,
-	showTaskViewTool,
 	updateTaskTool,
 } from '../../services/ai/tools'
 import { getObservability } from '../../services/observability'
@@ -231,42 +230,27 @@ export const Route = createFileRoute('/api/chat')({
 					getNavigationPromptSection(buildAppNavigation(router)),
 					promptConcept,
 				)
-				const tools =
-					promptConcept === 'agentic'
-						? [
-								getTasksTool,
-								getTaskTool,
-								getDistinctValuesTool,
-								getUserProfileTool,
-								getUserAccessTool,
-								getAppRuntimeInfoTool,
-								getCurrentUserContextTool,
-								createTaskTool,
-								updateTaskTool,
-								deleteTaskTool,
-								showTasksViewTool,
-								showTaskViewTool,
-							]
-						: [
-								getTasksTool,
-								getTaskTool,
-								getDistinctValuesTool,
-								getUserProfileTool,
-								getUserAccessTool,
-								getAppRuntimeInfoTool,
-								getCurrentUserContextTool,
-								createTaskTool,
-								updateTaskTool,
-								deleteTaskTool,
-								navigateToolDef,
-								invalidateRouterToolDef,
-							]
+				const dataTools = [
+					getTasksTool,
+					getTaskTool,
+					getDistinctValuesTool,
+					getUserProfileTool,
+					getUserAccessTool,
+					getAppRuntimeInfoTool,
+					getCurrentUserContextTool,
+					createTaskTool,
+					updateTaskTool,
+					deleteTaskTool,
+				]
+				const tools = promptConcept === 'agentic' ? dataTools : [...dataTools, navigateToolDef, invalidateRouterToolDef]
+				const taskViews = promptConcept === 'agentic' ? await connectTaskViewsMcp() : undefined
 
 				const stream = chat({
 					adapter,
 					messages: convertMessagesToModelMessages(body.messages ?? []) as Parameters<typeof chat>[0]['messages'],
 					systemPrompts: [systemPrompt],
 					tools,
+					...(taskViews ? { mcp: { clients: [taskViews] } } : {}),
 					agentLoopStrategy: maxIterations(10),
 				})
 

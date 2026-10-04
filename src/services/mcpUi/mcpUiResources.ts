@@ -59,15 +59,3 @@ export function readMcpUiResource(uri: string): Promise<{
 		],
 	})
 }
-
-/** Tool metadata: `_meta.ui.resourceUri` plus the host `resources/read` binding. */
-export function mcpAppToolMetadata(uri: string, toolName: string) {
-	return {
-		_meta: { ui: { resourceUri: uri } },
-		mcp: {
-			uiResourceUri: uri,
-			serverToolName: toolName,
-			readResource: readMcpUiResource,
-		},
-	}
-}

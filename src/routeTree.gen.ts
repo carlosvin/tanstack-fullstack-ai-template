@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TasksIndexRouteImport } from './routes/tasks/index'
 import { Route as TasksNewRouteImport } from './routes/tasks/new'
 import { Route as TasksTaskIdRouteImport } from './routes/tasks/$taskId'
+import { Route as ApiMcpRouteImport } from './routes/api/mcp'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as TasksTaskIdEditRouteImport } from './routes/tasks/$taskId.edit'
@@ -36,6 +37,11 @@ const TasksNewRoute = TasksNewRouteImport.update({
 const TasksTaskIdRoute = TasksTaskIdRouteImport.update({
   id: '/tasks/$taskId',
   path: '/tasks/$taskId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMcpRoute = ApiMcpRouteImport.update({
+  id: '/api/mcp',
+  path: '/api/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/api/chat': typeof ApiChatRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/tasks/$taskId': typeof TasksTaskIdRouteWithChildren
   '/tasks/new': typeof TasksNewRoute
   '/tasks/': typeof TasksIndexRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/chat': typeof ApiChatRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/tasks/$taskId': typeof TasksTaskIdRouteWithChildren
   '/tasks/new': typeof TasksNewRoute
   '/tasks': typeof TasksIndexRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/api/chat': typeof ApiChatRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/tasks/$taskId': typeof TasksTaskIdRouteWithChildren
   '/tasks/new': typeof TasksNewRoute
   '/tasks/': typeof TasksIndexRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/api/chat'
     | '/api/health'
+    | '/api/mcp'
     | '/tasks/$taskId'
     | '/tasks/new'
     | '/tasks/'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/api/chat'
     | '/api/health'
+    | '/api/mcp'
     | '/tasks/$taskId'
     | '/tasks/new'
     | '/tasks'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/'
     | '/api/chat'
     | '/api/health'
+    | '/api/mcp'
     | '/tasks/$taskId'
     | '/tasks/new'
     | '/tasks/'
@@ -127,6 +139,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  ApiMcpRoute: typeof ApiMcpRoute
   TasksTaskIdRoute: typeof TasksTaskIdRouteWithChildren
   TasksNewRoute: typeof TasksNewRoute
   TasksIndexRoute: typeof TasksIndexRoute
@@ -161,6 +174,13 @@ declare module '@tanstack/react-router' {
       path: '/tasks/$taskId'
       fullPath: '/tasks/$taskId'
       preLoaderRoute: typeof TasksTaskIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mcp': {
+      id: '/api/mcp'
+      path: '/api/mcp'
+      fullPath: '/api/mcp'
+      preLoaderRoute: typeof ApiMcpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/health': {
@@ -210,6 +230,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApiChatRoute: ApiChatRoute,
   ApiHealthRoute: ApiHealthRoute,
+  ApiMcpRoute: ApiMcpRoute,
   TasksTaskIdRoute: TasksTaskIdRouteWithChildren,
   TasksNewRoute: TasksNewRoute,
   TasksIndexRoute: TasksIndexRoute,

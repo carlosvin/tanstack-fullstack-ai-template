@@ -19,7 +19,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.4.0"
+  version: "1.4.1"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -97,7 +97,7 @@ coupling into the architecture skill.
 | Unit tests | **Vitest** + Testing Library | jsdom; `renderWithProviders` | AGENTS.md §10 |
 | E2E | **Playwright** | Chromium; seed repo; auth via JWT headers | AGENTS.md §10 |
 | Deploy | **Netlify** | `@netlify/vite-plugin-tanstack-start`; Git deploy previews | AGENTS.md CI/CD; `netlify.toml` |
-| Agentic UI | **MCP Apps** | `@mcp-ui/server` `createUIResource`, host `resources/read`, `@mcp-ui/client` `AppRenderer` (`toolInput` / `toolResult`), required sandbox proxy `public/sandbox_proxy.html` (inner iframe), guest SDK `public/mcp-app.js`. Tool link is `metadata._meta.ui.resourceUri`. | **`agentic-ux`** |
+| Agentic UI | **MCP Apps** | `@tanstack/ai-mcp` `createMCPServer` + `createMCPClient` (`chat({ mcp })`), `@mcp-ui/server` `createUIResource`, `@mcp-ui/client` `AppRenderer` (`toolInput` / `toolResult`), sandbox `public/sandbox_proxy.html`. Tool link is `metadata._meta.ui.resourceUri`. | **`agentic-ux`** |
 | Package manager | **pnpm** | Lockfile committed | AGENTS.md §12 / §15 |
 
 **Fixed (not listed as choices):** TanStack **Start**, **Router**, **AI**, and CLI — owned by the architecture skill.

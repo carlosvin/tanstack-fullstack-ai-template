@@ -803,6 +803,9 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				if (!/createUIResource/.test(skillMd)) missing.push('createUIResource recipe')
 				if (!/AppRenderer/.test(skillMd)) missing.push('AppRenderer recipe')
 				if (!/resources\/read/.test(skillMd)) missing.push('resources/read recipe')
+				if (!/createMCPServer/.test(skillMd) || !/createMCPClient/.test(skillMd)) {
+					missing.push('TanStack MCP registration recipe')
+				}
 				if (!/toolResult/.test(skillMd)) missing.push('toolResult recipe')
 				if (!/sandbox_proxy\.html/.test(skillMd)) missing.push('sandbox proxy recipe')
 				if (!/only inside the MCP UI iframe/.test(skillMd)) missing.push('iframe-only render rule')
@@ -823,12 +826,23 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 					return fail('Parent architecture skill must ask which UX and default to prompt-first')
 				}
 				const tools = await readText(path.join(rootDir, 'src/services/ai/tools.ts'))
+				const mcpServer = await readText(path.join(rootDir, 'src/services/ai/taskViewsMcp.server.ts'))
+				const chatRoute = await readText(path.join(rootDir, 'src/routes/api/chat.ts'))
 				const renderer = await readText(path.join(rootDir, 'src/components/AgenticMcp/AgenticMcpRenderer.tsx'))
 				const resources = await readText(path.join(rootDir, 'src/services/mcpUi/mcpUiResources.ts'))
 				const shell = await readText(path.join(rootDir, 'src/components/AgenticShell/AgenticShell.tsx'))
 				const drift = []
-				if (!/_meta:\s*\{\s*ui:\s*\{\s*resourceUri:/.test(`${tools}\n${resources}`)) {
+				if (!/_meta:\s*\{\s*ui:\s*\{\s*resourceUri:/.test(mcpServer)) {
 					drift.push('view tools must set metadata._meta.ui.resourceUri')
+				}
+				if (!/createMCPServer/.test(mcpServer) || !/resourceDefinition/.test(mcpServer) || !/createMCPClient/.test(mcpServer)) {
+					drift.push('task views must be registered with createMCPServer and createMCPClient')
+				}
+				if (!/connectTaskViewsMcp/.test(chatRoute) || !/mcp:\s*\{\s*clients:/.test(chatRoute)) {
+					drift.push('agentic chat must pass the MCP client to chat({ mcp })')
+				}
+				if (/readResource:/.test(mcpServer) || /readResource:/.test(tools)) {
+					drift.push('view tools must not bind readResource themselves')
 				}
 				if (!/AppRenderer/.test(renderer) || !/sandbox_proxy\.html/.test(renderer) || !/toolResult/.test(renderer)) {
 					drift.push('AgenticMcpRenderer must render AppRenderer through sandbox_proxy.html with toolResult')
@@ -836,11 +850,8 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				if (!/createUIResource/.test(resources) || !/readMcpUiResource/.test(resources)) {
 					drift.push('mcpUiResources must register views with createUIResource and readMcpUiResource')
 				}
-				if (!/readMcpUiResource/.test(tools) && !/mcpAppToolMetadata/.test(tools)) {
-					drift.push('tools.ts must bind resources/read for view tools')
-				}
-				if (/emitMcpUiResource/.test(tools)) {
-					drift.push('tools.ts must not embed the view in the tool handler')
+				if (/emitMcpUiResource|showTasksViewTool/.test(tools)) {
+					drift.push('tools.ts must not register the view tools outside the MCP server')
 				}
 				if (/ChatDrawer|PromptBar|AppNavbar/.test(shell)) {
 					drift.push('AgenticShell must not mount route-based prompt chrome')

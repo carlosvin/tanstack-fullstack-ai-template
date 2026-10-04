@@ -41,6 +41,9 @@ importers:
       '@tanstack/ai-gemini':
         specifier: ^0.34.2
         version: 0.34.2(@modelcontextprotocol/sdk@1.32.0(zod@4.3.6))(@tanstack/ai@0.64.0(@opentelemetry/api@1.9.1)(zod@4.3.6))
+      '@tanstack/ai-mcp':
+        specifier: ^0.7.0
+        version: 0.7.0(@opentelemetry/api@1.9.1)(zod@4.3.6)
       '@tanstack/ai-openai':
         specifier: ^0.26.0
         version: 0.26.0(@tanstack/ai@0.64.0(@opentelemetry/api@1.9.1)(zod@4.3.6))(ws@8.20.0)(zod@4.3.6)
@@ -991,6 +994,14 @@ packages:
   '@mcp-ui/server@6.1.0':
     resolution: {integrity: sha512-uxv9JrzEzHfdGo/V/KTFKp5WeCOsaiAoQZ3V88jw1dSXUofONEw4rMwEvVP3612aj/unS2TIeM0o1I0asfIxtw==}
 
+  '@modelcontextprotocol/client@2.3.0':
+    resolution: {integrity: sha512-pbHtGj6EeFCHngFE8gtNPaKrsj8Mb1IMw45BLcaPML/m2WTxI7pyYmeNQvaux88Lw8BSO5r7nyRbUyIkICmGrg==}
+    engines: {node: '>=20'}
+
+  '@modelcontextprotocol/core@2.3.0':
+    resolution: {integrity: sha512-09BHFaNVBe5pB2AhzCfLj0cqmsKLERvZQ4FblzP90UMGLaXVqdZPByFjURwsUYCmxonUW2yAwgTTvle+8O2/8w==}
+    engines: {node: '>=20'}
+
   '@modelcontextprotocol/ext-apps@0.3.1':
     resolution: {integrity: sha512-Iivz2KwWK8xlRbiWwFB/C4NXqE8VJBoRCbBkJCN98ST2UbQvA6kfyebcLsypiqylJS467XOOaBcI9DeQ3t+zqA==}
     peerDependencies:
@@ -1027,6 +1038,10 @@ packages:
     peerDependenciesMeta:
       '@cfworker/json-schema':
         optional: true
+
+  '@modelcontextprotocol/server@2.3.0':
+    resolution: {integrity: sha512-+6b0LdsQLmHsvS7J6sQJ4weTpzUn61fU1JKS+321/+IyDYoHW5CR2Tgqcs6GgAAQvlesCo6yX3xttgmx+XGtJw==}
+    engines: {node: '>=20'}
 
   '@mongodb-js/saslprep@1.4.6':
     resolution: {integrity: sha512-y+x3H1xBZd38n10NZF/rEBlvDOOMQ6LKUTHqr8R9VkJ+mmQOYtJFxIlkkK8fZrtOiL6VixbOBWMbZGBdal3Z1g==}
@@ -2099,6 +2114,10 @@ packages:
     resolution: {integrity: sha512-AeSaYpxu+og6VKQWTitk0c1QVau+fw8VIbn4kbTWXcXul0obpM70ipIxcqyUdYUzQp+Z85kGY469kkF7Aem35w==}
     peerDependencies:
       '@tanstack/ai': ^0.64.0
+
+  '@tanstack/ai-mcp@0.7.0':
+    resolution: {integrity: sha512-5S27OLi6U4QPkqOu2j84y4AdI436PDXS9FK2YuxS45VxfyBH/SuDwC1CCGEYRsMUuSXroeddj3BduIQwO8yhcQ==}
+    hasBin: true
 
   '@tanstack/ai-openai@0.26.0':
     resolution: {integrity: sha512-PBdaL8SGyIWTMyWCaRkLZaum+9N4wp3Sftm6hl75hHaoJEkDLLNZMtqAH/y1uBPzbhZbaKkYLSnyAne+QgHzJA==}
@@ -4012,6 +4031,9 @@ packages:
   jiti@2.6.1:
     resolution: {integrity: sha512-ekilCSN1jwRvIbgeg/57YFh8qQDNbwDb9xT/qu2DAHbFFZUicIl4ygVaAvzveMhMVr3LnpSKTNnwt8PoOfmKhQ==}
     hasBin: true
+
+  jose@6.2.12:
+    resolution: {integrity: sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw==}
 
   jose@6.2.2:
     resolution: {integrity: sha512-d7kPDd34KO/YnzaDOlikGpOurfF0ByC2sEV4cANCtdqLlTfBlw2p14O/5d/zv40gJPbIQxfES3nSx1/oYNyuZQ==}
@@ -6820,6 +6842,20 @@ snapshots:
       - supports-color
       - zod
 
+  '@modelcontextprotocol/client@2.3.0':
+    dependencies:
+      '@modelcontextprotocol/core': 2.3.0
+      cross-spawn: 7.0.6
+      eventsource: 3.0.7
+      eventsource-parser: 3.1.1
+      jose: 6.2.12
+      pkce-challenge: 5.0.1
+      zod: 4.3.6
+
+  '@modelcontextprotocol/core@2.3.0':
+    dependencies:
+      zod: 4.3.6
+
   '@modelcontextprotocol/ext-apps@0.3.1(@modelcontextprotocol/sdk@1.32.0(zod@4.3.6))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(zod@4.3.6)':
     dependencies:
       '@modelcontextprotocol/sdk': 1.32.0(zod@4.3.6)
@@ -6897,6 +6933,11 @@ snapshots:
       zod-to-json-schema: 3.25.2(zod@4.3.6)
     transitivePeerDependencies:
       - supports-color
+
+  '@modelcontextprotocol/server@2.3.0':
+    dependencies:
+      '@modelcontextprotocol/core': 2.3.0
+      zod: 4.3.6
 
   '@mongodb-js/saslprep@1.4.6':
     dependencies:
@@ -8168,6 +8209,16 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
+
+  '@tanstack/ai-mcp@0.7.0(@opentelemetry/api@1.9.1)(zod@4.3.6)':
+    dependencies:
+      '@modelcontextprotocol/client': 2.3.0
+      '@modelcontextprotocol/server': 2.3.0
+      '@tanstack/ai': 0.64.0(@opentelemetry/api@1.9.1)(zod@4.3.6)
+      jose: 6.2.12
+    transitivePeerDependencies:
+      - '@opentelemetry/api'
+      - zod
 
   '@tanstack/ai-openai@0.26.0(@tanstack/ai@0.64.0(@opentelemetry/api@1.9.1)(zod@4.3.6))(ws@8.20.0)(zod@4.3.6)':
     dependencies:
@@ -10382,6 +10433,8 @@ snapshots:
       '@pkgjs/parseargs': 0.11.0
 
   jiti@2.6.1: {}
+
+  jose@6.2.12: {}
 
   jose@6.2.2: {}
 

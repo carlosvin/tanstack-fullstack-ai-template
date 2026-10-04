@@ -19,7 +19,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "0.2.3"
+  version: "0.2.4"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -97,8 +97,8 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 Follow [TanStack AI MCP Apps](https://tanstack.com/ai/latest/docs/mcp/apps) and the [MCP UI client walkthrough](https://mcpui.dev/guide/client/walkthrough):
 
-- Follow the [MCP Apps pattern](https://github.com/MCP-UI-Org/mcp-ui#mcp-apps-pattern-recommended): register the view with `createUIResource`, link the tool with `metadata._meta.ui.resourceUri`, and return only tool data from `execute`. The HTML does not go in the model-facing tool result.
-- Bind `metadata.mcp.readResource` to that registered document so `chat()` performs `resources/read` and emits a `UIResourcePart`. In-process tools use the same read as an MCP server resource handler.
+- Follow the [MCP Apps pattern](https://github.com/MCP-UI-Org/mcp-ui#mcp-apps-pattern-recommended) and [TanStack AI MCP registration](https://tanstack.com/ai/latest/docs/mcp/apps). Register the view with `resourceDefinition` on `createMCPServer`, link each tool with `metadata._meta.ui.resourceUri`, and return only tool data from `execute`. The HTML does not go in the model-facing tool result.
+- Connect that server with `createMCPClient` and pass it to `chat({ mcp: { clients } })`. Discovery stamps `metadata.mcp.uiResourceUri`. `chat()` binds the client's `resources/read` and emits a `UIResourcePart`. Do not attach `readResource` on the tool definition.
 - Render each `ui-resource` part with `AppRenderer` from `@mcp-ui/client`. Pass the HTML from the read, plus `toolInput` and `toolResult`, so the guest receives `ui/notifications/tool-result`. Pass `useMcpAppBridge` handlers for prompts and links. `sandbox.url` is required: it is the hosted proxy `public/sandbox_proxy.html`, not the widget. The proxy keeps the guest HTML in an inner iframe with no `allow-same-origin`.
 - The guest uses `@modelcontextprotocol/ext-apps` `App` from `public/mcp-app.js`. Set `ontoolresult` before `connect()`, and use `sendMessage` and `openLink`. Do not post `{ type: 'prompt' | 'link' | 'notify' | 'tool' | 'intent' }`. `UIResourceRenderer` is out of scope.
 - A separate MCP server plus `createMcpAppCallHandler` is the path when a widget calls tools itself. This shell's views send a follow-up prompt, and `POST /api/mcp-apps/call` refuses direct widget tool calls, so writes stay on the chat tools and the auth ticket.
@@ -107,7 +107,7 @@ Follow [TanStack AI MCP Apps](https://tanstack.com/ai/latest/docs/mcp/apps) and 
 
 Generate views with this recipe. The reference example (`showTasksView`, `showTaskView`, `AgenticMcpRenderer`) is that recipe:
 
-- `toolDefinition` sets `metadata._meta.ui.resourceUri` to an allowlisted `ui://` URI and `metadata.mcp.readResource` so the host reads that URI.
+- `toolDefinition` sets `metadata._meta.ui.resourceUri` to an allowlisted `ui://` URI. `createMCPServer` registers that tool and a `resourceDefinition` for the same URI. `chat({ mcp })` reads it.
 - Load the view document from a file (`task-view.html`) and the guest script (`public/mcp-task-view.js`). `createUIResource` wraps that static document once. Do not embed repository rows in the HTML. The guest writes tool-result text with `textContent`. Bound field length, and refuse a document over the size cap.
 - The host renders that HTML only through `AppRenderer` and `sandbox_proxy.html`. The proxy does not replace its own document with the guest HTML. Show an error state whose retry re-requests the same view, and keep the markdown answer when the resource fails.
 - A capability that returns a UI resource does not also get a hand-built page.
