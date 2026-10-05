@@ -1,6 +1,14 @@
 import { UnstyledButton } from '@mantine/core'
+import type { ReactNode } from 'react'
 import { isInternalPath, toInternalRouterLinkTarget } from '../../utils/internalLinks'
 import { MarkdownLink } from '../PromptChat/MarkdownLink'
+
+function hasVisibleLabel(children: ReactNode): boolean {
+	if (children == null || children === false) return false
+	if (typeof children === 'string' || typeof children === 'number') return String(children).trim().length > 0
+	if (Array.isArray(children)) return children.some(hasVisibleLabel)
+	return true
+}
 
 function internalHrefToPrompt(href: string): string | null {
 	const target = toInternalRouterLinkTarget(href)
@@ -32,7 +40,7 @@ export function AgenticPromptMarkdownLink({
 				onClick={() => onPrompt(prompt)}
 				style={{ color: 'inherit', textDecoration: 'underline', font: 'inherit', padding: 0 }}
 			>
-				{children}
+				{hasVisibleLabel(children) ? children : prompt}
 			</UnstyledButton>
 		)
 	}
