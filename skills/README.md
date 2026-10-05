@@ -7,7 +7,7 @@ This repo ships **[Agent Skills](https://agentskills.io)** — one `SKILL.md` pe
 - **`reference-tech-stack`** — **opinionated defaults** for *this* template: Zod, Mantine, lucide-react, MongoDB + seed, jose JWT, OpenAI adapter, pino + Sentry, react-markdown, Biome, Vitest, Playwright, Netlify.
 - **`repository-architecture`** — **language-agnostic repository architecture**: injected collection owners, indexes, stale-data cleanup, and resource lifetime (TypeScript `AsyncDisposable`, Java `AutoCloseable`, Python context-manager magic methods).
 - **`promptable-ux`** — **shared prompt UX**: mobile first, assistant markdown, and two concepts that differ only in prompt placement. **Promptable UI (side)** hides the prompt in a side or bottom panel (this reference app). **Prompt-first** keeps the prompt on screen and drills from an overview down the page.
-- **`agentic-ux`** — **fully agentic UX**: a thin prompt shell with no domain screens. Every view beyond text is a TanStack MCP server tool (`createMCPServer` / `chat({ mcp })`) rendered by `AppRenderer` inside the inner iframe in `public/sandbox_proxy.html`.
+- **`agentic-ux`** — **fully agentic UX**: a thin prompt shell with no domain screens. Every view beyond text is a TanStack MCP server tool (`createMCPServer` / `chat({ mcp })`) rendered by `AppRenderer` inside the inner iframe in `public/sandbox_proxy.html`. The shell hero asks for views, list answers stay one sentence, a demo visitor is not an assignee filter, and a card that names one item opens that detail view directly.
 
 Operational how-to (file paths, snippets, validation commands) still lives in **[AGENTS.md](../AGENTS.md)**.
 

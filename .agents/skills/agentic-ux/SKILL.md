@@ -19,7 +19,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "0.2.6"
+  version: "0.2.7"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -51,7 +51,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 # Agentic UX
 
-**Purpose:** One UX contract for fully agentic apps. The product is a thin shell — a prompt and a response surface. The agent receives the full tool set. Views appear only as [MCP UI](https://github.com/MCP-UI-Org/mcp-ui) resources returned by those tools and rendered in a sandboxed iframe. No hand-built domain screens.
+**Purpose:** One UX contract for fully agentic apps. The product is a thin shell — a prompt and a response surface. The agent receives the full tool set. Views are [MCP UI](https://github.com/MCP-UI-Org/mcp-ui) resources rendered in a sandboxed iframe. A tool call returns one. A prompt that already names one item id opens that same registered document directly. No hand-built domain screens.
 
 > **Parent skill:** `tanstack-promptable-fullstack-app-template` — schemas, tools, loaders, URL-as-state, `getAIAvailability()`, bounded `chat()`. Do not restate that contract here.
 >
@@ -77,12 +77,23 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 ## Shell
 
-- One root layout per deployment. Conversation state lives there so scrolling never wipes the thread. Layout: app bar with identity only, conversation stage as the main surface, bottom-pinned composer (footer) that stays reachable regardless of thread length.
-- When empty, the stage renders a clean hero state with welcome text and suggested starter chips. As the conversation progresses it shows the scrollable thread. Response order within the thread: markdown text, tool status, then the tool-linked UI resource. Text-only results stay markdown with GFM tables, code, and links.
-- Prompt behavior: Enter sends, Shift+Enter inserts a newline, stop while generating, clear once messages exist. Tool activity shows as short status labels in sentence case, not the raw tool name. Errors show in an alert with a short message, never a provider payload. Starter chips on this shell ask for inline views. Do not reuse `docs/help.md` bullets that point at dashboards or routes.
+- One root layout per deployment. Conversation state lives there so scrolling never wipes the thread. Layout: app bar with identity only (name in the bar; version in a tooltip), a centered conversation column, and a bottom-pinned composer that stays reachable regardless of thread length.
+- When empty, the stage is a centered hero: icon, welcome text, and starter controls that ask for inline views (`Show my tasks`, a status filter, a priority filter). Do not reuse `docs/help.md` bullets that point at dashboards or routes.
+- As the conversation progresses, the stage is the scrollable thread. Order inside one reply: one short markdown sentence, a sentence-case tool status (`showing tasks`, not the raw tool name), then the tool-linked UI resource. Text-only replies stay markdown with GFM tables, code, and links.
+- Prompt behavior: Enter sends, Shift+Enter inserts a newline, stop while generating, clear once messages exist. Clearing the thread also clears a detail view opened from a card.
+- Errors render in an alert with a short sentence a person can act on. Never show a provider payload, a JSON blob, or an HTTP status dump. A busy model says to wait and try again.
 - This matches the prompt-first bottom-composer shape from `promptable-ux` (see `AppShell.Footer`, `ChatThread`, `ChatComposer`) but without its route surfaces: no `AppNavbar`, no drill-down routes, no stacked dashboard, no navigation manifest. The composer and thread patterns transfer; the route surfaces do not.
 - Mobile first (default): usable at the narrowest width with the composer pinned and responses scrolling, then richer spacing as the viewport grows. Both color schemes work with theme tokens. Keep one icon library.
 - Unconfigured AI: `getAIAvailability()` gates the prompt and there is no domain UI behind it, so render an empty configuration state explaining that AI is not configured. No disabled prompt.
+
+## Answers
+
+The system prompt for this shell must say these rules. The view tool enforces the assignee rule even when the model ignores the prompt.
+
+- Greetings and "what can you do" stay text. Do not open a view for them.
+- "My tasks" means every task. Set `assignee` only when the user names a person. A demo visitor email (the auto-generated test identity) is not an assignee. The list tool drops that email before it queries, so the view is not an empty list with a "you have no tasks" sentence.
+- After a view tool, write one short sentence. Do not repeat titles, statuses, priorities, or emails. The inline view shows them. Trust the tool result: if it contains rows, do not say the list is empty.
+- Do not write markdown links. This shell has no pages. A route link in assistant markdown becomes a follow-up prompt. If that link has no label, the prompt text is the label, so the thread never shows a bare colon.
 
 ## Tool surface
 
@@ -109,6 +120,7 @@ Generate views with this recipe. The reference example (`showTasksView`, `showTa
 
 - `toolDefinition` sets `metadata._meta.ui.resourceUri` to an allowlisted `ui://` URI. `createMCPServer` registers that tool and a `resourceDefinition` for the same URI. `chat({ mcp })` reads it.
 - Load the view document from a file (`task-view.html`) and the guest script (`public/mcp-task-view.js`). `createUIResource` wraps that static document once. Do not embed repository rows in the HTML. The guest writes tool-result text with `textContent`. Bound field length, and refuse a document over the size cap.
+- The guest paints people-facing fields only. No raw ids. Status and priority are distinct. A list row is one control for the whole card, not a separate "Open" button. An empty result says no rows match and suggests dropping the filter. Both color schemes use the guest's own tokens.
 - The host renders that HTML only through `AppRenderer` and `sandbox_proxy.html`. The proxy does not replace its own document with the guest HTML. Show an error state whose retry re-requests the same view, and keep the markdown answer when the resource fails.
 - A capability that returns a UI resource does not also get a hand-built page.
 
@@ -116,7 +128,7 @@ Generate views with this recipe. The reference example (`showTasksView`, `showTa
 
 The guest `App` talks to the bridge. Map actions to a prompt. Never to an in-app route.
 
-- **prompt** — `app.sendMessage` becomes the next user message through `useMcpAppBridge`. A prompt that already names one task id opens that detail view directly, so the click does not wait on the model to call the tool again.
+- **prompt** — `app.sendMessage` becomes the next user message through `useMcpAppBridge`, except when the prompt already names one item id. That click opens the registered detail view in the host: read the item, pass it as `toolResult` with the same view document, and do not send another model turn. The model was repeating the other rows instead of opening the one that was named. The user line shows the item title, not the id. "Back to the list" is an ordinary prompt.
 - **link** — `app.openLink`. The bridge allows only `http:`, `https:`, and `mailto:`.
 - **tool** — these views do not call tools from the iframe. The call endpoint refuses a direct widget tool call.
 
@@ -134,7 +146,9 @@ The guest `App` talks to the bridge. Map actions to a prompt. Never to an in-app
 - `getAIAvailability()` gates the prompt. Unconfigured AI shows the empty configuration state.
 - Chat state lives on the layout and survives scrolling. Prompt stays pinned on narrow viewports.
 - Resources render sandboxed with loading, error, and markdown-fallback states.
-- UI actions map to tools or prompts only. No in-app navigation.
+- Empty hero uses view starters, not route help bullets. Tool status is sentence case. Errors are short alerts, never a provider payload.
+- A list answer is one sentence plus the view. A demo visitor email is not an assignee filter. A card that names one id opens that detail view without another model turn.
+- UI actions map to tools or prompts only. No in-app navigation. Route links in markdown become prompts, and an empty link label uses that prompt text.
 - Narrow layout and both color schemes checked.
 - Writes stay server-guarded with the auth ticket and `TraceabilityContext`.
 
