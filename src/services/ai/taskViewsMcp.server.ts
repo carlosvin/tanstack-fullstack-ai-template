@@ -59,7 +59,7 @@ const showTaskViewTool = createSafeServerTool(
 	toolDefinition({
 		name: 'showTaskView',
 		description:
-			'Show a single task as an interactive UI. Prefer this over getTask when the user needs to see a task. Returns the task. The linked MCP UI resource renders it.',
+			'Show one task in the detail view. Call this when the user opens or names a single task. Pass taskId. Returns the task. Do not list other tasks instead.',
 		inputSchema: TaskIdInputSchema,
 		metadata: { _meta: { ui: { resourceUri: TASK_DETAIL_UI_URI } } },
 	}),

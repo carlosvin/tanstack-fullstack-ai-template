@@ -63,7 +63,8 @@ function listCard(task) {
 	const box = document.createElement('button')
 	box.type = 'button'
 	box.className = 'card'
-	if (id) box.dataset.prompt = `Show task ${id}: ${plain(task?.title, 80) || 'this task'}`
+	const title = plain(task?.title, 80) || 'this task'
+	if (id) box.dataset.prompt = `Open the detail view for ${title}. The task id is ${id}.`
 	box.append(titleEl(task))
 	const description = descriptionEl(task, 140)
 	if (description) box.append(description)

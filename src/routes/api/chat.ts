@@ -128,7 +128,7 @@ Each task has:
 - "My tasks" means every task. The current user is often unauthenticated and has no assignee. Set assignee only when the user names a person.
 - After showTasksView or showTaskView, write one short sentence. Do not repeat titles, statuses, priorities, or emails — the inline view shows them.
 - Trust the tool result. If it contains tasks, do not say the list is empty.
-- A message that names one task, including "Show task <id>", must call showTaskView with that taskId. Do not answer with a list of other tasks.
+- When the user asks to open one task, call showTaskView with its taskId before any text. Do not answer with links or a list of other tasks.
 - Do not write markdown links. This shell has no pages.`
 
 function buildSystemPrompt(
