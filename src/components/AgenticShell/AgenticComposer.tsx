@@ -1,5 +1,6 @@
-import { ActionIcon, Group, Stack, Text, Textarea, Tooltip } from '@mantine/core'
+import { ActionIcon, Alert, Group, Stack, Textarea, Tooltip } from '@mantine/core'
 import { Send, Square, Trash2 } from 'lucide-react'
+import { friendlyChatError } from '../../utils/chatError'
 import { useAgenticChat } from '../AgenticChat/AgenticChatContext'
 
 /** Bottom-pinned composer for the agentic shell: Enter sends, Shift+Enter newline. */
@@ -16,9 +17,9 @@ export function AgenticComposer() {
 	return (
 		<Stack gap="xs" w="100%">
 			{error ? (
-				<Text size="sm" c="red" role="alert">
-					{error.message}
-				</Text>
+				<Alert color="red" variant="light" p="xs" role="alert">
+					{friendlyChatError(error)}
+				</Alert>
 			) : null}
 			<Group gap="xs" align="flex-end" wrap="nowrap">
 				{messages.length > 0 && (

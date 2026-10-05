@@ -49,15 +49,14 @@ export function AgenticShell({ appMeta, aiAvailable }: AgenticShellProps) {
 		>
 			<AppShell.Header>
 				<Group h="100%" px="md" justify="space-between" wrap="nowrap">
-					<Group gap="xs" wrap="nowrap" miw={0}>
-						<Sparkles size={20} />
-						<Text fw={700} size="lg" truncate>
-							{appMeta.name}
-						</Text>
-						<Text size="xs" c="dimmed">
-							v{appMeta.version}
-						</Text>
-					</Group>
+					<Tooltip label={`${appMeta.name} v${appMeta.version}`}>
+						<Group gap="xs" wrap="nowrap" miw={0}>
+							<Sparkles size={20} />
+							<Text fw={700} size="lg" truncate>
+								{appMeta.name}
+							</Text>
+						</Group>
+					</Tooltip>
 					<Tooltip label={`Switch to ${colorScheme === 'dark' ? 'light' : 'dark'} mode`}>
 						<ActionIcon type="button" variant="subtle" onClick={toggleColorScheme} size="lg">
 							{colorScheme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}

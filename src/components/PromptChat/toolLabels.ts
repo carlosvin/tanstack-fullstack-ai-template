@@ -11,6 +11,8 @@ export function getToolLabel(toolName: string): string {
 		createTask: 'creating task',
 		updateTask: 'updating task',
 		deleteTask: 'deleting task',
+		showTasksView: 'showing tasks',
+		showTaskView: 'showing a task',
 	}
 	return labels[toolName] ?? toolName
 }

@@ -19,7 +19,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "0.2.4"
+  version: "0.2.5"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -79,7 +79,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 - One root layout per deployment. Conversation state lives there so scrolling never wipes the thread. Layout: app bar with identity only, conversation stage as the main surface, bottom-pinned composer (footer) that stays reachable regardless of thread length.
 - When empty, the stage renders a clean hero state with welcome text and suggested starter chips. As the conversation progresses it shows the scrollable thread. Response order within the thread: markdown text, tool status, then the tool-linked UI resource. Text-only results stay markdown with GFM tables, code, and links.
-- Prompt behavior: Enter sends, Shift+Enter inserts a newline, stop while generating, clear once messages exist. Tool activity shows as short status labels. Errors show in an alert. Suggested prompts may come from the single help document (`docs/help.md`).
+- Prompt behavior: Enter sends, Shift+Enter inserts a newline, stop while generating, clear once messages exist. Tool activity shows as short status labels in sentence case, not the raw tool name. Errors show in an alert with a short message, never a provider payload. Starter chips on this shell ask for inline views. Do not reuse `docs/help.md` bullets that point at dashboards or routes.
 - This matches the prompt-first bottom-composer shape from `promptable-ux` (see `AppShell.Footer`, `ChatThread`, `ChatComposer`) but without its route surfaces: no `AppNavbar`, no drill-down routes, no stacked dashboard, no navigation manifest. The composer and thread patterns transfer; the route surfaces do not.
 - Mobile first (default): usable at the narrowest width with the composer pinned and responses scrolling, then richer spacing as the viewport grows. Both color schemes work with theme tokens. Keep one icon library.
 - Unconfigured AI: `getAIAvailability()` gates the prompt and there is no domain UI behind it, so render an empty configuration state explaining that AI is not configured. No disabled prompt.

@@ -25,7 +25,9 @@ function renderShell(aiAvailable: boolean) {
 describe('AgenticShell', () => {
 	it('renders the conversation stage and pinned composer with no nav or drawer', () => {
 		renderShell(true)
-		expect(screen.getByText('What do you want to get done?')).toBeTruthy()
+		expect(screen.getByText('What should we look at?')).toBeTruthy()
+		expect(screen.getByRole('button', { name: 'Show my tasks' })).toBeTruthy()
+		expect(screen.queryByRole('button', { name: 'Summarize my task overview' })).toBeNull()
 		expect(screen.getByRole('button', { name: 'Send' })).toBeTruthy()
 		expect(screen.queryByRole('button', { name: 'Toggle navigation' })).toBeNull()
 		expect(screen.queryByRole('button', { name: 'Open AI chat' })).toBeNull()

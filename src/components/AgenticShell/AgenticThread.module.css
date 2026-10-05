@@ -1,0 +1,35 @@
+.content {
+	min-height: 100%;
+	display: flex;
+	flex-direction: column;
+}
+
+.empty {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 100%;
+}
+
+.starter {
+	width: 100%;
+	margin: 0;
+	padding: var(--mantine-spacing-md);
+	text-align: left;
+	font: inherit;
+	color: inherit;
+	cursor: pointer;
+	background: var(--mantine-color-default);
+	border: 1px solid var(--mantine-color-default-border);
+	border-radius: var(--mantine-radius-md);
+}
+
+.starter:hover {
+	background: var(--mantine-color-default-hover);
+}
+
+.starter:focus-visible {
+	outline: 2px solid var(--mantine-primary-color-filled);
+	outline-offset: 2px;
+}

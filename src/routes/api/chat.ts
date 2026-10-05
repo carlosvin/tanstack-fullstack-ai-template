@@ -119,12 +119,15 @@ Each task has:
 - You can **createTask**, **updateTask**, and **deleteTask**. If the user is not allowed, the tool returns an error with a \`code\`: 401 (not logged in), 403 (only the task creator can edit/delete), or 404 (task not found). When you get 401, tell the user they need to log in to perform that action. When you get 403, tell them only the task creator can edit or delete that task.
 
 ## Guidelines
-- Use the getTasks tool with filters when the user asks about tasks matching criteria without needing a visual list.
-- Use the getTask tool when the user asks about a specific task without needing the detail view.
 - Use getDistinctValues to discover real filter options (e.g. assignees), and getUserProfile to resolve display names and roles from emails.
 - Format responses clearly using markdown. Do not use markdown links to in-app paths.
-- When listing tasks in prose, include their status and priority.
-- Be concise but thorough.`
+- Be concise but thorough.
+
+## Answers
+- Greetings and questions about what you can do stay as text. Do not call showTasksView or showTaskView for them.
+- "My tasks" means every task. The current user is often unauthenticated and has no assignee. Set assignee only when the user names a person.
+- After showTasksView or showTaskView, write one short sentence. Do not repeat titles, statuses, priorities, or emails — the inline view shows them.
+- Trust the tool result. If it contains tasks, do not say the list is empty.`
 
 function buildSystemPrompt(
 	user: UserIdentity,

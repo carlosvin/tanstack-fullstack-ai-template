@@ -30,6 +30,7 @@ export function MessageBubble({
 	}
 
 	const textContent = textParts.join('')
+	if (!isUser && !textContent && toolCallNames.length === 0) return null
 
 	return (
 		<div className={isUser ? styles.userMessage : styles.assistantMessage}>
@@ -41,7 +42,7 @@ export function MessageBubble({
 			{toolCallNames.length > 0 && (
 				<Group gap={4} mb={4}>
 					{toolCallNames.map((name, i) => (
-						<Badge key={`${message.id}-${name}-${String(i)}`} size="xs" variant="light">
+						<Badge key={`${message.id}-${name}-${String(i)}`} size="xs" variant="light" tt="none">
 							{getToolLabel(name)}
 						</Badge>
 					))}
