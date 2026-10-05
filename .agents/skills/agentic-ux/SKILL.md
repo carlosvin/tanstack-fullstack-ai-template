@@ -19,7 +19,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "0.2.5"
+  version: "0.2.6"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -116,7 +116,7 @@ Generate views with this recipe. The reference example (`showTasksView`, `showTa
 
 The guest `App` talks to the bridge. Map actions to a prompt. Never to an in-app route.
 
-- **prompt** — `app.sendMessage` becomes the next user message through `useMcpAppBridge`.
+- **prompt** — `app.sendMessage` becomes the next user message through `useMcpAppBridge`. A prompt that already names one task id opens that detail view directly, so the click does not wait on the model to call the tool again.
 - **link** — `app.openLink`. The bridge allows only `http:`, `https:`, and `mailto:`.
 - **tool** — these views do not call tools from the iframe. The call endpoint refuses a direct widget tool call.
 

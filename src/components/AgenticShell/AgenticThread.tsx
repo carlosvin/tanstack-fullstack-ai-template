@@ -2,8 +2,10 @@ import { Container, Group, Loader, ScrollArea, SimpleGrid, Stack, Text, ThemeIco
 import type { ToolResultPart, UIResourcePart } from '@tanstack/ai'
 import type { UIMessage } from '@tanstack/ai-react'
 import { Bot } from 'lucide-react'
-import { useEffect, useRef } from 'react'
-import { TASK_DETAIL_UI_URI, TASKS_LIST_UI_URI } from '../../services/mcpUi/mcpUiResource'
+import { useEffect, useRef, useState } from 'react'
+import { getTask } from '../../services/api/serverFns'
+import { MCP_APP_MIME_TYPE, TASK_DETAIL_UI_URI, TASKS_LIST_UI_URI } from '../../services/mcpUi/mcpUiResource'
+import taskViewHtml from '../../services/mcpUi/views/task-view.html?raw'
 import { useAgenticChat } from '../AgenticChat/AgenticChatContext'
 import { AgenticMcpRenderer } from '../AgenticMcp/AgenticMcpRenderer'
 import { MessageBubble } from '../PromptChat/MessageBubble'
@@ -11,6 +13,15 @@ import { AgenticPromptMarkdownLink } from './AgenticPromptMarkdownLink'
 import styles from './AgenticThread.module.css'
 
 const AGENTIC_STARTERS = ['Show my tasks', 'Show pending tasks', 'Show high priority tasks']
+
+const DETAIL_PROMPT = /^Open the detail view for (.+)\. The task id is ([^\s.]+)\.$/
+
+interface OpenedDetail {
+	id: string
+	title: string
+	taskId: string
+	resultText: string
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -66,7 +77,28 @@ function retryPrompt(uri: string, toolInput: Record<string, unknown> | undefined
  */
 export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number }) {
 	const { messages, isLoading, sendMessage } = useAgenticChat()
+	const [opened, setOpened] = useState<OpenedDetail[]>([])
 	const viewportRef = useRef<HTMLDivElement>(null)
+
+	function handlePrompt(text: string) {
+		const match = DETAIL_PROMPT.exec(text)
+		if (!match?.[2]) {
+			sendMessage(text)
+			return
+		}
+		const title = match[1] || 'Task'
+		const taskId = match[2]
+		const id = crypto.randomUUID()
+		setOpened((prev) => [...prev, { id, title, taskId, resultText: '' }])
+		void getTask({ data: { taskId } }).then((task) => {
+			const resultText = JSON.stringify(task ? { task } : { error: 'Task not found.', code: 404 })
+			setOpened((prev) => prev.map((item) => (item.id === id ? { ...item, resultText } : item)))
+		})
+	}
+
+	useEffect(() => {
+		if (messages.length === 0) setOpened([])
+	}, [messages.length])
 
 	useEffect(() => {
 		const el = viewportRef.current
@@ -96,7 +128,7 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 							</Stack>
 							<SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm" w="100%">
 								{AGENTIC_STARTERS.map((prompt) => (
-									<button key={prompt} type="button" className={styles.starter} onClick={() => sendMessage(prompt)}>
+									<button key={prompt} type="button" className={styles.starter} onClick={() => handlePrompt(prompt)}>
 										<Text component="span" size="sm" fw={500}>
 											{prompt}
 										</Text>
@@ -111,7 +143,7 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 							<Stack key={msg.id} gap="sm">
 								<MessageBubble
 									message={msg}
-									markdownLinkComponent={(props) => <AgenticPromptMarkdownLink {...props} onPrompt={sendMessage} />}
+									markdownLinkComponent={(props) => <AgenticPromptMarkdownLink {...props} onPrompt={handlePrompt} />}
 								/>
 								{resources.map((part) => {
 									const context = toolContext(msg, part.toolCallId)
@@ -122,11 +154,48 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 											toolInput={context.toolInput}
 											toolResultText={context.resultText}
 											toolFailed={context.toolFailed}
-											onPrompt={sendMessage}
-											onRetry={() => sendMessage(retryPrompt(part.resource.uri, context.toolInput))}
+											onPrompt={handlePrompt}
+											onRetry={() => handlePrompt(retryPrompt(part.resource.uri, context.toolInput))}
 										/>
 									)
 								})}
+							</Stack>
+						)
+					})}
+					{opened.map((item) => {
+						const userMessage: UIMessage = {
+							id: item.id,
+							role: 'user',
+							parts: [{ type: 'text', content: item.title }],
+						}
+						const part: UIResourcePart = {
+							type: 'ui-resource',
+							toolCallId: item.id,
+							toolName: 'showTaskView',
+							serverId: 'task-views',
+							resource: { uri: TASK_DETAIL_UI_URI, mimeType: MCP_APP_MIME_TYPE, text: taskViewHtml },
+						}
+						return (
+							<Stack key={item.id} gap="sm">
+								<MessageBubble message={userMessage} />
+								{item.resultText ? (
+									<AgenticMcpRenderer
+										part={part}
+										toolInput={{ taskId: item.taskId }}
+										toolResultText={item.resultText}
+										onPrompt={handlePrompt}
+										onRetry={() =>
+											handlePrompt(`Open the detail view for ${item.title}. The task id is ${item.taskId}.`)
+										}
+									/>
+								) : (
+									<Group gap="xs">
+										<Loader size="xs" />
+										<Text size="xs" c="dimmed">
+											Opening {item.title}
+										</Text>
+									</Group>
+								)}
 							</Stack>
 						)
 					})}
