@@ -10,11 +10,19 @@
 import { toolDefinition } from '@tanstack/ai'
 import { createMCPClient } from '@tanstack/ai-mcp'
 import { createMCPServer, resourceDefinition } from '@tanstack/ai-mcp/server'
+import { isDemoTestEmail } from '../../utils/testAuth.server'
 import { getTask, getTasks } from '../api/serverFns'
 import { MCP_APP_MIME_TYPE, TASK_DETAIL_UI_URI, TASKS_LIST_UI_URI } from '../mcpUi/mcpUiResource'
 import { readMcpUiResource } from '../mcpUi/mcpUiResources'
-import { TaskFilterSchema, TaskIdInputSchema } from '../schemas/schemas'
+import { type TaskFilter, TaskFilterSchema, TaskIdInputSchema } from '../schemas/schemas'
 import { createSafeServerTool } from './serverTool'
+
+/** Demo visitors are not assignees. Drop that filter so "my tasks" shows the list. */
+export function withoutDemoAssignee(filter: TaskFilter): TaskFilter {
+	if (!filter.assignee || !isDemoTestEmail(filter.assignee)) return filter
+	const { assignee: _assignee, ...rest } = filter
+	return rest
+}
 
 const TASK_VIEWS_MCP_URL = 'http://task-views.local/mcp'
 
@@ -42,7 +50,7 @@ const showTasksViewTool = createSafeServerTool(
 		metadata: { _meta: { ui: { resourceUri: TASKS_LIST_UI_URI } } },
 	}),
 	async (args) => {
-		const tasks = await getTasks({ data: args })
+		const tasks = await getTasks({ data: withoutDemoAssignee(args) })
 		return { tasks }
 	},
 )

@@ -156,7 +156,8 @@ function buildSystemPrompt(
 - Name: ${displayName}
 - Email: ${user.email || 'not authenticated'}
 - Role: ${role}
-- Test user: ${isTestUser ? 'yes (auto-generated demo identity)' : 'no'}`)
+- Test user: ${isTestUser ? 'yes (auto-generated demo identity)' : 'no'}
+- Never pass this email as an assignee filter. A demo visitor is not assigned tasks. "My tasks" means every task.`)
 
 	if (browserContext) {
 		const formattedDate = new Date(browserContext.currentTime).toLocaleString(browserContext.locale, {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { TASK_DETAIL_UI_URI, TASKS_LIST_UI_URI } from '../mcpUi/mcpUiResource'
-import { connectTaskViewsMcp } from './taskViewsMcp.server'
+import { connectTaskViewsMcp, withoutDemoAssignee } from './taskViewsMcp.server'
 
 describe('task views MCP server', () => {
 	it('discovers view tools with a ui resource URI and reads the document', async () => {
@@ -30,5 +30,12 @@ describe('task views MCP server', () => {
 		} finally {
 			await client.close()
 		}
+	})
+
+	it('drops a demo visitor email from the task list filter', () => {
+		expect(withoutDemoAssignee({ assignee: 'random3a8cba9a@example.com', status: 'pending' })).toEqual({
+			status: 'pending',
+		})
+		expect(withoutDemoAssignee({ assignee: 'alice@example.com' })).toEqual({ assignee: 'alice@example.com' })
 	})
 })
