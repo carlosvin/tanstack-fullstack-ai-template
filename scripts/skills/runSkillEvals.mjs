@@ -113,6 +113,64 @@ function pass() {
 	return { pass: true }
 }
 
+const UX_SILENT_DEFAULTS = [
+	[/If the user does not choose, use \*\*prompt-first\*\*/, 'defaults to prompt-first when the user does not choose'],
+	[/prompt-first\*\* \(default\)/, 'marks prompt-first as the default answer'],
+	[/When the preference is unclear, use/, 'picks an experience when the preference is unclear'],
+	[/if they do not choose, use \*\*prompt-first\*\*/i, 'defaults to prompt-first when they do not choose'],
+]
+
+/**
+ * Violations of the "ask which UX and wait" contract.
+ * @param {{ architecture: string, promptable: string, agentic: string }} skills
+ * @returns {string[]}
+ */
+export function uxChoiceViolations({ architecture, promptable, agentic }) {
+	const violations = []
+	const choose = architecture.split('## Choose a UX')[1]?.split('\n## ')[0] ?? ''
+	if (!choose) {
+		violations.push('Architecture skill must include Choose a UX')
+	} else {
+		const rows = choose.split('\n').filter((line) => line.startsWith('|'))
+		const expectRow = (experience, skillId) => {
+			const row = rows.find((line) => line.includes(`**${experience}**`))
+			if (!row?.includes(`**\`${skillId}\`**`)) {
+				violations.push(`Choose a UX must send ${experience} to ${skillId}`)
+			}
+		}
+		expectRow('side', 'promptable-ux')
+		expectRow('prompt-first', 'promptable-ux')
+		expectRow('agentic', 'agentic-ux')
+		if (!/keep that declaration/.test(choose)) {
+			violations.push('Choose a UX must keep an already declared PROMPT_CONCEPT')
+		}
+		if (!/ask which of the three[\s\S]{0,160}wait/.test(choose) || !/Do not pick one/.test(choose)) {
+			violations.push('Choose a UX must ask which of the three and wait, and must not pick one')
+		}
+	}
+
+	const texts = [
+		['Architecture skill', architecture],
+		['promptable-ux', promptable],
+		['agentic-ux', agentic],
+	]
+	for (const [name, text] of texts) {
+		for (const [pattern, reason] of UX_SILENT_DEFAULTS) {
+			if (pattern.test(text)) violations.push(`${name} ${reason}`)
+		}
+		if (!/not clear which user experience/.test(text) || !/ask which of the three[\s\S]{0,160}wait/.test(text)) {
+			violations.push(`${name} must ask which of the three and wait when it is not clear`)
+		}
+	}
+	if (!/Do not pick one/.test(promptable)) {
+		violations.push('promptable-ux must not pick one when it is not clear')
+	}
+	if (!/Do not build this shell as a fallback/.test(agentic)) {
+		violations.push('agentic-ux must not build the shell as a fallback')
+	}
+	return violations
+}
+
 export function createSkillEvals(rootDir = defaultRootDir) {
 	return [
 		{
@@ -783,6 +841,30 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 			},
 		},
 		{
+			id: 'choose-ux-asks-when-unclear',
+			skill: 'tanstack-promptable-fullstack-app-template',
+			description:
+				'When the user experience is not clear, the architecture skill and both UX companions ask which of side, prompt-first, or agentic to implement and wait',
+			async run() {
+				const { agentSkillsDir } = getSkillPaths(rootDir)
+				const readSkill = async (id) => readText(path.join(agentSkillsDir, id, 'SKILL.md'))
+				let architecture
+				let promptable
+				let agentic
+				try {
+					architecture = await readSkill('tanstack-promptable-fullstack-app-template')
+					promptable = await readSkill('promptable-ux')
+					agentic = await readSkill('agentic-ux')
+				} catch {
+					return fail('Choose a UX eval requires the architecture, promptable-ux, and agentic-ux skills')
+				}
+				const violations = uxChoiceViolations({ architecture, promptable, agentic })
+				return violations.length === 0
+					? pass()
+					: fail('UX skills must ask which experience to implement when it is not clear', violations)
+			},
+		},
+		{
 			id: 'agentic-ux-shell-contract',
 			skill: 'agentic-ux',
 			description:
@@ -833,18 +915,6 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				)
 				if (!/\*\*`agentic-ux`\*\*\s*\(companion\)/.test(templateSkill)) {
 					return fail('Parent architecture skill must list agentic-ux as a companion')
-				}
-				if (!/## Choose a UX/.test(templateSkill)) {
-					return fail('Parent architecture skill must include Choose a UX')
-				}
-				if (!/not clear which user experience/.test(templateSkill) || !/ask which of the three/.test(templateSkill)) {
-					return fail('Parent architecture skill must ask which UX when it is not clear')
-				}
-				if (
-					/If the user does not choose, use \*\*prompt-first\*\*/.test(templateSkill) ||
-					/prompt-first\*\* \(default\)/.test(templateSkill)
-				) {
-					return fail('Parent architecture skill must not default the UX when the choice is missing')
 				}
 				const tools = await readText(path.join(rootDir, 'src/services/ai/tools.ts'))
 				const mcpServer = await readText(path.join(rootDir, 'src/services/ai/taskViewsMcp.server.ts'))

@@ -50,7 +50,7 @@ CI runs this in `.github/workflows/skills.yml` with a pinned `waza` binary. Conf
 - `importProtection` in `vite.config.ts`
 - Agent Skills companion reciprocity and `npx skills` install commands (`pnpm skills:check`)
 - Architecture skill documents **Fixed vs swappable stack** and stays vendor-agnostic in prose
-- **Choose a UX** names side, prompt-first, and agentic, and asks which to implement when it is not clear
+- `choose-ux-asks-when-unclear` requires **Choose a UX** to name side, prompt-first, and agentic, and requires the architecture skill plus both UX companions to ask which of the three and wait when it is not clear
 
 ### `reference-tech-stack`
 
@@ -73,4 +73,4 @@ CI runs this in `.github/workflows/skills.yml` with a pinned `waza` binary. Conf
 
 ## Manual pressure scenarios
 
-See also `tanstack-promptable-fullstack-app-template.md` for prompt-based review scenarios (entity scaffold, loader refactor, markdown surface, etc.) and `promptable-ux.md` for the two prompt concepts.
+See also `tanstack-promptable-fullstack-app-template.md` for prompt-based review scenarios (entity scaffold, loader refactor, unclear UX, markdown surface, etc.) and `promptable-ux.md` for the prompt concepts.

@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createSkillEvals, runSkillEvals } from './runSkillEvals.mjs'
+import { createSkillEvals, runSkillEvals, uxChoiceViolations } from './runSkillEvals.mjs'
 import { formatCompanionInstallCommand } from './validateSkills.mjs'
 
 const createdDirs: string[] = []
@@ -197,6 +197,50 @@ describe('runSkillEvals', () => {
 		const result = await evalDef?.run()
 		expect(result?.pass).toBe(false)
 		expect(result?.files).toContain('mongoTaskRepository.server.ts')
+	})
+
+	it('asks which UX when the experience is not clear', async () => {
+		const evalDef = createSkillEvals().find((entry) => entry.id === 'choose-ux-asks-when-unclear')
+		expect(evalDef).toBeDefined()
+		await expect(evalDef?.run()).resolves.toEqual({ pass: true })
+	})
+
+	it('fails the UX eval when a skill picks prompt-first instead of asking', () => {
+		const skills = {
+			architecture: `## Choose a UX
+| **side** | **\`promptable-ux\`** | Domain screens |
+| **prompt-first** | **\`promptable-ux\`** | Composer |
+| **agentic** | **\`agentic-ux\`** | Thin shell |
+When the app already sets PROMPT_CONCEPT, keep that declaration.
+When it is not clear which user experience to implement, ask which of the three and wait.
+Do not pick one.
+## Next
+`,
+			promptable: `When it is not clear which user experience to implement, ask which of the three and wait. Do not pick one.`,
+			agentic: `When it is not clear which user experience to implement, ask which of the three and wait. Do not build this shell as a fallback.`,
+		}
+		expect(uxChoiceViolations(skills)).toEqual([])
+		expect(
+			uxChoiceViolations({
+				...skills,
+				architecture: skills.architecture.replace(
+					'Do not pick one.',
+					'If the user does not choose, use **prompt-first**.',
+				),
+			}).join('\n'),
+		).toMatch(/defaults to prompt-first/)
+		expect(
+			uxChoiceViolations({
+				...skills,
+				promptable: 'When the preference is unclear, use **prompt-first**.',
+			}).join('\n'),
+		).toMatch(/picks an experience when the preference is unclear/)
+		expect(
+			uxChoiceViolations({
+				...skills,
+				agentic: 'Build the agentic shell.',
+			}).join('\n'),
+		).toMatch(/agentic-ux must ask which of the three/)
 	})
 
 	it('fails when mongo repository casts TaskRepo results', async () => {
