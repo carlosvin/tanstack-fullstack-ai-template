@@ -10,7 +10,7 @@
 		"preview": "vite preview",
 		"test": "vitest run",
 		"test:skills": "vitest run scripts/skills/validateSkills.test.ts scripts/skills/runWazaCheck.test.ts",
-		"test:skill-evals": "vitest run scripts/skills/runSkillEvals.test.ts && node ./scripts/skills/runSkillEvals.mjs",
+		"test:skill-evals": "vitest run scripts/skills/runSkillEvals.test.ts",
 		"test:e2e": "playwright test",
 		"format": "biome check --write --unsafe",
 		"lint": "biome check && pnpm typecheck && pnpm skills:check && pnpm test:skill-evals",

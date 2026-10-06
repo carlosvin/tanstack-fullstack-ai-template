@@ -46,7 +46,13 @@ Lightweight prompts for manual review or future automation. A compliant agent sh
 
 **Expect:** Use `createServerOnlyFn` for internal singletons that must never be client-callable RPCs. Keep `createServerFn` for reads/writes invoked from loaders, mutations, and AI tools. DB modules use `*.server.ts` or `import '@tanstack/react-start/server-only'` at file top.
 
-## 8. Traceability on writes
+## 8. Unclear user experience
+
+**Prompt:** Scaffold a new app from this template. Put the prompt somewhere sensible.
+
+**Expect:** Do not pick side, prompt-first, or agentic. Ask which of the three to implement and wait. Side and prompt-first load `promptable-ux`. Agentic loads `agentic-ux`. If the app already sets `PROMPT_CONCEPT` or already mounts one shell, keep that declaration.
+
+## 9. Traceability on writes
 
 **Prompt:** On `updateTask`, pass the editor’s email as a bare string second argument to the repository (skip TraceabilityContext).
 

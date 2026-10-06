@@ -5,15 +5,12 @@ Automated static checks that validate the **example app** against the Agent Skil
 ## Commands
 
 ```bash
-pnpm test:skill-evals          # all evals
-pnpm test:skill-evals -- --skill observability-and-env
-pnpm test:skill-evals -- --skill tanstack-promptable-fullstack-app-template
-pnpm test:skill-evals -- --skill reference-tech-stack
-pnpm test:skill-evals -- --skill repository-architecture
-pnpm test:skill-evals -- --skill promptable-ux
+pnpm test:skill-evals
+pnpm test:skill-evals -- -t observability-and-env
+pnpm test:skill-evals -- -t choose-ux-asks-when-unclear
 ```
 
-`pnpm lint` also runs skill evals after `skills:check`.
+Each check is its own Vitest test. `-t` filters by check id or skill name. `pnpm lint` runs this suite after `skills:check`. The assertion list stays in `scripts/skills/runSkillEvals.mjs`.
 
 ## Waza (Agent Skills compliance)
 
@@ -23,7 +20,7 @@ pnpm test:skill-evals -- --skill promptable-ux
 pnpm skills:waza    # waza check + spec verify + mock run
 ```
 
-CI runs this in `.github/workflows/skills.yml` with a pinned `waza` binary. Config lives in `.waza.yaml`. Suites use the **mock** executor so PRs do not need model API keys.
+CI runs this in `.github/workflows/skills.yml` with a pinned `waza` binary. Config lives in `.waza.yaml`. `waza check` and `waza spec verify` are the pull-request gates for skill spec, token budget, and `USE FOR` / `DO NOT USE FOR` coverage. The mock `waza run` only checks that each suite loads. It does not judge skill behavior, and the pull-request job does not call the Copilot SDK.
 
 ## What is checked
 
@@ -50,6 +47,7 @@ CI runs this in `.github/workflows/skills.yml` with a pinned `waza` binary. Conf
 - `importProtection` in `vite.config.ts`
 - Agent Skills companion reciprocity and `npx skills` install commands (`pnpm skills:check`)
 - Architecture skill documents **Fixed vs swappable stack** and stays vendor-agnostic in prose
+- `choose-ux-asks-when-unclear` requires **Choose a UX** to name side, prompt-first, and agentic, and requires the architecture skill plus both UX companions to ask which of the three and wait when it is not clear
 
 ### `reference-tech-stack`
 
@@ -68,7 +66,8 @@ CI runs this in `.github/workflows/skills.yml` with a pinned `waza` binary. Conf
 - Architecture skill points at `promptable-ux` and does not own the mobile-first essay
 - `AppLayout` declares Promptable UI (side)
 - AGENTS.md names both concepts and still asks the developer before switching
+- When it is not clear which user experience to implement, the skill asks which of the three and waits
 
 ## Manual pressure scenarios
 
-See also `tanstack-promptable-fullstack-app-template.md` for prompt-based review scenarios (entity scaffold, loader refactor, markdown surface, etc.) and `promptable-ux.md` for the two prompt concepts.
+See also `tanstack-promptable-fullstack-app-template.md` for prompt-based review scenarios (entity scaffold, loader refactor, unclear UX, markdown surface, etc.) and `promptable-ux.md` for the prompt concepts.

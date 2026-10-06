@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createSkillEvals, runSkillEvals } from './runSkillEvals.mjs'
+import { createSkillEvals, uxChoiceViolations } from './runSkillEvals.mjs'
 import { formatCompanionInstallCommand } from './validateSkills.mjs'
 
 const createdDirs: string[] = []
@@ -126,33 +126,56 @@ afterEach(async () => {
 	await Promise.all(createdDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })))
 })
 
-describe('runSkillEvals', () => {
-	it('exposes architecture, observability, reference-stack, repository, and promptable-ux eval suites', () => {
-		const evals = createSkillEvals()
-		expect(evals.length).toBeGreaterThanOrEqual(10)
-		expect(evals.some((evalDef) => evalDef.skill === 'observability-and-env')).toBe(true)
-		expect(evals.some((evalDef) => evalDef.skill === 'tanstack-promptable-fullstack-app-template')).toBe(true)
-		expect(evals.some((evalDef) => evalDef.skill === 'reference-tech-stack')).toBe(true)
-		expect(evals.some((evalDef) => evalDef.skill === 'repository-architecture')).toBe(true)
-		expect(evals.some((evalDef) => evalDef.skill === 'promptable-ux')).toBe(true)
+function formatEvalFailure(result) {
+	const files = (result.files ?? []).map((file) => `- ${file}`).join('\n')
+	return [result.message, files].filter(Boolean).join('\n')
+}
+
+describe('skill contract evals', () => {
+	const evals = createSkillEvals()
+
+	it('covers architecture, observability, reference-stack, repository, promptable-ux, and agentic-ux', () => {
+		for (const skill of [
+			'observability-and-env',
+			'tanstack-promptable-fullstack-app-template',
+			'reference-tech-stack',
+			'repository-architecture',
+			'promptable-ux',
+			'agentic-ux',
+		]) {
+			expect(evals.some((evalDef) => evalDef.skill === skill)).toBe(true)
+		}
 	})
 
-	it('passes on the real workspace', async () => {
-		await expect(runSkillEvals({ logger: { log() {} } })).resolves.toBeDefined()
-	})
+	for (const evalDef of evals) {
+		it(`${evalDef.id} (${evalDef.skill})`, async () => {
+			const result = await evalDef.run()
+			expect(result.pass, formatEvalFailure(result)).toBe(true)
+		})
+	}
+})
 
+describe('skill eval fixtures', () => {
 	it('fails when process.env leaks into application code', async () => {
 		const rootDir = await createMinimalWorkspace({
 			'src/services/bad.ts': 'const x = process.env.SECRET\n',
 		})
-		await expect(runSkillEvals({ rootDir, logger: { log() {} } })).rejects.toThrow(/Skill evals failed/)
+		const evalDef = createSkillEvals(rootDir).find((entry) => entry.id === 'observability-process-env-centralized')
+		expect(evalDef).toBeDefined()
+		const result = await evalDef?.run()
+		expect(result?.pass).toBe(false)
+		expect(result?.files).toContain('src/services/bad.ts')
 	})
 
 	it('fails when a client-shared module imports a src/env server module', async () => {
 		const rootDir = await createMinimalWorkspace({
 			'src/components/Bad/Bad.tsx': "import { webServerEnv } from '../../env/webEnv.server'\n",
 		})
-		await expect(runSkillEvals({ rootDir, logger: { log() {} } })).rejects.toThrow(/Skill evals failed/)
+		const evalDef = createSkillEvals(rootDir).find((entry) => entry.id === 'observability-no-client-env-imports')
+		expect(evalDef).toBeDefined()
+		const result = await evalDef?.run()
+		expect(result?.pass).toBe(false)
+		expect(result?.files).toContain('src/components/Bad/Bad.tsx')
 	})
 
 	it('allows inline type-only imports from src/env in client-shared modules', async () => {
@@ -199,10 +222,58 @@ describe('runSkillEvals', () => {
 		expect(result?.files).toContain('mongoTaskRepository.server.ts')
 	})
 
+	it('fails the UX eval when a skill picks prompt-first instead of asking', () => {
+		const skills = {
+			architecture: `## Choose a UX
+| **side** | **\`promptable-ux\`** | Domain screens |
+| **prompt-first** | **\`promptable-ux\`** | Composer |
+| **agentic** | **\`agentic-ux\`** | Thin shell |
+When the app already sets PROMPT_CONCEPT, keep that declaration.
+When it is not clear which user experience to implement, ask which of the three and wait.
+Do not pick one.
+## Next
+`,
+			promptable: `When it is not clear which user experience to implement, ask which of the three and wait. Do not pick one.`,
+			agentic: `When it is not clear which user experience to implement, ask which of the three and wait. Do not build this shell as a fallback.`,
+		}
+		expect(uxChoiceViolations(skills)).toEqual([])
+		expect(
+			uxChoiceViolations({
+				...skills,
+				architecture: skills.architecture.replace(
+					'Do not pick one.',
+					'If the user does not choose, use **prompt-first**.',
+				),
+			}).join('\n'),
+		).toMatch(/chooses an experience when the choice is missing/)
+		expect(
+			uxChoiceViolations({
+				...skills,
+				architecture: `${skills.architecture}\nPrompt-first is the default when no choice is provided.`,
+			}).join('\n'),
+		).toMatch(/prompt-first is the default/i)
+		expect(
+			uxChoiceViolations({
+				...skills,
+				promptable: `${skills.promptable}\nWhen unclear, choose side.`,
+			}).join('\n'),
+		).toMatch(/choose side/)
+		expect(
+			uxChoiceViolations({
+				...skills,
+				agentic: 'Build the agentic shell.',
+			}).join('\n'),
+		).toMatch(/agentic-ux must ask which of the three/)
+	})
+
 	it('fails when mongo repository casts TaskRepo results', async () => {
 		const rootDir = await createMinimalWorkspace({
 			'src/services/repository/mongoRepository.server.ts': 'return col.find() as Promise<TaskRepo[]>\n',
 		})
-		await expect(runSkillEvals({ rootDir, logger: { log() {} } })).rejects.toThrow(/Skill evals failed/)
+		const evalDef = createSkillEvals(rootDir).find((entry) => entry.id === 'architecture-mongo-repo-parse')
+		expect(evalDef).toBeDefined()
+		const result = await evalDef?.run()
+		expect(result?.pass).toBe(false)
+		expect(result?.files).toContain('src/services/repository/mongoRepository.server.ts')
 	})
 })

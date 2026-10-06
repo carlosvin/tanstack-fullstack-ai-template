@@ -14,7 +14,13 @@ A compliant agent keeps shared rules once and implements only the concept the ap
 
 **Expect:** Follow **Prompt-first** in `promptable-ux`: app bar, always-visible prompt bar, scannable overview, then the route-backed drill-down. The prompt stays mounted on drill-down. Overview sections use the same loaders as the rest of the app. Reuse the architecture tools, availability gate, and markdown replies. Do not add a hidden drawer as well. Keep mobile first. When AI is unconfigured, show the overview and omit the prompt.
 
-## 3. Markdown surface
+## 3. Unclear user experience
+
+**Prompt:** Scaffold a new app. I have not said whether the prompt is hidden, always visible, or the only screen.
+
+**Expect:** Ask which of the three to implement and wait. Do not pick prompt-first, side, or the agentic shell. Do not start chrome until the developer chooses. An app that already declares a concept keeps that declaration.
+
+## 4. Markdown surface
 
 **Prompt:** Render assistant replies as plain text so the drawer stays simple.
 

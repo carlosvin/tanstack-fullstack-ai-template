@@ -1,7 +1,6 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
-import process from 'node:process'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
 import { getSkillPaths } from './validateSkills.mjs'
 
 const defaultRootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
@@ -111,6 +110,69 @@ function fail(message, files = []) {
 
 function pass() {
 	return { pass: true }
+}
+
+const UX_MISSING_CHOICE = /\b(not clear|unclear|does not choose|do not choose|no choice|no answer|without an answer)\b/i
+const UX_PRESCRIBED_EXPERIENCE =
+	/\b(?:default to|fall back to|falls back to|choose|chooses|pick|picks|use|uses|select|selects)\s+\*{0,2}(side|prompt-first|agentic)\b|\b(side|prompt-first|agentic)\b[^\n.]{0,40}\bis the default\b|\b(side|prompt-first|agentic)\*\*\s*\(default\)/i
+
+/** Sentences that name one experience when the choice is missing, excluding the ask-and-wait instruction. */
+export function silentUxChoiceSentences(text) {
+	return text.split(/\n|(?<=[.!?])\s+/).filter((sentence) => {
+		if (!UX_MISSING_CHOICE.test(sentence) || !UX_PRESCRIBED_EXPERIENCE.test(sentence)) return false
+		return !/\bask\b/i.test(sentence) && !/\bdo not pick\b/i.test(sentence)
+	})
+}
+
+/**
+ * Violations of the "ask which UX and wait" contract.
+ * @param {{ architecture: string, promptable: string, agentic: string }} skills
+ * @returns {string[]}
+ */
+export function uxChoiceViolations({ architecture, promptable, agentic }) {
+	const violations = []
+	const choose = architecture.split('## Choose a UX')[1]?.split('\n## ')[0] ?? ''
+	if (!choose) {
+		violations.push('Architecture skill must include Choose a UX')
+	} else {
+		const rows = choose.split('\n').filter((line) => line.startsWith('|'))
+		const expectRow = (experience, skillId) => {
+			const row = rows.find((line) => line.includes(`**${experience}**`))
+			if (!row?.includes(`**\`${skillId}\`**`)) {
+				violations.push(`Choose a UX must send ${experience} to ${skillId}`)
+			}
+		}
+		expectRow('side', 'promptable-ux')
+		expectRow('prompt-first', 'promptable-ux')
+		expectRow('agentic', 'agentic-ux')
+		if (!/keep that declaration/.test(choose)) {
+			violations.push('Choose a UX must keep an already declared PROMPT_CONCEPT')
+		}
+		if (!/ask which of the three[\s\S]{0,160}wait/.test(choose) || !/Do not pick one/.test(choose)) {
+			violations.push('Choose a UX must ask which of the three and wait, and must not pick one')
+		}
+	}
+
+	const texts = [
+		['Architecture skill', architecture],
+		['promptable-ux', promptable],
+		['agentic-ux', agentic],
+	]
+	for (const [name, text] of texts) {
+		for (const sentence of silentUxChoiceSentences(text)) {
+			violations.push(`${name} chooses an experience when the choice is missing: ${sentence.trim()}`)
+		}
+		if (!/not clear which user experience/.test(text) || !/ask which of the three[\s\S]{0,160}wait/.test(text)) {
+			violations.push(`${name} must ask which of the three and wait when it is not clear`)
+		}
+	}
+	if (!/Do not pick one/.test(promptable)) {
+		violations.push('promptable-ux must not pick one when it is not clear')
+	}
+	if (!/Do not build this shell as a fallback/.test(agentic)) {
+		violations.push('agentic-ux must not build the shell as a fallback')
+	}
+	return violations
 }
 
 export function createSkillEvals(rootDir = defaultRootDir) {
@@ -783,6 +845,30 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 			},
 		},
 		{
+			id: 'choose-ux-asks-when-unclear',
+			skill: 'tanstack-promptable-fullstack-app-template',
+			description:
+				'When the user experience is not clear, the architecture skill and both UX companions ask which of side, prompt-first, or agentic to implement and wait',
+			async run() {
+				const { agentSkillsDir } = getSkillPaths(rootDir)
+				const readSkill = async (id) => readText(path.join(agentSkillsDir, id, 'SKILL.md'))
+				let architecture
+				let promptable
+				let agentic
+				try {
+					architecture = await readSkill('tanstack-promptable-fullstack-app-template')
+					promptable = await readSkill('promptable-ux')
+					agentic = await readSkill('agentic-ux')
+				} catch {
+					return fail('Choose a UX eval requires the architecture, promptable-ux, and agentic-ux skills')
+				}
+				const violations = uxChoiceViolations({ architecture, promptable, agentic })
+				return violations.length === 0
+					? pass()
+					: fail('UX skills must ask which experience to implement when it is not clear', violations)
+			},
+		},
+		{
 			id: 'agentic-ux-shell-contract',
 			skill: 'agentic-ux',
 			description:
@@ -833,9 +919,6 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				)
 				if (!/\*\*`agentic-ux`\*\*\s*\(companion\)/.test(templateSkill)) {
 					return fail('Parent architecture skill must list agentic-ux as a companion')
-				}
-				if (!/## Choose a UX/.test(templateSkill) || !/prompt-first\*\* \(default\)/.test(templateSkill)) {
-					return fail('Parent architecture skill must ask which UX and default to prompt-first')
 				}
 				const tools = await readText(path.join(rootDir, 'src/services/ai/tools.ts'))
 				const mcpServer = await readText(path.join(rootDir, 'src/services/ai/taskViewsMcp.server.ts'))
@@ -904,49 +987,4 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 			},
 		},
 	]
-}
-
-export async function runSkillEvals({ rootDir = defaultRootDir, logger = console, filterSkill = null } = {}) {
-	const evals = createSkillEvals(rootDir).filter((evalDef) => !filterSkill || evalDef.skill === filterSkill)
-	const results = []
-
-	for (const evalDef of evals) {
-		const result = await evalDef.run()
-		results.push({ ...evalDef, ...result })
-	}
-
-	const failed = results.filter((result) => !result.pass)
-	for (const result of results) {
-		const status = result.pass ? 'PASS' : 'FAIL'
-		logger.log(`[${status}] ${result.id} (${result.skill})`)
-		if (!result.pass) {
-			logger.log(`       ${result.message}`)
-			for (const file of result.files ?? []) {
-				logger.log(`       - ${file}`)
-			}
-		}
-	}
-
-	if (failed.length > 0) {
-		const error = new Error(`Skill evals failed: ${failed.length}/${results.length}`)
-		error.results = results
-		throw error
-	}
-
-	logger.log(`Skill evals passed: ${results.length}/${results.length}`)
-	return results
-}
-
-async function main() {
-	const args = process.argv.slice(2)
-	const skillFlagIndex = args.indexOf('--skill')
-	const filterSkill = skillFlagIndex >= 0 ? args[skillFlagIndex + 1] : null
-	await runSkillEvals({ filterSkill })
-}
-
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-	main().catch((error) => {
-		console.error(error instanceof Error ? error.message : String(error))
-		process.exit(1)
-	})
 }
