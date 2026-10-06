@@ -7,7 +7,15 @@ import { MarkdownLink } from './MarkdownLink'
 import styles from './PromptChat.module.css'
 import { getToolLabel } from './toolLabels'
 
-export function MessageBubble({ message }: { message: UIMessage }) {
+type MarkdownLinkComponent = React.ComponentType<{ href?: string; children?: React.ReactNode }>
+
+export function MessageBubble({
+	message,
+	markdownLinkComponent,
+}: {
+	message: UIMessage
+	markdownLinkComponent?: MarkdownLinkComponent
+}) {
 	const isUser = message.role === 'user'
 
 	const textParts: string[] = []
@@ -22,6 +30,7 @@ export function MessageBubble({ message }: { message: UIMessage }) {
 	}
 
 	const textContent = textParts.join('')
+	if (!isUser && !textContent && toolCallNames.length === 0) return null
 
 	return (
 		<div className={isUser ? styles.userMessage : styles.assistantMessage}>
@@ -33,7 +42,7 @@ export function MessageBubble({ message }: { message: UIMessage }) {
 			{toolCallNames.length > 0 && (
 				<Group gap={4} mb={4}>
 					{toolCallNames.map((name, i) => (
-						<Badge key={`${message.id}-${name}-${String(i)}`} size="xs" variant="light">
+						<Badge key={`${message.id}-${name}-${String(i)}`} size="xs" variant="light" tt="none">
 							{getToolLabel(name)}
 						</Badge>
 					))}
@@ -50,7 +59,7 @@ export function MessageBubble({ message }: { message: UIMessage }) {
 						<Text size="sm">{textContent}</Text>
 					) : (
 						<div className={styles.markdown}>
-							<Markdown remarkPlugins={[remarkGfm]} components={{ a: MarkdownLink }}>
+							<Markdown remarkPlugins={[remarkGfm]} components={{ a: markdownLinkComponent ?? MarkdownLink }}>
 								{textContent}
 							</Markdown>
 						</div>

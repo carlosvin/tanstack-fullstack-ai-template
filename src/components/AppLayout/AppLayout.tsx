@@ -4,6 +4,8 @@ import { useRouterState } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import type { ShellSession } from '../../services/schemas/shellSession'
 import type { CurrentUser } from '../../types'
+import { AgenticChatProvider } from '../AgenticChat/AgenticChatContext'
+import { AgenticShell } from '../AgenticShell/AgenticShell'
 import { AppNavbar } from '../AppNavbar/AppNavbar'
 import { ChatDrawer } from '../ChatDrawer/ChatDrawer'
 import { Header } from '../Header/Header'
@@ -20,9 +22,10 @@ interface AppLayoutProps {
 const PROMPT_FIRST_FOOTER_MIN_HEIGHT = 72
 
 /**
- * Prompt concept from `shellSession.promptConcept` (promptable-ux skill):
+ * Prompt concept from `shellSession.promptConcept` (promptable-ux + agentic-ux skills):
  * - **Promptable UI (side)** (`side`) — ChatDrawer hidden until the header opens it
  * - **Prompt-first** (`prompt-first`) — clean agentic conversation with bottom-pinned composer
+ * - **Fully agentic** (`agentic`) — thin tool-only shell, no domain routes (agentic-ux skill)
  *
  * One chat shell per deployment; `PROMPT_CONCEPT` selects the branch.
  */
@@ -30,6 +33,8 @@ export function AppLayout({ currentUser, shellSession, aiAvailable = false, chil
 	const promptConcept = shellSession.promptConcept
 	const isSideConcept = promptConcept === 'side'
 	const isPromptFirst = promptConcept === 'prompt-first'
+	const isAgentic = promptConcept === 'agentic'
+
 	const showPromptFirstFooter = isPromptFirst && aiAvailable
 
 	const [chatOpened, { open: openChatDrawer, close: closeChat }] = useDisclosure(false)
@@ -64,6 +69,14 @@ export function AppLayout({ currentUser, shellSession, aiAvailable = false, chil
 	const openChat = () => {
 		closeNav()
 		openChatDrawer()
+	}
+
+	if (isAgentic) {
+		return (
+			<AgenticChatProvider>
+				<AgenticShell appMeta={shellSession.app} aiAvailable={aiAvailable} />
+			</AgenticChatProvider>
+		)
 	}
 
 	const shell = (

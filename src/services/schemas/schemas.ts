@@ -149,7 +149,12 @@ export type Task = z.infer<typeof TaskSchema>
 export const TaskFilterSchema = z.object({
 	status: TaskStatusSchema.optional().describe('Filter by status: pending | in-progress | done | cancelled'),
 	priority: TaskPrioritySchema.optional().describe('Filter by priority: low | medium | high | critical'),
-	assignee: z.string().optional().describe('Filter by assignee email'),
+	assignee: z
+		.string()
+		.optional()
+		.describe(
+			'Assignee email, only when the user names that person. Omit for "my tasks" and for an unauthenticated user.',
+		),
 	search: z.string().optional().describe('Full-text search over tasks'),
 })
 

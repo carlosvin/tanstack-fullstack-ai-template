@@ -3,7 +3,7 @@ import type { UIMessage } from '@tanstack/ai-react'
 import { fetchServerSentEvents, useChat } from '@tanstack/ai-react'
 import { useRouter } from '@tanstack/react-router'
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useRef, useState } from 'react'
-import { invalidateRouterToolDef, NavigateInputSchema, navigateToolDef } from '../../services/ai/tools'
+import { invalidateRouterToolDef, navigateToolDef } from '../../services/ai/tools'
 import type { BrowserContext } from '../../types'
 import { captureBrowserContext } from '../../utils/browserContext'
 import { toInternalRouterLinkTarget } from '../../utils/internalLinks'
@@ -36,13 +36,10 @@ export function PromptChatProvider({ children }: { children: ReactNode }) {
 	const router = useRouter()
 
 	const navigateClient = navigateToolDef.client((args) => {
-		const parsed = NavigateInputSchema.safeParse(args)
-		if (!parsed.success) return { success: false }
-		const navInput = parsed.data
-		const path = navInput.to.startsWith('/') ? navInput.to : `/${navInput.to}`
+		const path = args.to.startsWith('/') ? args.to : `/${args.to}`
 		const params = new URLSearchParams()
-		if (navInput.search) {
-			for (const [key, value] of Object.entries(navInput.search)) {
+		if (args.search) {
+			for (const [key, value] of Object.entries(args.search)) {
 				if (value !== undefined) params.set(key, value)
 			}
 		}

@@ -782,6 +782,127 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 					: fail('new MongoClient is owned by src/services/db/mongoClient.server.ts', clientOwners)
 			},
 		},
+		{
+			id: 'agentic-ux-shell-contract',
+			skill: 'agentic-ux',
+			description:
+				'Agentic skill recipe matches the example shell: metadata._meta.ui.resourceUri, AppRenderer, no route chrome',
+			async run() {
+				const { agentSkillsDir } = getSkillPaths(rootDir)
+				let skillMd
+				try {
+					skillMd = await readText(path.join(agentSkillsDir, 'agentic-ux', 'SKILL.md'))
+				} catch {
+					return fail('Missing .agents/skills/agentic-ux/SKILL.md')
+				}
+				const missing = []
+				if (!/## Shell/.test(skillMd)) missing.push('Shell section')
+				if (!/## MCP UI rendering/.test(skillMd)) missing.push('MCP UI rendering section')
+				if (!/## Security/.test(skillMd)) missing.push('Security section')
+				if (!/metadata\._meta\.ui\.resourceUri/.test(skillMd)) missing.push('metadata._meta.ui.resourceUri recipe')
+				if (!/createUIResource/.test(skillMd)) missing.push('createUIResource recipe')
+				if (!/AppRenderer/.test(skillMd)) missing.push('AppRenderer recipe')
+				if (!/resources\/read/.test(skillMd)) missing.push('resources/read recipe')
+				if (!/createMCPServer/.test(skillMd) || !/createMCPClient/.test(skillMd)) {
+					missing.push('TanStack MCP registration recipe')
+				}
+				if (!/toolResult/.test(skillMd)) missing.push('toolResult recipe')
+				if (!/sandbox_proxy\.html/.test(skillMd)) missing.push('sandbox proxy recipe')
+				if (!/only inside the MCP UI iframe/.test(skillMd)) missing.push('iframe-only render rule')
+				if (!/No `ChatDrawer`, `PromptBar`, `AppNavbar`/.test(skillMd)) missing.push('no route-component reuse rule')
+				if (!/docs\/help\.md/.test(skillMd) || !/sentence case/.test(skillMd)) {
+					missing.push('hero and tool-status rules')
+				}
+				if (!/provider payload/.test(skillMd)) missing.push('short error alert rule')
+				if (!/one short sentence/.test(skillMd) || !/demo visitor/.test(skillMd)) {
+					missing.push('answer and demo-assignee rules')
+				}
+				if (!/without waiting|do not send another model turn/.test(skillMd)) {
+					missing.push('direct detail-open rule')
+				}
+				if (!/bare colon/.test(skillMd)) missing.push('empty markdown-link label rule')
+				if (!/No raw ids/.test(skillMd)) missing.push('guest card presentation rule')
+				if (!/\*\*`agentic-ux`\*\*\s*\(companion\)/.test(skillMd) && !/agentic-ux/.test(skillMd)) {
+					missing.push('companion wiring')
+				}
+				if (missing.length > 0) {
+					return fail('agentic-ux skill is missing required contract text', missing)
+				}
+				const templateSkill = await readText(
+					path.join(agentSkillsDir, 'tanstack-promptable-fullstack-app-template', 'SKILL.md'),
+				)
+				if (!/\*\*`agentic-ux`\*\*\s*\(companion\)/.test(templateSkill)) {
+					return fail('Parent architecture skill must list agentic-ux as a companion')
+				}
+				if (!/## Choose a UX/.test(templateSkill) || !/prompt-first\*\* \(default\)/.test(templateSkill)) {
+					return fail('Parent architecture skill must ask which UX and default to prompt-first')
+				}
+				const tools = await readText(path.join(rootDir, 'src/services/ai/tools.ts'))
+				const mcpServer = await readText(path.join(rootDir, 'src/services/ai/taskViewsMcp.server.ts'))
+				const chatRoute = await readText(path.join(rootDir, 'src/routes/api/chat.ts'))
+				const renderer = await readText(path.join(rootDir, 'src/components/AgenticMcp/AgenticMcpRenderer.tsx'))
+				const resources = await readText(path.join(rootDir, 'src/services/mcpUi/mcpUiResources.ts'))
+				const shell = await readText(path.join(rootDir, 'src/components/AgenticShell/AgenticShell.tsx'))
+				const thread = await readText(path.join(rootDir, 'src/components/AgenticShell/AgenticThread.tsx'))
+				const composer = await readText(path.join(rootDir, 'src/components/AgenticShell/AgenticComposer.tsx'))
+				const guest = await readText(path.join(rootDir, 'public/mcp-task-view.js'))
+				const labels = await readText(path.join(rootDir, 'src/components/PromptChat/toolLabels.ts'))
+				const drift = []
+				if (!/_meta:\s*\{\s*ui:\s*\{\s*resourceUri:/.test(mcpServer)) {
+					drift.push('view tools must set metadata._meta.ui.resourceUri')
+				}
+				if (
+					!/createMCPServer/.test(mcpServer) ||
+					!/resourceDefinition/.test(mcpServer) ||
+					!/createMCPClient/.test(mcpServer)
+				) {
+					drift.push('task views must be registered with createMCPServer and createMCPClient')
+				}
+				if (!/connectTaskViewsMcp/.test(chatRoute) || !/mcp:\s*\{\s*clients:/.test(chatRoute)) {
+					drift.push('agentic chat must pass the MCP client to chat({ mcp })')
+				}
+				if (/readResource:/.test(mcpServer) || /readResource:/.test(tools)) {
+					drift.push('view tools must not bind readResource themselves')
+				}
+				if (!/AppRenderer/.test(renderer) || !/sandbox_proxy\.html/.test(renderer) || !/toolResult/.test(renderer)) {
+					drift.push('AgenticMcpRenderer must render AppRenderer through sandbox_proxy.html with toolResult')
+				}
+				if (!/createUIResource/.test(resources) || !/readMcpUiResource/.test(resources)) {
+					drift.push('mcpUiResources must register views with createUIResource and readMcpUiResource')
+				}
+				if (/emitMcpUiResource|showTasksViewTool/.test(tools)) {
+					drift.push('tools.ts must not register the view tools outside the MCP server')
+				}
+				if (/ChatDrawer|PromptBar|AppNavbar/.test(shell)) {
+					drift.push('AgenticShell must not mount route-based prompt chrome')
+				}
+				if (!/withoutDemoAssignee/.test(mcpServer) || !/isDemoTestEmail/.test(mcpServer)) {
+					drift.push('showTasksView must drop a demo visitor email before querying')
+				}
+				if (!/one short sentence/.test(chatRoute) || !/Never pass this email as an assignee filter/.test(chatRoute)) {
+					drift.push('agentic system prompt must keep answers short and must not filter my tasks by the demo email')
+				}
+				if (!/friendlyChatError/.test(composer)) {
+					drift.push('the composer must show a short alert, not the provider payload')
+				}
+				if (!/Show my tasks/.test(thread) || /Summarize my task overview/.test(thread)) {
+					drift.push('the empty hero must use view starters, not route help bullets')
+				}
+				if (!/Open the detail view for/.test(thread) || !/getTask\(/.test(thread)) {
+					drift.push('a card that names a task id must open that detail view without another model turn')
+				}
+				if (!/showing tasks/.test(labels)) {
+					drift.push('tool status labels must be sentence case')
+				}
+				if (!/textContent/.test(guest) || /Open'/.test(guest)) {
+					drift.push('the guest must paint with textContent and must not use a separate Open button')
+				}
+				if (drift.length > 0) {
+					return fail('Agentic example drifted from the agentic-ux recipe', drift)
+				}
+				return pass()
+			},
+		},
 	]
 }
 

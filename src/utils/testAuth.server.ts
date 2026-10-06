@@ -7,6 +7,11 @@ export const TEST_AUTH_COOKIE_NAME = 'test-auth'
 
 const TEST_USER_EMAIL_PATTERN = /^random[a-f0-9]{8}@example\.com$/i
 
+/** True for the auto-generated demo identity, which is not a task assignee. */
+export function isDemoTestEmail(email: string): boolean {
+	return TEST_USER_EMAIL_PATTERN.test(email)
+}
+
 /** Creates a random demo identity for visitors without an auth header. */
 export function createRandomTestIdentity(): UserIdentity {
 	const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8)

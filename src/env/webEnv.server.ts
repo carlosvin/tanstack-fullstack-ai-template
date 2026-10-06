@@ -37,7 +37,7 @@ export const WebServerEnvSchema = WebPublicEnvSchema.extend({
 		.describe('Human-readable application name shown in the header and page title.'),
 	PROMPT_CONCEPT: z
 		.preprocess(envStringToUndefined, PromptConceptSchema.default('side' satisfies PromptConcept))
-		.describe('Prompt UX: side (drawer) or prompt-first (always-visible bar).'),
+		.describe('Prompt UX: side (drawer), prompt-first (always-visible bar), or agentic (tool-only shell).'),
 	AUTH_HEADER_NAME: OptionalTrimmedStringSchema.describe(
 		'HTTP header name for the JWT. Default: Authorization when unset or blank.',
 	),

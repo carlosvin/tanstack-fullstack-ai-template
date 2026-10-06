@@ -1,3 +1,4 @@
+import type { ToolExecutionContext } from '@tanstack/ai'
 import { HttpError } from '../../utils/httpError'
 
 /** Structured error shape returned to the AI when a tool call fails. */
@@ -15,11 +16,11 @@ export type SafeToolResult<T> = T | ToolErrorResult
  * This lets the AI interpret failures (401, 403, 404) and respond helpfully.
  */
 export function safeToolHandler<TArgs, TResult>(
-	execute: (args: TArgs) => Promise<TResult> | TResult,
-): (args: TArgs) => Promise<SafeToolResult<TResult>> {
-	return async (args: TArgs) => {
+	execute: (args: TArgs, context?: ToolExecutionContext) => Promise<TResult> | TResult,
+): (args: TArgs, context?: ToolExecutionContext) => Promise<SafeToolResult<TResult>> {
+	return async (args: TArgs, context?: ToolExecutionContext) => {
 		try {
-			return await execute(args)
+			return await execute(args, context)
 		} catch (err) {
 			if (err instanceof HttpError) {
 				return { error: err.message, code: err.statusCode }
@@ -34,12 +35,15 @@ export function safeToolHandler<TArgs, TResult>(
 /**
  * Convenience factory: creates a server-side AI tool from a `toolDefinition`
  * and an execution function, wrapping both in `safeToolHandler` for error safety.
+ *
+ * `context` stays `ToolExecutionContext` from TanStack AI (tool call id, abort
+ * signal, and `emitCustomEvent`). Do not widen it to `unknown`.
  */
 export function createSafeServerTool<TArgs, TServerTool>(
 	tool: {
-		server: (execute: (args: NoInfer<TArgs>) => Promise<unknown> | unknown) => TServerTool
+		server: (execute: (args: TArgs, context?: ToolExecutionContext) => Promise<unknown> | unknown) => TServerTool
 	},
-	execute: (args: TArgs) => Promise<unknown> | unknown,
+	execute: (args: TArgs, context?: ToolExecutionContext) => Promise<unknown> | unknown,
 ): TServerTool {
-	return tool.server(safeToolHandler(execute) as (args: NoInfer<TArgs>) => Promise<unknown> | unknown)
+	return tool.server(safeToolHandler(execute))
 }

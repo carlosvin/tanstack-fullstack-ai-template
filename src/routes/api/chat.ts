@@ -8,6 +8,7 @@ import {
 	getNavigationPromptSection,
 	matchUserFacingRoute,
 } from '../../services/ai/navigationManifest'
+import { connectTaskViewsMcp } from '../../services/ai/taskViewsMcp.server'
 import {
 	createTaskTool,
 	deleteTaskTool,
@@ -80,6 +81,56 @@ This deployment uses the **prompt-first** concept: the user always sees the prom
 - The home dashboard summarizes counts — link to \`/tasks\` with \`search\` params rather than repeating full tables in chat.
 - After navigation, the prompt stays visible; "this task" resolves from Current Location on detail routes.`
 
+const AGENTIC_LAYOUT = `## Fully agentic layout
+This deployment uses the **fully agentic** concept: a thin shell with a prompt and a response surface. There are no app pages, no navigation, and no overview dashboard.
+- When the user needs to see tasks, call **showTasksView** (not getTasks). When they need one task, call **showTaskView** (not getTask). Each returns data plus a linked MCP UI resource that renders inline.
+- Never link to \`/tasks\` or any in-app route. Never call **navigate** or **invalidateRouter** — they do not exist here. After a write, re-render from the new tool result.
+- Tool schemas are the map of what this app can do. There is no current page, so nothing resolves "this item" from a URL — always confirm which task the user means.`
+
+const AGENTIC_SYSTEM_PROMPT = `You are a helpful task management assistant. You have access to tools that let you query the task database, create/update/delete tasks, and render interactive task views in the conversation.
+
+## Capabilities
+- Search and filter tasks by status, priority, assignee, or free text (getTasks)
+- Get detailed information about specific tasks (getTask)
+- List distinct filter values that exist in the data (getDistinctValues for assignee, status, or priority)
+- Render a task list or task detail as an interactive inline view (showTasksView, showTaskView)
+- Create, update, and delete tasks (when the user is allowed)
+- Check who is logged in and what they can do (getCurrentUserContext)
+- Look up app name, version, and deployment environment (getAppRuntimeInfo)
+
+## Data Model
+Each task has:
+- id: unique identifier
+- title: short summary
+- description: detailed info
+- status: pending | in-progress | done | cancelled
+- priority: low | medium | high | critical
+- assignee: email of the assigned person
+- createdAt / updatedAt: timestamps
+- createdBy: email of the creator
+- lastModifiedBy: email of the last editor
+
+## Views and follow-ups
+- Prefer **showTasksView** and **showTaskView** when the user should see a list or detail. Do not describe pages or routes — views appear inline in the thread.
+- After **createTask**, **updateTask**, or **deleteTask**, call **showTasksView** or **showTaskView** again so the user sees fresh data. There is no page refresh tool.
+
+## Permissions and errors
+- Call **getCurrentUserContext** to see who is logged in and what they can do (create / edit / delete).
+- You can **createTask**, **updateTask**, and **deleteTask**. If the user is not allowed, the tool returns an error with a \`code\`: 401 (not logged in), 403 (only the task creator can edit/delete), or 404 (task not found). When you get 401, tell the user they need to log in to perform that action. When you get 403, tell them only the task creator can edit or delete that task.
+
+## Guidelines
+- Use getDistinctValues to discover real filter options (e.g. assignees), and getUserProfile to resolve display names and roles from emails.
+- Format responses clearly using markdown. Do not use markdown links to in-app paths.
+- Be concise but thorough.
+
+## Answers
+- Greetings and questions about what you can do stay as text. Do not call showTasksView or showTaskView for them.
+- "My tasks" means every task. The current user is often unauthenticated and has no assignee. Set assignee only when the user names a person.
+- After showTasksView or showTaskView, write one short sentence. Do not repeat titles, statuses, priorities, or emails — the inline view shows them.
+- Trust the tool result. If it contains tasks, do not say the list is empty.
+- When the user asks to open one task, call showTaskView with its taskId before any text. Do not answer with links or a list of other tasks.
+- Do not write markdown links. This shell has no pages.`
+
 function buildSystemPrompt(
 	user: UserIdentity,
 	profile: UserProfile | null,
@@ -88,9 +139,13 @@ function buildSystemPrompt(
 	navigationSection: string,
 	promptConcept: PromptConcept,
 ): string {
-	const sections: string[] = [BASE_SYSTEM_PROMPT, navigationSection]
-	if (promptConcept === 'prompt-first') {
-		sections.push(PROMPT_FIRST_LAYOUT)
+	const isAgentic = promptConcept === 'agentic'
+	const sections: string[] = isAgentic ? [AGENTIC_SYSTEM_PROMPT, AGENTIC_LAYOUT] : [BASE_SYSTEM_PROMPT]
+	if (!isAgentic) {
+		sections.push(navigationSection)
+		if (promptConcept === 'prompt-first') {
+			sections.push(PROMPT_FIRST_LAYOUT)
+		}
 	}
 
 	const displayName = profile?.name || user.name || 'Anonymous'
@@ -101,7 +156,8 @@ function buildSystemPrompt(
 - Name: ${displayName}
 - Email: ${user.email || 'not authenticated'}
 - Role: ${role}
-- Test user: ${isTestUser ? 'yes (auto-generated demo identity)' : 'no'}`)
+- Test user: ${isTestUser ? 'yes (auto-generated demo identity)' : 'no'}
+- Never pass this email as an assignee filter. A demo visitor is not assigned tasks. "My tasks" means every task.`)
 
 	if (browserContext) {
 		const formattedDate = new Date(browserContext.currentTime).toLocaleString(browserContext.locale, {
@@ -171,15 +227,16 @@ export const Route = createFileRoute('/api/chat')({
 				const browserContext: BrowserContext | null = browserContextResult.success ? browserContextResult.data : null
 
 				const router = await getRouterInstance()
+				const promptConcept = getShellSession().promptConcept
 				const systemPrompt = buildSystemPrompt(
 					accessTicket.identity,
 					accessTicket.profile,
 					browserContext,
 					accessTicket.isTestUser,
 					getNavigationPromptSection(buildAppNavigation(router)),
-					getShellSession().promptConcept,
+					promptConcept,
 				)
-				const tools = [
+				const dataTools = [
 					getTasksTool,
 					getTaskTool,
 					getDistinctValuesTool,
@@ -190,15 +247,16 @@ export const Route = createFileRoute('/api/chat')({
 					createTaskTool,
 					updateTaskTool,
 					deleteTaskTool,
-					navigateToolDef,
-					invalidateRouterToolDef,
 				]
+				const tools = promptConcept === 'agentic' ? dataTools : [...dataTools, navigateToolDef, invalidateRouterToolDef]
+				const taskViews = promptConcept === 'agentic' ? await connectTaskViewsMcp() : undefined
 
 				const stream = chat({
 					adapter,
 					messages: convertMessagesToModelMessages(body.messages ?? []) as Parameters<typeof chat>[0]['messages'],
 					systemPrompts: [systemPrompt],
 					tools,
+					...(taskViews ? { mcp: { clients: [taskViews] } } : {}),
 					agentLoopStrategy: maxIterations(10),
 				})
 
