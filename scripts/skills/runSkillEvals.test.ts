@@ -126,21 +126,37 @@ afterEach(async () => {
 	await Promise.all(createdDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })))
 })
 
-describe('runSkillEvals', () => {
-	it('exposes architecture, observability, reference-stack, repository, and promptable-ux eval suites', () => {
-		const evals = createSkillEvals()
+function formatEvalFailure(result) {
+	const files = (result.files ?? []).map((file) => `- ${file}`).join('\n')
+	return [result.message, files].filter(Boolean).join('\n')
+}
+
+describe('skill contract evals', () => {
+	const evals = createSkillEvals()
+
+	it('covers architecture, observability, reference-stack, repository, promptable-ux, and agentic-ux', () => {
 		expect(evals.length).toBeGreaterThanOrEqual(10)
-		expect(evals.some((evalDef) => evalDef.skill === 'observability-and-env')).toBe(true)
-		expect(evals.some((evalDef) => evalDef.skill === 'tanstack-promptable-fullstack-app-template')).toBe(true)
-		expect(evals.some((evalDef) => evalDef.skill === 'reference-tech-stack')).toBe(true)
-		expect(evals.some((evalDef) => evalDef.skill === 'repository-architecture')).toBe(true)
-		expect(evals.some((evalDef) => evalDef.skill === 'promptable-ux')).toBe(true)
+		for (const skill of [
+			'observability-and-env',
+			'tanstack-promptable-fullstack-app-template',
+			'reference-tech-stack',
+			'repository-architecture',
+			'promptable-ux',
+			'agentic-ux',
+		]) {
+			expect(evals.some((evalDef) => evalDef.skill === skill)).toBe(true)
+		}
 	})
 
-	it('passes on the real workspace', async () => {
-		await expect(runSkillEvals({ logger: { log() {} } })).resolves.toBeDefined()
-	})
+	for (const evalDef of evals) {
+		it(`${evalDef.id} (${evalDef.skill})`, async () => {
+			const result = await evalDef.run()
+			expect(result.pass, formatEvalFailure(result)).toBe(true)
+		})
+	}
+})
 
+describe('runSkillEvals', () => {
 	it('fails when process.env leaks into application code', async () => {
 		const rootDir = await createMinimalWorkspace({
 			'src/services/bad.ts': 'const x = process.env.SECRET\n',

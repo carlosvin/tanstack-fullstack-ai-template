@@ -5,15 +5,12 @@ Automated static checks that validate the **example app** against the Agent Skil
 ## Commands
 
 ```bash
-pnpm test:skill-evals          # all evals
-pnpm test:skill-evals -- --skill observability-and-env
-pnpm test:skill-evals -- --skill tanstack-promptable-fullstack-app-template
-pnpm test:skill-evals -- --skill reference-tech-stack
-pnpm test:skill-evals -- --skill repository-architecture
-pnpm test:skill-evals -- --skill promptable-ux
+pnpm test:skill-evals
+pnpm test:skill-evals -- -t observability-and-env
+pnpm test:skill-evals -- -t choose-ux-asks-when-unclear
 ```
 
-`pnpm lint` also runs skill evals after `skills:check`.
+Each check is its own Vitest test. `-t` filters by check id or skill name. `pnpm lint` runs this suite after `skills:check`. The assertion list stays in `scripts/skills/runSkillEvals.mjs`.
 
 ## Waza (Agent Skills compliance)
 
@@ -23,7 +20,7 @@ pnpm test:skill-evals -- --skill promptable-ux
 pnpm skills:waza    # waza check + spec verify + mock run
 ```
 
-CI runs this in `.github/workflows/skills.yml` with a pinned `waza` binary. Config lives in `.waza.yaml`. Suites use the **mock** executor so PRs do not need model API keys.
+CI runs this in `.github/workflows/skills.yml` with a pinned `waza` binary. Config lives in `.waza.yaml`. `waza check` and `waza spec verify` are the pull-request gates for skill spec, token budget, and `USE FOR` / `DO NOT USE FOR` coverage. The mock `waza run` only checks that each suite loads. It does not judge skill behavior, and the pull-request job does not call the Copilot SDK.
 
 ## What is checked
 

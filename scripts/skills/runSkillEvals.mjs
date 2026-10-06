@@ -1,7 +1,6 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
-import process from 'node:process'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
 import { getSkillPaths } from './validateSkills.mjs'
 
 const defaultRootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
@@ -1014,18 +1013,4 @@ export async function runSkillEvals({ rootDir = defaultRootDir, logger = console
 
 	logger.log(`Skill evals passed: ${results.length}/${results.length}`)
 	return results
-}
-
-async function main() {
-	const args = process.argv.slice(2)
-	const skillFlagIndex = args.indexOf('--skill')
-	const filterSkill = skillFlagIndex >= 0 ? args[skillFlagIndex + 1] : null
-	await runSkillEvals({ filterSkill })
-}
-
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-	main().catch((error) => {
-		console.error(error instanceof Error ? error.message : String(error))
-		process.exit(1)
-	})
 }
