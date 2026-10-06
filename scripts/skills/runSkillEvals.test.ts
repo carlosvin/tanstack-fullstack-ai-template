@@ -245,13 +245,19 @@ Do not pick one.
 					'If the user does not choose, use **prompt-first**.',
 				),
 			}).join('\n'),
-		).toMatch(/defaults to prompt-first/)
+		).toMatch(/chooses an experience when the choice is missing/)
 		expect(
 			uxChoiceViolations({
 				...skills,
-				promptable: 'When the preference is unclear, use **prompt-first**.',
+				architecture: `${skills.architecture}\nPrompt-first is the default when no choice is provided.`,
 			}).join('\n'),
-		).toMatch(/picks an experience when the preference is unclear/)
+		).toMatch(/prompt-first is the default/i)
+		expect(
+			uxChoiceViolations({
+				...skills,
+				promptable: `${skills.promptable}\nWhen unclear, choose side.`,
+			}).join('\n'),
+		).toMatch(/choose side/)
 		expect(
 			uxChoiceViolations({
 				...skills,

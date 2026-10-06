@@ -112,12 +112,17 @@ function pass() {
 	return { pass: true }
 }
 
-const UX_SILENT_DEFAULTS = [
-	[/If the user does not choose, use \*\*prompt-first\*\*/, 'defaults to prompt-first when the user does not choose'],
-	[/prompt-first\*\* \(default\)/, 'marks prompt-first as the default answer'],
-	[/When the preference is unclear, use/, 'picks an experience when the preference is unclear'],
-	[/if they do not choose, use \*\*prompt-first\*\*/i, 'defaults to prompt-first when they do not choose'],
-]
+const UX_MISSING_CHOICE = /\b(not clear|unclear|does not choose|do not choose|no choice|no answer|without an answer)\b/i
+const UX_PRESCRIBED_EXPERIENCE =
+	/\b(?:default to|fall back to|falls back to|choose|chooses|pick|picks|use|uses|select|selects)\s+\*{0,2}(side|prompt-first|agentic)\b|\b(side|prompt-first|agentic)\b[^\n.]{0,40}\bis the default\b|\b(side|prompt-first|agentic)\*\*\s*\(default\)/i
+
+/** Sentences that name one experience when the choice is missing, excluding the ask-and-wait instruction. */
+export function silentUxChoiceSentences(text) {
+	return text.split(/\n|(?<=[.!?])\s+/).filter((sentence) => {
+		if (!UX_MISSING_CHOICE.test(sentence) || !UX_PRESCRIBED_EXPERIENCE.test(sentence)) return false
+		return !/\bask\b/i.test(sentence) && !/\bdo not pick\b/i.test(sentence)
+	})
+}
 
 /**
  * Violations of the "ask which UX and wait" contract.
@@ -154,8 +159,8 @@ export function uxChoiceViolations({ architecture, promptable, agentic }) {
 		['agentic-ux', agentic],
 	]
 	for (const [name, text] of texts) {
-		for (const [pattern, reason] of UX_SILENT_DEFAULTS) {
-			if (pattern.test(text)) violations.push(`${name} ${reason}`)
+		for (const sentence of silentUxChoiceSentences(text)) {
+			violations.push(`${name} chooses an experience when the choice is missing: ${sentence.trim()}`)
 		}
 		if (!/not clear which user experience/.test(text) || !/ask which of the three[\s\S]{0,160}wait/.test(text)) {
 			violations.push(`${name} must ask which of the three and wait when it is not clear`)
