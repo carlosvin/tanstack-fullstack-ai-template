@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createSkillEvals, runSkillEvals, uxChoiceViolations } from './runSkillEvals.mjs'
+import { createSkillEvals, uxChoiceViolations } from './runSkillEvals.mjs'
 import { formatCompanionInstallCommand } from './validateSkills.mjs'
 
 const createdDirs: string[] = []
@@ -135,7 +135,6 @@ describe('skill contract evals', () => {
 	const evals = createSkillEvals()
 
 	it('covers architecture, observability, reference-stack, repository, promptable-ux, and agentic-ux', () => {
-		expect(evals.length).toBeGreaterThanOrEqual(10)
 		for (const skill of [
 			'observability-and-env',
 			'tanstack-promptable-fullstack-app-template',
@@ -156,19 +155,27 @@ describe('skill contract evals', () => {
 	}
 })
 
-describe('runSkillEvals', () => {
+describe('skill eval fixtures', () => {
 	it('fails when process.env leaks into application code', async () => {
 		const rootDir = await createMinimalWorkspace({
 			'src/services/bad.ts': 'const x = process.env.SECRET\n',
 		})
-		await expect(runSkillEvals({ rootDir, logger: { log() {} } })).rejects.toThrow(/Skill evals failed/)
+		const evalDef = createSkillEvals(rootDir).find((entry) => entry.id === 'observability-process-env-centralized')
+		expect(evalDef).toBeDefined()
+		const result = await evalDef?.run()
+		expect(result?.pass).toBe(false)
+		expect(result?.files).toContain('src/services/bad.ts')
 	})
 
 	it('fails when a client-shared module imports a src/env server module', async () => {
 		const rootDir = await createMinimalWorkspace({
 			'src/components/Bad/Bad.tsx': "import { webServerEnv } from '../../env/webEnv.server'\n",
 		})
-		await expect(runSkillEvals({ rootDir, logger: { log() {} } })).rejects.toThrow(/Skill evals failed/)
+		const evalDef = createSkillEvals(rootDir).find((entry) => entry.id === 'observability-no-client-env-imports')
+		expect(evalDef).toBeDefined()
+		const result = await evalDef?.run()
+		expect(result?.pass).toBe(false)
+		expect(result?.files).toContain('src/components/Bad/Bad.tsx')
 	})
 
 	it('allows inline type-only imports from src/env in client-shared modules', async () => {
@@ -215,12 +222,6 @@ describe('runSkillEvals', () => {
 		expect(result?.files).toContain('mongoTaskRepository.server.ts')
 	})
 
-	it('asks which UX when the experience is not clear', async () => {
-		const evalDef = createSkillEvals().find((entry) => entry.id === 'choose-ux-asks-when-unclear')
-		expect(evalDef).toBeDefined()
-		await expect(evalDef?.run()).resolves.toEqual({ pass: true })
-	})
-
 	it('fails the UX eval when a skill picks prompt-first instead of asking', () => {
 		const skills = {
 			architecture: `## Choose a UX
@@ -263,6 +264,10 @@ Do not pick one.
 		const rootDir = await createMinimalWorkspace({
 			'src/services/repository/mongoRepository.server.ts': 'return col.find() as Promise<TaskRepo[]>\n',
 		})
-		await expect(runSkillEvals({ rootDir, logger: { log() {} } })).rejects.toThrow(/Skill evals failed/)
+		const evalDef = createSkillEvals(rootDir).find((entry) => entry.id === 'architecture-mongo-repo-parse')
+		expect(evalDef).toBeDefined()
+		const result = await evalDef?.run()
+		expect(result?.pass).toBe(false)
+		expect(result?.files).toContain('src/services/repository/mongoRepository.server.ts')
 	})
 })

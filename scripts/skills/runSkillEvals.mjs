@@ -983,34 +983,3 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 		},
 	]
 }
-
-export async function runSkillEvals({ rootDir = defaultRootDir, logger = console, filterSkill = null } = {}) {
-	const evals = createSkillEvals(rootDir).filter((evalDef) => !filterSkill || evalDef.skill === filterSkill)
-	const results = []
-
-	for (const evalDef of evals) {
-		const result = await evalDef.run()
-		results.push({ ...evalDef, ...result })
-	}
-
-	const failed = results.filter((result) => !result.pass)
-	for (const result of results) {
-		const status = result.pass ? 'PASS' : 'FAIL'
-		logger.log(`[${status}] ${result.id} (${result.skill})`)
-		if (!result.pass) {
-			logger.log(`       ${result.message}`)
-			for (const file of result.files ?? []) {
-				logger.log(`       - ${file}`)
-			}
-		}
-	}
-
-	if (failed.length > 0) {
-		const error = new Error(`Skill evals failed: ${failed.length}/${results.length}`)
-		error.results = results
-		throw error
-	}
-
-	logger.log(`Skill evals passed: ${results.length}/${results.length}`)
-	return results
-}
