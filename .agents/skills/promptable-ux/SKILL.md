@@ -18,7 +18,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.2.0"
+  version: "1.3.0"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -61,6 +61,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 | Task | Load |
 |------|------|
 | Which prompt concept, side panel chat, prompt bar, mobile first, assistant markdown, app navigation UX | **This skill** |
+| Fully agentic shell, no domain screens | **`agentic-ux`** |
 | Schemas, routes, AI tools, server boundaries, availability gate | **`tanstack-promptable-fullstack-app-template`** |
 | Which UI library or markdown package this template uses | **`reference-tech-stack`** |
 | Widget snippets and file paths in this repo | **AGENTS.md** §3 and §8 |
@@ -69,7 +70,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 ## How to use this skill
 
 1. Read **Shared UX**. It applies to both concepts.
-2. Read **Choose a concept**. This template's reference app already declares **Promptable UI (side)**. Ask the developer before using the other concept or changing that declaration. Record the choice so reviewers know which checklist applied.
+2. Read **Choose a concept**. This template's reference app already declares **Promptable UI (side)**. When it is not clear which user experience to implement, ask which of the three (side, prompt-first, or agentic) and wait. Record the choice so reviewers know which checklist applied.
 3. Implement only the chosen concept. Do not ship both prompt surfaces.
 4. Run the **UX checklist** before a UI change.
 5. Keep routes, tools, and loaders on the architecture skill. This skill changes composition, not the data model.
@@ -87,7 +88,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 **One concept per app.** A hidden drawer plus a second always-visible prompt is a mixed concept. Do not build it.
 
-**Ask the developer** which concept to use when the app has not declared one. Do not silently switch an app that already declares a concept. When the preference is unclear, use **prompt-first**. This template's default site stays **Promptable UI (side)** (`PROMPT_CONCEPT=side` or unset). A second site uses `PROMPT_CONCEPT=prompt-first`. Do not change those env values from this question.
+**Ask the developer** which user experience to implement when it is not clear. The three experiences are **Promptable UI (side)** and **Prompt-first** in this skill, and the fully agentic shell in companion **`agentic-ux`**. Ask which of the three and wait. Do not pick one. Do not silently switch an app that already declares a concept. This template's default site stays **Promptable UI (side)** (`PROMPT_CONCEPT=side` or unset). A second site uses `PROMPT_CONCEPT=prompt-first`. A third site uses `PROMPT_CONCEPT=agentic`. Do not change those env values from this question.
 
 ## Shared UX
 
@@ -162,7 +163,7 @@ This template implements prompt-first when `PROMPT_CONCEPT=prompt-first` (see `s
 
 ## UX checklist
 
-- Concept chosen with the developer. If they do not choose, use prompt-first. This repo's default site stays side unless asked.
+- Concept chosen with the developer. When it is not clear which user experience to implement, ask which of the three (side, prompt-first, or agentic) and wait. This repo's sites keep their declared `PROMPT_CONCEPT`.
 - `getAIAvailability()` gates the prompt. No disabled placeholder.
 - Chat state lives on the layout and survives navigation.
 - Assistant output is GFM markdown. Internal links use the project `Link`.

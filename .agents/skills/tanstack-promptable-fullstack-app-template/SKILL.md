@@ -21,7 +21,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.33.1"
+  version: "1.34.0"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -81,20 +81,22 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 1. Read **Core Contract** first — it is the non-negotiable architecture.
 2. Run the **Architecture Checklist** before every non-trivial change.
-3. Jump to **Server execution boundaries**, **Schema Boundaries**, **Request Context**, or **Special Patterns** only when that concern applies. Special Patterns are not Core Contract. Ask **Choose a UX** before prompt chrome. Mobile first lives in companion **`promptable-ux`**.
-4. Use **[AGENTS.md](https://raw.githubusercontent.com/carlosvin/tanstack-fullstack-ai-template/main/AGENTS.md)** for operational how-to — not for inventing alternate architecture. **This skill is vendor-agnostic** for UI kits and observability SDKs. Concrete packages for *this* template live in companion skill **`reference-tech-stack`**; env/logging setup lives in **`observability-and-env`**. Collection ownership, indexes, stale-data cleanup, and resource lifetime live in **`repository-architecture`**. Prompt concepts live in **`promptable-ux`** and **`agentic-ux`**. Ask which one in **Choose a UX** before building chrome.
+3. Jump to **Server execution boundaries**, **Schema Boundaries**, **Request Context**, or **Special Patterns** only when that concern applies. Special Patterns are not Core Contract. Follow **Choose a UX** before prompt chrome. Mobile first lives in companion **`promptable-ux`**.
+4. Use **[AGENTS.md](https://raw.githubusercontent.com/carlosvin/tanstack-fullstack-ai-template/main/AGENTS.md)** for operational how-to — not for inventing alternate architecture. **This skill is vendor-agnostic** for UI kits and observability SDKs. Concrete packages for *this* template live in companion skill **`reference-tech-stack`**; env/logging setup lives in **`observability-and-env`**. Collection ownership, indexes, stale-data cleanup, and resource lifetime live in **`repository-architecture`**. The three user experiences live in **`promptable-ux`** (side and prompt-first) and **`agentic-ux`** (fully agentic). When it is not clear which user experience to implement, ask in **Choose a UX** and wait.
 
 ## Choose a UX
 
-Ask which UX to follow before placing a prompt or adding domain screens. One concept per deployment.
+The UX companion skills cover three experiences. One experience per deployment.
 
-| Answer | Load | Build |
-|--------|------|--------|
-| **prompt-first** (default) | **`promptable-ux`** | Bottom-pinned composer, conversation stage, and domain routes |
+| Experience | Companion skill | Build |
+|------------|-----------------|--------|
 | **side** | **`promptable-ux`** | Domain screens, with the prompt hidden until opened |
+| **prompt-first** | **`promptable-ux`** | Bottom-pinned composer, conversation stage, and domain routes |
 | **agentic** | **`agentic-ux`** | Thin shell only. No domain screens. Views are MCP UI resources from tools |
 
-If the user does not choose, use **prompt-first**. If the app already sets `PROMPT_CONCEPT` or already mounts one shell, keep that declaration. This template's three sites stay as they are: side (unset or `side`), prompt-first, and agentic. Do not change those env values because of this question.
+When the app already sets `PROMPT_CONCEPT` or already mounts one shell, keep that declaration. This template's three sites stay as they are: side (unset or `side`), prompt-first, and agentic. Do not change those env values because of this question.
+
+When it is not clear which user experience to implement, ask which of the three to build and wait for an answer. Do not pick one. Do not place a prompt, add domain screens, or start an agentic shell until the developer chooses.
 
 ## Fixed vs swappable stack
 
@@ -123,7 +125,8 @@ Pick **one validator library** per app and use it consistently across router sea
 - **Runtime context guards:** `getShellAuthContext`, `getAccessTicket`, `accessTicketFrom`, or property-presence checks on middleware-assembled `context` — chain the middleware and read `ctx.context` directly (Start infers types).
 - **Context type bypasses:** `context as AuthContext`, `as unknown`, or `as any` on request context — chain middleware so TypeScript infers context.
 - **Secrets in the browser:** returning `serverEnv` or raw env to loaders/components — project through `shellSession` only.
-- **Prompt chrome invented here:** choosing a drawer, a prompt-first page, or an agentic shell inside this skill. Ask **Choose a UX** (default **prompt-first**), then load **`promptable-ux`** or **`agentic-ux`**. This template's sites already declare their concepts.
+- **Prompt chrome invented here:** choosing a drawer, a prompt-first page, or an agentic shell inside this skill. When it is not clear which user experience to implement, ask **Choose a UX** and wait, then load **`promptable-ux`** or **`agentic-ux`**. This template's sites already declare their concepts.
+- **UX chosen without an answer:** starting side, prompt-first, or agentic chrome when the experience is not clear. Ask which of the three to build and wait.
 
 ## Core Contract
 
@@ -454,10 +457,10 @@ interface Repository {
 1. **Schemas:** repo + tools + search layers; repository I/O and mappers with `Schema.parse()`; URL state via `validateSearch`.
 2. **Repository:** interfaces in `types.ts`; seed + production implementations. Collection owners, indexes, and client disposal: companion **`repository-architecture`**.
 3. **Server functions:** `serverFns.ts` — GET queries, POST mutations with shared validators.
-4. **AI tools:** each server function → `toolDefinition` + `createSafeServerTool`; wire client tools in the prompt shell (AGENTS.md §8). Prompt placement: **Choose a UX** (default **prompt-first**), then **`promptable-ux`** or **`agentic-ux`**.
+4. **AI tools:** each server function → `toolDefinition` + `createSafeServerTool`; wire client tools in the prompt shell (AGENTS.md §8). Prompt placement: **Choose a UX**, then **`promptable-ux`** or **`agentic-ux`**. When it is not clear which user experience to implement, ask which of the three and wait.
 5. **Middleware:** `start.ts` — auth, invalidation, optional pre-auth `308` redirects for legacy paths.
 6. **Routes:** `validateSearch`, `loaderDeps`, loaders; parent layouts for shared `beforeLoad`/data.
-7. **Chat:** adapter, `chat()`, `buildSystemPrompt`, tool list — details in AGENTS.md §8. Ask **Choose a UX** before wiring chrome. Default **prompt-first** via **`promptable-ux`**. **Agentic** loads **`agentic-ux`** and skips domain screens.
+7. **Chat:** adapter, `chat()`, `buildSystemPrompt`, tool list — details in AGENTS.md §8. Follow **Choose a UX** before wiring chrome. When it is not clear which user experience to implement, ask which of the three and wait. **Side** and **prompt-first** load **`promptable-ux`**. **Agentic** loads **`agentic-ux`** and skips domain screens.
 
 ## Special Patterns (use when the feature applies)
 
@@ -491,7 +494,7 @@ interface Repository {
 - **Help surface:** single `docs/help.md` can back `/help`, an AI tool, and suggested prompts (see AGENTS.md).
 - **Distinct values:** `getDistinctValues` → GET server fn → read-only AI tool so filters match real data.
 - **Dynamic AI navigation:** derive route/help context from `router.flatRoutes` + `validateSearch` introspection where possible.
-- **Prompt chrome and mobile first:** ask **Choose a UX** (default **prompt-first**), then **`promptable-ux`** or **`agentic-ux`**. Do not choose the layout inside this skill. Existing deployments keep their declared `PROMPT_CONCEPT`.
+- **Prompt chrome and mobile first:** when it is not clear which user experience to implement, ask **Choose a UX** and wait, then load **`promptable-ux`** or **`agentic-ux`**. Do not choose the layout inside this skill. Existing deployments keep their declared `PROMPT_CONCEPT`.
 
 ## Agent Skills, TanStack CLI, and AI
 
@@ -505,6 +508,7 @@ interface Repository {
 |------|--------|
 | UI kit and styling | §3 + **`reference-tech-stack`** |
 | Prompt concepts, mobile first, assistant markdown | **`promptable-ux`** + §3 and §8 |
+| Fully agentic shell | **`agentic-ux`** |
 | Auth, middleware, guards | §5 |
 | AI adapters, chat client, tools, prompts | §8 |
 | Observability and env bridge | §9 + **`observability-and-env`** |

@@ -834,8 +834,17 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				if (!/\*\*`agentic-ux`\*\*\s*\(companion\)/.test(templateSkill)) {
 					return fail('Parent architecture skill must list agentic-ux as a companion')
 				}
-				if (!/## Choose a UX/.test(templateSkill) || !/prompt-first\*\* \(default\)/.test(templateSkill)) {
-					return fail('Parent architecture skill must ask which UX and default to prompt-first')
+				if (!/## Choose a UX/.test(templateSkill)) {
+					return fail('Parent architecture skill must include Choose a UX')
+				}
+				if (!/not clear which user experience/.test(templateSkill) || !/ask which of the three/.test(templateSkill)) {
+					return fail('Parent architecture skill must ask which UX when it is not clear')
+				}
+				if (
+					/If the user does not choose, use \*\*prompt-first\*\*/.test(templateSkill) ||
+					/prompt-first\*\* \(default\)/.test(templateSkill)
+				) {
+					return fail('Parent architecture skill must not default the UX when the choice is missing')
 				}
 				const tools = await readText(path.join(rootDir, 'src/services/ai/tools.ts'))
 				const mcpServer = await readText(path.join(rootDir, 'src/services/ai/taskViewsMcp.server.ts'))

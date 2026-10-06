@@ -97,7 +97,7 @@ Paste one of these into your agent after install:
 - "Add a new domain entity using the template's schema layers, repository, server functions, routes, and AI tools."
 - "What UI library and validator does the reference tech stack skill pick for this template?"
 - "How should a repository own indexes, stale-data cleanup, and connection lifetime?"
-- "Should this app use the hidden side prompt or a prompt-first layout?"
+- "Should this app use the hidden side prompt, a prompt-first layout, or a fully agentic shell? Ask when it is not clear."
 - "Review my nested routes: shared `beforeLoad` / loaders should live on the parent layout — what should move?"
 
 ## Contributors

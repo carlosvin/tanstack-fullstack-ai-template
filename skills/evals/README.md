@@ -50,6 +50,7 @@ CI runs this in `.github/workflows/skills.yml` with a pinned `waza` binary. Conf
 - `importProtection` in `vite.config.ts`
 - Agent Skills companion reciprocity and `npx skills` install commands (`pnpm skills:check`)
 - Architecture skill documents **Fixed vs swappable stack** and stays vendor-agnostic in prose
+- **Choose a UX** names side, prompt-first, and agentic, and asks which to implement when it is not clear
 
 ### `reference-tech-stack`
 
@@ -68,6 +69,7 @@ CI runs this in `.github/workflows/skills.yml` with a pinned `waza` binary. Conf
 - Architecture skill points at `promptable-ux` and does not own the mobile-first essay
 - `AppLayout` declares Promptable UI (side)
 - AGENTS.md names both concepts and still asks the developer before switching
+- When it is not clear which user experience to implement, the skill asks which of the three and waits
 
 ## Manual pressure scenarios
 
