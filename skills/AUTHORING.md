@@ -51,7 +51,7 @@ This repo is both the **skill contract** and the **reference app**. They must st
 | `.agents/skills/*/SKILL.md` | Architectural / stack contract (agentskills.io) | Yes |
 | `src/` | Reference implementation that must satisfy the contract | Yes |
 | `AGENTS.md` | Ops handbook + alignment roadmap (not alternate architecture) | Yes |
-| `scripts/skills/runSkillEvals.mjs` | Static app↔skill invariants. Vitest runs one test per check via `pnpm test:skill-evals` | Yes when contract changes |
+| `scripts/skills/skillEvals.ts` | Static app↔skill invariants. Vitest runs one test per check via `pnpm test:skill-evals` | Yes when contract changes |
 
 When app and skill disagree, pick one:
 

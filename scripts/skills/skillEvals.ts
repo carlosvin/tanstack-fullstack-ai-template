@@ -3,6 +3,17 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { getSkillPaths } from './validateSkills.mjs'
 
+/** Static app↔skill checks. Vitest runs them in `skillEvals.test.ts`. */
+
+export type SkillEvalResult = { pass: true } | { pass: false; message: string; files?: string[] }
+
+export type SkillEval = {
+	id: string
+	skill: string
+	description: string
+	run: () => Promise<SkillEvalResult>
+}
+
 const defaultRootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
 const PROCESS_ENV_ALLOWED = new Set(['src/env/webEnv.server.ts', 'instrument.env.mts'])
@@ -21,7 +32,10 @@ const ARCHITECTURE_VENDOR_FORBIDDEN = [
 	/\bBiome\b/,
 ]
 
-async function walkFiles(dir, options = {}) {
+async function walkFiles(
+	dir: string,
+	options: { extensions?: string[] | null; ignoreDirs?: Set<string> } = {},
+): Promise<string[]> {
 	const { extensions = null, ignoreDirs = new Set(['node_modules', '.output', 'dist', '.git']) } = options
 	const results = []
 
@@ -46,21 +60,21 @@ async function walkFiles(dir, options = {}) {
 	return results
 }
 
-function relative(rootDir, filePath) {
+function relative(rootDir: string, filePath: string) {
 	return path.relative(rootDir, filePath).split(path.sep).join('/')
 }
 
-function isProcessEnvAllowed(relativePath) {
+function isProcessEnvAllowed(relativePath: string) {
 	if (PROCESS_ENV_ALLOWED.has(relativePath)) return true
 	return PROCESS_ENV_ALLOWED_PREFIXES.some((prefix) => relativePath.startsWith(prefix) || relativePath.endsWith(prefix))
 }
 
-async function readText(filePath) {
+async function readText(filePath: string) {
 	return fs.readFile(filePath, 'utf8')
 }
 
 /** Remove import/export statements that are type-only (erased at compile time). */
-function stripTypeOnlyImports(content) {
+function stripTypeOnlyImports(content: string) {
 	let result = content
 	// import type Foo from '...' | import type { Foo } from '...'
 	result = result.replace(/import\s+type\s[^;]+;?/g, '')
@@ -91,7 +105,7 @@ function stripTypeOnlyImports(content) {
 	return result
 }
 
-async function collectMatches(rootDir, files, pattern) {
+async function collectMatches(rootDir: string, files: string[], pattern: RegExp | string) {
 	const regex = pattern instanceof RegExp ? pattern : new RegExp(pattern, 'g')
 	const matches = []
 	for (const filePath of files) {
@@ -104,11 +118,11 @@ async function collectMatches(rootDir, files, pattern) {
 	return matches
 }
 
-function fail(message, files = []) {
+function fail(message: string, files: string[] = []): SkillEvalResult {
 	return { pass: false, message, files }
 }
 
-function pass() {
+function pass(): SkillEvalResult {
 	return { pass: true }
 }
 
@@ -117,26 +131,30 @@ const UX_PRESCRIBED_EXPERIENCE =
 	/\b(?:default to|fall back to|falls back to|choose|chooses|pick|picks|use|uses|select|selects)\s+\*{0,2}(side|prompt-first|agentic)\b|\b(side|prompt-first|agentic)\b[^\n.]{0,40}\bis the default\b|\b(side|prompt-first|agentic)\*\*\s*\(default\)/i
 
 /** Sentences that name one experience when the choice is missing, excluding the ask-and-wait instruction. */
-export function silentUxChoiceSentences(text) {
+export function silentUxChoiceSentences(text: string) {
 	return text.split(/\n|(?<=[.!?])\s+/).filter((sentence) => {
 		if (!UX_MISSING_CHOICE.test(sentence) || !UX_PRESCRIBED_EXPERIENCE.test(sentence)) return false
 		return !/\bask\b/i.test(sentence) && !/\bdo not pick\b/i.test(sentence)
 	})
 }
 
-/**
- * Violations of the "ask which UX and wait" contract.
- * @param {{ architecture: string, promptable: string, agentic: string }} skills
- * @returns {string[]}
- */
-export function uxChoiceViolations({ architecture, promptable, agentic }) {
-	const violations = []
+/** Violations of the "ask which UX and wait" contract. */
+export function uxChoiceViolations({
+	architecture,
+	promptable,
+	agentic,
+}: {
+	architecture: string
+	promptable: string
+	agentic: string
+}): string[] {
+	const violations: string[] = []
 	const choose = architecture.split('## Choose a UX')[1]?.split('\n## ')[0] ?? ''
 	if (!choose) {
 		violations.push('Architecture skill must include Choose a UX')
 	} else {
 		const rows = choose.split('\n').filter((line) => line.startsWith('|'))
-		const expectRow = (experience, skillId) => {
+		const expectRow = (experience: string, skillId: string) => {
 			const row = rows.find((line) => line.includes(`**${experience}**`))
 			if (!row?.includes(`**\`${skillId}\`**`)) {
 				violations.push(`Choose a UX must send ${experience} to ${skillId}`)
@@ -157,7 +175,7 @@ export function uxChoiceViolations({ architecture, promptable, agentic }) {
 		['Architecture skill', architecture],
 		['promptable-ux', promptable],
 		['agentic-ux', agentic],
-	]
+	] as const
 	for (const [name, text] of texts) {
 		for (const sentence of silentUxChoiceSentences(text)) {
 			violations.push(`${name} chooses an experience when the choice is missing: ${sentence.trim()}`)
@@ -175,7 +193,7 @@ export function uxChoiceViolations({ architecture, promptable, agentic }) {
 	return violations
 }
 
-export function createSkillEvals(rootDir = defaultRootDir) {
+export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 	return [
 		{
 			id: 'observability-process-env-centralized',
@@ -278,7 +296,7 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				const clientSharedZones = ['src/components', 'src/routes', 'src/services/schemas', 'src/constants', 'src/types']
 				const violations = []
 				for (const zone of clientSharedZones) {
-					let files
+					let files: string[]
 					try {
 						files = await walkFiles(path.join(rootDir, zone), { extensions: ['.ts', '.tsx'] })
 					} catch {
@@ -347,7 +365,7 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 			description: 'MongoRepository validates outbound documents with repo parsers (no casts)',
 			async run() {
 				const repoDir = path.join(rootDir, 'src/services/repository')
-				let files
+				let files: string[]
 				try {
 					files = await walkFiles(repoDir, { extensions: ['.ts'] })
 				} catch {
@@ -537,7 +555,7 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				const seed = await readText(path.join(rootDir, 'src/services/repository/seedRepository.ts'))
 				const taskRepoPath = path.join(rootDir, 'src/services/repository/mongoTaskRepository.server.ts')
 				const legacyRepoPath = path.join(rootDir, 'src/services/repository/mongoRepository.server.ts')
-				let mongo
+				let mongo: string
 				try {
 					mongo = await readText(taskRepoPath)
 				} catch {
@@ -637,7 +655,7 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				'Shared UX skill defines both prompt concepts; mobile first stays out of the architecture core contract',
 			async run() {
 				const { agentSkillsDir } = getSkillPaths(rootDir)
-				let skillMd
+				let skillMd: string
 				try {
 					skillMd = await readText(path.join(agentSkillsDir, 'promptable-ux', 'SKILL.md'))
 				} catch {
@@ -716,7 +734,7 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 			async run() {
 				const { agentSkillsDir } = getSkillPaths(rootDir)
 				const skillMdPath = path.join(agentSkillsDir, 'repository-architecture', 'SKILL.md')
-				let skillMd
+				let skillMd: string
 				try {
 					skillMd = await readText(skillMdPath)
 				} catch {
@@ -757,7 +775,7 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 			skill: 'repository-architecture',
 			description: 'Database driver imports stay in the composition root and repository implementations',
 			async run() {
-				let srcFiles
+				let srcFiles: string[]
 				try {
 					srcFiles = await walkFiles(path.join(rootDir, 'src'), { extensions: ['.ts', '.tsx', '.mts'] })
 				} catch {
@@ -788,10 +806,8 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				const taskPath = path.join(rootDir, 'src/services/repository/mongoTaskRepository.server.ts')
 				const userPath = path.join(rootDir, 'src/services/repository/mongoUserRepository.server.ts')
 				const facadePath = path.join(rootDir, 'src/services/repository/mongoRepository.server.ts')
-				let _hasFacade = false
 				try {
 					await fs.access(facadePath)
-					_hasFacade = true
 				} catch {
 					return pass()
 				}
@@ -851,10 +867,10 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				'When the user experience is not clear, the architecture skill and both UX companions ask which of side, prompt-first, or agentic to implement and wait',
 			async run() {
 				const { agentSkillsDir } = getSkillPaths(rootDir)
-				const readSkill = async (id) => readText(path.join(agentSkillsDir, id, 'SKILL.md'))
-				let architecture
-				let promptable
-				let agentic
+				const readSkill = async (id: string) => readText(path.join(agentSkillsDir, id, 'SKILL.md'))
+				let architecture: string
+				let promptable: string
+				let agentic: string
 				try {
 					architecture = await readSkill('tanstack-promptable-fullstack-app-template')
 					promptable = await readSkill('promptable-ux')
@@ -875,7 +891,7 @@ export function createSkillEvals(rootDir = defaultRootDir) {
 				'Agentic skill recipe matches the example shell: metadata._meta.ui.resourceUri, AppRenderer, no route chrome',
 			async run() {
 				const { agentSkillsDir } = getSkillPaths(rootDir)
-				let skillMd
+				let skillMd: string
 				try {
 					skillMd = await readText(path.join(agentSkillsDir, 'agentic-ux', 'SKILL.md'))
 				} catch {

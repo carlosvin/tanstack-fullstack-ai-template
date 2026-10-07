@@ -2,10 +2,19 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createSkillEvals, uxChoiceViolations } from './runSkillEvals.mjs'
+import { createSkillEvals, type SkillEvalResult, uxChoiceViolations } from './skillEvals'
 import { formatCompanionInstallCommand } from './validateSkills.mjs'
 
 const createdDirs: string[] = []
+
+const PUBLISHED_SKILLS = [
+	'observability-and-env',
+	'tanstack-promptable-fullstack-app-template',
+	'promptable-ux',
+	'reference-tech-stack',
+	'repository-architecture',
+	'agentic-ux',
+] as const
 
 const FIXTURE_SKILLS = [
 	{
@@ -66,7 +75,7 @@ ${companions}
 ${extraSections}`
 }
 
-async function createMinimalWorkspace(overrides = {}) {
+async function createMinimalWorkspace(overrides: Record<string, string> = {}) {
 	const rootDir = await mkdtemp(path.join(os.tmpdir(), 'skill-eval-'))
 	createdDirs.push(rootDir)
 
@@ -82,7 +91,7 @@ async function createMinimalWorkspace(overrides = {}) {
 		}),
 	)
 
-	const files = {
+	const files: Record<string, string> = {
 		'src/env/webEnv.server.ts': 'export const webServerEnv = {}\nexport const shellSession = {}\n',
 		'src/utils/logger.ts': 'export function createModuleLogger() {}\n',
 		'src/utils/serverLogger.ts': 'export const createServerLogger = () => {}\n',
@@ -122,35 +131,38 @@ async function createMinimalWorkspace(overrides = {}) {
 	return rootDir
 }
 
+async function runEval(rootDir: string, id: string): Promise<SkillEvalResult> {
+	const evalDef = createSkillEvals(rootDir).find((entry) => entry.id === id)
+	expect(evalDef, id).toBeDefined()
+	return evalDef?.run() ?? { pass: false, message: `Missing eval ${id}` }
+}
+
 afterEach(async () => {
 	await Promise.all(createdDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })))
 })
 
-function formatEvalFailure(result) {
+function formatEvalFailure(result: SkillEvalResult) {
+	if (result.pass) return ''
 	const files = (result.files ?? []).map((file) => `- ${file}`).join('\n')
 	return [result.message, files].filter(Boolean).join('\n')
 }
 
-describe('skill contract evals', () => {
-	const evals = createSkillEvals()
+const workspaceEvals = createSkillEvals()
+const skills = [...new Set(workspaceEvals.map((evalDef) => evalDef.skill))]
 
-	it('covers architecture, observability, reference-stack, repository, promptable-ux, and agentic-ux', () => {
-		for (const skill of [
-			'observability-and-env',
-			'tanstack-promptable-fullstack-app-template',
-			'reference-tech-stack',
-			'repository-architecture',
-			'promptable-ux',
-			'agentic-ux',
-		]) {
-			expect(evals.some((evalDef) => evalDef.skill === skill)).toBe(true)
-		}
+describe('skill evals', () => {
+	it('covers every published skill', () => {
+		expect(skills).toEqual([...PUBLISHED_SKILLS])
 	})
 
-	for (const evalDef of evals) {
-		it(`${evalDef.id} (${evalDef.skill})`, async () => {
-			const result = await evalDef.run()
-			expect(result.pass, formatEvalFailure(result)).toBe(true)
+	for (const skill of skills) {
+		describe(skill, () => {
+			for (const evalDef of workspaceEvals.filter((entry) => entry.skill === skill)) {
+				it(`${evalDef.id}: ${evalDef.description}`, async () => {
+					const result = await evalDef.run()
+					expect(result.pass, formatEvalFailure(result)).toBe(true)
+				})
+			}
 		})
 	}
 })
@@ -160,31 +172,29 @@ describe('skill eval fixtures', () => {
 		const rootDir = await createMinimalWorkspace({
 			'src/services/bad.ts': 'const x = process.env.SECRET\n',
 		})
-		const evalDef = createSkillEvals(rootDir).find((entry) => entry.id === 'observability-process-env-centralized')
-		expect(evalDef).toBeDefined()
-		const result = await evalDef?.run()
-		expect(result?.pass).toBe(false)
-		expect(result?.files).toContain('src/services/bad.ts')
+		const result = await runEval(rootDir, 'observability-process-env-centralized')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(result.files).toContain('src/services/bad.ts')
+		}
 	})
 
 	it('fails when a client-shared module imports a src/env server module', async () => {
 		const rootDir = await createMinimalWorkspace({
 			'src/components/Bad/Bad.tsx': "import { webServerEnv } from '../../env/webEnv.server'\n",
 		})
-		const evalDef = createSkillEvals(rootDir).find((entry) => entry.id === 'observability-no-client-env-imports')
-		expect(evalDef).toBeDefined()
-		const result = await evalDef?.run()
-		expect(result?.pass).toBe(false)
-		expect(result?.files).toContain('src/components/Bad/Bad.tsx')
+		const result = await runEval(rootDir, 'observability-no-client-env-imports')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(result.files).toContain('src/components/Bad/Bad.tsx')
+		}
 	})
 
 	it('allows inline type-only imports from src/env in client-shared modules', async () => {
 		const rootDir = await createMinimalWorkspace({
 			'src/components/Ok/Ok.tsx': "import { type WebServerEnv } from '../../env/webEnv.server'\nexport const x = 1\n",
 		})
-		const evalDef = createSkillEvals(rootDir).find((e) => e.id === 'observability-no-client-env-imports')
-		expect(evalDef).toBeDefined()
-		const result = await evalDef.run()
+		const result = await runEval(rootDir, 'observability-no-client-env-imports')
 		expect(result.pass).toBe(true)
 	})
 
@@ -192,22 +202,22 @@ describe('skill eval fixtures', () => {
 		const rootDir = await createMinimalWorkspace({
 			'src/services/api/rawDriver.ts': "import { MongoClient } from 'mongodb'\n",
 		})
-		const evalDef = createSkillEvals(rootDir).find((entry) => entry.id === 'repository-driver-confined')
-		expect(evalDef).toBeDefined()
-		const result = await evalDef?.run()
-		expect(result?.pass).toBe(false)
-		expect(result?.files).toContain('src/services/api/rawDriver.ts')
+		const result = await runEval(rootDir, 'repository-driver-confined')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(result.files).toContain('src/services/api/rawDriver.ts')
+		}
 	})
 
 	it('fails when repository consumer contracts import the database driver', async () => {
 		const rootDir = await createMinimalWorkspace({
 			'src/services/repository/types.ts': "import type { Collection } from 'mongodb'\n",
 		})
-		const evalDef = createSkillEvals(rootDir).find((entry) => entry.id === 'repository-driver-confined')
-		expect(evalDef).toBeDefined()
-		const result = await evalDef?.run()
-		expect(result?.pass).toBe(false)
-		expect(result?.files).toContain('src/services/repository/types.ts')
+		const result = await runEval(rootDir, 'repository-driver-confined')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(result.files).toContain('src/services/repository/types.ts')
+		}
 	})
 
 	it('fails when the mongo facade exists without both collection owners', async () => {
@@ -215,11 +225,11 @@ describe('skill eval fixtures', () => {
 			'src/services/repository/mongoRepository.server.ts': 'export class MongoRepository {}\n',
 			'src/services/db/mongoClient.server.ts': 'export const scope = { [Symbol.asyncDispose]: async () => {} }\n',
 		})
-		const evalDef = createSkillEvals(rootDir).find((entry) => entry.id === 'repository-collection-owners')
-		expect(evalDef).toBeDefined()
-		const result = await evalDef?.run()
-		expect(result?.pass).toBe(false)
-		expect(result?.files).toContain('mongoTaskRepository.server.ts')
+		const result = await runEval(rootDir, 'repository-collection-owners')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(result.files).toContain('mongoTaskRepository.server.ts')
+		}
 	})
 
 	it('fails the UX eval when a skill picks prompt-first instead of asking', () => {
@@ -270,10 +280,10 @@ Do not pick one.
 		const rootDir = await createMinimalWorkspace({
 			'src/services/repository/mongoRepository.server.ts': 'return col.find() as Promise<TaskRepo[]>\n',
 		})
-		const evalDef = createSkillEvals(rootDir).find((entry) => entry.id === 'architecture-mongo-repo-parse')
-		expect(evalDef).toBeDefined()
-		const result = await evalDef?.run()
-		expect(result?.pass).toBe(false)
-		expect(result?.files).toContain('src/services/repository/mongoRepository.server.ts')
+		const result = await runEval(rootDir, 'architecture-mongo-repo-parse')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(result.files).toContain('src/services/repository/mongoRepository.server.ts')
+		}
 	})
 })

@@ -10,7 +10,7 @@ pnpm test:skill-evals -- -t observability-and-env
 pnpm test:skill-evals -- -t choose-ux-asks-when-unclear
 ```
 
-Each check is its own Vitest test. `-t` filters by check id or skill name. `pnpm lint` runs this suite after `skills:check`. The assertion list stays in `scripts/skills/runSkillEvals.mjs`.
+Each check is its own Vitest test, grouped by skill id. `-t` filters by check id or skill name. `pnpm lint` runs this suite after `skills:check`. The checks live in `scripts/skills/skillEvals.ts`.
 
 ## Waza (Agent Skills compliance)
 
@@ -67,6 +67,11 @@ CI runs this in `.github/workflows/skills.yml` with a pinned `waza` binary. Conf
 - `AppLayout` declares Promptable UI (side)
 - AGENTS.md names both concepts and still asks the developer before switching
 - When it is not clear which user experience to implement, the skill asks which of the three and waits
+
+### `agentic-ux`
+
+- Skill documents the shell, MCP UI rendering, and security rules
+- The example shell follows that recipe (`metadata._meta.ui.resourceUri`, `AppRenderer`, no route chrome)
 
 ## Manual pressure scenarios
 
