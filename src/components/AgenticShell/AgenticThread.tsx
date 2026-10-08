@@ -1,4 +1,4 @@
-import { Container, Group, Loader, ScrollArea, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core'
+import { Box, Group, Loader, ScrollArea, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core'
 import type { ToolResultPart, UIResourcePart } from '@tanstack/ai'
 import type { UIMessage } from '@tanstack/ai-react'
 import { Bot } from 'lucide-react'
@@ -111,10 +111,10 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 
 	return (
 		<ScrollArea h={scrollHeight} viewportRef={viewportRef} type="auto" classNames={{ content: styles.content }}>
-			<Container size="md" p={0} className={isEmpty ? styles.empty : undefined}>
+			<Box className={`${styles.stage} ${isEmpty ? styles.empty : ''}`}>
 				<Stack gap="md" p="xs" w="100%">
 					{isEmpty && (
-						<Stack align="center" gap="lg" py="xl">
+						<Stack className={styles.hero} align="center" gap="lg" py="xl">
 							<ThemeIcon size={64} radius="xl" variant="light" color="teal">
 								<Bot size={32} />
 							</ThemeIcon>
@@ -208,7 +208,7 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 						</Group>
 					)}
 				</Stack>
-			</Container>
+			</Box>
 		</ScrollArea>
 	)
 }

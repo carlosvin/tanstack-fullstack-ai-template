@@ -29,6 +29,7 @@ describe('mcpUiResource', () => {
 				? decodeMcpUiHtml({ uri: content.uri, mimeType: content.mimeType, text: content.text, blob: content.blob })
 				: null
 		expect(html).toContain('/mcp-task-view.js')
+		expect(html).toContain('aria-live="polite"')
 		expect(html).not.toContain('__VIEW_DATA__')
 		expect(html).not.toContain('id="view-data"')
 
@@ -39,7 +40,11 @@ describe('mcpUiResource', () => {
 		const guest = readFileSync(path.join(process.cwd(), 'public/mcp-task-view.js'), 'utf8')
 		expect(guest).toContain('/mcp-app.js')
 		expect(guest).toContain('ontoolresult')
+		expect(guest).toContain('onhostcontextchanged')
 		expect(guest).toContain('sendMessage')
+		expect(guest).toContain('sendSizeChanged({ height })')
+		expect(guest).toContain('autoResize: false')
+		expect(guest).toContain('aria-label')
 		expect(guest).toContain('textContent')
 		expect(guest).not.toContain('view-data')
 	})
