@@ -44,6 +44,7 @@ describe('mcpUiResource', () => {
 		expect(guest).toContain('sendMessage')
 		expect(guest).toContain('sendSizeChanged({ height })')
 		expect(guest).toContain('autoResize: false')
+		expect(guest).toContain("presentation === 'table'")
 		expect(guest).toContain('aria-label')
 		expect(guest).toContain('textContent')
 		expect(guest).not.toContain('view-data')

@@ -19,7 +19,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "0.2.9"
+  version: "0.2.10"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -120,7 +120,7 @@ Generate views with this recipe. The reference example (`showTasksView`, `showTa
 
 - `toolDefinition` sets `metadata._meta.ui.resourceUri` to an allowlisted `ui://` URI. `createMCPServer` registers that tool and a `resourceDefinition` for the same URI. `chat({ mcp })` reads it.
 - Load the view document from a file (`task-view.html`) and the guest script (`public/mcp-task-view.js`). `createUIResource` wraps that static document once. Do not embed repository rows in the HTML. The guest writes tool-result text with `textContent`. Bound field length, and refuse a document over the size cap.
-- The guest paints people-facing fields only. No raw ids. Status and priority are distinct. A list row is one control for the whole card, not a separate "Open" button. The list is a grid that fills the column, and each card's accessible name includes status, priority, and assignee. An empty result says no rows match and suggests dropping the filter. Both color schemes use the guest's own tokens. The guest follows the host color scheme from `onhostcontextchanged`. It reports height with `sendSizeChanged` and does not send a width, so the frame stays as wide as the column.
+- The guest paints people-facing fields only. No raw ids. Status and priority are distinct. A list row is one control for the whole card, not a separate "Open" button. The list is a grid that fills the column, and each card's accessible name includes status, priority, and assignee. When `showTasksView` sets `presentation` to `table`, the same rows render as a table instead of that grid. An empty result says no rows match and suggests dropping the filter. Both color schemes use the guest's own tokens. The guest follows the host color scheme from `onhostcontextchanged`. It reports height with `sendSizeChanged` and does not send a width, so the frame stays as wide as the column.
 - The host renders that HTML only through `AppRenderer` and `sandbox_proxy.html`. The proxy does not replace its own document with the guest HTML. Show an error state whose retry re-requests the same view, and keep the markdown answer when the resource fails.
 - A capability that returns a UI resource does not also get a hand-built page.
 

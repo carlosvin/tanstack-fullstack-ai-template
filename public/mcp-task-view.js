@@ -119,6 +119,64 @@ function announce(text) {
 	live.textContent = text
 }
 
+function textCell(value) {
+	const cell = document.createElement('td')
+	cell.textContent = plain(value, 80)
+	return cell
+}
+
+function badgeCell(value, className) {
+	const cell = document.createElement('td')
+	const label = plain(value, 40)
+	if (label) cell.append(badge(label, className))
+	return cell
+}
+
+function taskRow(task) {
+	const row = document.createElement('tr')
+	const id = plain(task?.id, 80)
+	const title = plain(task?.title, 80) || 'this task'
+	if (id) {
+		row.dataset.prompt = `Open the detail view for ${title}. The task id is ${id}.`
+		row.tabIndex = 0
+		row.setAttribute('aria-label', taskLabel(task))
+	}
+	const titleCell = document.createElement('th')
+	titleCell.scope = 'row'
+	titleCell.textContent = plain(task?.title, 120) || 'Untitled task'
+	row.append(
+		titleCell,
+		textCell(task?.description),
+		badgeCell(task?.status, STATUS_CLASS[plain(task?.status, 40)]),
+		badgeCell(task?.priority, PRIORITY_CLASS[plain(task?.priority, 40)]),
+		textCell(task?.assignee),
+	)
+	return row
+}
+
+function taskTable(tasks, countLabel) {
+	const wrap = document.createElement('div')
+	wrap.className = 'table-wrap'
+	const table = document.createElement('table')
+	table.className = 'tasks'
+	const caption = document.createElement('caption')
+	caption.textContent = countLabel
+	const head = document.createElement('thead')
+	const headRow = document.createElement('tr')
+	for (const label of ['Task', 'Description', 'Status', 'Priority', 'Assignee']) {
+		const cell = document.createElement('th')
+		cell.scope = 'col'
+		cell.textContent = label
+		headRow.append(cell)
+	}
+	head.append(headRow)
+	const body = document.createElement('tbody')
+	for (const task of tasks) body.append(taskRow(task))
+	table.append(caption, head, body)
+	wrap.append(table)
+	return wrap
+}
+
 function emptyState() {
 	const box = document.createElement('div')
 	box.className = 'empty'
@@ -165,15 +223,21 @@ function render(data) {
 		const heading = document.createElement('h2')
 		const countLabel = data.tasks.length === 1 ? '1 task' : `${data.tasks.length} tasks`
 		heading.textContent = countLabel
-		const list = document.createElement('ul')
-		list.className = 'list'
-		list.setAttribute('aria-label', 'Tasks')
-		for (const task of shown) {
-			const item = document.createElement('li')
-			item.append(listCard(task))
-			list.append(item)
+		if (shown.length === 0) {
+			root.append(heading, emptyState())
+		} else if (data.presentation === 'table') {
+			root.append(taskTable(shown, countLabel))
+		} else {
+			const list = document.createElement('ul')
+			list.className = 'list'
+			list.setAttribute('aria-label', 'Tasks')
+			for (const task of shown) {
+				const item = document.createElement('li')
+				item.append(listCard(task))
+				list.append(item)
+			}
+			root.append(heading, list)
 		}
-		root.append(heading, shown.length === 0 ? emptyState() : list)
 		let announcement = shown.length === 0 ? 'No tasks match' : countLabel
 		if (data.tasks.length > shown.length) {
 			const more = `Showing ${shown.length} of ${data.tasks.length}. Ask for a narrower filter.`
@@ -246,6 +310,13 @@ app
 		document.addEventListener('click', (event) => {
 			const el = event.target?.closest?.('[data-prompt]')
 			if (!el) return
+			event.preventDefault()
+			sendPrompt(el)
+		})
+		document.addEventListener('keydown', (event) => {
+			if (event.key !== 'Enter' && event.key !== ' ') return
+			const el = event.target?.closest?.('[data-prompt]')
+			if (!el || el.tagName === 'BUTTON') return
 			event.preventDefault()
 			sendPrompt(el)
 		})

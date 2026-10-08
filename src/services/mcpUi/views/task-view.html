@@ -141,6 +141,48 @@
 				background: var(--medium-bg);
 				color: var(--medium-fg);
 			}
+			.table-wrap {
+				overflow-x: auto;
+			}
+			table.tasks {
+				width: 100%;
+				border-collapse: collapse;
+				font-size: 14px;
+			}
+			caption {
+				caption-side: top;
+				margin: 0 0 12px;
+				text-align: left;
+				font-size: 14px;
+				font-weight: 600;
+				color: var(--muted);
+			}
+			th,
+			td {
+				padding: 10px 12px;
+				border-bottom: 1px solid var(--line);
+				text-align: left;
+				vertical-align: top;
+			}
+			thead th {
+				font-size: 12px;
+				font-weight: 600;
+				color: var(--muted);
+			}
+			tbody tr[data-prompt] {
+				cursor: pointer;
+			}
+			tbody tr[data-prompt]:hover {
+				background: var(--hover);
+			}
+			tbody tr[data-prompt]:focus-visible {
+				outline: 2px solid var(--focus);
+				outline-offset: -2px;
+			}
+			td .desc,
+			th .desc {
+				display: block;
+			}
 			.detail {
 				max-width: 40rem;
 			}

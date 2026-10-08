@@ -14,7 +14,12 @@ import { isDemoTestEmail } from '../../utils/testAuth.server'
 import { getTask, getTasks } from '../api/serverFns'
 import { MCP_APP_MIME_TYPE, TASK_DETAIL_UI_URI, TASKS_LIST_UI_URI } from '../mcpUi/mcpUiResource'
 import { readMcpUiResource } from '../mcpUi/mcpUiResources'
-import { type TaskFilter, TaskFilterSchema, TaskIdInputSchema } from '../schemas/schemas'
+import {
+	type ShowTasksViewInput,
+	ShowTasksViewInputSchema,
+	type TaskFilter,
+	TaskIdInputSchema,
+} from '../schemas/schemas'
 import { createSafeServerTool } from './serverTool'
 
 /** Demo visitors are not assignees. Drop that filter so "my tasks" shows the list. */
@@ -22,6 +27,15 @@ export function withoutDemoAssignee(filter: TaskFilter): TaskFilter {
 	if (!filter.assignee || !isDemoTestEmail(filter.assignee)) return filter
 	const { assignee: _assignee, ...rest } = filter
 	return rest
+}
+
+/** Split the view choice from the repository filter. A table is opt-in. */
+export function taskListRequest(args: ShowTasksViewInput): { filter: TaskFilter; presentation: 'cards' | 'table' } {
+	const { presentation, ...filter } = args
+	return {
+		filter: withoutDemoAssignee(filter),
+		presentation: presentation === 'table' ? 'table' : 'cards',
+	}
 }
 
 const TASK_VIEWS_MCP_URL = 'http://task-views.local/mcp'
@@ -45,13 +59,14 @@ const showTasksViewTool = createSafeServerTool(
 	toolDefinition({
 		name: 'showTasksView',
 		description:
-			'Show the task list as an interactive UI. Prefer this over getTasks when the user needs to see tasks. Returns the tasks. The linked MCP UI resource renders them.',
-		inputSchema: TaskFilterSchema,
+			'Show the task list as an interactive UI. Set presentation to "table" when the user asks for a table. Set presentation to "cards" when they ask for cards or a grid. Omit presentation for the card grid. Prefer this over getTasks when the user needs to see tasks. Returns the tasks and the presentation. The linked MCP UI resource renders them.',
+		inputSchema: ShowTasksViewInputSchema,
 		metadata: { _meta: { ui: { resourceUri: TASKS_LIST_UI_URI } } },
 	}),
 	async (args) => {
-		const tasks = await getTasks({ data: withoutDemoAssignee(args) })
-		return { tasks }
+		const { filter, presentation } = taskListRequest(args)
+		const tasks = await getTasks({ data: filter })
+		return { tasks, presentation }
 	},
 )
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { TASK_DETAIL_UI_URI, TASKS_LIST_UI_URI } from '../mcpUi/mcpUiResource'
-import { connectTaskViewsMcp, withoutDemoAssignee } from './taskViewsMcp.server'
+import { connectTaskViewsMcp, taskListRequest, withoutDemoAssignee } from './taskViewsMcp.server'
 
 describe('task views MCP server', () => {
 	it('discovers view tools with a ui resource URI and reads the document', async () => {
@@ -37,5 +37,15 @@ describe('task views MCP server', () => {
 			status: 'pending',
 		})
 		expect(withoutDemoAssignee({ assignee: 'alice@example.com' })).toEqual({ assignee: 'alice@example.com' })
+	})
+
+	it('keeps a table request out of the repository filter', () => {
+		expect(
+			taskListRequest({ presentation: 'table', status: 'pending', assignee: 'random3a8cba9a@example.com' }),
+		).toEqual({
+			filter: { status: 'pending' },
+			presentation: 'table',
+		})
+		expect(taskListRequest({ search: 'api' }).presentation).toBe('cards')
 	})
 })
