@@ -1,7 +1,12 @@
 import { App } from '/mcp-app.js'
 
-const root = document.getElementById('root')
-const live = document.getElementById('live')
+let root = document.getElementById('root')
+let live = document.getElementById('live')
+
+function refreshMount() {
+	root = document.getElementById('root')
+	live = document.getElementById('live')
+}
 const MAX_TASKS = 20
 const MAX_TEXT = 180
 
@@ -136,14 +141,19 @@ function taskRow(task) {
 	const row = document.createElement('tr')
 	const id = plain(task?.id, 80)
 	const title = plain(task?.title, 80) || 'this task'
-	if (id) {
-		row.dataset.prompt = `Open the detail view for ${title}. The task id is ${id}.`
-		row.tabIndex = 0
-		row.setAttribute('aria-label', taskLabel(task))
-	}
 	const titleCell = document.createElement('th')
 	titleCell.scope = 'row'
-	titleCell.textContent = plain(task?.title, 120) || 'Untitled task'
+	if (id) {
+		const open = document.createElement('button')
+		open.type = 'button'
+		open.className = 'row-open'
+		open.dataset.prompt = `Open the detail view for ${title}. The task id is ${id}.`
+		open.setAttribute('aria-label', taskLabel(task))
+		open.textContent = plain(task?.title, 120) || 'Untitled task'
+		titleCell.append(open)
+	} else {
+		titleCell.textContent = plain(task?.title, 120) || 'Untitled task'
+	}
 	row.append(
 		titleCell,
 		textCell(task?.description),
@@ -205,6 +215,8 @@ function scheduleHeight() {
 }
 
 function render(data) {
+	refreshMount()
+	if (!root) return
 	root.replaceChildren()
 	if (!data || typeof data !== 'object') {
 		root.append(message('This view has no data yet.'))
@@ -284,12 +296,24 @@ function applyTheme(value) {
 	scheduleHeight()
 }
 
+/** The control for a click: the element itself, or the row's title button. */
+export function promptTarget(node) {
+	const direct = node?.closest?.('[data-prompt]')
+	if (direct) return direct
+	return node?.closest?.('tr')?.querySelector?.('[data-prompt]') ?? null
+}
+
 function sendPrompt(el) {
 	if (!el?.dataset?.prompt) return
 	app.sendMessage({ role: 'user', content: [{ type: 'text', text: el.dataset.prompt }] })
 }
 
-root.append(message('Loading view…'))
+/** @internal Exported so tests can paint a result without the MCP bridge. */
+export function renderTaskView(data) {
+	render(data)
+}
+
+if (root) root.append(message('Loading view…'))
 
 const app = new App({ name: 'task-view', version: '0.1.0' }, {}, { autoResize: false })
 app.ontoolresult = (result) => {
@@ -308,15 +332,8 @@ app
 		const observer = new ResizeObserver(() => reportHeight())
 		observer.observe(document.body)
 		document.addEventListener('click', (event) => {
-			const el = event.target?.closest?.('[data-prompt]')
+			const el = promptTarget(event.target)
 			if (!el) return
-			event.preventDefault()
-			sendPrompt(el)
-		})
-		document.addEventListener('keydown', (event) => {
-			if (event.key !== 'Enter' && event.key !== ' ') return
-			const el = event.target?.closest?.('[data-prompt]')
-			if (!el || el.tagName === 'BUTTON') return
 			event.preventDefault()
 			sendPrompt(el)
 		})
