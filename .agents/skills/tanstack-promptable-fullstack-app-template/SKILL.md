@@ -21,7 +21,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.34.0"
+  version: "1.35.0"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -49,7 +49,7 @@ This template publishes **multiple** skills. If only **this** skill is installed
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill promptable-ux
   ```
 
-- **`agentic-ux`** (companion) — Fully agentic tool-only shell where views render as MCP UI resources. Install when the deployment has no domain screens.
+- **`agentic-ux`** (companion) — Fully agentic tool-only shell. Catalog views are declarative surfaces. Raw documents stay MCP UI resources. Install when the deployment has no domain screens.
   ```bash
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill agentic-ux
   ```
@@ -92,7 +92,7 @@ The UX companion skills cover three experiences. One experience per deployment.
 |------------|-----------------|--------|
 | **side** | **`promptable-ux`** | Domain screens, with the prompt hidden until opened |
 | **prompt-first** | **`promptable-ux`** | Bottom-pinned composer, conversation stage, and domain routes |
-| **agentic** | **`agentic-ux`** | Thin shell only. No domain screens. Views are MCP UI resources from tools |
+| **agentic** | **`agentic-ux`** | Thin shell only. No domain screens. Catalog views are declarative surfaces from tool data. Raw documents stay MCP UI resources. The guest kind follows the declared kit |
 
 When the app already sets `PROMPT_CONCEPT` or already mounts one shell, keep that declaration. This template's three sites stay as they are: side (unset or `side`), prompt-first, and agentic. Do not change those env values because of this question.
 

@@ -19,6 +19,8 @@
 		"skills:waza": "node ./scripts/skills/runWazaCheck.mjs"
 	},
 	"dependencies": {
+		"@a2ui-bridge/core": "^0.1.0",
+		"@a2ui-bridge/react": "^0.1.0",
 		"@mantine/core": "^9.5.1",
 		"@mantine/form": "^9.5.1",
 		"@mantine/hooks": "^9.5.1",
