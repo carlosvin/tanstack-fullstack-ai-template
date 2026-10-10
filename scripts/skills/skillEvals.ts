@@ -1002,6 +1002,12 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 				if (!/Open the detail view for/.test(thread) || !/getTask\(/.test(thread)) {
 					drift.push('a card that names a task id must open that detail view without another model turn')
 				}
+				if (!/findRememberedTask/.test(thread)) {
+					drift.push('opening a task must use the task already returned in the thread')
+				}
+				if (!/rememberSeedTasks/.test(chatRoute)) {
+					drift.push('chat must replay seed tasks from earlier tool results before the next read')
+				}
 				if (!/showing tasks/.test(labels)) {
 					drift.push('tool status labels must be sentence case')
 				}

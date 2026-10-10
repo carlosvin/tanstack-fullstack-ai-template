@@ -8,6 +8,7 @@ import {
 	getNavigationPromptSection,
 	matchUserFacingRoute,
 } from '../../services/ai/navigationManifest'
+import { rememberSeedTasks } from '../../services/ai/seedConversation.server'
 import { showTasksViewTool, showTaskViewTool } from '../../services/ai/taskViews.server'
 import {
 	createTaskTool,
@@ -221,6 +222,7 @@ export const Route = createFileRoute('/api/chat')({
 				}
 
 				const body = await request.json()
+				await rememberSeedTasks(body.messages)
 
 				const { accessTicket } = context
 

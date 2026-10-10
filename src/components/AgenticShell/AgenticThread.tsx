@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { buildTaskViewMessages, promptFromA2uiAction } from '../../services/a2ui/taskViewMessages'
 import { getTask } from '../../services/api/serverFns'
 import { TASK_DETAIL_UI_URI, TASKS_LIST_UI_URI } from '../../services/mcpUi/mcpUiResource'
+import { findRememberedTask } from '../../services/repository/conversationTasks'
 import { AgenticA2uiSurface } from '../AgenticA2ui/AgenticA2uiSurface'
 import { useAgenticChat } from '../AgenticChat/AgenticChatContext'
 import { AgenticMcpRenderer } from '../AgenticMcp/AgenticMcpRenderer'
@@ -119,7 +120,12 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 		}
 		const title = match[1] || 'Task'
 		const taskId = match[2]
+		const remembered = findRememberedTask(messages, taskId)
 		const id = crypto.randomUUID()
+		if (remembered) {
+			setOpened((prev) => [...prev, { id, title, taskId, resultText: JSON.stringify({ task: remembered }) }])
+			return
+		}
 		setOpened((prev) => [...prev, { id, title, taskId, resultText: '' }])
 		void getTask({ data: { taskId } }).then((task) => {
 			const resultText = JSON.stringify(task ? { task } : { error: 'Task not found.', code: 404 })

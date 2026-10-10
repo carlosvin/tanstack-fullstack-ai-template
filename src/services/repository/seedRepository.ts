@@ -190,4 +190,25 @@ export class SeedRepository implements Repository {
 		this.tasks.splice(index, 1)
 		return true
 	}
+
+	/**
+	 * Put a task the conversation already returned back into this process.
+	 * Seed writes do not cross serverless instances, so a later read replays them.
+	 */
+	rememberTask(task: TaskRepo): void {
+		const parsed = parseTaskRepo(task)
+		const index = this.tasks.findIndex((item) => item.id === parsed.id)
+		if (index === -1) this.tasks.push(parsed)
+		else this.tasks[index] = parsed
+		const numbered = /^task-(\d+)$/.exec(parsed.id)
+		if (!numbered) return
+		const value = Number(numbered[1])
+		if (value >= nextId) nextId = value
+	}
+
+	/** Drop a task the conversation deleted, including one this process never stored. */
+	forgetTask(taskId: string): void {
+		const index = this.tasks.findIndex((item) => item.id === taskId)
+		if (index !== -1) this.tasks.splice(index, 1)
+	}
 }
