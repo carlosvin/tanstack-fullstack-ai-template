@@ -1,11 +1,11 @@
 ---
 name: agentic-ux
 description: >-
-  **WORKFLOW SKILL** - Fully agentic UX where a thin prompt shell renders
-  tool-linked MCP UI resources.
+  **WORKFLOW SKILL** - Fully agentic UX. A thin prompt shell renders Mantine
+  views as A2UI surfaces and raw documents as sandboxed MCP UI resources.
 
-  USE FOR: fully agentic mode, MCP UI host, dynamic tool UI, agent shell,
-  sandboxed UI resource.
+  USE FOR: fully agentic mode, A2UI surface, Mantine catalog, MCP UI host,
+  dynamic tool UI, agent shell, sandboxed UI resource.
 
   DO NOT USE FOR: side panel chat (use promptable-ux), prompt-first layout
   (use promptable-ux), schema layers or server boundaries (use
@@ -19,7 +19,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "0.2.8"
+  version: "0.3.0"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -51,7 +51,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 # Agentic UX
 
-**Purpose:** One UX contract for fully agentic apps. The product is a thin shell — a prompt and a response surface. The agent receives the full tool set. Views are [MCP UI](https://github.com/MCP-UI-Org/mcp-ui) resources rendered in a sandboxed iframe. A tool call returns one. A prompt that already names one item id opens that same registered document directly. No hand-built domain screens.
+**Purpose:** One UX contract for fully agentic apps. The product is a thin shell — a prompt and a response surface. The agent receives the full tool set. Mantine task views are [A2UI](https://a2ui.org/) messages rendered by a host `Surface` and a narrowed Mantine catalog. Raw HTML documents stay [MCP UI](https://github.com/MCP-UI-Org/mcp-ui) resources in a sandboxed iframe. A tool call returns data. A prompt that already names one item id opens that detail view directly. No hand-built domain screens.
 
 > **Parent skill:** `tanstack-promptable-fullstack-app-template` — schemas, tools, loaders, URL-as-state, `getAIAvailability()`, bounded `chat()`. Do not restate that contract here.
 >
@@ -61,7 +61,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 | Task | Load |
 |------|------|
-| Fully agentic mode, MCP UI host, dynamic tool UI, agent shell, sandboxed UI resource | **This skill** |
+| Fully agentic mode, A2UI surface, Mantine catalog, MCP UI host, dynamic tool UI, agent shell, sandboxed UI resource | **This skill** |
 | Side panel chat, prompt-first layout, domain screens | **`promptable-ux`** |
 | Schemas, routes, AI tools, server boundaries, availability gate | **`tanstack-promptable-fullstack-app-template`** |
 | Which UI library or MCP UI package this template uses | **`reference-tech-stack`** |
@@ -70,8 +70,8 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 ## How to use this skill
 
 1. Declare the mode. One mode per deployment. Use this skill when the app already sets `PROMPT_CONCEPT=agentic` or the developer chose **agentic**. When it is not clear which user experience to implement, ask which of the three (side or prompt-first in **`promptable-ux`**, or agentic here) and wait. Do not build this shell as a fallback. This shell never mounts beside a drawer, a prompt-first bar, an overview, or drill-down routes. This template's example ships as a third Netlify site with `PROMPT_CONCEPT=agentic` (see README).
-2. Reuse none of the route-based components. No `ChatDrawer`, `PromptBar`, `AppNavbar`, task pages, or navigation manifest. The shell is identity plus prompt plus thread. Everything visual beyond text comes from a tool resource.
-3. Implement the **Shell**, **Tool surface**, **MCP UI rendering**, **UI actions**, and **Security** sections below.
+2. Reuse none of the route-based components. No `ChatDrawer`, `PromptBar`, `AppNavbar`, task pages, or navigation manifest. The shell is identity plus prompt plus thread. Everything visual beyond text comes from a tool result: an A2UI surface for the declared catalog, or a sandboxed MCP UI document for raw HTML.
+3. Implement the **Shell**, **Tool surface**, **View strategy**, **MCP UI rendering**, **UI actions**, and **Security** sections below.
 4. Run the **UX checklist** before a shell change.
 5. Keep schemas, tools, and server boundaries on the architecture skill. This skill changes composition and rendering, not the data model.
 
@@ -102,6 +102,27 @@ The system prompt for this shell must say these rules. The view tool enforces th
 - `browserContext` carries timezone, locale, and current time plus a marker that this surface is the agent shell. It does not carry a current path or search. There is one route, so nothing resolves "this item" from a URL. Reuse the `captureBrowserContext()` shape and drop the location fields.
 - Every `chat()` call still sets `agentLoopStrategy: maxIterations(N)` explicitly (default `N=10`).
 
+## View strategy
+
+The declared UI kit chooses how a tool result becomes a view. Read the kit from **`reference-tech-stack`**. Ask once when a new app has no kit, then wait. Strategy is deployment configuration. The model returns data. It does not emit markup, JSON blueprints, or renderer instructions.
+
+| Composition | Examples | Renderer |
+|-------------|---------|----------|
+| Closed catalog | Mantine (this template), MUI, Ant Design, Chakra, PrimeReact | Host `Surface` from `@a2ui-bridge/react` plus that kit's allowlisted adapters |
+| Utility composition with no catalog | Tailwind, shadcn, Radix primitives | Sandboxed runner inside the MCP iframe. No host `react-runner` |
+| Raw document | Charts, WebGL, third-party embeds | MCP UI document below |
+| Persist source | "Add this component to the repo" | Outside this shell. Review the diff. Do not install files as a chat side effect |
+
+### Mantine catalog
+
+This template's kit is Mantine 9 and `lucide-react`. Render task views with `useA2uiProcessor` and `Surface`. Pass a narrowed `createComponentMapping` (`Column`, `Row`, `Card`, `Text`, `Title`, `Badge`, `Button`). Unknown component types render nothing.
+
+`@a2ui-bridge/react-mantine@0.1.0` peers `@mantine/core` `^8` and `@tabler/icons-react`. Do not add that package, and do not add a second icon library. Keep `@a2ui-bridge/core` and `@a2ui-bridge/react`, and map those six-plus-button types onto Mantine 9 in the host so the existing `MantineProvider` supplies theme and color scheme.
+
+`showTasksView` and `showTaskView` return task data only. `buildTaskViewMessages` turns that payload into A2UI messages. `acceptA2uiMessages` drops any component type outside the catalog before `processMessages`. People-facing text uses `literalString`. No raw ids. A list row is one control for the whole card, not a separate "Open" button. An empty result says no rows match and suggests dropping the filter.
+
+`onAction` follows **UI actions**. `open-task` with one id opens that detail view without another model turn. `back-to-list` is an ordinary prompt. Any other action name is ignored.
+
 ## MCP UI rendering
 
 ### Docs alignment
@@ -116,10 +137,10 @@ Follow [TanStack AI MCP Apps](https://tanstack.com/ai/latest/docs/mcp/apps) and 
 
 ### Recipe
 
-Generate views with this recipe. The reference example (`showTasksView`, `showTaskView`, `AgenticMcpRenderer`) is that recipe:
+Use this recipe for a raw HTML document. Task list and detail in this template use the Mantine catalog above, not this document. `AgenticMcpRenderer` remains the host for a real `ui://` resource:
 
 - `toolDefinition` sets `metadata._meta.ui.resourceUri` to an allowlisted `ui://` URI. `createMCPServer` registers that tool and a `resourceDefinition` for the same URI. `chat({ mcp })` reads it.
-- Load the view document from a file (`task-view.html`) and the guest script (`public/mcp-task-view.js`). `createUIResource` wraps that static document once. Do not embed repository rows in the HTML. The guest writes tool-result text with `textContent`. Bound field length, and refuse a document over the size cap.
+- Load the view document from a file and register it with `createUIResource`. Do not embed repository rows in the HTML. The guest writes tool-result text with `textContent`. Bound field length, and refuse a document over the size cap.
 - The guest paints people-facing fields only. No raw ids. Status and priority are distinct. A list row is one control for the whole card, not a separate "Open" button. An empty result says no rows match and suggests dropping the filter. Both color schemes use the guest's own tokens.
 - The host renders that HTML only through `AppRenderer` and `sandbox_proxy.html`. The proxy does not replace its own document with the guest HTML. Show an error state whose retry re-requests the same view, and keep the markdown answer when the resource fails.
 - A capability that returns a UI resource does not also get a hand-built page.
@@ -134,15 +155,15 @@ The guest `App` talks to the bridge. Map actions to a prompt. Never to an in-app
 
 ## Security
 
-- HTML from a tool or the model renders only inside the MCP UI iframe. The host document never injects that HTML.
-- Allowlist `ui://` resource URIs and validate the MIME type before rendering. Cap resource size.
+- HTML from a tool or the model renders only inside the MCP UI iframe. The host document never injects that HTML. A Mantine catalog surface is the host exception: it renders allowlisted A2UI nodes through `Surface`, and unknown component types render nothing.
+- Allowlist `ui://` resource URIs and validate the MIME type before rendering. Cap resource size. Allowlist A2UI component types the same way.
 - UI-action tool calls pass the same input schemas and server guards as chat tool calls. Hiding a widget is not a guard. Writes still use the auth ticket and `TraceabilityContext`.
 - Log resource URI, tool latency, and render failures through the observability interface.
 
 ## UX checklist
 
 - Mode declared. No drawer, prompt-first bar, overview, drill-down, navbar, or domain route in this deployment.
-- No reused route-based components. Every view beyond text is a tool-linked MCP UI resource.
+- No reused route-based components. Mantine task views are A2UI surfaces built from tool data. Raw HTML stays a tool-linked MCP UI resource.
 - `getAIAvailability()` gates the prompt. Unconfigured AI shows the empty configuration state.
 - Chat state lives on the layout and survives scrolling. Prompt stays pinned on narrow viewports.
 - Resources render sandboxed with loading, error, and markdown-fallback states.
@@ -158,7 +179,7 @@ The guest `App` talks to the bridge. Map actions to a prompt. Never to an in-app
 |---------|----------------|
 | `getAIAvailability()` gate, tool coverage, agent loop | Architecture Core Contract #11–#13 |
 | Schemas, server functions, trust boundaries | Architecture Core Contract #3–#6 and Schema Boundaries |
-| MCP UI package versions for this repo | **`reference-tech-stack`** |
+| Mantine A2UI packages and the MCP UI packages for raw documents | **`reference-tech-stack`** |
 | Side panel and prompt-first concepts | **`promptable-ux`** |
 | Env, logging, error tracking | **`observability-and-env`** |
 

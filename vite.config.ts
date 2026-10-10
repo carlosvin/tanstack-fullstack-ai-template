@@ -34,7 +34,7 @@ export default defineConfig(({ command }) => ({
 			configureServer(server) {
 				server.middlewares.use((req, res, next) => {
 					const path = req.url?.split('?')[0]
-					if (path === '/mcp-app.js' || path === '/mcp-task-view.js') {
+					if (path === '/mcp-app.js') {
 						res.setHeader('Access-Control-Allow-Origin', '*')
 					}
 					next()

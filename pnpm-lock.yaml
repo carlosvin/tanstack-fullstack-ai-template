@@ -8,6 +8,12 @@ importers:
 
   .:
     dependencies:
+      '@a2ui-bridge/core':
+        specifier: ^0.1.0
+        version: 0.1.0
+      '@a2ui-bridge/react':
+        specifier: ^0.1.0
+        version: 0.1.0(react@19.2.5)
       '@mantine/core':
         specifier: ^9.5.1
         version: 9.5.1(@mantine/hooks@9.5.1(react@19.2.5))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -152,6 +158,14 @@ importers:
         version: 2.8.3
 
 packages:
+
+  '@a2ui-bridge/core@0.1.0':
+    resolution: {integrity: sha512-XyLF47VD/FOxtgFhXJsLfaVVfd+c82AE5VakKXO6rKmOtXUVn7blCGUvsLUIwfUzjkRbFnAF7d156ziapBblXQ==}
+
+  '@a2ui-bridge/react@0.1.0':
+    resolution: {integrity: sha512-mGNaxtTNg5UQ/TC9TFgudKwsx1tPiZpNbOOl2CZQDaqZ67aFR5uyLRgCL+xND1p4wqPSsPB5JnLRyUVCI7nqdQ==}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0
 
   '@ag-ui/core@1.0.0':
     resolution: {integrity: sha512-yCRhsQvb4+lmGMrDsi4TOJxqKpm/kb3H64wwL+Z90jNVrkhy17RErfzsNgybfbjNKLM0nenEDYDVJsZHJJSigQ==}
@@ -6175,6 +6189,13 @@ packages:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
 snapshots:
+
+  '@a2ui-bridge/core@0.1.0': {}
+
+  '@a2ui-bridge/react@0.1.0(react@19.2.5)':
+    dependencies:
+      '@a2ui-bridge/core': 0.1.0
+      react: 19.2.5
 
   '@ag-ui/core@1.0.0(zod@4.3.6)':
     optionalDependencies:

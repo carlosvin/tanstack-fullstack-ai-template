@@ -8,7 +8,7 @@ import {
 	getNavigationPromptSection,
 	matchUserFacingRoute,
 } from '../../services/ai/navigationManifest'
-import { connectTaskViewsMcp } from '../../services/ai/taskViewsMcp.server'
+import { showTasksViewTool, showTaskViewTool } from '../../services/ai/taskViews.server'
 import {
 	createTaskTool,
 	deleteTaskTool,
@@ -83,7 +83,7 @@ This deployment uses the **prompt-first** concept: the user always sees the prom
 
 const AGENTIC_LAYOUT = `## Fully agentic layout
 This deployment uses the **fully agentic** concept: a thin shell with a prompt and a response surface. There are no app pages, no navigation, and no overview dashboard.
-- When the user needs to see tasks, call **showTasksView** (not getTasks). When they need one task, call **showTaskView** (not getTask). Each returns data plus a linked MCP UI resource that renders inline.
+- When the user needs to see tasks, call **showTasksView** (not getTasks). When they need one task, call **showTaskView** (not getTask). Each returns task data. The shell renders that data inline.
 - Never link to \`/tasks\` or any in-app route. Never call **navigate** or **invalidateRouter** — they do not exist here. After a write, re-render from the new tool result.
 - Tool schemas are the map of what this app can do. There is no current page, so nothing resolves "this item" from a URL — always confirm which task the user means.`
 
@@ -248,15 +248,16 @@ export const Route = createFileRoute('/api/chat')({
 					updateTaskTool,
 					deleteTaskTool,
 				]
-				const tools = promptConcept === 'agentic' ? dataTools : [...dataTools, navigateToolDef, invalidateRouterToolDef]
-				const taskViews = promptConcept === 'agentic' ? await connectTaskViewsMcp() : undefined
+				const tools =
+					promptConcept === 'agentic'
+						? [...dataTools, showTasksViewTool, showTaskViewTool]
+						: [...dataTools, navigateToolDef, invalidateRouterToolDef]
 
 				const stream = chat({
 					adapter,
 					messages: convertMessagesToModelMessages(body.messages ?? []) as Parameters<typeof chat>[0]['messages'],
 					systemPrompts: [systemPrompt],
 					tools,
-					...(taskViews ? { mcp: { clients: [taskViews] } } : {}),
 					agentLoopStrategy: maxIterations(10),
 				})
 

@@ -14,8 +14,8 @@ const AGENTIC_FOOTER_MIN_HEIGHT = 76
 
 /**
  * Fully agentic shell: identity header, conversation stage, bottom-pinned
- * composer. No navbar, no domain routes, no stacked dashboard. Every view
- * beyond text arrives as a tool-linked MCP UI resource in the thread.
+ * composer. No navbar, no domain routes, no stacked dashboard. Task views
+ * arrive as Mantine A2UI surfaces. Raw HTML arrives as a sandboxed MCP UI resource.
  */
 export function AgenticShell({ appMeta, aiAvailable }: AgenticShellProps) {
 	const { colorScheme, toggleColorScheme } = useMantineColorScheme()

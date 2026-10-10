@@ -899,7 +899,12 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 				}
 				const missing = []
 				if (!/## Shell/.test(skillMd)) missing.push('Shell section')
+				if (!/## View strategy/.test(skillMd)) missing.push('View strategy section')
 				if (!/## MCP UI rendering/.test(skillMd)) missing.push('MCP UI rendering section')
+				if (!/@a2ui-bridge\/react/.test(skillMd) || !/createComponentMapping/.test(skillMd)) {
+					missing.push('Mantine A2UI catalog recipe')
+				}
+				if (!/Unknown component types render nothing/.test(skillMd)) missing.push('unknown component rule')
 				if (!/## Security/.test(skillMd)) missing.push('Security section')
 				if (!/metadata\._meta\.ui\.resourceUri/.test(skillMd)) missing.push('metadata._meta.ui.resourceUri recipe')
 				if (!/createUIResource/.test(skillMd)) missing.push('createUIResource recipe')
@@ -937,45 +942,52 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 					return fail('Parent architecture skill must list agentic-ux as a companion')
 				}
 				const tools = await readText(path.join(rootDir, 'src/services/ai/tools.ts'))
-				const mcpServer = await readText(path.join(rootDir, 'src/services/ai/taskViewsMcp.server.ts'))
+				const taskViews = await readText(path.join(rootDir, 'src/services/ai/taskViews.server.ts'))
+				const messages = await readText(path.join(rootDir, 'src/services/a2ui/taskViewMessages.ts'))
+				const catalog = await readText(path.join(rootDir, 'src/services/a2ui/mantineCatalog.tsx'))
 				const chatRoute = await readText(path.join(rootDir, 'src/routes/api/chat.ts'))
 				const renderer = await readText(path.join(rootDir, 'src/components/AgenticMcp/AgenticMcpRenderer.tsx'))
+				const surface = await readText(path.join(rootDir, 'src/components/AgenticA2ui/AgenticA2uiSurface.tsx'))
 				const resources = await readText(path.join(rootDir, 'src/services/mcpUi/mcpUiResources.ts'))
 				const shell = await readText(path.join(rootDir, 'src/components/AgenticShell/AgenticShell.tsx'))
 				const thread = await readText(path.join(rootDir, 'src/components/AgenticShell/AgenticThread.tsx'))
 				const composer = await readText(path.join(rootDir, 'src/components/AgenticShell/AgenticComposer.tsx'))
-				const guest = await readText(path.join(rootDir, 'public/mcp-task-view.js'))
 				const labels = await readText(path.join(rootDir, 'src/components/PromptChat/toolLabels.ts'))
 				const drift = []
-				if (!/_meta:\s*\{\s*ui:\s*\{\s*resourceUri:/.test(mcpServer)) {
-					drift.push('view tools must set metadata._meta.ui.resourceUri')
+				if (/resourceUri/.test(taskViews)) {
+					drift.push('task view tools return data only and must not link an HTML resource')
 				}
-				if (
-					!/createMCPServer/.test(mcpServer) ||
-					!/resourceDefinition/.test(mcpServer) ||
-					!/createMCPClient/.test(mcpServer)
-				) {
-					drift.push('task views must be registered with createMCPServer and createMCPClient')
+				if (!/showTasksViewTool/.test(chatRoute) || !/showTaskViewTool/.test(chatRoute)) {
+					drift.push('agentic chat must register the task view tools')
 				}
-				if (!/connectTaskViewsMcp/.test(chatRoute) || !/mcp:\s*\{\s*clients:/.test(chatRoute)) {
-					drift.push('agentic chat must pass the MCP client to chat({ mcp })')
+				if (/connectTaskViewsMcp|mcp:\s*\{\s*clients:/.test(chatRoute)) {
+					drift.push('task views must not be served as MCP UI documents')
 				}
-				if (/readResource:/.test(mcpServer) || /readResource:/.test(tools)) {
+				if (/readResource:/.test(taskViews) || /readResource:/.test(tools)) {
 					drift.push('view tools must not bind readResource themselves')
+				}
+				if (!/Surface/.test(surface) || !/mantineTaskCatalog/.test(surface) || !/acceptA2uiMessages/.test(surface)) {
+					drift.push('AgenticA2uiSurface must render Surface through the Mantine catalog after acceptA2uiMessages')
 				}
 				if (!/AppRenderer/.test(renderer) || !/sandbox_proxy\.html/.test(renderer) || !/toolResult/.test(renderer)) {
 					drift.push('AgenticMcpRenderer must render AppRenderer through sandbox_proxy.html with toolResult')
 				}
 				if (!/createUIResource/.test(resources) || !/readMcpUiResource/.test(resources)) {
-					drift.push('mcpUiResources must register views with createUIResource and readMcpUiResource')
+					drift.push('mcpUiResources must register raw documents with createUIResource and readMcpUiResource')
+				}
+				if (!/buildTaskViewMessages/.test(messages) || !/open-task/.test(messages)) {
+					drift.push('task view messages must be built from tool data with an open-task action')
+				}
+				if (/dangerouslySetInnerHTML/.test(catalog) || !/UnknownA2uiNode/.test(catalog)) {
+					drift.push('the Mantine catalog must drop unknown components and must not inject HTML')
 				}
 				if (/emitMcpUiResource|showTasksViewTool/.test(tools)) {
-					drift.push('tools.ts must not register the view tools outside the MCP server')
+					drift.push('tools.ts must not register the view tools')
 				}
 				if (/ChatDrawer|PromptBar|AppNavbar/.test(shell)) {
 					drift.push('AgenticShell must not mount route-based prompt chrome')
 				}
-				if (!/withoutDemoAssignee/.test(mcpServer) || !/isDemoTestEmail/.test(mcpServer)) {
+				if (!/withoutDemoAssignee/.test(taskViews) || !/isDemoTestEmail/.test(taskViews)) {
 					drift.push('showTasksView must drop a demo visitor email before querying')
 				}
 				if (!/one short sentence/.test(chatRoute) || !/Never pass this email as an assignee filter/.test(chatRoute)) {
@@ -993,8 +1005,8 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 				if (!/showing tasks/.test(labels)) {
 					drift.push('tool status labels must be sentence case')
 				}
-				if (!/textContent/.test(guest) || /Open'/.test(guest)) {
-					drift.push('the guest must paint with textContent and must not use a separate Open button')
+				if (!/buildTaskViewMessages/.test(thread) || !/promptFromA2uiAction/.test(thread)) {
+					drift.push('the thread must render task data through the A2UI surface')
 				}
 				if (drift.length > 0) {
 					return fail('Agentic example drifted from the agentic-ux recipe', drift)
