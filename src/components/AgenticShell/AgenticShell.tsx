@@ -1,9 +1,10 @@
-import { ActionIcon, AppShell, Container, Group, Stack, Text, Tooltip, useMantineColorScheme } from '@mantine/core'
+import { ActionIcon, AppShell, Box, Container, Group, Stack, Text, Tooltip, useMantineColorScheme } from '@mantine/core'
 import { Moon, Sparkles, Sun } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { AppMeta } from '../../services/schemas/shellSession'
 import { AgenticComposer } from './AgenticComposer'
 import { AgenticThread } from './AgenticThread'
+import threadStyles from './AgenticThread.module.css'
 
 interface AgenticShellProps {
 	appMeta: AppMeta
@@ -81,10 +82,10 @@ export function AgenticShell({ appMeta, aiAvailable }: AgenticShellProps) {
 				)}
 			</AppShell.Main>
 			{aiAvailable ? (
-				<AppShell.Footer p="xs" px={{ base: 'xs', sm: 'md' }}>
-					<Container size="md" p={0} ref={footerMeasureRef}>
+				<AppShell.Footer p="xs" px={{ base: 'sm', sm: 'md' }}>
+					<Box className={threadStyles.stage} ref={footerMeasureRef}>
 						<AgenticComposer />
-					</Container>
+					</Box>
 				</AppShell.Footer>
 			) : null}
 		</AppShell>

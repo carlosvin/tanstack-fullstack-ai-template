@@ -8,6 +8,22 @@
 const RESOURCE_READY = 'ui/notifications/sandbox-resource-ready'
 const PROXY_READY = 'ui/notifications/sandbox-proxy-ready'
 const HOST_ORIGIN = window.location.origin
+const HUD_FRAME_IDS = ['nl-badge-frame', 'nl-hud-frame']
+
+/**
+ * Netlify appends `/.netlify/scripts/hud` after published HTML, including this
+ * proxy. The badge then covers the last card inside the view iframe.
+ */
+function removeNetlifyHud() {
+	for (const id of HUD_FRAME_IDS) document.getElementById(id)?.remove()
+	for (const script of document.querySelectorAll('script[data-nf-variant], script[src*="/.netlify/scripts/hud"]')) {
+		script.remove()
+	}
+}
+
+removeNetlifyHud()
+const hudObserver = new MutationObserver(removeNetlifyHud)
+hudObserver.observe(document.documentElement, { childList: true, subtree: true })
 
 const view = document.getElementById('mcp-view')
 

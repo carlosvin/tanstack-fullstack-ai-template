@@ -7,10 +7,12 @@ import { Notifications } from '@mantine/notifications'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { createRootRoute, HeadContent, Scripts } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+import { useEffect } from 'react'
 import { AppLayout } from '../components/AppLayout/AppLayout'
 import { ErrorDisplay } from '../components/ErrorDisplay/ErrorDisplay'
 import { NotFoundPage } from '../components/NotFoundPage/NotFoundPage'
 import { getAIAvailability, getBrowserShellSession, getCurrentUser } from '../services/api/serverFns'
+import { watchNetlifyHud } from '../utils/netlifyHud'
 
 export const Route = createRootRoute({
 	loader: async () => {
@@ -54,6 +56,7 @@ const theme = createTheme({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
 	const { currentUser, shellSession, aiAvailable } = Route.useLoaderData()
+	useEffect(() => watchNetlifyHud(document), [])
 
 	return (
 		<html lang="en" suppressHydrationWarning>

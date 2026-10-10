@@ -51,6 +51,20 @@ describe('buildTaskViewMessages', () => {
 		expect(JSON.stringify(messages)).toContain('task-1')
 	})
 
+	it('draws a table when the payload asks for one', () => {
+		const messages = buildTaskViewMessages({ tasks: [task], presentation: 'table' })
+		const text = visibleText(messages).join(' ')
+		expect(text).toContain('Ship the report')
+		expect(text).toContain('Title')
+		expect(text).toContain('Status')
+		expect(text).not.toContain('task-1')
+		const flat = JSON.stringify(messages)
+		expect(flat).toContain('"appearance":"row"')
+		expect(flat).not.toContain('"appearance":"card"')
+		const processor = new A2uiMessageProcessor()
+		expect(() => processor.processMessages(messages)).not.toThrow()
+	})
+
 	it('says when no rows match', () => {
 		expect(visibleText(buildTaskViewMessages({ tasks: [] })).join(' ')).toContain('No tasks match')
 	})

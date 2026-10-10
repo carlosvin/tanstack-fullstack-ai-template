@@ -4,6 +4,18 @@
 	flex-direction: column;
 }
 
+.stage {
+	width: 100%;
+	max-width: 1440px;
+	margin-inline: auto;
+	min-width: 0;
+}
+
+.hero {
+	width: min(100%, 880px);
+	margin-inline: auto;
+}
+
 .empty {
 	flex: 1;
 	display: flex;
