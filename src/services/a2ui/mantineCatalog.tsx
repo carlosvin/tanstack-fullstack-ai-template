@@ -8,9 +8,23 @@
 
 import type { A2UIComponentProps } from '@a2ui-bridge/react'
 import { createActionHandler, createComponentMapping, extractValue } from '@a2ui-bridge/react'
-import { Badge, Button, Card, Group, Stack, Text, Title } from '@mantine/core'
+import { Badge, Button, Card, Group, Stack, Table, Text, Title } from '@mantine/core'
 
-export const A2UI_COMPONENT_TYPES = ['Column', 'Row', 'Card', 'Text', 'Title', 'Badge', 'Button'] as const
+export const A2UI_COMPONENT_TYPES = [
+	'Column',
+	'Row',
+	'Card',
+	'Text',
+	'Title',
+	'Badge',
+	'Button',
+	'Table',
+	'TableHead',
+	'TableBody',
+	'TableRow',
+	'TableHeaderCell',
+	'TableCell',
+] as const
 
 export type A2uiComponentType = (typeof A2UI_COMPONENT_TYPES)[number]
 
@@ -70,19 +84,17 @@ function BadgeAdapter({ node }: A2UIComponentProps) {
 }
 
 function ButtonAdapter({ node, onAction, components, surfaceId, children }: A2UIComponentProps) {
-	const appearance = field(node.properties, 'appearance')
-	const card = appearance === 'card'
-	const wide = card || appearance === 'row'
+	const card = field(node.properties, 'appearance') === 'card'
 	return (
 		<Button
 			type="button"
 			variant={card ? 'light' : 'subtle'}
 			color="gray"
-			fullWidth={wide}
+			fullWidth={card}
 			justify="flex-start"
-			h={wide ? 'auto' : undefined}
+			h={card ? 'auto' : undefined}
 			styles={
-				wide
+				card
 					? {
 							inner: { justifyContent: 'flex-start' },
 							label: { width: '100%', whiteSpace: 'normal', textAlign: 'left' },
@@ -118,6 +130,34 @@ function RowAdapter({ children }: A2UIComponentProps) {
 	return <Group gap="xs">{children}</Group>
 }
 
+function TableAdapter({ children }: A2UIComponentProps) {
+	return <Table withTableBorder>{children}</Table>
+}
+
+function TableHeadAdapter({ children }: A2UIComponentProps) {
+	return (
+		<Table.Thead>
+			<Table.Tr>{children}</Table.Tr>
+		</Table.Thead>
+	)
+}
+
+function TableBodyAdapter({ children }: A2UIComponentProps) {
+	return <Table.Tbody>{children}</Table.Tbody>
+}
+
+function TableRowAdapter({ children }: A2UIComponentProps) {
+	return <Table.Tr>{children}</Table.Tr>
+}
+
+function TableHeaderCellAdapter({ children }: A2UIComponentProps) {
+	return <Table.Th scope="col">{children}</Table.Th>
+}
+
+function TableCellAdapter({ children }: A2UIComponentProps) {
+	return <Table.Td>{children}</Table.Td>
+}
+
 function UnknownA2uiNode() {
 	return null
 }
@@ -131,6 +171,12 @@ export const mantineTaskCatalog = createComponentMapping(
 		Title: TitleAdapter,
 		Badge: BadgeAdapter,
 		Button: ButtonAdapter,
+		Table: TableAdapter,
+		TableHead: TableHeadAdapter,
+		TableBody: TableBodyAdapter,
+		TableRow: TableRowAdapter,
+		TableHeaderCell: TableHeaderCellAdapter,
+		TableCell: TableCellAdapter,
 	},
 	UnknownA2uiNode,
 )

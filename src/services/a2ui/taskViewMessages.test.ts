@@ -59,8 +59,24 @@ describe('buildTaskViewMessages', () => {
 		expect(text).toContain('Status')
 		expect(text).not.toContain('task-1')
 		const flat = JSON.stringify(messages)
-		expect(flat).toContain('"appearance":"row"')
+		expect(flat).toContain('TableHeaderCell')
 		expect(flat).not.toContain('"appearance":"card"')
+		const processor = new A2uiMessageProcessor()
+		expect(() => processor.processMessages(messages)).not.toThrow()
+	})
+
+	it('says when a table is only the first page of matches', () => {
+		const tasks = Array.from({ length: 21 }, (_, index) => ({ ...task, id: `task-${index}`, title: `Task ${index}` }))
+		expect(visibleText(buildTaskViewMessages({ tasks, presentation: 'table' })).join(' ')).toContain('Showing 20 of 21')
+	})
+
+	it('renders when task text matches a component id', () => {
+		const colliding = { ...task, title: 'title', description: 'body', assignee: 'heading' }
+		const messages = buildTaskViewMessages({ tasks: [colliding] })
+		const text = visibleText(messages)
+		expect(text).toContain('title')
+		expect(text).toContain('body')
+		expect(text).toContain('heading')
 		const processor = new A2uiMessageProcessor()
 		expect(() => processor.processMessages(messages)).not.toThrow()
 	})
