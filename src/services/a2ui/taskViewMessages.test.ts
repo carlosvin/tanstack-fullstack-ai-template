@@ -1,4 +1,4 @@
-import { A2uiMessageProcessor } from '@a2ui-bridge/core'
+import { A2uiMessageProcessor, type ServerToClientMessage } from '@a2ui-bridge/core'
 import { describe, expect, it } from 'vitest'
 import type { Task } from '../schemas/schemas'
 import { acceptA2uiMessages, buildTaskViewMessages, promptFromA2uiAction } from './taskViewMessages'
@@ -14,20 +14,14 @@ const task: Task = {
 	updatedAt: '2026-01-02T00:00:00.000Z',
 }
 
-function visibleText(messages: unknown): string[] {
+function visibleText(messages: ServerToClientMessage[]): string[] {
 	const texts: string[] = []
-	const list = Array.isArray(messages) ? messages : []
-	for (const message of list) {
-		if (typeof message !== 'object' || message === null || !('surfaceUpdate' in message)) continue
-		const update = message.surfaceUpdate
-		if (typeof update !== 'object' || update === null || !('components' in update)) continue
-		const components = update.components
-		if (!Array.isArray(components)) continue
+	for (const message of messages) {
+		const components = message.surfaceUpdate?.components
+		if (!components) continue
 		for (const instance of components) {
-			if (typeof instance !== 'object' || instance === null || !('component' in instance)) continue
-			const component = instance.component
-			if (typeof component !== 'object' || component === null) continue
-			for (const [type, body] of Object.entries(component)) {
+			if (!instance.component) continue
+			for (const [type, body] of Object.entries(instance.component)) {
 				if (type === 'Button' || typeof body !== 'object' || body === null || !('text' in body)) continue
 				const text = body.text
 				if (

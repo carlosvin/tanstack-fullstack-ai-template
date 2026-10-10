@@ -62,16 +62,14 @@ function toolContext(message: UIMessage, toolCallId: string) {
 const TASK_VIEW_TOOLS = new Set(['showTasksView', 'showTaskView'])
 
 function taskViewResults(message: UIMessage) {
-	const names = new Map<string, string>()
+	const callIds = new Set<string>()
 	for (const part of message.parts) {
-		if (part.type !== 'tool-call' || !('name' in part) || !('id' in part)) continue
-		if (typeof part.name !== 'string' || typeof part.id !== 'string') continue
-		if (TASK_VIEW_TOOLS.has(part.name)) names.set(part.id, part.name)
+		if (part.type === 'tool-call' && TASK_VIEW_TOOLS.has(part.name)) callIds.add(part.id)
 	}
 	const results: Array<{ callId: string; resultText: string }> = []
 	for (const part of message.parts) {
 		if (part.type !== 'tool-result') continue
-		if (!names.has(part.toolCallId)) continue
+		if (!callIds.has(part.toolCallId)) continue
 		results.push({
 			callId: part.toolCallId,
 			resultText: toolResultText(part),

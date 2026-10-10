@@ -76,7 +76,7 @@ function ButtonAdapter({ node, onAction, components, surfaceId, children }: A2UI
 			type="button"
 			variant={card ? 'light' : 'subtle'}
 			color="gray"
-			fullWidth={card === true}
+			fullWidth={card}
 			justify="flex-start"
 			h={card ? 'auto' : undefined}
 			styles={
@@ -120,7 +120,6 @@ function UnknownA2uiNode() {
 	return null
 }
 
-/** Allowlisted Mantine adapters. Unknown A2UI types render nothing. */
 export const mantineTaskCatalog = createComponentMapping(
 	{
 		Column: ColumnAdapter,

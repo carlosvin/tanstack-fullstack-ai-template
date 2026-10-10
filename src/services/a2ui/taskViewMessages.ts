@@ -7,8 +7,8 @@
 
 import type { ServerToClientMessage, UserAction } from '@a2ui-bridge/core'
 import { z } from 'zod'
-import { TaskSchema } from '../schemas/schemas'
-import { A2UI_COMPONENT_TYPES, isAllowedA2uiComponent } from './mantineCatalog'
+import { type Task, TaskSchema } from '../schemas/schemas'
+import { isAllowedA2uiComponent } from './mantineCatalog'
 
 const MAX_TASKS = 20
 const MAX_TITLE = 120
@@ -218,16 +218,7 @@ function note(text: string): ServerToClientMessage[] {
 	])
 }
 
-interface TaskCard {
-	id: string
-	title: string
-	description?: string
-	status: string
-	priority: string
-	assignee?: string
-}
-
-function listCard(task: TaskCard, index: number) {
+function listCard(task: Task, index: number) {
 	const base = `t${index}`
 	const badgeIds = [`${base}-status`, `${base}-priority`]
 	if (task.assignee) badgeIds.push(`${base}-assignee`)
@@ -241,12 +232,11 @@ function listCard(task: TaskCard, index: number) {
 				Button: {
 					child: `${base}-body`,
 					appearance: 'card',
-					fullWidth: true,
 					action: {
 						name: 'open-task',
 						context: [
 							{ key: 'taskId', value: { literalString: clip(task.id, 80) } },
-							{ key: 'title', value: { literalString: clip(task.title, MAX_TITLE) || 'Task' } },
+							{ key: 'title', value: { literalString: clip(task.title, MAX_TITLE) } },
 						],
 					},
 				},
@@ -256,7 +246,7 @@ function listCard(task: TaskCard, index: number) {
 			id: `${base}-body`,
 			component: { Column: { children: { explicitList: bodyIds } } },
 		},
-		textNode(`${base}-title`, task.title || 'Untitled task', 'h3', MAX_TITLE),
+		textNode(`${base}-title`, task.title, 'h3', MAX_TITLE),
 		...(task.description ? [textNode(`${base}-desc`, task.description, 'caption', 140)] : []),
 		{
 			id: `${base}-badges`,
@@ -269,7 +259,7 @@ function listCard(task: TaskCard, index: number) {
 	return { rootId: base, nodes }
 }
 
-function listMessages(tasks: TaskCard[]): ServerToClientMessage[] {
+function listMessages(tasks: Task[]): ServerToClientMessage[] {
 	const shown = tasks.slice(0, MAX_TASKS)
 	const childIds = ['heading']
 	const nodes: ComponentInstance[] = [titleNode('heading', tasks.length === 1 ? '1 task' : `${tasks.length} tasks`)]
@@ -294,7 +284,7 @@ function listMessages(tasks: TaskCard[]): ServerToClientMessage[] {
 	return messages([{ id: 'root', component: { Column: { children: { explicitList: childIds } } } }, ...nodes])
 }
 
-function detailMessages(task: TaskCard): ServerToClientMessage[] {
+function detailMessages(task: Task): ServerToClientMessage[] {
 	// Component ids must not match bare string props (usageHint "body", colors, "card").
 	// The processor treats any string equal to a component id as a child reference.
 	const badgeIds = ['status', 'priority']
@@ -303,7 +293,7 @@ function detailMessages(task: TaskCard): ServerToClientMessage[] {
 	const nodes: ComponentInstance[] = [
 		{ id: 'root', component: { Card: { child: 'detail' } } },
 		{ id: 'detail', component: { Column: { children: { explicitList: bodyIds } } } },
-		textNode('title', task.title || 'Untitled task', 'h3', MAX_TITLE),
+		textNode('title', task.title, 'h3', MAX_TITLE),
 		{ id: 'badges', component: { Row: { children: { explicitList: badgeIds } } } },
 		badgeNode('status', task.status, statusColor(task.status)),
 		badgeNode('priority', task.priority, priorityColor(task.priority)),
@@ -323,9 +313,9 @@ function detailMessages(task: TaskCard): ServerToClientMessage[] {
 	return messages(nodes)
 }
 
-function parseTasks(value: unknown): TaskCard[] | null {
+function parseTasks(value: unknown): Task[] | null {
 	if (!Array.isArray(value)) return null
-	const tasks: TaskCard[] = []
+	const tasks: Task[] = []
 	for (const item of value) {
 		const parsed = TaskSchema.safeParse(item)
 		if (parsed.success) tasks.push(parsed.data)
@@ -333,12 +323,11 @@ function parseTasks(value: unknown): TaskCard[] | null {
 	return tasks
 }
 
-/** Build the inline task view from a tool-result payload. */
 export function buildTaskViewMessages(payload: unknown): ServerToClientMessage[] {
 	let data: unknown = payload
 	if (typeof payload === 'string') {
 		try {
-			data = JSON.parse(payload) as unknown
+			data = JSON.parse(payload)
 		} catch {
 			return note('This view has no data yet.')
 		}
@@ -368,5 +357,3 @@ export function promptFromA2uiAction(action: UserAction): string | null {
 		typeof action.context?.title === 'string' && action.context.title.length > 0 ? action.context.title : 'Task'
 	return `Open the detail view for ${title}. The task id is ${taskId}.`
 }
-
-export const a2uiCatalogTypes = A2UI_COMPONENT_TYPES
