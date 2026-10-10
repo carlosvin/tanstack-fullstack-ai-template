@@ -284,6 +284,64 @@ function listMessages(tasks: Task[]): ServerToClientMessage[] {
 	return messages([{ id: 'root', component: { Column: { children: { explicitList: childIds } } } }, ...nodes])
 }
 
+function tableRow(task: Task, index: number) {
+	const base = `t${index}`
+	const cellIds = [`${base}-title`, `${base}-status`, `${base}-priority`, `${base}-assignee`]
+	const nodes: ComponentInstance[] = [
+		{
+			id: base,
+			component: {
+				Button: {
+					child: `${base}-cells`,
+					appearance: 'row',
+					action: {
+						name: 'open-task',
+						context: [
+							{ key: 'taskId', value: { literalString: clip(task.id, 80) } },
+							{ key: 'title', value: { literalString: clip(task.title, MAX_TITLE) } },
+						],
+					},
+				},
+			},
+		},
+		{ id: `${base}-cells`, component: { Row: { children: { explicitList: cellIds } } } },
+		textNode(`${base}-title`, task.title, 'body', MAX_TITLE),
+		textNode(`${base}-status`, task.status, 'caption', MAX_BADGE),
+		textNode(`${base}-priority`, task.priority, 'caption', MAX_BADGE),
+		textNode(`${base}-assignee`, task.assignee ?? '—', 'caption', MAX_BADGE),
+	]
+	return { rootId: base, nodes }
+}
+
+function tableMessages(tasks: Task[]): ServerToClientMessage[] {
+	const shown = tasks.slice(0, MAX_TASKS)
+	const childIds = ['heading', 'header']
+	const nodes: ComponentInstance[] = [
+		titleNode('heading', tasks.length === 1 ? '1 task' : `${tasks.length} tasks`),
+		{
+			id: 'header',
+			component: { Row: { children: { explicitList: ['h-title', 'h-status', 'h-priority', 'h-assignee'] } } },
+		},
+		textNode('h-title', 'Title', 'caption', MAX_BADGE),
+		textNode('h-status', 'Status', 'caption', MAX_BADGE),
+		textNode('h-priority', 'Priority', 'caption', MAX_BADGE),
+		textNode('h-assignee', 'Assignee', 'caption', MAX_BADGE),
+	]
+	if (shown.length === 0) {
+		childIds.push('empty-title', 'empty-note')
+		nodes.push(
+			textNode('empty-title', 'No tasks match', 'h3', MAX_TITLE),
+			textNode('empty-note', 'Try another filter, or ask to see every task.', 'body'),
+		)
+	}
+	for (const [index, task] of shown.entries()) {
+		const row = tableRow(task, index)
+		childIds.push(row.rootId)
+		nodes.push(...row.nodes)
+	}
+	return messages([{ id: 'root', component: { Column: { children: { explicitList: childIds } } } }, ...nodes])
+}
+
 function detailMessages(task: Task): ServerToClientMessage[] {
 	// Component ids must not match bare string props (usageHint "body", colors, "card").
 	// The processor treats any string equal to a component id as a child reference.
@@ -337,7 +395,8 @@ export function buildTaskViewMessages(payload: unknown): ServerToClientMessage[]
 	if ('tasks' in data) {
 		const tasks = parseTasks(data.tasks)
 		if (!tasks) return note('This view has no data yet.')
-		return listMessages(tasks)
+		const presentation = 'presentation' in data && data.presentation === 'table' ? 'table' : 'cards'
+		return presentation === 'table' ? tableMessages(tasks) : listMessages(tasks)
 	}
 	if ('task' in data) {
 		const parsed = TaskSchema.safeParse(data.task)

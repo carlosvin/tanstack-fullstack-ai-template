@@ -70,17 +70,19 @@ function BadgeAdapter({ node }: A2UIComponentProps) {
 }
 
 function ButtonAdapter({ node, onAction, components, surfaceId, children }: A2UIComponentProps) {
-	const card = field(node.properties, 'appearance') === 'card'
+	const appearance = field(node.properties, 'appearance')
+	const card = appearance === 'card'
+	const wide = card || appearance === 'row'
 	return (
 		<Button
 			type="button"
 			variant={card ? 'light' : 'subtle'}
 			color="gray"
-			fullWidth={card}
+			fullWidth={wide}
 			justify="flex-start"
-			h={card ? 'auto' : undefined}
+			h={wide ? 'auto' : undefined}
 			styles={
-				card
+				wide
 					? {
 							inner: { justifyContent: 'flex-start' },
 							label: { width: '100%', whiteSpace: 'normal', textAlign: 'left' },

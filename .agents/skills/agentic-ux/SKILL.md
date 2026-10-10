@@ -77,7 +77,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 ## Shell
 
-- One root layout per deployment. Conversation state lives there so scrolling never wipes the thread. Layout: app bar with identity only (name in the bar; version in a tooltip), a centered conversation column, and a bottom-pinned composer that stays reachable regardless of thread length.
+- One root layout per deployment. Conversation state lives there so scrolling never wipes the thread. Layout: app bar with identity only (name in the bar; version in a tooltip), a centered conversation column, and a bottom-pinned composer that stays reachable regardless of thread length. The column and the composer share one width: the space under the header, capped so a line stays readable on an ultra-wide monitor. A tool view fills that column.
 - When empty, the stage is a centered hero: icon, welcome text, and starter controls that ask for inline views (`Show my tasks`, a status filter, a priority filter). Do not reuse `docs/help.md` bullets that point at dashboards or routes.
 - As the conversation progresses, the stage is the scrollable thread. Order inside one reply: one short markdown sentence, a sentence-case tool status (`showing tasks`, not the raw tool name), then the tool-linked UI resource. Text-only replies stay markdown with GFM tables, code, and links.
 - Prompt behavior: Enter sends, Shift+Enter inserts a newline, stop while generating, clear once messages exist. Clearing the thread also clears a detail view opened from a card.
@@ -119,7 +119,7 @@ This template's kit is Mantine 9 and `lucide-react`. Render task views with `use
 
 `@a2ui-bridge/react-mantine@0.1.0` peers `@mantine/core` `^8` and `@tabler/icons-react`. Do not add that package, and do not add a second icon library. Keep `@a2ui-bridge/core` and `@a2ui-bridge/react`, and map those six-plus-button types onto Mantine 9 in the host so the existing `MantineProvider` supplies theme and color scheme.
 
-`showTasksView` and `showTaskView` return task data only. `buildTaskViewMessages` turns that payload into A2UI messages. `acceptA2uiMessages` drops any component type outside the catalog before `processMessages`. People-facing text uses `literalString`. No raw ids. A list row is one control for the whole card, not a separate "Open" button. An empty result says no rows match and suggests dropping the filter.
+`showTasksView` and `showTaskView` return task data only. `showTasksView` also returns `presentation`. `"table"` draws one row per task. `"cards"` or omitting it draws the card list. That choice is not part of the repository filter. `buildTaskViewMessages` turns the payload into A2UI messages. `acceptA2uiMessages` drops any component type outside the catalog before `processMessages`. People-facing text uses `literalString`. No raw ids. A list row is one control for the whole card, not a separate "Open" button. A table row is one control whose accessible name includes status, priority, and assignee. An empty result says no rows match and suggests dropping the filter.
 
 `onAction` follows **UI actions**. `open-task` with one id opens that detail view without another model turn. `back-to-list` is an ordinary prompt. Any other action name is ignored.
 
@@ -141,7 +141,7 @@ Use this recipe for a raw HTML document. Task list and detail in this template u
 
 - `toolDefinition` sets `metadata._meta.ui.resourceUri` to an allowlisted `ui://` URI. `createMCPServer` registers that tool and a `resourceDefinition` for the same URI. `chat({ mcp })` reads it.
 - Load the view document from a file and register it with `createUIResource`. Do not embed repository rows in the HTML. The guest writes tool-result text with `textContent`. Bound field length, and refuse a document over the size cap.
-- The guest paints people-facing fields only. No raw ids. Status and priority are distinct. A list row is one control for the whole card, not a separate "Open" button. An empty result says no rows match and suggests dropping the filter. Both color schemes use the guest's own tokens.
+- The guest paints people-facing fields only. No raw ids. Status and priority are distinct. A list row is one control for the whole card, not a separate "Open" button. An empty result says no rows match and suggests dropping the filter. Both color schemes use the guest's own tokens. The guest follows the host color scheme and reports height only, so the frame stays as wide as the column.
 - The host renders that HTML only through `AppRenderer` and `sandbox_proxy.html`. The proxy does not replace its own document with the guest HTML. Show an error state whose retry re-requests the same view, and keep the markdown answer when the resource fails.
 - A capability that returns a UI resource does not also get a hand-built page.
 

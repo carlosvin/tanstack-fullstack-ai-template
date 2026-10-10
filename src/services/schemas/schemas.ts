@@ -160,6 +160,19 @@ export const TaskFilterSchema = z.object({
 
 export type TaskFilter = z.infer<typeof TaskFilterSchema>
 
+/** How showTasksView draws the list. Cards are the default. */
+export const TaskListPresentationSchema = z
+	.enum(['cards', 'table'])
+	.describe(
+		'How to draw the list. Use "table" when the user asks for a table. Use "cards" when they ask for cards or a grid. Omit for the card grid.',
+	)
+
+export const ShowTasksViewInputSchema = TaskFilterSchema.extend({
+	presentation: TaskListPresentationSchema.optional(),
+})
+
+export type ShowTasksViewInput = z.infer<typeof ShowTasksViewInputSchema>
+
 /** URL search params for the tasks list (subset of TaskFilter without assignee). */
 export const TasksListSearchSchema = TaskFilterSchema.pick({ status: true, priority: true, search: true })
 

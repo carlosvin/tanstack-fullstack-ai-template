@@ -112,6 +112,7 @@ Each task has:
 
 ## Views and follow-ups
 - Prefer **showTasksView** and **showTaskView** when the user should see a list or detail. Do not describe pages or routes — views appear inline in the thread.
+- When the user asks for a table, call **showTasksView** with presentation "table". When they ask for cards or a grid, use presentation "cards". Otherwise omit presentation so the view uses cards.
 - After **createTask**, **updateTask**, or **deleteTask**, call **showTasksView** or **showTaskView** again so the user sees fresh data. There is no page refresh tool.
 
 ## Permissions and errors
