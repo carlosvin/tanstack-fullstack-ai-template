@@ -1,9 +1,16 @@
-import { Alert, Button, Paper, Stack, Text } from '@mantine/core'
+import { Alert, Button, Stack, Text, useComputedColorScheme } from '@mantine/core'
 import { AppRenderer } from '@mcp-ui/client'
 import type { UIResourcePart } from '@tanstack/ai'
 import { useMcpAppBridge } from '@tanstack/ai-react'
-import { useCallback, useMemo, useState } from 'react'
-import { decodeMcpUiHtml, isAllowedMcpUiUri, MCP_APP_MIME_TYPE } from '../../services/mcpUi/mcpUiResource'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+	decodeMcpUiHtml,
+	isAllowedMcpUiUri,
+	MCP_APP_MIME_TYPE,
+	TASK_DETAIL_UI_URI,
+	TASKS_LIST_UI_URI,
+} from '../../services/mcpUi/mcpUiResource'
+import styles from './AgenticMcpRenderer.module.css'
 
 const MCP_APP_CALL_ENDPOINT = '/api/mcp-apps/call'
 const AGENTIC_THREAD_ID = 'agentic'
@@ -24,6 +31,13 @@ function sandboxUrl(): URL {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/** Accessible name for the host iframe around a tool-linked view. */
+export function mcpFrameTitle(uri: string): string {
+	if (uri === TASKS_LIST_UI_URI) return 'Task list'
+	if (uri === TASK_DETAIL_UI_URI) return 'Task'
+	return 'Interactive view'
 }
 
 /** MCP `CallToolResult` for `AppRenderer`, built from the chat tool-result text. */
@@ -58,11 +72,29 @@ export function AgenticMcpRenderer({
 	onRetry,
 }: AgenticMcpRendererProps) {
 	const [attempt, setAttempt] = useState(0)
+	const frameRef = useRef<HTMLDivElement>(null)
 	const resource = part.resource
 	const valid = isAllowedMcpUiUri(resource.uri) && resource.mimeType === MCP_APP_MIME_TYPE
 	const html = valid ? decodeMcpUiHtml(resource) : null
 	const sandbox = useMemo(() => ({ url: sandboxUrl() }), [])
 	const toolResult = toolResultText === undefined ? undefined : toMcpToolResult(toolResultText, toolFailed)
+	const colorScheme = useComputedColorScheme('light')
+	const hostContext = useMemo(() => {
+		const locale = typeof navigator === 'undefined' ? undefined : navigator.language
+		let timeZone: string | undefined
+		try {
+			timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+		} catch {
+			timeZone = undefined
+		}
+		return {
+			theme: colorScheme,
+			...(locale ? { locale } : {}),
+			...(timeZone ? { timeZone } : {}),
+			platform: 'web' as const,
+			displayMode: 'inline' as const,
+		}
+	}, [colorScheme])
 
 	const bridge = useMcpAppBridge({
 		threadId: AGENTIC_THREAD_ID,
@@ -76,6 +108,22 @@ export function AgenticMcpRenderer({
 			window.open(url, '_blank', 'noopener,noreferrer')
 		},
 	})
+
+	const keepFluidWidth = useCallback(() => {
+		const iframe = frameRef.current?.querySelector('iframe')
+		if (!iframe) return
+		iframe.style.width = '100%'
+		iframe.title = mcpFrameTitle(resource.uri)
+	}, [resource.uri])
+
+	useEffect(() => {
+		const root = frameRef.current
+		if (!root) return
+		keepFluidWidth()
+		const observer = new MutationObserver(keepFluidWidth)
+		observer.observe(root, { childList: true, subtree: true })
+		return () => observer.disconnect()
+	}, [keepFluidWidth])
 
 	const handleRetry = useCallback(() => {
 		if (onRetry) onRetry()
@@ -99,7 +147,7 @@ export function AgenticMcpRenderer({
 	}
 
 	return (
-		<Paper withBorder radius="md" p={0} style={{ overflow: 'hidden' }} key={`${resource.uri}-${attempt}`}>
+		<div className={styles.frame} ref={frameRef} key={`${resource.uri}-${attempt}`}>
 			<AppRenderer
 				toolName={part.toolName}
 				toolResourceUri={resource.uri}
@@ -107,6 +155,8 @@ export function AgenticMcpRenderer({
 				sandbox={sandbox}
 				toolInput={toolInput}
 				toolResult={toolResult}
+				hostContext={hostContext}
+				onSizeChanged={keepFluidWidth}
 				onCallTool={async ({ name, arguments: args }) => {
 					const result = await bridge.callTool({
 						serverId: part.serverId,
@@ -130,6 +180,6 @@ export function AgenticMcpRenderer({
 				}}
 				onOpenLink={({ url }) => Promise.resolve(bridge.openLink(url))}
 			/>
-		</Paper>
+		</div>
 	)
 }

@@ -19,7 +19,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "0.2.8"
+  version: "0.2.10"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -77,7 +77,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 ## Shell
 
-- One root layout per deployment. Conversation state lives there so scrolling never wipes the thread. Layout: app bar with identity only (name in the bar; version in a tooltip), a centered conversation column, and a bottom-pinned composer that stays reachable regardless of thread length.
+- One root layout per deployment. Conversation state lives there so scrolling never wipes the thread. Layout: app bar with identity only (name in the bar; version in a tooltip), a centered conversation column, and a bottom-pinned composer that stays reachable regardless of thread length. The column and the composer share one width: the space under the header, capped so a line stays readable on an ultra-wide monitor. A tool view fills that column.
 - When empty, the stage is a centered hero: icon, welcome text, and starter controls that ask for inline views (`Show my tasks`, a status filter, a priority filter). Do not reuse `docs/help.md` bullets that point at dashboards or routes.
 - As the conversation progresses, the stage is the scrollable thread. Order inside one reply: one short markdown sentence, a sentence-case tool status (`showing tasks`, not the raw tool name), then the tool-linked UI resource. Text-only replies stay markdown with GFM tables, code, and links.
 - Prompt behavior: Enter sends, Shift+Enter inserts a newline, stop while generating, clear once messages exist. Clearing the thread also clears a detail view opened from a card.
@@ -120,7 +120,7 @@ Generate views with this recipe. The reference example (`showTasksView`, `showTa
 
 - `toolDefinition` sets `metadata._meta.ui.resourceUri` to an allowlisted `ui://` URI. `createMCPServer` registers that tool and a `resourceDefinition` for the same URI. `chat({ mcp })` reads it.
 - Load the view document from a file (`task-view.html`) and the guest script (`public/mcp-task-view.js`). `createUIResource` wraps that static document once. Do not embed repository rows in the HTML. The guest writes tool-result text with `textContent`. Bound field length, and refuse a document over the size cap.
-- The guest paints people-facing fields only. No raw ids. Status and priority are distinct. A list row is one control for the whole card, not a separate "Open" button. An empty result says no rows match and suggests dropping the filter. Both color schemes use the guest's own tokens.
+- The guest paints people-facing fields only. No raw ids. Status and priority are distinct. A list row is one control for the whole card, not a separate "Open" button. The list is a grid that fills the column, and each card's accessible name includes status, priority, and assignee. When `showTasksView` sets `presentation` to `table`, the same rows render as a table instead of that grid. An empty result says no rows match and suggests dropping the filter. Both color schemes use the guest's own tokens. The guest follows the host color scheme from `onhostcontextchanged`. It reports height with `sendSizeChanged` and does not send a width, so the frame stays as wide as the column.
 - The host renders that HTML only through `AppRenderer` and `sandbox_proxy.html`. The proxy does not replace its own document with the guest HTML. Show an error state whose retry re-requests the same view, and keep the markdown answer when the resource fails.
 - A capability that returns a UI resource does not also get a hand-built page.
 
