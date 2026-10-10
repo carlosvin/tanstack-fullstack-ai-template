@@ -61,18 +61,28 @@ function toolContext(message: UIMessage, toolCallId: string) {
 
 const TASK_VIEW_TOOLS = new Set(['showTasksView', 'showTaskView'])
 
+function detailRetryPrompt(input: Record<string, unknown> | undefined): string | null {
+	const taskId = input && typeof input.taskId === 'string' ? input.taskId : ''
+	if (!taskId || /[\s.]/.test(taskId)) return null
+	return `Open the detail view for Task. The task id is ${taskId}.`
+}
+
 function taskViewResults(message: UIMessage) {
-	const callIds = new Set<string>()
+	const calls = new Map<string, { name: string; input: Record<string, unknown> | undefined }>()
 	for (const part of message.parts) {
-		if (part.type === 'tool-call' && TASK_VIEW_TOOLS.has(part.name)) callIds.add(part.id)
+		if (part.type !== 'tool-call' || !TASK_VIEW_TOOLS.has(part.name)) continue
+		calls.set(part.id, { name: part.name, input: isRecord(part.input) ? part.input : undefined })
 	}
-	const results: Array<{ callId: string; resultText: string }> = []
+	const results: Array<{ callId: string; resultText: string; retryPrompt: string }> = []
 	for (const part of message.parts) {
 		if (part.type !== 'tool-result') continue
-		if (!callIds.has(part.toolCallId)) continue
+		const call = calls.get(part.toolCallId)
+		if (!call) continue
+		const detailRetry = call.name === 'showTaskView' ? detailRetryPrompt(call.input) : null
 		results.push({
 			callId: part.toolCallId,
 			resultText: toolResultText(part),
+			retryPrompt: detailRetry ?? 'Show my tasks',
 		})
 	}
 	return results
@@ -177,7 +187,7 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 										key={view.callId}
 										resultText={view.resultText}
 										onAction={handleAction}
-										onRetry={() => handlePrompt('Show my tasks')}
+										onRetry={() => handlePrompt(view.retryPrompt)}
 									/>
 								))}
 								{resources.map((part) => {

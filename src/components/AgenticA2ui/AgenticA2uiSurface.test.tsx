@@ -51,6 +51,21 @@ describe('AgenticA2uiSurface', () => {
 		)
 	})
 
+	it('renders a table with column headers', async () => {
+		render(
+			<MantineProvider>
+				<AgenticA2uiSurface
+					messages={buildTaskViewMessages({ tasks: [task], presentation: 'table' })}
+					onAction={vi.fn()}
+				/>
+			</MantineProvider>,
+		)
+		expect(await screen.findByRole('columnheader', { name: 'Title' })).toBeTruthy()
+		expect(screen.getByRole('columnheader', { name: 'Status' })).toBeTruthy()
+		expect(screen.getByRole('button', { name: 'Ship the report' })).toBeTruthy()
+		expect(screen.queryByText('task-1')).toBeNull()
+	})
+
 	it('renders the detail view and sends the list action', async () => {
 		const onAction = vi.fn()
 		render(

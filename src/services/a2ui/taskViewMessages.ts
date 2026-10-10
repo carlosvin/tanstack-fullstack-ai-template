@@ -15,6 +15,8 @@ const MAX_TITLE = 120
 const MAX_DESCRIPTION = 2000
 const MAX_BADGE = 40
 const SURFACE_ID = '@default'
+/** Private-use mark. Component ids start with it, and every other string has it removed. */
+const ID_MARK = '\uE000'
 
 const ComponentInstanceSchema = z
 	.object({
@@ -197,13 +199,61 @@ export function acceptA2uiMessages(input: unknown): ServerToClientMessage[] {
 	})
 }
 
+function stripIdMark(value: unknown): unknown {
+	if (typeof value === 'string') return value.replaceAll(ID_MARK, '')
+	if (Array.isArray(value)) return value.map(stripIdMark)
+	if (typeof value === 'object' && value !== null) {
+		const next: Record<string, unknown> = {}
+		for (const [key, item] of Object.entries(value)) next[key] = stripIdMark(item)
+		return next
+	}
+	return value
+}
+
+/**
+ * The processor treats any string equal to a component id as a child, including
+ * text inside `literalString`. Ids use a private-use prefix that literals cannot contain.
+ */
+function sealComponentIds(components: ComponentInstance[]): { components: ComponentInstance[]; rootId: string } {
+	const ids = new Map(components.map((instance, index) => [instance.id, `${ID_MARK}${index}`]))
+	const ref = (id: string) => ids.get(id) ?? id
+	const sealed = components.map((instance) => {
+		const type = Object.keys(instance.component)[0]
+		const body = type ? instance.component[type] : undefined
+		if (!type || typeof body !== 'object' || body === null || Array.isArray(body)) {
+			return { id: ref(instance.id), component: instance.component }
+		}
+		const next: Record<string, unknown> = {}
+		for (const [key, value] of Object.entries(body)) {
+			if (key === 'child' && typeof value === 'string') {
+				next.child = ref(value)
+			} else if (
+				key === 'children' &&
+				typeof value === 'object' &&
+				value !== null &&
+				'explicitList' in value &&
+				Array.isArray(value.explicitList)
+			) {
+				next.children = {
+					explicitList: value.explicitList.map((id: unknown) => (typeof id === 'string' ? ref(id) : id)),
+				}
+			} else {
+				next[key] = stripIdMark(value)
+			}
+		}
+		return { id: ref(instance.id), component: { [type]: next } }
+	})
+	return { components: sealed, rootId: ref('root') }
+}
+
 function messages(components: ComponentInstance[]): ServerToClientMessage[] {
+	const sealed = sealComponentIds(components)
 	return acceptA2uiMessages([
 		{
-			surfaceUpdate: { surfaceId: SURFACE_ID, components },
+			surfaceUpdate: { surfaceId: SURFACE_ID, components: sealed.components },
 		},
 		{
-			beginRendering: { surfaceId: SURFACE_ID, root: 'root' },
+			beginRendering: { surfaceId: SURFACE_ID, root: sealed.rootId },
 		},
 	])
 }
@@ -284,16 +334,32 @@ function listMessages(tasks: Task[]): ServerToClientMessage[] {
 	return messages([{ id: 'root', component: { Column: { children: { explicitList: childIds } } } }, ...nodes])
 }
 
+function tableCell(id: string, text: string, header = false): ComponentInstance[] {
+	return [
+		{
+			id,
+			component: {
+				[header ? 'TableHeaderCell' : 'TableCell']: { child: `${id}-text` },
+			},
+		},
+		textNode(`${id}-text`, text, header ? 'caption' : 'body', header ? MAX_BADGE : MAX_TITLE),
+	]
+}
+
 function tableRow(task: Task, index: number) {
 	const base = `t${index}`
 	const cellIds = [`${base}-title`, `${base}-status`, `${base}-priority`, `${base}-assignee`]
 	const nodes: ComponentInstance[] = [
+		{ id: base, component: { TableRow: { children: { explicitList: cellIds } } } },
 		{
-			id: base,
+			id: `${base}-title`,
+			component: { TableCell: { child: `${base}-open` } },
+		},
+		{
+			id: `${base}-open`,
 			component: {
 				Button: {
-					child: `${base}-cells`,
-					appearance: 'row',
+					child: `${base}-label`,
 					action: {
 						name: 'open-task',
 						context: [
@@ -304,29 +370,34 @@ function tableRow(task: Task, index: number) {
 				},
 			},
 		},
-		{ id: `${base}-cells`, component: { Row: { children: { explicitList: cellIds } } } },
-		textNode(`${base}-title`, task.title, 'body', MAX_TITLE),
-		textNode(`${base}-status`, task.status, 'caption', MAX_BADGE),
-		textNode(`${base}-priority`, task.priority, 'caption', MAX_BADGE),
-		textNode(`${base}-assignee`, task.assignee ?? '—', 'caption', MAX_BADGE),
+		textNode(`${base}-label`, task.title, 'body', MAX_TITLE),
+		...tableCell(`${base}-status`, task.status),
+		...tableCell(`${base}-priority`, task.priority),
+		...tableCell(`${base}-assignee`, task.assignee ?? '—'),
 	]
 	return { rootId: base, nodes }
 }
 
 function tableMessages(tasks: Task[]): ServerToClientMessage[] {
 	const shown = tasks.slice(0, MAX_TASKS)
-	const childIds = ['heading', 'header']
+	const childIds = ['heading', 'table']
 	const nodes: ComponentInstance[] = [
 		titleNode('heading', tasks.length === 1 ? '1 task' : `${tasks.length} tasks`),
 		{
-			id: 'header',
-			component: { Row: { children: { explicitList: ['h-title', 'h-status', 'h-priority', 'h-assignee'] } } },
+			id: 'table',
+			component: { Table: { children: { explicitList: ['thead', 'tbody'] } } },
 		},
-		textNode('h-title', 'Title', 'caption', MAX_BADGE),
-		textNode('h-status', 'Status', 'caption', MAX_BADGE),
-		textNode('h-priority', 'Priority', 'caption', MAX_BADGE),
-		textNode('h-assignee', 'Assignee', 'caption', MAX_BADGE),
+		{
+			id: 'thead',
+			component: { TableHead: { children: { explicitList: ['h-title', 'h-status', 'h-priority', 'h-assignee'] } } },
+		},
+		...tableCell('h-title', 'Title', true),
+		...tableCell('h-status', 'Status', true),
+		...tableCell('h-priority', 'Priority', true),
+		...tableCell('h-assignee', 'Assignee', true),
+		{ id: 'tbody', component: { TableBody: { children: { explicitList: [] } } } },
 	]
+	const bodyIds: string[] = []
 	if (shown.length === 0) {
 		childIds.push('empty-title', 'empty-note')
 		nodes.push(
@@ -336,15 +407,21 @@ function tableMessages(tasks: Task[]): ServerToClientMessage[] {
 	}
 	for (const [index, task] of shown.entries()) {
 		const row = tableRow(task, index)
-		childIds.push(row.rootId)
+		bodyIds.push(row.rootId)
 		nodes.push(...row.nodes)
+	}
+	const body = nodes.find((node) => node.id === 'tbody')
+	if (body) body.component = { TableBody: { children: { explicitList: bodyIds } } }
+	if (tasks.length > shown.length) {
+		childIds.push('overflow')
+		nodes.push(
+			textNode('overflow', `Showing ${shown.length} of ${tasks.length}. Ask for a narrower filter.`, 'caption'),
+		)
 	}
 	return messages([{ id: 'root', component: { Column: { children: { explicitList: childIds } } } }, ...nodes])
 }
 
 function detailMessages(task: Task): ServerToClientMessage[] {
-	// Component ids must not match bare string props (usageHint "body", colors, "card").
-	// The processor treats any string equal to a component id as a child reference.
 	const badgeIds = ['status', 'priority']
 	if (task.assignee) badgeIds.push('assignee')
 	const bodyIds = ['title', 'badges', 'description', 'back']
