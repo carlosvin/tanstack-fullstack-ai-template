@@ -11,11 +11,6 @@ interface AgenticA2uiSurfaceProps {
 	onRetry?: () => void
 }
 
-/**
- * Host renderer for a Mantine A2UI task view.
- * Messages are catalog-checked before they reach the processor.
- * Unknown component types render nothing.
- */
 export function AgenticA2uiSurface({ messages, onAction, onRetry }: AgenticA2uiSurfaceProps) {
 	const processor = useA2uiProcessor()
 	const [failed, setFailed] = useState(false)
@@ -26,6 +21,7 @@ export function AgenticA2uiSurface({ messages, onAction, onRetry }: AgenticA2uiS
 			processor.processMessages(acceptA2uiMessages(messages))
 			setFailed(false)
 		} catch {
+			// ZodError from acceptA2uiMessages, or Error from the processor (invalid node or a cycle).
 			setFailed(true)
 		}
 	}, [messages, processor])

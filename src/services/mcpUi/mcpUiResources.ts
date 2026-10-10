@@ -9,8 +9,6 @@
 import { createUIResource } from '@mcp-ui/server'
 import { isAllowedMcpUiUri, MAX_MCP_UI_HTML_CHARS, type McpUiResource } from './mcpUiResource'
 
-export { TASK_DETAIL_UI_URI, TASKS_LIST_UI_URI } from './mcpUiResource'
-
 /** @internal Used by unit tests to verify the HTML size cap. */
 export function assertMcpUiHtmlWithinCap(htmlString: string, uri: string): void {
 	if (htmlString.length > MAX_MCP_UI_HTML_CHARS) {
