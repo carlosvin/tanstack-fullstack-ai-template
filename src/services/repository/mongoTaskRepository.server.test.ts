@@ -58,10 +58,18 @@ function createTaskDb() {
 			}
 		},
 		findOne: async (filter: Record<string, unknown>) => docs.find((doc) => matches(doc, filter)) ?? null,
-		findOneAndUpdate: async (filter: Record<string, unknown>, update: { $set: Partial<StoredTask> }) => {
+		findOneAndUpdate: async (
+			filter: Record<string, unknown>,
+			update: { $set?: Partial<StoredTask>; $unset?: Record<string, string> },
+		) => {
 			const doc = docs.find((candidate) => matches(candidate, filter))
 			if (!doc) return null
-			Object.assign(doc, update.$set)
+			if (update.$set) Object.assign(doc, update.$set)
+			if (update.$unset) {
+				for (const key of Object.keys(update.$unset)) {
+					delete doc[key as keyof StoredTask]
+				}
+			}
 			return { ...doc }
 		},
 		deleteOne: async (filter: Record<string, unknown>) => {

@@ -10,6 +10,8 @@ import { getObservability } from '../observability'
 import { createWriteTrace, updateWriteTrace } from '../repository/traceability'
 import { TaskRepoFilterSchema, TaskRepoInputSchema } from '../schemas/repository'
 import {
+	AssigneeOptionListSchema,
+	BulkTaskStatusInputSchema,
 	CurrentUserSchema,
 	DistinctValueListSchema,
 	DistinctValuesInputSchema,
@@ -20,6 +22,7 @@ import {
 	UserProfileByEmailSchema,
 } from '../schemas/schemas'
 import { toToolTask, toToolUserAccess, toToolUserProfile } from '../schemas/taskMappers'
+import { applyBulkStatus } from './bulkTaskStatus'
 
 // ============================================================================
 // Queries (GET) — accessed from route loaders and AI tools
@@ -53,6 +56,21 @@ export const getDistinctValues = createServerFn({ method: 'GET' })
 			context.repository.getDistinctValues(data.field),
 		)
 		return DistinctValueListSchema.parse(values)
+	})
+
+/** Distinct assignees labeled with a profile name when the repository has one. */
+export const getAssigneeOptions = createServerFn({ method: 'GET' })
+	.middleware([repositoryMiddleware])
+	.handler(async ({ context }) => {
+		const emails = await getObservability({}).startSpan('getAssigneeOptions', () =>
+			context.repository.getDistinctValues('assignee'),
+		)
+		const options = []
+		for (const email of emails) {
+			const profile = await context.repository.getUserProfile(email)
+			options.push({ email, name: profile?.name })
+		}
+		return AssigneeOptionListSchema.parse(options)
 	})
 
 /** Fetch a user profile by email. */
@@ -139,6 +157,16 @@ export const updateTask = createServerFn({ method: 'POST' })
 		)
 		return row ? toToolTask(row) : null
 	})
+
+/** Set one status on many tasks. Each row is checked for the creator. */
+export const updateTasksStatus = createServerFn({ method: 'POST' })
+	.middleware([requireAuthMiddleware, invalidateMiddleware])
+	.inputValidator(BulkTaskStatusInputSchema)
+	.handler(async ({ data, context }) =>
+		getObservability({}).startSpan('updateTasksStatus', () =>
+			applyBulkStatus(context.repository, context.accessTicket, data),
+		),
+	)
 
 /** Delete a task. Only the creator may delete. */
 export const deleteTask = createServerFn({ method: 'POST' })

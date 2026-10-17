@@ -14,6 +14,7 @@ import {
 	type UserProfileRepo,
 	UserProfileRepoSchema,
 } from '../schemas/repository'
+import { matchesDueFilter, sortTasks, taskUpdateFields, taskWriteFields } from './taskQuery'
 import { resolveCreateLastModifiedBy } from './traceability'
 import type { DistinctValueField, Repository, TraceabilityContext } from './types'
 
@@ -26,6 +27,7 @@ const SEED_TASKS: TaskRepo[] = [
 		status: 'done',
 		priority: 'high',
 		assignee: 'alice@example.com',
+		dueDate: '2026-01-20',
 		createdBy: 'alice@example.com',
 		createdAt: '2025-01-15T09:00:00Z',
 		updatedAt: '2025-01-16T14:30:00Z',
@@ -37,6 +39,7 @@ const SEED_TASKS: TaskRepo[] = [
 		status: 'in-progress',
 		priority: 'high',
 		assignee: 'bob@example.com',
+		dueDate: '2026-10-01',
 		createdBy: 'alice@example.com',
 		createdAt: '2025-01-16T10:00:00Z',
 		updatedAt: '2025-01-18T11:00:00Z',
@@ -48,6 +51,7 @@ const SEED_TASKS: TaskRepo[] = [
 		status: 'pending',
 		priority: 'critical',
 		assignee: 'alice@example.com',
+		dueDate: '2026-10-10',
 		createdBy: 'bob@example.com',
 		createdAt: '2025-01-17T08:00:00Z',
 		updatedAt: '2025-01-17T08:00:00Z',
@@ -59,6 +63,7 @@ const SEED_TASKS: TaskRepo[] = [
 		status: 'pending',
 		priority: 'medium',
 		assignee: 'charlie@example.com',
+		dueDate: '2026-11-15',
 		createdBy: 'alice@example.com',
 		createdAt: '2025-01-18T12:00:00Z',
 		updatedAt: '2025-01-18T12:00:00Z',
@@ -125,8 +130,9 @@ export class SeedRepository implements Repository {
 			const q = filter.search.toLowerCase()
 			result = result.filter((t) => t.title.toLowerCase().includes(q) || t.description?.toLowerCase().includes(q))
 		}
+		result = result.filter((task) => matchesDueFilter(task, filter))
 
-		return parseTaskRepoList(result)
+		return parseTaskRepoList(sortTasks(result, filter))
 	}
 
 	async getTask(taskId: string): Promise<TaskRepo | null> {
@@ -156,7 +162,7 @@ export class SeedRepository implements Repository {
 	async createTask(input: TaskRepoInput, trace?: TraceabilityContext): Promise<TaskRepo> {
 		const now = new Date().toISOString()
 		const task: TaskRepo = {
-			...input,
+			...taskWriteFields(input),
 			id: `task-${++this.nextId}`,
 			createdAt: now,
 			updatedAt: now,
@@ -175,12 +181,15 @@ export class SeedRepository implements Repository {
 		const index = this.tasks.findIndex((t) => t.id === taskId)
 		if (index === -1) return null
 
-		this.tasks[index] = parseTaskRepo({
+		const { set, unsetDueDate } = taskUpdateFields(input)
+		const next: TaskRepo = {
 			...this.tasks[index],
-			...input,
+			...set,
 			updatedAt: new Date().toISOString(),
 			...(trace?.lastModifiedBy ? { lastModifiedBy: trace.lastModifiedBy } : {}),
-		})
+		}
+		if (unsetDueDate) delete next.dueDate
+		this.tasks[index] = parseTaskRepo(next)
 		return this.tasks[index]
 	}
 

@@ -38,7 +38,7 @@ describe('AgenticA2uiSurface', () => {
 	it('opens the named task from the card without showing the id', async () => {
 		const onAction = vi.fn()
 		renderSurface('light', onAction)
-		const card = await screen.findByRole('button', { name: /Ship the report/ })
+		const card = await screen.findByRole('button', { name: /^Ship the report/ })
 		expect(card.textContent).not.toContain('task-1')
 		const label = card.querySelector('[class*="label"]')
 		expect(label?.getAttribute('style') ?? '').toMatch(/text-align:\s*left/)

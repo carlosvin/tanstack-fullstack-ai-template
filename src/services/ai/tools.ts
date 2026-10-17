@@ -20,14 +20,15 @@ import {
 	getUserAccess,
 	getUserProfile,
 	updateTask,
+	updateTasksStatus,
 } from '../api/serverFns'
 import {
 	AppRuntimeInfoSchema,
+	BulkTaskStatusInputSchema,
 	DistinctValuesInputSchema,
 	TaskFilterSchema,
 	TaskIdInputSchema,
 	TaskInputSchema,
-	TasksListSearchSchema,
 	UpdateTaskInputSchema,
 	UserProfileByEmailSchema,
 } from '../schemas/schemas'
@@ -40,7 +41,7 @@ import { createSafeServerTool } from './serverTool'
 const getTasksToolDef = toolDefinition({
 	name: 'getTasks',
 	description:
-		'Get all tasks with optional filters. Supports filtering by status, priority, assignee, and full-text search.',
+		'Get tasks with optional filters. Supports status, priority, assignee, full-text search, and due date (due, asOf, dueOnOrBefore). Pass sort "due" when the user asks what is due. Pass asOf as the user local YYYY-MM-DD from browser context when filtering overdue.',
 	inputSchema: TaskFilterSchema,
 })
 
@@ -104,12 +105,14 @@ export const getUserAccessTool = createSafeServerTool(getUserAccessToolDef, asyn
 // Client tools — definition-only (implementations in ChatDrawer.tsx)
 // ---------------------------------------------------------------------------
 
-const NavigateSearchSchema = TasksListSearchSchema.optional()
+const NavigateSearchSchema = TaskFilterSchema.optional()
 
 /** Input schema for the navigate client tool. */
 export const NavigateInputSchema = z.object({
 	to: z.string().describe('Path to navigate to (e.g. /, /tasks, /tasks/123)'),
-	search: NavigateSearchSchema.describe('Optional query params for /tasks (status, priority, search)'),
+	search: NavigateSearchSchema.describe(
+		'Optional query params for /tasks: status, priority, assignee, search, due, asOf, dueOnOrBefore, sort',
+	),
 })
 
 /** AI client tool definition: trigger in-app navigation. Implementation in ChatDrawer.tsx. */
@@ -167,7 +170,7 @@ export const getCurrentUserContextTool = createSafeServerTool(getCurrentUserCont
 	return {
 		...currentUser,
 		permissions:
-			'Anyone logged in can create tasks. Only the task creator can edit or delete a task (check task.createdBy).',
+			'Anyone logged in can create tasks. Only the task creator can edit, delete, or include a task in updateTasksStatus (check task.createdBy).',
 	}
 })
 
@@ -199,6 +202,23 @@ const updateTaskToolDef = toolDefinition({
 export const updateTaskTool = createSafeServerTool(updateTaskToolDef, async (args) => {
 	const task = await updateTask({ data: args })
 	return { task, message: 'Task updated.' }
+})
+
+const updateTasksStatusToolDef = toolDefinition({
+	name: 'updateTasksStatus',
+	description:
+		'Set one status on many tasks. Requires login. Each task is changed only when the caller created it. The result lists updated tasks and refused tasks with a reason. Call this for a bulk status change instead of looping updateTask.',
+	inputSchema: BulkTaskStatusInputSchema,
+})
+
+/** AI server tool: set one status on many tasks, with a per-row creator check. */
+export const updateTasksStatusTool = createSafeServerTool(updateTasksStatusToolDef, async (args) => {
+	const result = await updateTasksStatus({ data: args })
+	const message =
+		result.refused.length > 0
+			? `Updated ${result.updated.length}. Left ${result.refused.length} unchanged.`
+			: `Updated ${result.updated.length}.`
+	return { ...result, message }
 })
 
 const deleteTaskToolDef = toolDefinition({

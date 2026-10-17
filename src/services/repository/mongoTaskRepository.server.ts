@@ -1,6 +1,7 @@
-import type { Collection, Db, Filter } from 'mongodb'
+import type { Collection, Db, Filter, UpdateFilter } from 'mongodb'
 import { parseDistinctValues, parseTaskRepo, parseTaskRepoList, parseTaskRepoOrNull } from '../schemas/repoParsers'
 import type { TaskRepo, TaskRepoFilter, TaskRepoInput } from '../schemas/repository'
+import { matchesDueFilter, sortTasks, taskUpdateFields, taskWriteFields } from './taskQuery'
 import { resolveCreateLastModifiedBy } from './traceability'
 import type { DistinctValueField, IndexableRepository, TraceabilityContext } from './types'
 
@@ -45,7 +46,8 @@ export class MongoTaskRepository implements TaskCollectionRepository {
 		}
 
 		const rows = await this.collection.find(query).sort({ updatedAt: -1 }).toArray()
-		return parseTaskRepoList(rows)
+		const matched = parseTaskRepoList(rows).filter((task) => matchesDueFilter(task, filter))
+		return sortTasks(matched, filter)
 	}
 
 	async getTask(taskId: string): Promise<TaskRepo | null> {
@@ -61,7 +63,7 @@ export class MongoTaskRepository implements TaskCollectionRepository {
 	async createTask(input: Readonly<TaskRepoInput>, trace?: Readonly<TraceabilityContext>): Promise<TaskRepo> {
 		const now = new Date().toISOString()
 		const task: TaskRepo = {
-			...input,
+			...taskWriteFields(input),
 			id: crypto.randomUUID(),
 			createdAt: now,
 			updatedAt: now,
@@ -77,17 +79,16 @@ export class MongoTaskRepository implements TaskCollectionRepository {
 		input: Readonly<Partial<TaskRepoInput>>,
 		trace?: Readonly<TraceabilityContext>,
 	): Promise<TaskRepo | null> {
-		const result = await this.collection.findOneAndUpdate(
-			{ id: taskId },
-			{
-				$set: {
-					...input,
-					updatedAt: new Date().toISOString(),
-					...(trace?.lastModifiedBy ? { lastModifiedBy: trace.lastModifiedBy } : {}),
-				},
+		const { set, unsetDueDate } = taskUpdateFields(input)
+		const update: UpdateFilter<TaskRepo> = {
+			$set: {
+				...set,
+				updatedAt: new Date().toISOString(),
+				...(trace?.lastModifiedBy ? { lastModifiedBy: trace.lastModifiedBy } : {}),
 			},
-			{ returnDocument: 'after' },
-		)
+		}
+		if (unsetDueDate) update.$unset = { dueDate: '' }
+		const result = await this.collection.findOneAndUpdate({ id: taskId }, update, { returnDocument: 'after' })
 		return parseTaskRepoOrNull(result)
 	}
 

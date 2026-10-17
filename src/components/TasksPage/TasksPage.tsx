@@ -3,6 +3,7 @@ import {
 	Badge,
 	Button,
 	Card,
+	Checkbox,
 	Container,
 	Flex,
 	Group,
@@ -14,8 +15,15 @@ import {
 } from '@mantine/core'
 import { useDebouncedCallback } from '@mantine/hooks'
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
-import { OptionalTaskPrioritySchema, OptionalTaskStatusSchema } from '../../services/schemas/schemas'
-import type { Task, TaskFilter } from '../../types'
+import { useState } from 'react'
+import { z } from 'zod'
+import {
+	OptionalTaskPrioritySchema,
+	OptionalTaskStatusSchema,
+	TaskDueFilterSchema,
+} from '../../services/schemas/schemas'
+import type { AssigneeOption, Task, TaskStatus, TasksListSearch } from '../../types'
+import { formatCalendarDate } from '../../utils/calendarDate'
 import {
 	priorityColor,
 	priorityLabel,
@@ -24,19 +32,52 @@ import {
 	statusLabel,
 	statusSelectOptions,
 } from '../../utils/taskDisplay'
+import { isTaskOverdue } from '../../utils/taskDue'
 import { Link } from '../Link/Link'
+
+const DUE_OPTIONS = [
+	{ value: 'overdue', label: 'Overdue' },
+	{ value: 'scheduled', label: 'Has a due date' },
+	{ value: 'unscheduled', label: 'No due date' },
+]
 
 export interface TasksPageProps {
 	tasks: Task[]
-	search: TaskFilter
+	assignees: AssigneeOption[]
+	search: TasksListSearch
 	isAuth: boolean
+	isTestUser: boolean
+	today: string
 	currentUserEmail?: string
-	onUpdateSearch: (updates: Partial<TaskFilter>, replace?: boolean) => void
+	bulkLoading?: boolean
+	onUpdateSearch: (updates: Partial<TasksListSearch>, replace?: boolean) => void
 	onDeleteTask: (task: Task) => void
+	onBulkStatus: (status: TaskStatus) => void
 }
 
-export function TasksPage({ tasks, search, isAuth, currentUserEmail, onUpdateSearch, onDeleteTask }: TasksPageProps) {
+function assigneeLabel(option: AssigneeOption): string {
+	return option.name ? `${option.name} (${option.email})` : option.email
+}
+
+export function TasksPage({
+	tasks,
+	assignees,
+	search,
+	isAuth,
+	isTestUser,
+	today,
+	currentUserEmail,
+	bulkLoading = false,
+	onUpdateSearch,
+	onDeleteTask,
+	onBulkStatus,
+}: TasksPageProps) {
 	const urlSearch = search.search ?? ''
+	const selected = search.selected ?? []
+	const visibleIds = tasks.map((task) => task.id)
+	const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selected.includes(id))
+	const mine = Boolean(currentUserEmail) && search.assignee === currentUserEmail
+	const [bulkStatus, setBulkStatus] = useState<TaskStatus>('done')
 
 	const debouncedSearch = useDebouncedCallback((value: string) => {
 		const next = value || undefined
@@ -93,7 +134,82 @@ export function TasksPage({ tasks, search, isAuth, currentUserEmail, onUpdateSea
 						onChange={(val) => onUpdateSearch({ priority: OptionalTaskPrioritySchema.parse(val) })}
 						w={{ base: '100%', sm: 150 }}
 					/>
+					<Select
+						placeholder="Due"
+						aria-label="Due"
+						clearable
+						data={DUE_OPTIONS}
+						value={search.due ?? null}
+						onChange={(val) => {
+							const due = TaskDueFilterSchema.optional().parse(val ?? undefined)
+							onUpdateSearch({ due, asOf: due === 'overdue' ? today : undefined })
+						}}
+						w={{ base: '100%', sm: 170 }}
+					/>
+					<Select
+						placeholder="Assignee"
+						aria-label="Assignee"
+						clearable
+						data={assignees.map((option) => ({ value: option.email, label: assigneeLabel(option) }))}
+						value={search.assignee ?? null}
+						onChange={(val) =>
+							onUpdateSearch({
+								assignee: z
+									.string()
+									.min(1)
+									.optional()
+									.parse(val ?? undefined),
+							})
+						}
+						w={{ base: '100%', sm: 220 }}
+					/>
+					{isAuth && !isTestUser && currentUserEmail ? (
+						<Button
+							variant={mine ? 'filled' : 'light'}
+							onClick={() => onUpdateSearch({ assignee: mine ? undefined : currentUserEmail })}
+							w={{ base: '100%', sm: 'auto' }}
+						>
+							Assigned to me
+						</Button>
+					) : null}
 				</Flex>
+
+				{isAuth && tasks.length > 0 ? (
+					<Flex
+						gap="sm"
+						align={{ base: 'stretch', sm: 'center' }}
+						direction={{ base: 'column', sm: 'row' }}
+						wrap="wrap"
+					>
+						<Checkbox
+							label="Select visible"
+							checked={allVisibleSelected}
+							onChange={() =>
+								onUpdateSearch({ selected: allVisibleSelected ? undefined : visibleIds.slice(0, 50) }, true)
+							}
+						/>
+						{selected.length > 0 ? (
+							<Group gap="sm" align="flex-end" wrap="wrap">
+								<Text size="sm" c="dimmed">
+									{selected.length} selected
+								</Text>
+								<Select
+									aria-label="Status for selected tasks"
+									data={statusSelectOptions}
+									value={bulkStatus}
+									w={{ base: '100%', sm: 160 }}
+									onChange={(value) => {
+										const parsed = OptionalTaskStatusSchema.parse(value)
+										if (parsed) setBulkStatus(parsed)
+									}}
+								/>
+								<Button loading={bulkLoading} onClick={() => onBulkStatus(bulkStatus)}>
+									Update status
+								</Button>
+							</Group>
+						) : null}
+					</Flex>
+				) : null}
 
 				{tasks.length === 0 ? (
 					<Text c="dimmed" ta="center" py="xl">
@@ -103,9 +219,22 @@ export function TasksPage({ tasks, search, isAuth, currentUserEmail, onUpdateSea
 					<Stack gap="xs">
 						{tasks.map((task) => {
 							const isCreator = isAuth && task.createdBy === currentUserEmail
+							const overdue = isTaskOverdue(task, today)
 							return (
 								<Card key={task.id} withBorder padding="md">
 									<Group justify="space-between" wrap="wrap" gap="sm">
+										{isAuth ? (
+											<Checkbox
+												aria-label={`Select ${task.title}`}
+												checked={selected.includes(task.id)}
+												onChange={() => {
+													const next = selected.includes(task.id)
+														? selected.filter((id) => id !== task.id)
+														: [...selected, task.id].slice(0, 50)
+													onUpdateSearch({ selected: next.length > 0 ? next : undefined }, true)
+												}}
+											/>
+										) : null}
 										<Link
 											to="/tasks/$taskId"
 											params={{ taskId: task.id }}
@@ -130,9 +259,14 @@ export function TasksPage({ tasks, search, isAuth, currentUserEmail, onUpdateSea
 												<Group gap="sm" wrap="wrap">
 													{task.assignee && (
 														<Text size="xs" c="dimmed">
-															{task.assignee}
+															{assignees.find((option) => option.email === task.assignee)?.name ?? task.assignee}
 														</Text>
 													)}
+													{task.dueDate ? (
+														<Text size="xs" c={overdue ? 'red' : 'dimmed'}>
+															{overdue ? 'Overdue' : 'Due'} {formatCalendarDate(task.dueDate)}
+														</Text>
+													) : null}
 													<Badge variant="dot" color={statusColor(task.status)}>
 														{statusLabel(task.status)}
 													</Badge>

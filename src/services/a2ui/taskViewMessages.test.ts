@@ -1,7 +1,13 @@
 import { A2uiMessageProcessor, type ServerToClientMessage } from '@a2ui-bridge/core'
 import { describe, expect, it } from 'vitest'
 import type { Task } from '../schemas/schemas'
-import { acceptA2uiMessages, buildTaskViewMessages, promptFromA2uiAction } from './taskViewMessages'
+import {
+	acceptA2uiMessages,
+	buildTaskViewMessages,
+	bulkStatusPrompt,
+	promptFromA2uiAction,
+	taskViewIntent,
+} from './taskViewMessages'
 
 const task: Task = {
 	id: 'task-1',
@@ -81,6 +87,16 @@ describe('buildTaskViewMessages', () => {
 		expect(() => processor.processMessages(messages)).not.toThrow()
 	})
 
+	it('shows a due date and a select control without a second open button', () => {
+		const dated = { ...task, dueDate: '2026-10-01' }
+		const text = visibleText(buildTaskViewMessages({ tasks: [dated], asOf: '2026-10-17' })).join(' ')
+		expect(text).toContain('Overdue 2026-10-01')
+		expect(text).toContain('Select Ship the report')
+		expect(text).toContain('Mark selected done')
+		const selected = visibleText(buildTaskViewMessages({ tasks: [dated], asOf: '2026-10-17' }, ['task-1'])).join(' ')
+		expect(selected).toContain('Selected Ship the report')
+	})
+
 	it('says when no rows match', () => {
 		expect(visibleText(buildTaskViewMessages({ tasks: [] })).join(' ')).toContain('No tasks match')
 	})
@@ -143,5 +159,29 @@ describe('promptFromA2uiAction', () => {
 				timestamp: '2026-01-01T00:00:00.000Z',
 			}),
 		).toBeNull()
+	})
+
+	it('turns a selected set into one status prompt and ignores an empty set', () => {
+		const payload = { tasks: [task] }
+		expect(bulkStatusPrompt(payload, ['task-1'], 'done')).toBe(
+			'Set the status of these tasks to done: Ship the report. Task ids: task-1.',
+		)
+		expect(bulkStatusPrompt(payload, [], 'done')).toBeNull()
+		expect(
+			taskViewIntent({
+				actionName: 'mark-selected',
+				sourceComponentId: 'bulk-done',
+				timestamp: '2026-01-01T00:00:00.000Z',
+				context: { status: 'done' },
+			}),
+		).toEqual({ kind: 'mark-selected', status: 'done' })
+		expect(
+			taskViewIntent({
+				actionName: 'toggle-select',
+				sourceComponentId: 't0-select',
+				timestamp: '2026-01-01T00:00:00.000Z',
+				context: { taskId: 'task-1' },
+			}),
+		).toEqual({ kind: 'toggle', taskId: 'task-1' })
 	})
 })

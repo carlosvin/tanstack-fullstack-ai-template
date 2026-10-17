@@ -10,6 +10,7 @@ export function toToolTask(row: TaskRepo) {
 		status: row.status,
 		priority: row.priority,
 		assignee: row.assignee,
+		dueDate: row.dueDate,
 		createdAt: row.createdAt,
 		updatedAt: row.updatedAt,
 		createdBy: row.createdBy,
