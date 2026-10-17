@@ -18,7 +18,15 @@ This repo ships **three prompt UX examples** from one codebase. Set `PROMPT_CONC
 
 Link **additional Netlify sites** to the same repository (base directory `/`, same `pnpm build` as `netlify.toml`). Give each site its own `DISPLAY_NAME` and shared AI/observability env vars. Production on the default site stays on `main`; the prompt-first site uses `PROMPT_CONCEPT=prompt-first` and the agentic site uses `PROMPT_CONCEPT=agentic` in site settings (see `scripts/netlify/setup-prompt-first-site.sh` and `scripts/netlify/setup-agentic-site.sh`).
 
-On pull requests, **each linked site** gets its own Netlify deploy preview (one check / URL per site): side drawer on `fullstack-promptable-app-example`, prompt-first on `fullstack-promptable-prompt-first`, agentic shell on `fullstack-promptable-agentic`. Enable **Deploy Previews** and disable **Branch deploys** in all projects’ Build & deploy settings.
+On pull requests, Netlify builds a deploy preview for each linked site. GitHub Actions (`.github/workflows/netlify-previews.yml`) records a separate status for each one — `netlify/side`, `netlify/prompt-first`, and `netlify/agentic` — because Netlify’s own `deploy/netlify` status is a single name shared by every site. When the pull request is merged or closed, that workflow deletes those preview deploys. Both steps call the Netlify API with the `NETLIFY_AUTH_TOKEN` Actions secret.
+
+| Check | Preview URL |
+|-------|-------------|
+| `netlify/side` | `https://deploy-preview-<pr>--fullstack-promptable-app-example.netlify.app` |
+| `netlify/prompt-first` | `https://deploy-preview-<pr>--fullstack-promptable-prompt-first.netlify.app` |
+| `netlify/agentic` | `https://deploy-preview-<pr>--fullstack-promptable-agentic.netlify.app` |
+
+A push to `main` publishes production for all three sites through Netlify Git. Production branch is `main`. Enable **Deploy Previews** and disable **Branch deploys** on each site. In the Netlify team, set **Notifications → Commit status webhooks → Multiple webhooks per repo** so Netlify’s own checks do not overwrite each other.
 
 ## Use the Agent Skill
 
