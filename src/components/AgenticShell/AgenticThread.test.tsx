@@ -4,7 +4,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const sendMessage = vi.fn()
-const getTask = vi.fn(async () => null)
+const getTask = vi.fn(async (_input: unknown) => null)
 
 vi.mock('../AgenticChat/AgenticChatContext', () => ({
 	useAgenticChat: () => ({
@@ -15,7 +15,7 @@ vi.mock('../AgenticChat/AgenticChatContext', () => ({
 }))
 
 vi.mock('../../services/api/serverFns', () => ({
-	getTask: (...args: unknown[]) => getTask(...args),
+	getTask: (input: unknown) => getTask(input),
 }))
 
 const created = {
@@ -39,13 +39,13 @@ const chatMessages: UIMessage[] = [
 				name: 'showTasksView',
 				arguments: '{}',
 				input: {},
-				state: 'output-available',
+				state: 'complete',
 			},
 			{
 				type: 'tool-result',
 				toolCallId: 'call-list',
 				content: JSON.stringify({ tasks: [created], presentation: 'cards' }),
-				state: 'output-available',
+				state: 'complete',
 			},
 		],
 	},
