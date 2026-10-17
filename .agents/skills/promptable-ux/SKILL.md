@@ -18,7 +18,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.3.0"
+  version: "1.3.1"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -41,7 +41,7 @@ This template publishes **multiple** skills. If only **this** skill is installed
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env
   ```
 
-- **`agentic-ux`** (companion) — Fully agentic tool-only shell where views render as MCP UI resources. Install when the deployment has no domain screens.
+- **`agentic-ux`** (companion) — Fully agentic tool-only shell. Mantine views are A2UI surfaces. Raw documents stay MCP UI resources. Install when the deployment has no domain screens.
   ```bash
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill agentic-ux
   ```

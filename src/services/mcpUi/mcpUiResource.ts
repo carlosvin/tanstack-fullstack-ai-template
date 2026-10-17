@@ -28,7 +28,7 @@ export interface McpUiResource {
 }
 
 /** Allowlist for tool-linked UI resource URIs. */
-export function isAllowedMcpUiUri(uri: string): boolean {
+export function isAllowedMcpUiUri(uri: string): uri is `ui://${string}` {
 	return ALLOWED_MCP_UI_URI_PREFIXES.some((prefix) => uri.startsWith(prefix))
 }
 

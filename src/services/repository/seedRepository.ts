@@ -99,8 +99,6 @@ const SEED_USERS: UserProfileRepo[] = [
 	},
 ]
 
-let nextId = SEED_TASKS.length + 1
-
 /**
  * In-memory seed repository for development and demos.
  * Mutations modify the in-memory array (not persisted across restarts).
@@ -108,6 +106,8 @@ let nextId = SEED_TASKS.length + 1
 export class SeedRepository implements Repository {
 	private tasks: TaskRepo[] = parseTaskRepoList(SEED_TASKS)
 	private users: UserProfileRepo[] = UserProfileRepoSchema.array().parse(SEED_USERS)
+	/** `createTask` uses `++nextId`, so the first minted id is `task-7`. */
+	private nextId = SEED_TASKS.length + 1
 
 	async getTasks(filter?: TaskRepoFilter): Promise<TaskRepo[]> {
 		let result = [...this.tasks]
@@ -157,7 +157,7 @@ export class SeedRepository implements Repository {
 		const now = new Date().toISOString()
 		const task: TaskRepo = {
 			...input,
-			id: `task-${++nextId}`,
+			id: `task-${++this.nextId}`,
 			createdAt: now,
 			updatedAt: now,
 			createdBy: trace?.createdBy,
@@ -189,5 +189,17 @@ export class SeedRepository implements Repository {
 		if (index === -1) return false
 		this.tasks.splice(index, 1)
 		return true
+	}
+
+	/** Upsert a full row. A replayed `task-N` id advances this instance's counter so the next create does not reuse it. */
+	rememberTask(task: TaskRepo): void {
+		const parsed = parseTaskRepo(task)
+		const index = this.tasks.findIndex((item) => item.id === parsed.id)
+		if (index === -1) this.tasks.push(parsed)
+		else this.tasks[index] = parsed
+		const numbered = /^task-(\d+)$/.exec(parsed.id)
+		if (!numbered) return
+		const value = Number(numbered[1])
+		if (value >= this.nextId) this.nextId = value
 	}
 }

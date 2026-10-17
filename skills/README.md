@@ -7,7 +7,7 @@ This repo ships **[Agent Skills](https://agentskills.io)** — one `SKILL.md` pe
 - **`reference-tech-stack`** — **opinionated defaults** for *this* template: Zod, Mantine, lucide-react, MongoDB + seed, jose JWT, OpenAI adapter, pino + Sentry, react-markdown, Biome, Vitest, Playwright, Netlify.
 - **`repository-architecture`** — **language-agnostic repository architecture**: injected collection owners, indexes, stale-data cleanup, and resource lifetime (TypeScript `AsyncDisposable`, Java `AutoCloseable`, Python context-manager magic methods).
 - **`promptable-ux`** — **shared prompt UX**: mobile first, assistant markdown, and two concepts that differ only in prompt placement. **Promptable UI (side)** hides the prompt in a side or bottom panel (this reference app). **Prompt-first** keeps the prompt on screen and drills from an overview down the page.
-- **`agentic-ux`** — **fully agentic UX**: a thin prompt shell with no domain screens. Every view beyond text is a TanStack MCP server tool (`createMCPServer` / `chat({ mcp })`) rendered by `AppRenderer` inside the inner iframe in `public/sandbox_proxy.html`. The shell hero asks for views, list answers stay one sentence, a demo visitor is not an assignee filter, and a card that names one item opens that detail view directly.
+- **`agentic-ux`** — **fully agentic UX**: a thin prompt shell with no domain screens. Mantine task views are A2UI surfaces (`@a2ui-bridge/react` `Surface` plus a Mantine 9 catalog). Raw HTML documents still render through `AppRenderer` inside `public/sandbox_proxy.html`. The shell hero asks for views, list answers stay one sentence, a demo visitor is not an assignee filter, and a card that names one item opens that detail view directly.
 
 Operational how-to (file paths, snippets, validation commands) still lives in **[AGENTS.md](../AGENTS.md)**.
 
@@ -20,7 +20,7 @@ Operational how-to (file paths, snippets, validation commands) still lives in **
 | "Which package does this template use?" / match the demo app | `reference-tech-stack` |
 | Collection repositories, indexes, stale-data cleanup, resource lifetime | `repository-architecture` |
 | Prompt chrome, mobile first, assistant markdown, prompt-first vs side panel | `promptable-ux` |
-| Fully agentic shell, MCP UI host, dynamic tool UI | `agentic-ux` |
+| Fully agentic shell, A2UI surface, MCP UI host, dynamic tool UI | `agentic-ux` |
 | Scaffolding this template as-is | Architecture + `reference-tech-stack` + `promptable-ux` (+ observability when touching env; repository-architecture when splitting repositories) |
 
 Keep them **separate**. The parent skill states architecture **invariants** and which stack pieces are **swappable**; `reference-tech-stack` names this repo's vendors; `observability-and-env` owns the env/logging setup recipe; `repository-architecture` owns how repositories are split, indexed, cleaned up, and disposed; `promptable-ux` owns shared layout rules and the two prompt concepts; AGENTS.md owns day-to-day ops.

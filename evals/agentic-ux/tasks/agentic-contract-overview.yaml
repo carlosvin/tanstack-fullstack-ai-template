@@ -4,8 +4,8 @@ description: Covers the skill description tagline.
 tags: [ux, description]
 inputs:
   prompt: >-
-    Fully agentic UX where a thin prompt shell renders tool-linked MCP UI
-    resources.
+    Fully agentic UX. A thin prompt shell renders Mantine views as A2UI
+    surfaces and raw documents as sandboxed MCP UI resources.
 expected:
   outcomes:
     - type: task_completed

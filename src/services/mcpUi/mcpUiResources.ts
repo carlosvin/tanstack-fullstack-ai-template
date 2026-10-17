@@ -1,22 +1,13 @@
 /**
  * Registered MCP Apps view resources.
  *
- * The recommended MCP Apps pattern links a tool with `_meta.ui.resourceUri`
- * and serves the document from `resources/read`. Task data stays in the tool
- * result. The guest paints it with `textContent` after `toolresult`.
+ * Raw HTML documents still use the MCP Apps pattern: link a tool with
+ * `_meta.ui.resourceUri` and serve the document from `resources/read`.
+ * Task list and detail views are A2UI surfaces, so this registry starts empty.
  */
 
 import { createUIResource } from '@mcp-ui/server'
-import {
-	isAllowedMcpUiUri,
-	MAX_MCP_UI_HTML_CHARS,
-	type McpUiResource,
-	TASK_DETAIL_UI_URI,
-	TASKS_LIST_UI_URI,
-} from './mcpUiResource'
-import taskViewHtml from './views/task-view.html?raw'
-
-export { TASK_DETAIL_UI_URI, TASKS_LIST_UI_URI }
+import { isAllowedMcpUiUri, MAX_MCP_UI_HTML_CHARS, type McpUiResource } from './mcpUiResource'
 
 /** @internal Used by unit tests to verify the HTML size cap. */
 export function assertMcpUiHtmlWithinCap(htmlString: string, uri: string): void {
@@ -25,24 +16,24 @@ export function assertMcpUiHtmlWithinCap(htmlString: string, uri: string): void 
 	}
 }
 
-function registerView(uri: typeof TASKS_LIST_UI_URI | typeof TASK_DETAIL_UI_URI): McpUiResource {
+/** Register one raw HTML document. Refuses a non-allowlisted URI or an oversized document. */
+export function registerRawHtmlView(uri: string, htmlString: string): McpUiResource {
 	if (!isAllowedMcpUiUri(uri)) {
 		throw new Error(`Refusing to register MCP UI resource for non-allowlisted URI: ${uri}`)
 	}
-	assertMcpUiHtmlWithinCap(taskViewHtml, uri)
-	return createUIResource({
+	assertMcpUiHtmlWithinCap(htmlString, uri)
+	const resource = createUIResource({
 		uri,
-		content: { type: 'rawHtml', htmlString: taskViewHtml },
+		content: { type: 'rawHtml', htmlString },
 		encoding: 'text',
 	})
+	views.set(uri, resource)
+	return resource
 }
 
-const views = new Map<string, McpUiResource>([
-	[TASKS_LIST_UI_URI, registerView(TASKS_LIST_UI_URI)],
-	[TASK_DETAIL_UI_URI, registerView(TASK_DETAIL_UI_URI)],
-])
+const views = new Map<string, McpUiResource>()
 
-/** `resources/read` for a registered view. Unknown URIs return no contents. */
+/** `resources/read` for a registered raw document. Unknown URIs return no contents. */
 export function readMcpUiResource(uri: string): Promise<{
 	contents: Array<{ uri: string; mimeType?: string; text?: string; blob?: string }>
 }> {

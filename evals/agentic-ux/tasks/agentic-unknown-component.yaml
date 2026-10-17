@@ -1,0 +1,15 @@
+id: agentic-unknown-component
+name: Unknown A2UI component renders nothing
+description: Covers dropping a component type outside the Mantine catalog.
+tags: [ux, trigger]
+inputs:
+  prompt: What happens when an A2UI message names a component type outside the Mantine catalog?
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"
