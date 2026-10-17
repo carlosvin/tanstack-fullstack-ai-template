@@ -75,12 +75,6 @@ function toolCalls(messages: unknown): Map<string, ToolCall> {
 	return calls
 }
 
-function taskIdFromInput(input: unknown): string | null {
-	if (!isRecord(input) || typeof input.taskId !== 'string' || input.taskId.length === 0) return null
-	return input.taskId
-}
-
-/** Fold create, update, list, and delete tool results into the tasks still in the thread. */
 export function conversationTaskState(messages: unknown): ConversationTaskState {
 	const tasks = new Map<string, TaskRepo>()
 	const deleted = new Set<string>()
@@ -94,7 +88,10 @@ export function conversationTaskState(messages: unknown): ConversationTaskState 
 			const call = typeof part.toolCallId === 'string' ? calls.get(part.toolCallId) : undefined
 			const payload = payloadFromContent(part.content)
 			if (call?.name === 'deleteTask' && !(isRecord(payload) && 'error' in payload)) {
-				const taskId = taskIdFromInput(call.input)
+				const taskId =
+					isRecord(call.input) && typeof call.input.taskId === 'string' && call.input.taskId.length > 0
+						? call.input.taskId
+						: null
 				if (!taskId) continue
 				tasks.delete(taskId)
 				deleted.add(taskId)
@@ -110,7 +107,6 @@ export function conversationTaskState(messages: unknown): ConversationTaskState 
 	return { tasks: [...tasks.values()], deletedIds: [...deleted] }
 }
 
-/** Task from an earlier tool result, when the thread still contains it. */
 export function findRememberedTask(messages: unknown, taskId: string): TaskRepo | null {
 	const state = conversationTaskState(messages)
 	return state.tasks.find((task) => task.id === taskId) ?? null

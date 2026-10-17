@@ -122,11 +122,11 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 		const taskId = match[2]
 		const remembered = findRememberedTask(messages, taskId)
 		const id = crypto.randomUUID()
-		if (remembered) {
-			setOpened((prev) => [...prev, { id, title, taskId, resultText: JSON.stringify({ task: remembered }) }])
-			return
-		}
-		setOpened((prev) => [...prev, { id, title, taskId, resultText: '' }])
+		setOpened((prev) => [
+			...prev,
+			{ id, title, taskId, resultText: remembered ? JSON.stringify({ task: remembered }) : '' },
+		])
+		if (remembered) return
 		void getTask({ data: { taskId } }).then((task) => {
 			const resultText = JSON.stringify(task ? { task } : { error: 'Task not found.', code: 404 })
 			setOpened((prev) => prev.map((item) => (item.id === id ? { ...item, resultText } : item)))

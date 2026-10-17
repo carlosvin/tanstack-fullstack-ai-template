@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { applySeedConversation } from '../ai/seedConversation.server'
 import { conversationTaskState, findRememberedTask } from './conversationTasks'
 import { SeedRepository } from './seedRepository'
 
@@ -76,11 +77,11 @@ describe('SeedRepository conversation replay', () => {
 	it('finds a task created in another process after the conversation is replayed', async () => {
 		const fresh = new SeedRepository()
 		expect(await fresh.getTask(created.id)).toBeNull()
-		const state = conversationTaskState(
-			thread([call('list', 'showTasksView', {}), result('list', { tasks: [created], presentation: 'cards' })]),
-		)
-		for (const taskId of state.deletedIds) fresh.forgetTask(taskId)
-		for (const task of state.tasks) fresh.rememberTask(task)
+		const messages = thread([
+			call('list', 'showTasksView', {}),
+			result('list', { tasks: [created], presentation: 'cards' }),
+		])
+		await applySeedConversation(fresh, messages)
 		expect((await fresh.getTask(created.id))?.title).toBe(created.title)
 		const next = await fresh.createTask({ title: 'Another', status: 'pending', priority: 'low' })
 		expect(next.id).not.toBe(created.id)
