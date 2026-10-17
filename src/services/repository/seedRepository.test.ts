@@ -28,6 +28,11 @@ describe('SeedRepository', () => {
 			}
 		})
 
+		it('filters overdue open tasks against asOf', async () => {
+			const tasks = await repo.getTasks({ due: 'overdue', asOf: '2026-10-17' })
+			expect(tasks.map((task) => task.id).sort()).toEqual(['task-2', 'task-3'])
+		})
+
 		it('filters by search term', async () => {
 			const tasks = await repo.getTasks({ search: 'database' })
 			expect(tasks.length).toBeGreaterThan(0)

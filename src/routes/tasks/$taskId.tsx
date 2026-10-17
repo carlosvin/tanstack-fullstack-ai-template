@@ -4,6 +4,7 @@ import { processResponse } from '../../services/api/processResponse'
 import { deleteTask, getTask } from '../../services/api/serverFns'
 import { confirmDelete } from '../../utils/confirmDelete'
 import { notifyProcessed } from '../../utils/notifyProcessed'
+import { useCalendarToday } from '../../utils/useCalendarToday'
 
 export const Route = createFileRoute('/tasks/$taskId')({
 	staticData: {
@@ -20,6 +21,7 @@ function TaskDetailRoute() {
 	const { task } = Route.useLoaderData()
 	const { currentUser } = useLoaderData({ from: '__root__' })
 	const router = useRouter()
+	const today = useCalendarToday()
 	const isCreator = Boolean(task && currentUser?.identity?.email && task.createdBy === currentUser.identity.email)
 
 	const handleDeleteClick = () => {
@@ -39,6 +41,7 @@ function TaskDetailRoute() {
 			<TaskDetailPage
 				task={task}
 				isCreator={isCreator}
+				today={today}
 				onEdit={() => {
 					if (!task) return
 					router.navigate({ to: '/tasks/$taskId/edit', params: { taskId: task.id } })

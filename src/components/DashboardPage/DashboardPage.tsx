@@ -1,7 +1,9 @@
 import { Badge, Card, Container, Group, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core'
 import { CheckCircle, Circle, Clock, ListTodo, type LucideIcon } from 'lucide-react'
 import type { Task, TaskStatus } from '../../types'
+import { formatCalendarDate } from '../../utils/calendarDate'
 import { priorityColor, priorityLabel, statusColor, statusLabel } from '../../utils/taskDisplay'
+import { isTaskOverdue } from '../../utils/taskDue'
 import { Link } from '../Link/Link'
 
 interface DashboardStat {
@@ -9,6 +11,7 @@ interface DashboardStat {
 	value: number
 	icon: LucideIcon
 	status?: TaskStatus
+	due?: 'overdue'
 	filterLabel: string
 }
 
@@ -17,13 +20,14 @@ export interface DashboardPageProps {
 	appName: string
 	appVersion: string
 	env?: string
+	today: string
 }
 
 function statusCount(tasks: Task[], status: TaskStatus) {
 	return tasks.filter((t) => t.status === status).length
 }
 
-export function DashboardPage({ tasks, appName, appVersion, env }: DashboardPageProps) {
+export function DashboardPage({ tasks, appName, appVersion, env, today }: DashboardPageProps) {
 	const stats: DashboardStat[] = [
 		{
 			label: 'Total',
@@ -52,6 +56,13 @@ export function DashboardPage({ tasks, appName, appVersion, env }: DashboardPage
 			status: 'done',
 			filterLabel: 'Filter tasks by done status',
 		},
+		{
+			label: 'Overdue',
+			value: tasks.filter((task) => isTaskOverdue(task, today)).length,
+			icon: Clock,
+			due: 'overdue',
+			filterLabel: 'Filter tasks that are overdue',
+		},
 	]
 
 	return (
@@ -72,12 +83,12 @@ export function DashboardPage({ tasks, appName, appVersion, env }: DashboardPage
 					</Group>
 				</div>
 
-				<SimpleGrid cols={{ base: 1, xs: 2, sm: 4 }}>
+				<SimpleGrid cols={{ base: 1, xs: 2, sm: 3, lg: 5 }}>
 					{stats.map((stat) => (
 						<Link
 							key={stat.label}
 							to="/tasks"
-							search={stat.status ? { status: stat.status } : {}}
+							search={stat.due ? { due: stat.due, asOf: today } : stat.status ? { status: stat.status } : {}}
 							aria-label={stat.filterLabel}
 							style={{ textDecoration: 'none', color: 'inherit' }}
 						>
@@ -106,7 +117,7 @@ export function DashboardPage({ tasks, appName, appVersion, env }: DashboardPage
 									</div>
 									<ThemeIcon
 										variant="light"
-										color={stat.status ? statusColor(stat.status) : 'blue'}
+										color={stat.due ? 'red' : stat.status ? statusColor(stat.status) : 'blue'}
 										size="lg"
 										radius="md"
 									>
@@ -144,6 +155,11 @@ export function DashboardPage({ tasks, appName, appVersion, env }: DashboardPage
 											<Badge size="sm" variant="light" color={priorityColor(task.priority)}>
 												{priorityLabel(task.priority)}
 											</Badge>
+											{task.dueDate ? (
+												<Text size="xs" c={isTaskOverdue(task, today) ? 'red' : 'dimmed'}>
+													{isTaskOverdue(task, today) ? 'Overdue' : 'Due'} {formatCalendarDate(task.dueDate)}
+												</Text>
+											) : null}
 										</Group>
 										<Badge variant="dot" color={statusColor(task.status)}>
 											{statusLabel(task.status)}

@@ -4,6 +4,7 @@ import { DashboardPage } from '../components/DashboardPage/DashboardPage'
 import { PromptFirstLanding } from '../components/PromptFirstLanding/PromptFirstLanding'
 import { getBrowserShellSession, getTasks } from '../services/api/serverFns'
 import type { PromptConcept } from '../services/schemas/shellSession'
+import { useCalendarToday } from '../utils/useCalendarToday'
 
 type HomeTasks = Awaited<ReturnType<typeof getTasks>>
 
@@ -26,12 +27,14 @@ export const Route = createFileRoute('/')({
 function SideHome() {
 	const tasks = Route.useLoaderData()
 	const { shellSession } = useLoaderData({ from: '__root__' })
+	const today = useCalendarToday()
 	return (
 		<DashboardPage
 			tasks={tasks}
 			appName={shellSession.app.name}
 			appVersion={shellSession.app.version}
 			env={shellSession.ENV}
+			today={today}
 		/>
 	)
 }
@@ -39,6 +42,7 @@ function SideHome() {
 function PromptFirstHome() {
 	const tasks = Route.useLoaderData()
 	const { shellSession, aiAvailable } = useLoaderData({ from: '__root__' })
+	const today = useCalendarToday()
 	if (aiAvailable) return <PromptFirstLanding tasks={tasks} />
 	return (
 		<DashboardPage
@@ -46,6 +50,7 @@ function PromptFirstHome() {
 			appName={shellSession.app.name}
 			appVersion={shellSession.app.version}
 			env={shellSession.ENV}
+			today={today}
 		/>
 	)
 }

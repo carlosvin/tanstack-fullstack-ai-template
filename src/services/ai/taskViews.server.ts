@@ -42,7 +42,7 @@ export const showTasksViewTool = createSafeServerTool(
 	async (args) => {
 		const { filter, presentation } = taskListRequest(args)
 		const tasks = await getTasks({ data: filter })
-		return { tasks, presentation }
+		return { tasks, presentation, ...(filter.asOf ? { asOf: filter.asOf } : {}) }
 	},
 )
 
