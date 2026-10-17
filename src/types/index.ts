@@ -4,7 +4,9 @@
  */
 export type {
 	AppError,
+	AssigneeOption,
 	BrowserContext,
+	BulkTaskStatusResult,
 	CurrentUser,
 	ProcessedResponse,
 	Task,
@@ -12,6 +14,7 @@ export type {
 	TaskInput,
 	TaskPriority,
 	TaskStatus,
+	TasksListSearch,
 	UpdateTaskInput,
 	UserIdentity,
 	UserProfile,

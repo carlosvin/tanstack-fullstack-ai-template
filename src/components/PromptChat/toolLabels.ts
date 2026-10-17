@@ -10,6 +10,7 @@ export function getToolLabel(toolName: string): string {
 		getCurrentUserContext: 'checking permissions',
 		createTask: 'creating task',
 		updateTask: 'updating task',
+		updateTasksStatus: 'updating tasks',
 		deleteTask: 'deleting task',
 		showTasksView: 'showing tasks',
 		showTaskView: 'showing a task',

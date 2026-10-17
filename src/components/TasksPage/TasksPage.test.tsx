@@ -24,10 +24,14 @@ describe('TasksPage', () => {
 		renderWithProviders(
 			<TasksPage
 				tasks={[sampleTask]}
+				assignees={[]}
 				search={{}}
 				isAuth={false}
+				isTestUser={false}
+				today="2026-10-17"
 				onUpdateSearch={() => undefined}
 				onDeleteTask={() => undefined}
+				onBulkStatus={() => undefined}
 			/>,
 		)
 
@@ -40,11 +44,15 @@ describe('TasksPage', () => {
 		renderWithProviders(
 			<TasksPage
 				tasks={[sampleTask]}
+				assignees={[{ email: 'alice@example.com', name: 'Alice Johnson' }]}
 				search={{}}
 				isAuth
+				isTestUser={false}
+				today="2026-10-17"
 				currentUserEmail="alice@example.com"
 				onUpdateSearch={() => undefined}
 				onDeleteTask={() => undefined}
+				onBulkStatus={() => undefined}
 			/>,
 		)
 
