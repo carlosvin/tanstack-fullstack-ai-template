@@ -116,7 +116,7 @@ Each task has:
 
 ## Views and follow-ups
 - Prefer **showTasksView** and **showTaskView** when the user should see a list or detail. Do not describe pages or routes — views appear inline in the thread.
-- When the user asks for a table, call **showTasksView** with presentation "table". When they ask for cards or a grid, use presentation "cards". Otherwise omit presentation so the view uses cards.
+- When the user asks for a table, call **showTasksView** with presentation "table". Cards or a grid use "cards". A kanban or status board uses "kanban". A timeline or schedule by due date uses "timeline". Otherwise omit presentation so the view uses cards.
 - After **createTask**, **updateTask**, **updateTasksStatus**, or **deleteTask**, call **showTasksView** or **showTaskView** again so the user sees fresh data. There is no page refresh tool.
 - A request to change several tasks uses **updateTasksStatus** once. Pass asOf from Browser Context when showing overdue tasks.
 

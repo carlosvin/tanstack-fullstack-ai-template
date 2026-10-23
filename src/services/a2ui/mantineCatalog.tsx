@@ -8,7 +8,7 @@
 
 import type { A2UIComponentProps } from '@a2ui-bridge/react'
 import { createActionHandler, createComponentMapping, extractValue } from '@a2ui-bridge/react'
-import { Badge, Button, Card, Group, Stack, Table, Text, Title } from '@mantine/core'
+import { Badge, Button, Card, Group, Stack, Table, Text, Timeline, Title } from '@mantine/core'
 
 export const A2UI_COMPONENT_TYPES = [
 	'Column',
@@ -18,6 +18,8 @@ export const A2UI_COMPONENT_TYPES = [
 	'Title',
 	'Badge',
 	'Button',
+	'Timeline',
+	'TimelineItem',
 	'Table',
 	'TableHead',
 	'TableBody',
@@ -122,12 +124,34 @@ function CardAdapter({ children }: A2UIComponentProps) {
 	)
 }
 
-function ColumnAdapter({ children }: A2UIComponentProps) {
-	return <Stack gap="xs">{children}</Stack>
+function ColumnAdapter({ node, children }: A2UIComponentProps) {
+	const lane = field(node.properties, 'distribution') === 'lane'
+	return (
+		<Stack gap="xs" flex={lane ? '1 1 14rem' : undefined} miw={lane ? 220 : undefined}>
+			{children}
+		</Stack>
+	)
 }
 
-function RowAdapter({ children }: A2UIComponentProps) {
-	return <Group gap="xs">{children}</Group>
+function RowAdapter({ node, children }: A2UIComponentProps) {
+	const board = field(node.properties, 'distribution') === 'board'
+	return (
+		<Group gap={board ? 'sm' : 'xs'} align={board ? 'stretch' : undefined} wrap="wrap" grow={board}>
+			{children}
+		</Group>
+	)
+}
+
+function TimelineAdapter({ children }: A2UIComponentProps) {
+	return (
+		<Timeline active={-1} bulletSize={18} lineWidth={2}>
+			{children}
+		</Timeline>
+	)
+}
+
+function TimelineItemAdapter({ node, children }: A2UIComponentProps) {
+	return <Timeline.Item title={readText(field(node.properties, 'title'))}>{children}</Timeline.Item>
 }
 
 function TableAdapter({ children }: A2UIComponentProps) {
@@ -171,6 +195,8 @@ export const mantineTaskCatalog = createComponentMapping(
 		Title: TitleAdapter,
 		Badge: BadgeAdapter,
 		Button: ButtonAdapter,
+		Timeline: TimelineAdapter,
+		TimelineItem: TimelineItemAdapter,
 		Table: TableAdapter,
 		TableHead: TableHeadAdapter,
 		TableBody: TableBodyAdapter,

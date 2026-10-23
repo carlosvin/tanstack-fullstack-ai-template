@@ -66,6 +66,34 @@ describe('AgenticA2uiSurface', () => {
 		expect(screen.queryByText('task-1')).toBeNull()
 	})
 
+	it('renders kanban lanes and a timeline item', async () => {
+		const { unmount } = render(
+			<MantineProvider>
+				<AgenticA2uiSurface
+					messages={buildTaskViewMessages({ tasks: [task], presentation: 'kanban' })}
+					onAction={vi.fn()}
+				/>
+			</MantineProvider>,
+		)
+		expect(await screen.findByText('Pending')).toBeTruthy()
+		expect(screen.getByText('Ship the report')).toBeTruthy()
+		expect(screen.getAllByText('None')).toHaveLength(3)
+		unmount()
+		render(
+			<MantineProvider>
+				<AgenticA2uiSurface
+					messages={buildTaskViewMessages({
+						tasks: [{ ...task, dueDate: '2026-10-01' }],
+						presentation: 'timeline',
+						asOf: '2026-10-17',
+					})}
+					onAction={vi.fn()}
+				/>
+			</MantineProvider>,
+		)
+		expect(await screen.findAllByText('Overdue 2026-10-01')).toHaveLength(2)
+	})
+
 	it('renders the detail view and sends the list action', async () => {
 		const onAction = vi.fn()
 		render(
