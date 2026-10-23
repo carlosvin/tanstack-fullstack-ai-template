@@ -97,6 +97,44 @@ describe('buildTaskViewMessages', () => {
 		expect(selected).toContain('Selected Ship the report')
 	})
 
+	it('draws a kanban lane for each status', () => {
+		const other = { ...task, id: 'task-2', title: 'File the notes', status: 'done' as const }
+		const text = visibleText(buildTaskViewMessages({ tasks: [task, other], presentation: 'kanban' })).join(' ')
+		expect(text).toContain('Pending')
+		expect(text).toContain('In Progress')
+		expect(text).toContain('Done')
+		expect(text).toContain('Cancelled')
+		expect(text).toContain('Ship the report')
+		expect(text).toContain('File the notes')
+		expect(text).toContain('None')
+		expect(text).not.toContain('task-1')
+		const processor = new A2uiMessageProcessor()
+		expect(() =>
+			processor.processMessages(buildTaskViewMessages({ tasks: [task], presentation: 'kanban' })),
+		).not.toThrow()
+	})
+
+	it('draws a timeline with overdue dates before unscheduled tasks', () => {
+		const later = { ...task, id: 'task-2', title: 'File the notes', dueDate: '2026-11-15', status: 'pending' as const }
+		const dated = { ...task, dueDate: '2026-10-01' }
+		const open = { ...task, id: 'task-3', title: 'Clear the inbox' }
+		const flat = JSON.stringify(
+			buildTaskViewMessages({ tasks: [open, later, dated], presentation: 'timeline', asOf: '2026-10-17' }),
+		)
+		expect(flat.indexOf('Overdue 2026-10-01')).toBeLessThan(flat.indexOf('Due 2026-11-15'))
+		expect(flat.indexOf('Due 2026-11-15')).toBeLessThan(flat.indexOf('No due date'))
+		expect(flat).toContain('Clear the inbox')
+		expect(visibleText(buildTaskViewMessages({ tasks: [open], presentation: 'timeline' })).join(' ')).not.toContain(
+			'task-3',
+		)
+		const processor = new A2uiMessageProcessor()
+		expect(() =>
+			processor.processMessages(
+				buildTaskViewMessages({ tasks: [dated], presentation: 'timeline', asOf: '2026-10-17' }),
+			),
+		).not.toThrow()
+	})
+
 	it('says when no rows match', () => {
 		expect(visibleText(buildTaskViewMessages({ tasks: [] })).join(' ')).toContain('No tasks match')
 	})

@@ -7,6 +7,8 @@
 
 import type { ServerToClientMessage, UserAction } from '@a2ui-bridge/core'
 import { z } from 'zod'
+import { TASK_STATUSES } from '../../constants/options'
+import { statusLabel } from '../../utils/taskDisplay'
 import { type Task, TaskSchema, type TaskStatus, TaskStatusSchema } from '../schemas/schemas'
 import { isAllowedA2uiComponent } from './mantineCatalog'
 
@@ -520,6 +522,150 @@ function tableMessages(
 	return messages([{ id: 'root', component: { Column: { children: { explicitList: childIds } } } }, ...nodes])
 }
 
+function appendCards(
+	tasks: Task[],
+	startIndex: number,
+	asOf: string | undefined,
+	selectedIds: readonly string[],
+	childIds: string[],
+	nodes: ComponentInstance[],
+): number {
+	let index = startIndex
+	for (const task of tasks) {
+		const card = listCard(task, index, asOf, selectedIds)
+		childIds.push(card.rootId, card.selectId)
+		nodes.push(...card.nodes)
+		index += 1
+	}
+	return index
+}
+
+function kanbanMessages(
+	tasks: Task[],
+	asOf: string | undefined,
+	selectedIds: readonly string[],
+): ServerToClientMessage[] {
+	const shown = tasks.slice(0, MAX_TASKS)
+	const childIds = ['heading']
+	const nodes: ComponentInstance[] = [titleNode('heading', tasks.length === 1 ? '1 task' : `${tasks.length} tasks`)]
+	if (shown.length > 0) {
+		const bulk = bulkActions()
+		childIds.push(...bulk.ids)
+		nodes.push(...bulk.nodes)
+	}
+	childIds.push('board')
+	const laneIds = TASK_STATUSES.map((status) => `lane-${status}`)
+	nodes.push({
+		id: 'board',
+		component: { Row: { children: { explicitList: laneIds }, distribution: 'board' } },
+	})
+	let index = 0
+	for (const status of TASK_STATUSES) {
+		const laneId = `lane-${status}`
+		const laneTasks = shown.filter((task) => task.status === status)
+		const laneChildIds = [`${laneId}-title`]
+		const laneNodes: ComponentInstance[] = [titleNode(`${laneId}-title`, statusLabel(status))]
+		if (laneTasks.length === 0) {
+			laneChildIds.push(`${laneId}-empty`)
+			laneNodes.push(textNode(`${laneId}-empty`, 'None', 'caption', 20))
+		}
+		index = appendCards(laneTasks, index, asOf, selectedIds, laneChildIds, laneNodes)
+		nodes.push(
+			{
+				id: laneId,
+				component: { Column: { children: { explicitList: laneChildIds }, distribution: 'lane' } },
+			},
+			...laneNodes,
+		)
+	}
+	if (tasks.length > shown.length) {
+		childIds.push('overflow')
+		nodes.push(
+			textNode('overflow', `Showing ${shown.length} of ${tasks.length}. Ask for a narrower filter.`, 'caption'),
+		)
+	}
+	return messages([{ id: 'root', component: { Column: { children: { explicitList: childIds } } } }, ...nodes])
+}
+
+function timelineGroups(tasks: Task[]): Array<{ dueDate: string | null; tasks: Task[] }> {
+	const sorted = [...tasks].sort((a, b) => {
+		if (a.dueDate === b.dueDate) return 0
+		if (!a.dueDate) return 1
+		if (!b.dueDate) return -1
+		return a.dueDate < b.dueDate ? -1 : 1
+	})
+	const groups: Array<{ dueDate: string | null; tasks: Task[] }> = []
+	for (const task of sorted) {
+		const dueDate = task.dueDate ?? null
+		const last = groups.at(-1)
+		if (last && last.dueDate === dueDate) last.tasks.push(task)
+		else groups.push({ dueDate, tasks: [task] })
+	}
+	return groups
+}
+
+function timelineHeading(dueDate: string | null, group: Task[], asOf?: string): string {
+	if (!dueDate) return 'No due date'
+	const open = group.some((task) => task.status !== 'done' && task.status !== 'cancelled')
+	return asOf && dueDate < asOf && open ? `Overdue ${dueDate}` : `Due ${dueDate}`
+}
+
+function timelineMessages(
+	tasks: Task[],
+	asOf: string | undefined,
+	selectedIds: readonly string[],
+): ServerToClientMessage[] {
+	const shown = tasks.slice(0, MAX_TASKS)
+	const childIds = ['heading']
+	const nodes: ComponentInstance[] = [titleNode('heading', tasks.length === 1 ? '1 task' : `${tasks.length} tasks`)]
+	if (shown.length > 0) {
+		const bulk = bulkActions()
+		childIds.push(...bulk.ids)
+		nodes.push(...bulk.nodes)
+		const groups = timelineGroups(shown)
+		const itemIds = groups.map((_, index) => `day-${index}`)
+		childIds.push('timeline')
+		nodes.push({
+			id: 'timeline',
+			component: { Timeline: { children: { explicitList: itemIds } } },
+		})
+		let index = 0
+		for (const [groupIndex, group] of groups.entries()) {
+			const itemId = `day-${groupIndex}`
+			const bodyId = `${itemId}-body`
+			const bodyIds: string[] = []
+			const bodyNodes: ComponentInstance[] = []
+			index = appendCards(group.tasks, index, asOf, selectedIds, bodyIds, bodyNodes)
+			nodes.push(
+				{
+					id: itemId,
+					component: {
+						TimelineItem: {
+							title: { literalString: timelineHeading(group.dueDate, group.tasks, asOf) },
+							child: bodyId,
+						},
+					},
+				},
+				{ id: bodyId, component: { Column: { children: { explicitList: bodyIds } } } },
+				...bodyNodes,
+			)
+		}
+	} else {
+		childIds.push('empty-title', 'empty-note')
+		nodes.push(
+			textNode('empty-title', 'No tasks match', 'h3', MAX_TITLE),
+			textNode('empty-note', 'Try another filter, or ask to see every task.', 'body'),
+		)
+	}
+	if (tasks.length > shown.length) {
+		childIds.push('overflow')
+		nodes.push(
+			textNode('overflow', `Showing ${shown.length} of ${tasks.length}. Ask for a narrower filter.`, 'caption'),
+		)
+	}
+	return messages([{ id: 'root', component: { Column: { children: { explicitList: childIds } } } }, ...nodes])
+}
+
 function detailMessages(task: Task, asOf?: string): ServerToClientMessage[] {
 	const due = dueLabel(task, asOf)
 	const badgeIds = ['status', 'priority']
@@ -579,9 +725,16 @@ export function buildTaskViewMessages(payload: unknown, selectedIds: readonly st
 	if ('tasks' in data) {
 		const tasks = parseTasks(data.tasks)
 		if (!tasks) return note('This view has no data yet.')
-		const presentation = 'presentation' in data && data.presentation === 'table' ? 'table' : 'cards'
+		const presentation =
+			'presentation' in data &&
+			(data.presentation === 'table' || data.presentation === 'kanban' || data.presentation === 'timeline')
+				? data.presentation
+				: 'cards'
 		const asOf = readAsOf(data)
-		return presentation === 'table' ? tableMessages(tasks, asOf, selectedIds) : listMessages(tasks, asOf, selectedIds)
+		if (presentation === 'table') return tableMessages(tasks, asOf, selectedIds)
+		if (presentation === 'kanban') return kanbanMessages(tasks, asOf, selectedIds)
+		if (presentation === 'timeline') return timelineMessages(tasks, asOf, selectedIds)
+		return listMessages(tasks, asOf, selectedIds)
 	}
 	if ('task' in data) {
 		const parsed = TaskSchema.safeParse(data.task)

@@ -17,5 +17,10 @@ describe('task view tools', () => {
 			presentation: 'table',
 		})
 		expect(taskListRequest({ search: 'api' }).presentation).toBe('cards')
+		expect(taskListRequest({ presentation: 'kanban' }).presentation).toBe('kanban')
+		expect(taskListRequest({ presentation: 'timeline', due: 'scheduled' })).toEqual({
+			filter: { due: 'scheduled' },
+			presentation: 'timeline',
+		})
 	})
 })
