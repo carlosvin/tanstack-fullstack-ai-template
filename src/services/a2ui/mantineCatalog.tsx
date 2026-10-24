@@ -1,208 +1,480 @@
 /**
- * Narrow Mantine 9 catalog for agentic A2UI surfaces.
+ * Mantine 9 catalog for agentic A2UI surfaces.
  *
- * `@a2ui-bridge/react-mantine@0.1.0` peers Mantine 8 and Tabler icons.
- * This app is Mantine 9 with lucide-react, so the host maps the few
- * component types task views need and drops every other type.
+ * Every A2UI component type that has a Mantine adapter is registered here,
+ * including the aliases from the bridge catalog. A type that is not in this
+ * map renders nothing.
  */
 
-import type { A2UIComponentProps } from '@a2ui-bridge/react'
-import { createActionHandler, createComponentMapping, extractValue } from '@a2ui-bridge/react'
-import { Badge, Button, Card, Group, Stack, Table, Text, Timeline, Title } from '@mantine/core'
+import { createComponentMapping } from '@a2ui-bridge/react'
 
-export const A2UI_COMPONENT_TYPES = [
-	'Column',
-	'Row',
-	'Card',
-	'Text',
-	'Title',
-	'Badge',
-	'Button',
-	'Timeline',
-	'TimelineItem',
-	'Table',
-	'TableHead',
-	'TableBody',
-	'TableRow',
-	'TableHeaderCell',
-	'TableCell',
-] as const
+import {
+	// Disclosure
+	AccordionAdapter,
+	AccordionItemAdapter,
+	ActionIconAdapter,
+	// Feedback
+	AlertAdapter,
+	// Links
+	AnchorAdapter,
+	AspectRatioAdapter,
+	// Images
+	AvatarAdapter,
+	// Badges
+	BadgeAdapter,
+	BlockquoteAdapter,
+	BoxAdapter,
+	BreadcrumbAdapter,
+	// Buttons
+	ButtonAdapter,
+	// Surfaces
+	CardAdapter,
+	CenterAdapter,
+	// Selection Inputs
+	CheckboxAdapter,
+	ChipAdapter,
+	CodeAdapter,
+	ColorInputAdapter,
+	ColumnAdapter,
+	ContainerAdapter,
+	DateTimeInputAdapter,
+	DividerAdapter,
+	DrawerAdapter,
+	FieldsetAdapter,
+	FileInputAdapter,
+	FlexAdapter,
+	GridAdapter,
+	HighlightAdapter,
+	ImageAdapter,
+	IndicatorAdapter,
+	// Text Inputs
+	InputAdapter,
+	// Data Display
+	ListAdapter,
+	MantineListAdapter,
+	MarkAdapter,
+	MenuAdapter,
+	ModalAdapter,
+	MultiSelectAdapter,
+	NavLinkAdapter,
+	NotificationAdapter,
+	NumberInputAdapter,
+	PaginationAdapter,
+	PaperAdapter,
+	PasswordInputAdapter,
+	PinInputAdapter,
+	PopoverAdapter,
+	ProgressAdapter,
+	RadioGroupAdapter,
+	RangeSliderAdapter,
+	RatingAdapter,
+	RingProgressAdapter,
+	// Layout
+	RowAdapter,
+	ScrollAreaAdapter,
+	SegmentedControlAdapter,
+	SelectAdapter,
+	SkeletonAdapter,
+	// Sliders
+	SliderAdapter,
+	SpaceAdapter,
+	SpinnerAdapter,
+	SpoilerAdapter,
+	StepperAdapter,
+	SwitchAdapter,
+	TableAdapter,
+	TableBodyAdapter,
+	TableCellAdapter,
+	TableHeadAdapter,
+	TableHeaderAdapter,
+	TableHeaderCellAdapter,
+	TableRowAdapter,
+	TabPanelAdapter,
+	// Navigation
+	TabsAdapter,
+	// Typography
+	TextAdapter,
+	TextAreaAdapter,
+	TextFieldAdapter,
+	ThemeIconAdapter,
+	TimelineAdapter,
+	TimelineItemAdapter,
+	TitleAdapter,
+	// Overlays
+	TooltipAdapter,
+} from './mantineAdapters.ts'
 
-export type A2uiComponentType = (typeof A2UI_COMPONENT_TYPES)[number]
-
-const ALLOWED = new Set<string>(A2UI_COMPONENT_TYPES)
-
-export function isAllowedA2uiComponent(type: string): type is A2uiComponentType {
-	return ALLOWED.has(type)
-}
-
-function field(properties: object, key: string): unknown {
-	for (const [entryKey, value] of Object.entries(properties)) {
-		if (entryKey === key) return value
-	}
-	return undefined
-}
-
-function readText(value: unknown): string {
-	const extracted = extractValue(value)
-	return typeof extracted === 'string' ? extracted : ''
-}
-
-function asAction(value: unknown): { name: string; context?: Array<{ key: string; value: unknown }> } | undefined {
-	if (typeof value !== 'object' || value === null || !('name' in value)) return undefined
-	const name = value.name
-	if (typeof name !== 'string' || name.length === 0) return undefined
-	const context = 'context' in value && Array.isArray(value.context) ? value.context : undefined
-	return { name, context }
-}
-
-function TextAdapter({ node }: A2UIComponentProps) {
-	const hintValue = field(node.properties, 'usageHint')
-	const hint = typeof hintValue === 'string' ? hintValue : 'body'
-	const caption = hint === 'caption'
-	return (
-		<Text
-			size={caption ? 'xs' : hint === 'h3' ? 'lg' : 'sm'}
-			fw={hint === 'h3' ? 600 : undefined}
-			c={caption ? 'dimmed' : undefined}
-		>
-			{readText(field(node.properties, 'text'))}
-		</Text>
-	)
-}
-
-function TitleAdapter({ node }: A2UIComponentProps) {
-	return <Title order={4}>{readText(field(node.properties, 'text'))}</Title>
-}
-
-function BadgeAdapter({ node }: A2UIComponentProps) {
-	const colorValue = field(node.properties, 'color')
-	const color = typeof colorValue === 'string' ? colorValue : 'gray'
-	return (
-		<Badge variant="light" color={color} tt="none">
-			{readText(field(node.properties, 'text'))}
-		</Badge>
-	)
-}
-
-function ButtonAdapter({ node, onAction, components, surfaceId, children }: A2UIComponentProps) {
-	const card = field(node.properties, 'appearance') === 'card'
-	return (
-		<Button
-			type="button"
-			variant={card ? 'light' : 'subtle'}
-			color="gray"
-			fullWidth={card}
-			justify="flex-start"
-			h={card ? 'auto' : undefined}
-			styles={
-				card
-					? {
-							inner: { justifyContent: 'flex-start' },
-							label: { width: '100%', whiteSpace: 'normal', textAlign: 'left' },
-						}
-					: undefined
-			}
-			onClick={createActionHandler(asAction(field(node.properties, 'action')), {
-				onAction,
-				surfaceId,
-				componentId: node.id,
-				children,
-				components,
-			})}
-		>
-			{children}
-		</Button>
-	)
-}
-
-function CardAdapter({ children }: A2UIComponentProps) {
-	return (
-		<Card withBorder radius="md" padding="sm">
-			{children}
-		</Card>
-	)
-}
-
-function ColumnAdapter({ node, children }: A2UIComponentProps) {
-	const lane = field(node.properties, 'distribution') === 'lane'
-	return (
-		<Stack gap="xs" flex={lane ? '1 1 14rem' : undefined} miw={lane ? 220 : undefined}>
-			{children}
-		</Stack>
-	)
-}
-
-function RowAdapter({ node, children }: A2UIComponentProps) {
-	const board = field(node.properties, 'distribution') === 'board'
-	return (
-		<Group gap={board ? 'sm' : 'xs'} align={board ? 'stretch' : undefined} wrap="wrap" grow={board}>
-			{children}
-		</Group>
-	)
-}
-
-function TimelineAdapter({ children }: A2UIComponentProps) {
-	return (
-		<Timeline active={-1} bulletSize={18} lineWidth={2}>
-			{children}
-		</Timeline>
-	)
-}
-
-function TimelineItemAdapter({ node, children }: A2UIComponentProps) {
-	return <Timeline.Item title={readText(field(node.properties, 'title'))}>{children}</Timeline.Item>
-}
-
-function TableAdapter({ children }: A2UIComponentProps) {
-	return <Table withTableBorder>{children}</Table>
-}
-
-function TableHeadAdapter({ children }: A2UIComponentProps) {
-	return (
-		<Table.Thead>
-			<Table.Tr>{children}</Table.Tr>
-		</Table.Thead>
-	)
-}
-
-function TableBodyAdapter({ children }: A2UIComponentProps) {
-	return <Table.Tbody>{children}</Table.Tbody>
-}
-
-function TableRowAdapter({ children }: A2UIComponentProps) {
-	return <Table.Tr>{children}</Table.Tr>
-}
-
-function TableHeaderCellAdapter({ children }: A2UIComponentProps) {
-	return <Table.Th scope="col">{children}</Table.Th>
-}
-
-function TableCellAdapter({ children }: A2UIComponentProps) {
-	return <Table.Td>{children}</Table.Td>
-}
-
+/**
+ * Complete Mantine component mapping for A2UI.
+ * Includes comprehensive case variants and semantic aliases.
+ */
 function UnknownA2uiNode() {
 	return null
 }
 
 export const mantineTaskCatalog = createComponentMapping(
 	{
-		Column: ColumnAdapter,
+		// Layout - Primary
 		Row: RowAdapter,
+		Column: ColumnAdapter,
+		Flex: FlexAdapter,
+		Grid: GridAdapter,
+		SimpleGrid: GridAdapter,
+		Center: CenterAdapter,
+		Box: BoxAdapter,
+		Space: SpaceAdapter,
+		Container: ContainerAdapter,
+		AspectRatio: AspectRatioAdapter,
+
+		// Layout - Case variants
+		row: RowAdapter,
+		column: ColumnAdapter,
+		flex: FlexAdapter,
+		grid: GridAdapter,
+		simpleGrid: GridAdapter,
+		center: CenterAdapter,
+		box: BoxAdapter,
+		space: SpaceAdapter,
+		container: ContainerAdapter,
+
+		// Layout - Aliases
+		Stack: ColumnAdapter,
+		stack: ColumnAdapter,
+		HStack: RowAdapter,
+		hstack: RowAdapter,
+		VStack: ColumnAdapter,
+		vstack: ColumnAdapter,
+		Group: RowAdapter,
+		group: RowAdapter,
+
+		// Surfaces - Primary
 		Card: CardAdapter,
+		Paper: PaperAdapter,
+		Fieldset: FieldsetAdapter,
+		Divider: DividerAdapter,
+		ScrollArea: ScrollAreaAdapter,
+
+		// Surfaces - Case variants & Aliases
+		card: CardAdapter,
+		paper: PaperAdapter,
+		fieldset: FieldsetAdapter,
+		divider: DividerAdapter,
+		scrollArea: ScrollAreaAdapter,
+		Separator: DividerAdapter,
+		separator: DividerAdapter,
+		Section: PaperAdapter,
+		section: PaperAdapter,
+		Panel: PaperAdapter,
+		panel: PaperAdapter,
+
+		// Typography - Primary
 		Text: TextAdapter,
 		Title: TitleAdapter,
+		Heading: TitleAdapter,
+		Code: CodeAdapter,
+		Blockquote: BlockquoteAdapter,
+		Highlight: HighlightAdapter,
+		Mark: MarkAdapter,
+		Spoiler: SpoilerAdapter,
+
+		// Typography - Case variants & Aliases
+		text: TextAdapter,
+		title: TitleAdapter,
+		heading: TitleAdapter,
+		code: CodeAdapter,
+		blockquote: BlockquoteAdapter,
+		highlight: HighlightAdapter,
+		mark: MarkAdapter,
+		spoiler: SpoilerAdapter,
+		H1: TitleAdapter,
+		H2: TitleAdapter,
+		H3: TitleAdapter,
+		H4: TitleAdapter,
+		H5: TitleAdapter,
+		H6: TitleAdapter,
+		h1: TitleAdapter,
+		h2: TitleAdapter,
+		h3: TitleAdapter,
+		h4: TitleAdapter,
+		h5: TitleAdapter,
+		h6: TitleAdapter,
+		Paragraph: TextAdapter,
+		paragraph: TextAdapter,
+		Label: TextAdapter,
+		label: TextAdapter,
+
+		// Badges & Indicators - Primary
 		Badge: BadgeAdapter,
+		Indicator: IndicatorAdapter,
+		ThemeIcon: ThemeIconAdapter,
+		Icon: ThemeIconAdapter,
+
+		// Badges - Case variants & Aliases
+		badge: BadgeAdapter,
+		indicator: IndicatorAdapter,
+		themeIcon: ThemeIconAdapter,
+		icon: ThemeIconAdapter,
+		Tag: BadgeAdapter,
+		tag: BadgeAdapter,
+		Chip: ChipAdapter,
+		chip: ChipAdapter,
+		Status: BadgeAdapter,
+		status: BadgeAdapter,
+
+		// Images - Primary
+		Avatar: AvatarAdapter,
+		Image: ImageAdapter,
+
+		// Images - Case variants & Aliases
+		avatar: AvatarAdapter,
+		image: ImageAdapter,
+		Img: ImageAdapter,
+		img: ImageAdapter,
+		ProfileImage: AvatarAdapter,
+		profileImage: AvatarAdapter,
+
+		// Buttons - Primary
 		Button: ButtonAdapter,
+		ActionIcon: ActionIconAdapter,
+		IconButton: ActionIconAdapter,
+
+		// Buttons - Case variants & Aliases
+		button: ButtonAdapter,
+		actionIcon: ActionIconAdapter,
+		iconButton: ActionIconAdapter,
+		Btn: ButtonAdapter,
+		btn: ButtonAdapter,
+
+		// Text Inputs - Primary
+		Input: InputAdapter,
+		TextField: TextFieldAdapter,
+		TextInput: TextFieldAdapter,
+		TextArea: TextAreaAdapter,
+		Textarea: TextAreaAdapter,
+		DateTimeInput: DateTimeInputAdapter,
+		NumberInput: NumberInputAdapter,
+		PasswordInput: PasswordInputAdapter,
+		ColorInput: ColorInputAdapter,
+		FileInput: FileInputAdapter,
+		PinInput: PinInputAdapter,
+
+		// Text Inputs - Case variants & Aliases
+		input: InputAdapter,
+		textField: TextFieldAdapter,
+		textInput: TextFieldAdapter,
+		textArea: TextAreaAdapter,
+		textarea: TextAreaAdapter,
+		dateTimeInput: DateTimeInputAdapter,
+		dateInput: DateTimeInputAdapter,
+		DatePicker: DateTimeInputAdapter,
+		datePicker: DateTimeInputAdapter,
+		DateInput: DateTimeInputAdapter,
+		numberInput: NumberInputAdapter,
+		passwordInput: PasswordInputAdapter,
+		colorInput: ColorInputAdapter,
+		fileInput: FileInputAdapter,
+		pinInput: PinInputAdapter,
+		Password: PasswordInputAdapter,
+		password: PasswordInputAdapter,
+		Number: NumberInputAdapter,
+		number: NumberInputAdapter,
+		File: FileInputAdapter,
+		file: FileInputAdapter,
+		Color: ColorInputAdapter,
+		color: ColorInputAdapter,
+		OTP: PinInputAdapter,
+		otp: PinInputAdapter,
+		PIN: PinInputAdapter,
+		pin: PinInputAdapter,
+
+		// Selection Inputs - Primary
+		Checkbox: CheckboxAdapter,
+		CheckBox: CheckboxAdapter,
+		Switch: SwitchAdapter,
+		RadioGroup: RadioGroupAdapter,
+		Radio: RadioGroupAdapter,
+		Select: SelectAdapter,
+		MultiSelect: MultiSelectAdapter,
+		SegmentedControl: SegmentedControlAdapter,
+
+		// Selection Inputs - Case variants & Aliases
+		checkbox: CheckboxAdapter,
+		switch: SwitchAdapter,
+		radioGroup: RadioGroupAdapter,
+		radio: RadioGroupAdapter,
+		select: SelectAdapter,
+		multiSelect: MultiSelectAdapter,
+		segmentedControl: SegmentedControlAdapter,
+		Toggle: SwitchAdapter,
+		toggle: SwitchAdapter,
+		Dropdown: SelectAdapter,
+		dropdown: SelectAdapter,
+		ComboBox: SelectAdapter,
+		combobox: SelectAdapter,
+		Combobox: SelectAdapter,
+		MultiDropdown: MultiSelectAdapter,
+		multiDropdown: MultiSelectAdapter,
+		ButtonGroup: SegmentedControlAdapter,
+		buttonGroup: SegmentedControlAdapter,
+
+		// Sliders - Primary
+		Slider: SliderAdapter,
+		RangeSlider: RangeSliderAdapter,
+		Rating: RatingAdapter,
+
+		// Sliders - Case variants & Aliases
+		slider: SliderAdapter,
+		rangeSlider: RangeSliderAdapter,
+		rating: RatingAdapter,
+		Range: RangeSliderAdapter,
+		range: RangeSliderAdapter,
+		Stars: RatingAdapter,
+		stars: RatingAdapter,
+
+		// Feedback - Primary
+		Alert: AlertAdapter,
+		Notification: NotificationAdapter,
+		Progress: ProgressAdapter,
+		RingProgress: RingProgressAdapter,
+		Spinner: SpinnerAdapter,
+		Loader: SpinnerAdapter,
+		Skeleton: SkeletonAdapter,
+
+		// Feedback - Case variants & Aliases
+		alert: AlertAdapter,
+		notification: NotificationAdapter,
+		progress: ProgressAdapter,
+		ringProgress: RingProgressAdapter,
+		spinner: SpinnerAdapter,
+		loader: SpinnerAdapter,
+		skeleton: SkeletonAdapter,
+		Toast: NotificationAdapter,
+		toast: NotificationAdapter,
+		Message: AlertAdapter,
+		message: AlertAdapter,
+		Banner: AlertAdapter,
+		banner: AlertAdapter,
+		ProgressBar: ProgressAdapter,
+		progressBar: ProgressAdapter,
+		CircularProgress: RingProgressAdapter,
+		circularProgress: RingProgressAdapter,
+		Loading: SpinnerAdapter,
+		loading: SpinnerAdapter,
+
+		// Overlays - Primary
+		Tooltip: TooltipAdapter,
+		Popover: PopoverAdapter,
+		Menu: MenuAdapter,
+		Modal: ModalAdapter,
+		Dialog: ModalAdapter,
+		Drawer: DrawerAdapter,
+
+		// Overlays - Case variants & Aliases
+		tooltip: TooltipAdapter,
+		popover: PopoverAdapter,
+		menu: MenuAdapter,
+		modal: ModalAdapter,
+		dialog: ModalAdapter,
+		drawer: DrawerAdapter,
+		Popup: PopoverAdapter,
+		popup: PopoverAdapter,
+		Sidebar: DrawerAdapter,
+		sidebar: DrawerAdapter,
+
+		// Navigation - Primary
+		Tabs: TabsAdapter,
+		TabsNav: TabsAdapter,
+		TabPanel: TabPanelAdapter,
+		Breadcrumb: BreadcrumbAdapter,
+		Breadcrumbs: BreadcrumbAdapter,
+		NavLink: NavLinkAdapter,
+		Pagination: PaginationAdapter,
+		Stepper: StepperAdapter,
+
+		// Navigation - Case variants & Aliases
+		tabs: TabsAdapter,
+		tabPanel: TabPanelAdapter,
+		breadcrumb: BreadcrumbAdapter,
+		breadcrumbs: BreadcrumbAdapter,
+		navLink: NavLinkAdapter,
+		pagination: PaginationAdapter,
+		stepper: StepperAdapter,
+		NavigationLink: NavLinkAdapter,
+		navigationLink: NavLinkAdapter,
+		Pager: PaginationAdapter,
+		pager: PaginationAdapter,
+		Steps: StepperAdapter,
+		steps: StepperAdapter,
+		Wizard: StepperAdapter,
+		wizard: StepperAdapter,
+
+		// Data Display - Primary
+		List: ListAdapter,
+		MantineList: MantineListAdapter,
 		Timeline: TimelineAdapter,
 		TimelineItem: TimelineItemAdapter,
 		Table: TableAdapter,
 		TableHead: TableHeadAdapter,
+		TableHeader: TableHeaderAdapter,
 		TableBody: TableBodyAdapter,
 		TableRow: TableRowAdapter,
-		TableHeaderCell: TableHeaderCellAdapter,
 		TableCell: TableCellAdapter,
+		TableHeaderCell: TableHeaderCellAdapter,
+
+		// Data Display - Case variants & Aliases
+		list: ListAdapter,
+		timeline: TimelineAdapter,
+		timelineItem: TimelineItemAdapter,
+		table: TableAdapter,
+		tableHeader: TableHeaderAdapter,
+		tableBody: TableBodyAdapter,
+		tableRow: TableRowAdapter,
+		tableCell: TableCellAdapter,
+		tableHeaderCell: TableHeaderCellAdapter,
+		DataTable: TableAdapter,
+		dataTable: TableAdapter,
+		THead: TableHeaderAdapter,
+		thead: TableHeaderAdapter,
+		TBody: TableBodyAdapter,
+		tbody: TableBodyAdapter,
+		TR: TableRowAdapter,
+		tr: TableRowAdapter,
+		TD: TableCellAdapter,
+		td: TableCellAdapter,
+		TH: TableHeaderCellAdapter,
+		th: TableHeaderCellAdapter,
+
+		// Disclosure - Primary
+		Accordion: AccordionAdapter,
+		AccordionItem: AccordionItemAdapter,
+
+		// Disclosure - Case variants & Aliases
+		accordion: AccordionAdapter,
+		accordionItem: AccordionItemAdapter,
+		Collapsible: AccordionAdapter,
+		collapsible: AccordionAdapter,
+		Expandable: AccordionAdapter,
+		expandable: AccordionAdapter,
+
+		// Links - Primary
+		Anchor: AnchorAdapter,
+		Link: AnchorAdapter,
+
+		// Links - Case variants
+		anchor: AnchorAdapter,
+		link: AnchorAdapter,
+		A: AnchorAdapter,
+		a: AnchorAdapter,
 	},
 	UnknownA2uiNode,
 )
+
+export const A2UI_COMPONENT_TYPES = Object.keys(mantineTaskCatalog).filter((type) => type !== '__fallback__')
+
+export type A2uiComponentType = string
+
+const ALLOWED = new Set<string>(A2UI_COMPONENT_TYPES)
+
+export function isAllowedA2uiComponent(type: string): type is A2uiComponentType {
+	return ALLOWED.has(type)
+}
