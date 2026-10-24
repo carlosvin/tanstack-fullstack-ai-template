@@ -19,7 +19,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.8.1"
+  version: "1.8.2"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -174,7 +174,7 @@ lazily from validated `webServerEnv` (see `webEnv.server.ts` below).
 
 ```typescript
 import { z } from 'zod'
-import { OptionalDeploymentEnvSchema, OptionalLogLevelSchema, OptionalTrimmedStringSchema } from './runtimeEnv'
+import { OptionalDeploymentEnvSchema, OptionalLogLevelSchema, OptionalTrimmedStringSchema } from '@/services/schemas/runtimeEnv'
 
 export const AppMetaSchema = z.object({
   name: z.string().min(1),
@@ -200,7 +200,7 @@ process. `WebServerEnvSchema` adds secrets on top of the public schemas.
 ```typescript
 import { z } from 'zod'
 import pkg from '../../package.json' with { type: 'json' }
-import { ShellSessionSchema, WebPublicEnvSchema } from '../services/schemas/shellSession'
+import { ShellSessionSchema, WebPublicEnvSchema } from '@/services/schemas/shellSession'
 
 export const WebServerEnvSchema = WebPublicEnvSchema.extend({
   AUTH_HEADER_NAME: z.string().optional(),
@@ -248,7 +248,7 @@ Structured logger factory. No `process.env` access — env values come from the 
 ```typescript
 import pino, { type Logger } from 'pino'
 import pinoPretty from 'pino-pretty'
-import type { DeploymentEnv, LogLevel } from '../services/schemas/runtimeEnv'
+import type { DeploymentEnv, LogLevel } from '@/services/schemas/runtimeEnv'
 
 export type ModuleLoggerOptions = {
   environment: DeploymentEnv   // validated by caller's env schema
@@ -283,8 +283,8 @@ Thin bound factory for server-side modules — eliminates repeated
 `{ environment: webServerEnv.ENV, logLevel: webServerEnv.LOG_LEVEL }` boilerplate.
 
 ```typescript
-import { webServerEnv } from '../env/webEnv.server'
-import { createModuleLogger } from './logger'
+import { webServerEnv } from '@/env/webEnv.server'
+import { createModuleLogger } from '@/utils/logger'
 
 /** Server-side logger factory pre-bound to webServerEnv options. */
 export const createServerLogger = (name: string) =>
@@ -293,7 +293,7 @@ export const createServerLogger = (name: string) =>
 
 Usage in any server module:
 ```typescript
-import { createServerLogger } from '../utils/serverLogger'
+import { createServerLogger } from '@/utils/serverLogger'
 const log = createServerLogger('myServerFn')
 ```
 
@@ -381,8 +381,8 @@ Injects startup-validated `serverEnv` and `shellSession`. Types come from
 ```typescript
 // src/middleware/webEnv.ts
 import { createMiddleware } from '@tanstack/react-start'
-import { getShellSession, getWebServerEnv } from '../env/webEnv.server'
-import { authMiddleware } from './auth'
+import { getShellSession, getWebServerEnv } from '@/env/webEnv.server'
+import { authMiddleware } from '@/middleware/auth'
 
 export const webEnvMiddleware = createMiddleware()
   .middleware([authMiddleware])
@@ -427,10 +427,10 @@ loader: async () => ({
 
 ## Updating call sites
 
-**observability/index.ts** — replace `process.env.SENTRY_DSN` with `getShellSession()`:
+**observability/getObservability.ts** — replace `process.env.SENTRY_DSN` with `getShellSession()`:
 
 ```typescript
-import { getShellSession } from '../../env/webEnv.server'
+import { getShellSession } from '@/env/webEnv.server'
 
 export function getObservability(options: GetObservabilityOptions): ObservabilityService {
   const dsn = options.shellSession?.SENTRY_DSN ?? getShellSession().SENTRY_DSN
@@ -442,7 +442,7 @@ export function getObservability(options: GetObservabilityOptions): Observabilit
 `webServerEnv`:
 
 ```typescript
-import { webServerEnv } from '../env/webEnv.server'
+import { webServerEnv } from '@/env/webEnv.server'
 const AUTH_HEADER_NAME = webServerEnv.AUTH_HEADER_NAME ?? 'Authorization'
 ```
 

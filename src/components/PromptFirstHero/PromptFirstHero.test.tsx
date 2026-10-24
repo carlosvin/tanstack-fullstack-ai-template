@@ -1,19 +1,19 @@
 import { fireEvent, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { renderWithProviders } from '../../test-utils/renderWithRouter'
-import type { Task } from '../../types'
-import { PromptFirstHero } from './PromptFirstHero'
+import { PromptFirstHero } from '@/components/PromptFirstHero/PromptFirstHero'
+import type { Task } from '@/services/schemas/schemas'
+import { renderWithProviders } from '@/test-utils/renderWithRouter'
 
 const mockSendMessage = vi.fn()
 
-vi.mock('../PromptChat/PromptChatContext', () => ({
+vi.mock('@/components/PromptChat/PromptChatContext', () => ({
 	usePromptChat: () => ({
 		sendMessage: mockSendMessage,
 	}),
 }))
 
-vi.mock('../Link/Link', () => ({
+vi.mock('@/components/Link/Link', () => ({
 	Link: ({ children, to }: { children: ReactNode; to: string }) => <a href={to}>{children}</a>,
 }))
 

@@ -1,7 +1,7 @@
 import { Drawer, Stack, useMantineTheme } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { ChatComposer } from '../PromptChat/ChatComposer'
-import { ChatThread } from '../PromptChat/ChatThread'
+import { ChatComposer } from '@/components/PromptChat/ChatComposer'
+import { ChatThread } from '@/components/PromptChat/ChatThread'
 
 interface ChatDrawerProps {
 	opened: boolean

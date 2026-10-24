@@ -1,10 +1,8 @@
-import { getShellSession } from '../../env/webEnv.server'
-import type { ShellSession } from '../schemas/shellSession'
-import { NoopObservability } from './noop'
-import { SentryObservability } from './sentry'
-import type { ObservabilityService } from './types'
-
-export type { ObservabilityService } from './types'
+import { getShellSession } from '@/env/webEnv.server'
+import { NoopObservability } from '@/services/observability/noop'
+import { SentryObservability } from '@/services/observability/sentry'
+import type { ObservabilityService } from '@/services/observability/types'
+import type { ShellSession } from '@/services/schemas/shellSession'
 
 export type GetObservabilityOptions = {
 	/** Optional shell session slice (e.g. from a route loader). Server defaults to startup `shellSession`. */

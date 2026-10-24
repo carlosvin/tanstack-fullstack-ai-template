@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { AppRuntimeInfoSchema } from '../schemas/schemas'
+import { AppRuntimeInfoSchema } from '@/services/schemas/schemas'
 
 describe('getAppRuntimeInfo tool shape', () => {
 	it('allowlists only app identity and deployment ENV', () => {

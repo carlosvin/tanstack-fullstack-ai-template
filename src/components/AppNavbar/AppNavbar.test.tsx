@@ -2,10 +2,10 @@ import { AppShell } from '@mantine/core'
 import { screen } from '@testing-library/react'
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { renderWithProviders } from '../../test-utils/renderWithRouter'
-import { AppNavbar } from './AppNavbar'
+import { AppNavbar } from '@/components/AppNavbar/AppNavbar'
+import { renderWithProviders } from '@/test-utils/renderWithRouter'
 
-vi.mock('../Link/Link', () => ({
+vi.mock('@/components/Link/Link', () => ({
 	Link: ({
 		children,
 		to,

@@ -1,5 +1,5 @@
-import type { UserIdentity, UserProfile } from '../../types'
-import { HttpError } from '../../utils/httpError'
+import type { UserIdentity, UserProfile } from '@/services/schemas/schemas'
+import { HttpError } from '@/utils/httpError'
 
 /** Auth ticket assembled by middleware from identity + repository profile. */
 export interface AccessTicket {

@@ -22,8 +22,8 @@ import type { GeminiTextModel } from '@tanstack/ai-gemini'
 import { createGeminiChat } from '@tanstack/ai-gemini'
 import type { OpenAIChatModel } from '@tanstack/ai-openai'
 import { createOpenaiChat } from '@tanstack/ai-openai'
-import { getWebServerEnv } from '../../env/webEnv.server'
-import type { AIAdapterService } from './types'
+import { getWebServerEnv } from '@/env/webEnv.server'
+import type { AIAdapterService } from '@/services/ai/types'
 
 function hasNetlifyAIGateway(env: ReturnType<typeof getWebServerEnv>): boolean {
 	return Boolean(env.NETLIFY_AI_GATEWAY_KEY || env.NETLIFY_AI_GATEWAY_BASE_URL)

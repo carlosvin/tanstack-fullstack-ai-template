@@ -6,9 +6,9 @@
  * caught by processResponse() for mutations or surfaces as a loader error
  * for queries.
  */
-import type { AuthContext } from '../middleware/auth'
-import type { UserIdentity } from '../types'
-import { HttpError } from './httpError'
+import type { AuthContext } from '@/middleware/auth'
+import type { UserIdentity } from '@/services/schemas/schemas'
+import { HttpError } from '@/utils/httpError'
 
 /** Requires an authenticated user. Returns the identity. Throws 401 if anonymous. */
 export function requireAuth(context: AuthContext): UserIdentity {

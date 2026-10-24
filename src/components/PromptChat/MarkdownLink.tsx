@@ -1,5 +1,5 @@
-import { isInternalPath, toInternalRouterLinkTarget } from '../../utils/internalLinks'
-import { Link } from '../Link/Link'
+import { Link } from '@/components/Link/Link'
+import { isInternalPath, toInternalRouterLinkTarget } from '@/utils/internalLinks'
 
 export function MarkdownLink({ href, children }: { href?: string; children?: React.ReactNode }) {
 	if (!href) return <span>{children}</span>

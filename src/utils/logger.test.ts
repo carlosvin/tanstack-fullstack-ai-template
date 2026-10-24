@@ -9,7 +9,7 @@ afterEach(() => {
 
 async function importFreshLogger() {
 	vi.resetModules()
-	return import('./logger')
+	return import('@/utils/logger')
 }
 
 describe('createModuleLogger', () => {
@@ -56,7 +56,7 @@ describe('createModuleLogger', () => {
 		vi.resetModules()
 		const { default: pino } = await import('pino')
 		const transportSpy = vi.spyOn(pino, 'transport')
-		const { createModuleLogger } = await import('./logger')
+		const { createModuleLogger } = await import('@/utils/logger')
 
 		createModuleLogger('ttyModule', { environment: 'staging' }).info('line')
 		createModuleLogger('prodModule', { environment: 'production' }).info('line')

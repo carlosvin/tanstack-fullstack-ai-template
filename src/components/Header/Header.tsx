@@ -1,7 +1,7 @@
 import { ActionIcon, Burger, Group, Text, Tooltip, useMantineColorScheme } from '@mantine/core'
 import { CheckSquare, MessageCircle, Moon, Sun } from 'lucide-react'
-import type { AppMeta, PromptConcept } from '../../services/schemas/shellSession'
-import { Link } from '../Link/Link'
+import { Link } from '@/components/Link/Link'
+import type { AppMeta, PromptConcept } from '@/services/schemas/shellSession'
 
 interface HeaderProps {
 	navOpened: boolean

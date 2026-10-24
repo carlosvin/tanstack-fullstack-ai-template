@@ -1,4 +1,4 @@
-import type { BrowserContext } from '../types'
+import type { BrowserContext } from '@/services/schemas/schemas'
 
 /** Snapshot of browser location and locale for the chat API (captured at submit time). */
 export function captureBrowserContext(): BrowserContext {

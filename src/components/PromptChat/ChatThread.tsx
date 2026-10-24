@@ -1,8 +1,8 @@
 import { Button, Group, Loader, ScrollArea, Stack, Text } from '@mantine/core'
 import { useCallback, useEffect, useRef } from 'react'
-import { suggestedPrompts } from '../../utils/suggestedPrompts'
-import { MessageBubble } from './MessageBubble'
-import { usePromptChat } from './PromptChatContext'
+import { MessageBubble } from '@/components/PromptChat/MessageBubble'
+import { usePromptChat } from '@/components/PromptChat/PromptChatContext'
+import { suggestedPrompts } from '@/utils/suggestedPrompts'
 
 interface ChatThreadProps {
 	emptyHint?: string

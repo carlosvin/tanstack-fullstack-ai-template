@@ -2,14 +2,14 @@ import { MantineProvider } from '@mantine/core'
 import { createMemoryHistory, createRootRoute, createRouter, RouterProvider } from '@tanstack/react-router'
 import { act, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import type { ShellSession } from '../../services/schemas/shellSession'
-import { AppLayout } from './AppLayout'
+import { AppLayout } from '@/components/AppLayout/AppLayout'
+import type { ShellSession } from '@/services/schemas/shellSession'
 
-vi.mock('../PromptBar/PromptBar', () => ({
+vi.mock('@/components/PromptBar/PromptBar', () => ({
 	PromptBar: () => <section aria-label="AI assistant">Prompt bar</section>,
 }))
 
-vi.mock('../PromptChat/PromptChatContext', () => ({
+vi.mock('@/components/PromptChat/PromptChatContext', () => ({
 	PromptChatProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }))
 

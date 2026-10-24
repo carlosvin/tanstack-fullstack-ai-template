@@ -1,5 +1,5 @@
 import { createMiddleware } from '@tanstack/react-start'
-import { ensureRepository } from '../services/repository/getRepository.server'
+import { ensureRepository } from '@/services/repository/getRepository.server'
 
 /**
  * Injects the process repository. The composition root constructs it with `new`

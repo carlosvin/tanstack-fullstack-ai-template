@@ -21,7 +21,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.35.0"
+  version: "1.35.1"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -125,6 +125,7 @@ Pick **one validator library** per app and use it consistently across router sea
 - **Runtime context guards:** `getShellAuthContext`, `getAccessTicket`, `accessTicketFrom`, or property-presence checks on middleware-assembled `context` — chain the middleware and read `ctx.context` directly (Start infers types).
 - **Context type bypasses:** `context as AuthContext`, `as unknown`, or `as any` on request context — chain middleware so TypeScript infers context.
 - **Secrets in the browser:** returning `serverEnv` or raw env to loaders/components — project through `shellSession` only.
+- **Barrel or relative in-src imports:** an `index.ts` that only re-exports, or a `../` import of a module under `src/`. Import the defining file with `@/`. `routes/**/index.tsx` stays, because file routing requires that name.
 - **Prompt chrome invented here:** choosing a drawer, a prompt-first page, or an agentic shell inside this skill. When it is not clear which user experience to implement, ask **Choose a UX** and wait, then load **`promptable-ux`** or **`agentic-ux`**. This template's sites already declare their concepts.
 - **UX chosen without an answer:** starting side, prompt-first, or agentic chrome when the experience is not clear. Ask which of the three to build and wait.
 
@@ -169,6 +170,7 @@ Scan before changing code:
 - **Metadata discipline:** schema field descriptions for narrative copy; structured extras for units/formats; closed vocabularies = `as const` tuple + schema enum + inferred type.
 - **Server boundaries:** loaders call `serverFns` only — no `process.env` secrets, DB drivers, or repo imports in route files; `*.server.ts` for DB drivers / Node SDKs; `createServerOnlyFn` for non-RPC infra; `importProtection` updated for new node packages.
 - **Request context:** middleware validates once; handlers **chain middleware** and read `context.*` directly — no runtime context helpers, no context casts, no Register; browser sees only **`getBrowserShellSession`** output (env bootstrap: **`observability-and-env`**).
+- **Direct `@/` imports:** no re-export `index.ts` barrels; modules under `src/` import the defining file with `@/` (`@/*` → `./src/*`). `routes/**/index.tsx` stays for file routing. Targets outside `src/` (`package.json`, docs, instrument bootstrap) stay relative.
 
 ## Server execution boundaries
 
@@ -204,6 +206,12 @@ export const getTasks = createServerFn({ method: 'GET' })
   })
 ```
 
+### Module imports
+
+Import the file that defines the symbol. Use the `@/` alias (`@/*` → `./src/*`) for every module under `src/`. Do not add `index.ts` files that only re-export. `routes/**/index.tsx` is the exception: TanStack Start file routing requires that name.
+
+Targets outside `src/` stay relative: `package.json`, `docs/help.md?raw`, and the instrument bootstrap (`instrument.*.mts` and the emitted `.mjs`).
+
 ### File naming and tripwires
 
 - **`*.server.ts` / `*.server.tsx`:** DB clients, repositories with drivers, private API keys, Node-only SDKs (e.g. `mongoClient.server.ts`, `getRepository.server.ts`).
@@ -218,7 +226,7 @@ export const getTasks = createServerFn({ method: 'GET' })
 
 ```typescript
 import { createServerOnlyFn } from '@tanstack/react-start'
-import type { Repository } from '../repository/types'
+import type { Repository } from '@/services/repository/types'
 
 export const readTasks = createServerOnlyFn(async (repository: Repository) => {
   return repository.getTasks()

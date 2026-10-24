@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { removeNetlifyHud, watchNetlifyHud } from './netlifyHud'
+import { removeNetlifyHud, watchNetlifyHud } from '@/utils/netlifyHud'
 
 describe('netlifyHud', () => {
 	it('removes the badge frame and the injected HUD script', () => {
