@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { HttpError } from '../../utils/httpError'
-import { createSafeServerTool, safeToolHandler } from './serverTool'
+import { createSafeServerTool, safeToolHandler } from '@/services/ai/serverTool'
+import { HttpError } from '@/utils/httpError'
 
 describe('safeToolHandler', () => {
 	it('returns successful handler results unchanged', async () => {

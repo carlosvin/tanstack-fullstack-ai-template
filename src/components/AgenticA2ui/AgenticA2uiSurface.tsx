@@ -2,8 +2,8 @@ import type { ServerToClientMessage, UserAction } from '@a2ui-bridge/core'
 import { Surface, useA2uiProcessor } from '@a2ui-bridge/react'
 import { Alert, Button, Paper, Stack, Text } from '@mantine/core'
 import { useEffect, useState } from 'react'
-import { mantineTaskCatalog } from '../../services/a2ui/mantineCatalog'
-import { acceptA2uiMessages } from '../../services/a2ui/taskViewMessages'
+import { mantineTaskCatalog } from '@/services/a2ui/mantineCatalog'
+import { acceptA2uiMessages } from '@/services/a2ui/taskViewMessages'
 
 interface AgenticA2uiSurfaceProps {
 	messages: ServerToClientMessage[]

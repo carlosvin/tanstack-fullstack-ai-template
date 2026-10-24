@@ -1,10 +1,10 @@
 import { ActionIcon, AppShell, Box, Container, Group, Stack, Text, Tooltip, useMantineColorScheme } from '@mantine/core'
 import { Moon, Sparkles, Sun } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import type { AppMeta } from '../../services/schemas/shellSession'
-import { AgenticComposer } from './AgenticComposer'
-import { AgenticThread } from './AgenticThread'
-import threadStyles from './AgenticThread.module.css'
+import { AgenticComposer } from '@/components/AgenticShell/AgenticComposer'
+import { AgenticThread } from '@/components/AgenticShell/AgenticThread'
+import threadStyles from '@/components/AgenticShell/AgenticThread.module.css'
+import type { AppMeta } from '@/services/schemas/shellSession'
 
 interface AgenticShellProps {
 	appMeta: AppMeta

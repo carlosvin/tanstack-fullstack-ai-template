@@ -1,11 +1,10 @@
 import { createFileRoute, Outlet, useLoaderData, useNavigate } from '@tanstack/react-router'
-import { TasksPage } from '../../components/TasksPage/TasksPage'
-import { processResponse } from '../../services/api/processResponse'
-import { deleteTask, getTasks } from '../../services/api/serverFns'
-import { TasksListSearchSchema } from '../../services/schemas/schemas'
-import type { Task } from '../../types'
-import { confirmDelete } from '../../utils/confirmDelete'
-import { notifyProcessed } from '../../utils/notifyProcessed'
+import { TasksPage } from '@/components/TasksPage/TasksPage'
+import { processResponse } from '@/services/api/processResponse'
+import { deleteTask, getTasks } from '@/services/api/serverFns'
+import { type Task, TasksListSearchSchema } from '@/services/schemas/schemas'
+import { confirmDelete } from '@/utils/confirmDelete'
+import { notifyProcessed } from '@/utils/notifyProcessed'
 
 export const Route = createFileRoute('/tasks/')({
 	staticData: { description: 'Tasks list with optional filters' },

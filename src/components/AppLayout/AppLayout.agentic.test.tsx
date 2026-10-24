@@ -2,18 +2,18 @@ import { MantineProvider } from '@mantine/core'
 import { createMemoryHistory, createRootRoute, createRouter, RouterProvider } from '@tanstack/react-router'
 import { act, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import type { ShellSession } from '../../services/schemas/shellSession'
-import { AppLayout } from './AppLayout'
+import { AppLayout } from '@/components/AppLayout/AppLayout'
+import type { ShellSession } from '@/services/schemas/shellSession'
 
-vi.mock('../AgenticChat/AgenticChatContext', () => ({
+vi.mock('@/components/AgenticChat/AgenticChatContext', () => ({
 	AgenticChatProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }))
 
-vi.mock('../AgenticShell/AgenticShell', () => ({
+vi.mock('@/components/AgenticShell/AgenticShell', () => ({
 	AgenticShell: () => <main>Agentic shell</main>,
 }))
 
-vi.mock('../PromptChat/PromptChatContext', () => ({
+vi.mock('@/components/PromptChat/PromptChatContext', () => ({
 	PromptChatProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }))
 

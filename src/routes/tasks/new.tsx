@@ -1,10 +1,10 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { NewTaskPage } from '../../components/NewTaskPage/NewTaskPage'
-import { processResponse } from '../../services/api/processResponse'
-import { createTask } from '../../services/api/serverFns'
-import type { TaskInput } from '../../types'
-import { notifyProcessed } from '../../utils/notifyProcessed'
+import { NewTaskPage } from '@/components/NewTaskPage/NewTaskPage'
+import { processResponse } from '@/services/api/processResponse'
+import { createTask } from '@/services/api/serverFns'
+import type { TaskInput } from '@/services/schemas/schemas'
+import { notifyProcessed } from '@/utils/notifyProcessed'
 
 export const Route = createFileRoute('/tasks/new')({
 	staticData: { description: 'Create task modal route over the tasks list page' },

@@ -1,7 +1,7 @@
 import type { Collection, Db } from 'mongodb'
-import { parseUserProfileRepoOrNull, toUserAccessRepo } from '../schemas/repoParsers'
-import type { UserAccessRepo, UserProfileRepo } from '../schemas/repository'
-import type { IndexableRepository } from './types'
+import type { IndexableRepository } from '@/services/repository/types'
+import { parseUserProfileRepoOrNull, toUserAccessRepo } from '@/services/schemas/repoParsers'
+import type { UserAccessRepo, UserProfileRepo } from '@/services/schemas/repository'
 
 const USERS_COLLECTION = 'users'
 

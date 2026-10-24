@@ -1,6 +1,6 @@
 import type { Db } from 'mongodb'
 import { describe, expect, it } from 'vitest'
-import { MongoUserRepository } from './mongoUserRepository.server'
+import { MongoUserRepository } from '@/services/repository/mongoUserRepository.server'
 
 interface StoredUser {
 	email: string

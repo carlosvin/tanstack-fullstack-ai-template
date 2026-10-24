@@ -6,8 +6,8 @@
  * values. Use `createModuleLogger` directly for tests or code that runs
  * outside the web-server runtime.
  */
-import { webServerEnv } from '../env/webEnv.server'
-import { createModuleLogger } from './logger'
+import { webServerEnv } from '@/env/webEnv.server'
+import { createModuleLogger } from '@/utils/logger'
 
 export const createServerLogger = (name: string) =>
 	createModuleLogger(name, {

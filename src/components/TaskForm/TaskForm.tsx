@@ -2,9 +2,8 @@ import { Button, Select, Stack, Textarea, TextInput } from '@mantine/core'
 import { schemaResolver, useForm } from '@mantine/form'
 import { useEffect } from 'react'
 import { z } from 'zod'
-import { TaskInputSchema } from '../../services/schemas/schemas'
-import type { TaskInput } from '../../types'
-import { prioritySelectOptions, statusSelectOptions } from '../../utils/taskDisplay'
+import { type TaskInput, TaskInputSchema } from '@/services/schemas/schemas'
+import { prioritySelectOptions, statusSelectOptions } from '@/utils/taskDisplay'
 
 const taskFormSchema = TaskInputSchema.extend({
 	title: z.string().trim().min(1, { error: 'Title is required' }),

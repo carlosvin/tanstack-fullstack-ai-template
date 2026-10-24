@@ -3,7 +3,7 @@ import { act, render, screen } from '@testing-library/react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { describe, expect, it } from 'vitest'
-import { MarkdownLink } from './MarkdownLink'
+import { MarkdownLink } from '@/components/PromptChat/MarkdownLink'
 
 async function renderMarkdownLink(markdown: string) {
 	const rootRoute = createRootRoute({

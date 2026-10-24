@@ -1,14 +1,13 @@
 import { createServerFn } from '@tanstack/react-start'
-import { authMiddleware } from '../../middleware/auth'
-import { invalidateMiddleware } from '../../middleware/invalidate'
-import { repositoryMiddleware } from '../../middleware/repository'
-import { requireAuthMiddleware } from '../../middleware/requireAuth'
-import { webEnvMiddleware } from '../../middleware/webEnv'
-import { HttpError } from '../../utils/httpError'
-import { getAIAdapterService } from '../ai/adapter'
-import { getObservability } from '../observability'
-import { createWriteTrace, updateWriteTrace } from '../repository/traceability'
-import { TaskRepoFilterSchema, TaskRepoInputSchema } from '../schemas/repository'
+import { authMiddleware } from '@/middleware/auth'
+import { invalidateMiddleware } from '@/middleware/invalidate'
+import { repositoryMiddleware } from '@/middleware/repository'
+import { requireAuthMiddleware } from '@/middleware/requireAuth'
+import { webEnvMiddleware } from '@/middleware/webEnv'
+import { getAIAdapterService } from '@/services/ai/adapter'
+import { getObservability } from '@/services/observability/getObservability'
+import { createWriteTrace, updateWriteTrace } from '@/services/repository/traceability'
+import { TaskRepoFilterSchema, TaskRepoInputSchema } from '@/services/schemas/repository'
 import {
 	CurrentUserSchema,
 	DistinctValueListSchema,
@@ -18,8 +17,9 @@ import {
 	TaskInputSchema,
 	UpdateTaskInputSchema,
 	UserProfileByEmailSchema,
-} from '../schemas/schemas'
-import { toToolTask, toToolUserAccess, toToolUserProfile } from '../schemas/taskMappers'
+} from '@/services/schemas/schemas'
+import { toToolTask, toToolUserAccess, toToolUserProfile } from '@/services/schemas/taskMappers'
+import { HttpError } from '@/utils/httpError'
 
 // ============================================================================
 // Queries (GET) — accessed from route loaders and AI tools

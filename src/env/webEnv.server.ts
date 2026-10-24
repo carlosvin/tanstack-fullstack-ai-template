@@ -10,15 +10,15 @@
  */
 import { config } from 'dotenv'
 import { z } from 'zod'
-import pkg from '../../package.json' with { type: 'json' }
-import { envStringToUndefined, OptionalTrimmedStringSchema } from '../services/schemas/runtimeEnv'
+import { envStringToUndefined, OptionalTrimmedStringSchema } from '@/services/schemas/runtimeEnv'
 import {
 	type PromptConcept,
 	PromptConceptSchema,
 	type ShellSession,
 	ShellSessionSchema,
 	WebPublicEnvSchema,
-} from '../services/schemas/shellSession'
+} from '@/services/schemas/shellSession'
+import pkg from '../../package.json' with { type: 'json' }
 
 /** Load local `.env` files before the one-time Zod parse (Vite also loads them during dev/build). */
 function loadLocalEnvFiles(): void {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { createUnsignedJwt, extractIdentityFromJwt } from './jwt.server'
-import { createRandomTestIdentity, resolveAccessTicket } from './testAuth.server'
+import { createUnsignedJwt, extractIdentityFromJwt } from '@/utils/jwt.server'
+import { createRandomTestIdentity, resolveAccessTicket } from '@/utils/testAuth.server'
 
 describe('createRandomTestIdentity', () => {
 	it('creates an example.com email and display name', () => {

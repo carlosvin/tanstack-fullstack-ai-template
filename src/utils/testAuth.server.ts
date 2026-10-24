@@ -1,6 +1,5 @@
-import { UserIdentitySchema } from '../services/schemas/schemas'
-import type { UserIdentity } from '../types'
-import { createUnsignedJwt, extractIdentityFromJwt } from './jwt.server'
+import { type UserIdentity, UserIdentitySchema } from '@/services/schemas/schemas'
+import { createUnsignedJwt, extractIdentityFromJwt } from '@/utils/jwt.server'
 
 /** Cookie storing the unsigned JWT for auto-generated demo users. */
 export const TEST_AUTH_COOKIE_NAME = 'test-auth'

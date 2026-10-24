@@ -427,10 +427,10 @@ loader: async () => ({
 
 ## Updating call sites
 
-**observability/index.ts** — replace `process.env.SENTRY_DSN` with `getShellSession()`:
+**observability/getObservability.ts** — replace `process.env.SENTRY_DSN` with `getShellSession()`:
 
 ```typescript
-import { getShellSession } from '../../env/webEnv.server'
+import { getShellSession } from '@/env/webEnv.server'
 
 export function getObservability(options: GetObservabilityOptions): ObservabilityService {
   const dsn = options.shellSession?.SENTRY_DSN ?? getShellSession().SENTRY_DSN
@@ -442,7 +442,7 @@ export function getObservability(options: GetObservabilityOptions): Observabilit
 `webServerEnv`:
 
 ```typescript
-import { webServerEnv } from '../env/webEnv.server'
+import { webServerEnv } from '@/env/webEnv.server'
 const AUTH_HEADER_NAME = webServerEnv.AUTH_HEADER_NAME ?? 'Authorization'
 ```
 

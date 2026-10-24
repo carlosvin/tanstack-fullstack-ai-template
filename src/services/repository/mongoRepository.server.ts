@@ -1,8 +1,15 @@
 import type { Db } from 'mongodb'
-import type { TaskRepo, TaskRepoFilter, TaskRepoInput, UserAccessRepo, UserProfileRepo } from '../schemas/repository'
-import { MongoTaskRepository } from './mongoTaskRepository.server'
-import { MongoUserRepository } from './mongoUserRepository.server'
-import type { DistinctValueField, IndexableRepository, Repository, TraceabilityContext } from './types'
+import type { DistinctValueField } from '@/constants/options'
+import { MongoTaskRepository } from '@/services/repository/mongoTaskRepository.server'
+import { MongoUserRepository } from '@/services/repository/mongoUserRepository.server'
+import type { IndexableRepository, Repository, TraceabilityContext } from '@/services/repository/types'
+import type {
+	TaskRepo,
+	TaskRepoFilter,
+	TaskRepoInput,
+	UserAccessRepo,
+	UserProfileRepo,
+} from '@/services/schemas/repository'
 
 /**
  * Domain facade over the task and user collection repositories.

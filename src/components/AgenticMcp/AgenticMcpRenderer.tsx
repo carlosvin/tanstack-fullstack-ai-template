@@ -3,14 +3,14 @@ import { AppRenderer } from '@mcp-ui/client'
 import type { UIResourcePart } from '@tanstack/ai'
 import { useMcpAppBridge } from '@tanstack/ai-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import styles from '@/components/AgenticMcp/AgenticMcpRenderer.module.css'
 import {
 	decodeMcpUiHtml,
 	isAllowedMcpUiUri,
 	MCP_APP_MIME_TYPE,
 	TASK_DETAIL_UI_URI,
 	TASKS_LIST_UI_URI,
-} from '../../services/mcpUi/mcpUiResource'
-import styles from './AgenticMcpRenderer.module.css'
+} from '@/services/mcpUi/mcpUiResource'
 
 const MCP_APP_CALL_ENDPOINT = '/api/mcp-apps/call'
 const AGENTIC_THREAD_ID = 'agentic'

@@ -1,6 +1,6 @@
 import { type BrowserContext, test as base, type Page } from '@playwright/test'
-import type { UserIdentity } from '../src/types'
-import { createUnsignedJwt } from '../src/utils/jwt.server'
+import type { UserIdentity } from '@/services/schemas/schemas'
+import { createUnsignedJwt } from '@/utils/jwt.server'
 
 export const ALICE = {
 	email: 'alice@example.com',

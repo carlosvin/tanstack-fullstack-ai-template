@@ -8,13 +8,13 @@ describe('getAIAdapterService', () => {
 
 	it('reports configured when GEMINI_API_KEY is present in webServerEnv', async () => {
 		vi.stubEnv('GEMINI_API_KEY', 'test-key')
-		const { getAIAdapterService } = await import('./adapter')
+		const { getAIAdapterService } = await import('@/services/ai/adapter')
 		expect(getAIAdapterService().isConfigured()).toBe(true)
 	})
 
 	it('defaults the Gemini chat model to gemini-3.1-flash-lite', async () => {
 		vi.stubEnv('GEMINI_API_KEY', 'test-key')
-		const { getAIAdapterService } = await import('./adapter')
+		const { getAIAdapterService } = await import('@/services/ai/adapter')
 		const adapter = getAIAdapterService().getAdapter() as { model: string } | null
 		expect(adapter?.model).toBe('gemini-3.1-flash-lite')
 	})
@@ -22,7 +22,7 @@ describe('getAIAdapterService', () => {
 	it('uses GEMINI_MODEL when it is set', async () => {
 		vi.stubEnv('GEMINI_API_KEY', 'test-key')
 		vi.stubEnv('GEMINI_MODEL', 'gemini-2.5-flash')
-		const { getAIAdapterService } = await import('./adapter')
+		const { getAIAdapterService } = await import('@/services/ai/adapter')
 		const adapter = getAIAdapterService().getAdapter() as { model: string } | null
 		expect(adapter?.model).toBe('gemini-2.5-flash')
 	})
@@ -30,26 +30,26 @@ describe('getAIAdapterService', () => {
 	it('reports configured when OpenAI env vars are present', async () => {
 		vi.stubEnv('OPENAI_API_KEY', 'openai-key')
 		vi.stubEnv('OPENAI_BASE_URL', 'https://gateway.example.com')
-		const { getAIAdapterService } = await import('./adapter')
+		const { getAIAdapterService } = await import('@/services/ai/adapter')
 		expect(getAIAdapterService().isConfigured()).toBe(true)
 	})
 
 	it('reports configured when Netlify AI Gateway env vars are present', async () => {
 		vi.stubEnv('NETLIFY_AI_GATEWAY_KEY', 'gateway-key')
 		vi.stubEnv('NETLIFY_AI_GATEWAY_BASE_URL', 'https://gateway.netlify.app')
-		const { getAIAdapterService } = await import('./adapter')
+		const { getAIAdapterService } = await import('@/services/ai/adapter')
 		expect(getAIAdapterService().isConfigured()).toBe(true)
 	})
 
 	it('reports configured when Azure OpenAI env vars are present', async () => {
 		vi.stubEnv('AZURE_OPENAI_API_KEY', 'azure-key')
 		vi.stubEnv('AZURE_OPENAI_ENDPOINT', 'https://example.openai.azure.com')
-		const { getAIAdapterService } = await import('./adapter')
+		const { getAIAdapterService } = await import('@/services/ai/adapter')
 		expect(getAIAdapterService().isConfigured()).toBe(true)
 	})
 
 	it('reports not configured when no AI env vars are set', async () => {
-		const { getAIAdapterService } = await import('./adapter')
+		const { getAIAdapterService } = await import('@/services/ai/adapter')
 		expect(getAIAdapterService().isConfigured()).toBe(false)
 	})
 })

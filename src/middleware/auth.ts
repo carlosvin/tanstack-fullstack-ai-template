@@ -1,12 +1,12 @@
 import { createMiddleware } from '@tanstack/react-start'
 import { getCookie, setCookie } from '@tanstack/react-start/server'
-import { webServerEnv } from '../env/webEnv.server'
-import { type AccessTicket, buildAccessTicket } from '../services/auth/accessTicket'
-import type { UserIdentity } from '../types'
-import { extractIdentityFromJwt } from '../utils/jwt.server'
-import { createServerLogger } from '../utils/serverLogger'
-import { resolveAccessTicket, TEST_AUTH_COOKIE_NAME } from '../utils/testAuth.server'
-import { repositoryMiddleware } from './repository'
+import { webServerEnv } from '@/env/webEnv.server'
+import { repositoryMiddleware } from '@/middleware/repository'
+import { type AccessTicket, buildAccessTicket } from '@/services/auth/accessTicket'
+import type { UserIdentity } from '@/services/schemas/schemas'
+import { extractIdentityFromJwt } from '@/utils/jwt.server'
+import { createServerLogger } from '@/utils/serverLogger'
+import { resolveAccessTicket, TEST_AUTH_COOKIE_NAME } from '@/utils/testAuth.server'
 
 const log = createServerLogger('auth')
 

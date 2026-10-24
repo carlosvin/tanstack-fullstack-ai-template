@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createUnsignedJwt, extractIdentityFromJwt } from './jwt.server'
+import { createUnsignedJwt, extractIdentityFromJwt } from '@/utils/jwt.server'
 
 function createTestJwt(payload: Record<string, unknown>): string {
 	const header = btoa(JSON.stringify({ alg: 'none', typ: 'JWT' }))

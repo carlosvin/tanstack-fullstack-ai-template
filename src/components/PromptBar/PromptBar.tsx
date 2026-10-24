@@ -1,6 +1,6 @@
 import { Box } from '@mantine/core'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
-import { ChatComposer } from '../PromptChat/ChatComposer'
+import { ChatComposer } from '@/components/PromptChat/ChatComposer'
 
 /**
  * Prompt-first shell: bottom-pinned prompt input bar.

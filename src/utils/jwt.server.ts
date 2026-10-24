@@ -1,6 +1,5 @@
 import { decodeJwt } from 'jose'
-import { JwtIdentityClaimsSchema, UserIdentitySchema } from '../services/schemas/schemas'
-import type { UserIdentity } from '../types'
+import { JwtIdentityClaimsSchema, type UserIdentity, UserIdentitySchema } from '@/services/schemas/schemas'
 
 const JWT_HEADER = { alg: 'none', typ: 'JWT' } as const
 

@@ -1,8 +1,8 @@
 import { Container } from '@mantine/core'
-import type { Task } from '../../types'
-import { ChatThread } from '../PromptChat/ChatThread'
-import { usePromptChat } from '../PromptChat/PromptChatContext'
-import { PromptFirstHero } from '../PromptFirstHero/PromptFirstHero'
+import { ChatThread } from '@/components/PromptChat/ChatThread'
+import { usePromptChat } from '@/components/PromptChat/PromptChatContext'
+import { PromptFirstHero } from '@/components/PromptFirstHero/PromptFirstHero'
+import type { Task } from '@/services/schemas/schemas'
 
 interface PromptFirstLandingProps {
 	tasks: Task[]

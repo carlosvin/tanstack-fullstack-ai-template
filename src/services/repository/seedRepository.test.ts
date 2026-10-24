@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { SeedRepository } from './seedRepository'
+import { SeedRepository } from '@/services/repository/seedRepository'
 
 describe('SeedRepository', () => {
 	let repo: SeedRepository

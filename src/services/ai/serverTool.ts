@@ -1,5 +1,5 @@
 import type { ToolExecutionContext } from '@tanstack/ai'
-import { HttpError } from '../../utils/httpError'
+import { HttpError } from '@/utils/httpError'
 
 /** Structured error shape returned to the AI when a tool call fails. */
 export type ToolErrorResult = {

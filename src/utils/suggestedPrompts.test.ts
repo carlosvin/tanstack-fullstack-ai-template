@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseSuggestedPrompts, suggestedPrompts } from './suggestedPrompts'
+import { parseSuggestedPrompts, suggestedPrompts } from '@/utils/suggestedPrompts'
 
 describe('parseSuggestedPrompts', () => {
 	it('reads quoted bullets from the Suggested prompts section', () => {

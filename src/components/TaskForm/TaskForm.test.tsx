@@ -1,7 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { renderWithProviders } from '../../test-utils/renderWithRouter'
-import { TaskForm } from './TaskForm'
+import { TaskForm } from '@/components/TaskForm/TaskForm'
+import { renderWithProviders } from '@/test-utils/renderWithRouter'
 
 describe('TaskForm', () => {
 	it('renders tools-layer fields from TaskInputSchema', () => {

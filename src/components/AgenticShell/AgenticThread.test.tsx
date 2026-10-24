@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const sendMessage = vi.fn()
 const getTask = vi.fn(async (_input: unknown) => null)
 
-vi.mock('../AgenticChat/AgenticChatContext', () => ({
+vi.mock('@/components/AgenticChat/AgenticChatContext', () => ({
 	useAgenticChat: () => ({
 		messages: chatMessages,
 		isLoading: false,
@@ -14,7 +14,7 @@ vi.mock('../AgenticChat/AgenticChatContext', () => ({
 	}),
 }))
 
-vi.mock('../../services/api/serverFns', () => ({
+vi.mock('@/services/api/serverFns', () => ({
 	getTask: (input: unknown) => getTask(input),
 }))
 
@@ -51,7 +51,7 @@ const chatMessages: UIMessage[] = [
 	},
 ]
 
-import { AgenticThread } from './AgenticThread'
+import { AgenticThread } from '@/components/AgenticShell/AgenticThread'
 
 describe('AgenticThread open task', () => {
 	beforeEach(() => {

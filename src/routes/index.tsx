@@ -1,9 +1,9 @@
 import { createFileRoute, useLoaderData } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
-import { DashboardPage } from '../components/DashboardPage/DashboardPage'
-import { PromptFirstLanding } from '../components/PromptFirstLanding/PromptFirstLanding'
-import { getBrowserShellSession, getTasks } from '../services/api/serverFns'
-import type { PromptConcept } from '../services/schemas/shellSession'
+import { DashboardPage } from '@/components/DashboardPage/DashboardPage'
+import { PromptFirstLanding } from '@/components/PromptFirstLanding/PromptFirstLanding'
+import { getBrowserShellSession, getTasks } from '@/services/api/serverFns'
+import type { PromptConcept } from '@/services/schemas/shellSession'
 
 type HomeTasks = Awaited<ReturnType<typeof getTasks>>
 
