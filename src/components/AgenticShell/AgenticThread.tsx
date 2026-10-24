@@ -4,7 +4,12 @@ import type { ToolResultPart, UIResourcePart } from '@tanstack/ai'
 import type { UIMessage } from '@tanstack/ai-react'
 import { Bot } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { buildTaskViewMessages, promptFromA2uiAction } from '../../services/a2ui/taskViewMessages'
+import {
+	buildTaskViewMessages,
+	bulkStatusPrompt,
+	promptFromA2uiAction,
+	taskViewIntent,
+} from '../../services/a2ui/taskViewMessages'
 import { getTask } from '../../services/api/serverFns'
 import { TASK_DETAIL_UI_URI, TASKS_LIST_UI_URI } from '../../services/mcpUi/mcpUiResource'
 import { findRememberedTask } from '../../services/repository/conversationTasks'
@@ -15,7 +20,7 @@ import { MessageBubble } from '../PromptChat/MessageBubble'
 import { AgenticPromptMarkdownLink } from './AgenticPromptMarkdownLink'
 import styles from './AgenticThread.module.css'
 
-const AGENTIC_STARTERS = ['Show my tasks', 'Show pending tasks', 'Show high priority tasks']
+const AGENTIC_STARTERS = ['Show my tasks', 'Show pending tasks', 'Show overdue tasks']
 
 const DETAIL_PROMPT = /^Open the detail view for (.+)\. The task id is ([^\s.]+)\.$/
 
@@ -133,11 +138,6 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 		})
 	}
 
-	function handleAction(action: UserAction) {
-		const prompt = promptFromA2uiAction(action)
-		if (prompt) handlePrompt(prompt)
-	}
-
 	useEffect(() => {
 		if (messages.length === 0) setOpened([])
 	}, [messages.length])
@@ -192,7 +192,7 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 									<TaskViewResult
 										key={view.callId}
 										resultText={view.resultText}
-										onAction={handleAction}
+										onPrompt={handlePrompt}
 										onRetry={() => handlePrompt(view.retryPrompt)}
 									/>
 								))}
@@ -225,7 +225,7 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 								{item.resultText ? (
 									<TaskViewResult
 										resultText={item.resultText}
-										onAction={handleAction}
+										onPrompt={handlePrompt}
 										onRetry={() =>
 											handlePrompt(`Open the detail view for ${item.title}. The task id is ${item.taskId}.`)
 										}
@@ -257,13 +257,38 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 
 function TaskViewResult({
 	resultText,
-	onAction,
+	onPrompt,
 	onRetry,
 }: {
 	resultText: string
-	onAction: (action: UserAction) => void
+	onPrompt: (text: string) => void
 	onRetry: () => void
 }) {
-	const messages = useMemo(() => buildTaskViewMessages(resultText), [resultText])
+	const [selected, setSelected] = useState<string[]>([])
+	const messages = useMemo(() => buildTaskViewMessages(resultText, selected), [resultText, selected])
+
+	useEffect(() => {
+		setSelected([])
+	}, [])
+
+	function onAction(action: UserAction) {
+		const prompt = promptFromA2uiAction(action)
+		if (prompt) {
+			onPrompt(prompt)
+			return
+		}
+		const intent = taskViewIntent(action)
+		if (intent.kind === 'toggle') {
+			setSelected((current) =>
+				current.includes(intent.taskId) ? current.filter((id) => id !== intent.taskId) : [...current, intent.taskId],
+			)
+			return
+		}
+		if (intent.kind === 'mark-selected') {
+			const next = bulkStatusPrompt(resultText, selected, intent.status)
+			if (next) onPrompt(next)
+		}
+	}
+
 	return <AgenticA2uiSurface messages={messages} onAction={onAction} onRetry={onRetry} />
 }

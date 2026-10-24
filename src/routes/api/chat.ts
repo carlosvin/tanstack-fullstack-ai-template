@@ -22,6 +22,7 @@ import {
 	getUserProfileTool,
 	invalidateRouterToolDef,
 	navigateToolDef,
+	updateTasksStatusTool,
 	updateTaskTool,
 } from '../../services/ai/tools'
 import { getObservability } from '../../services/observability'
@@ -35,11 +36,11 @@ const log = createServerLogger('apiChat')
 const BASE_SYSTEM_PROMPT = `You are a helpful task management assistant. You have access to tools that let you query the task database, create/update/delete tasks, and navigate the app.
 
 ## Capabilities
-- Search and filter tasks by status, priority, assignee, or free text
+- Search and filter tasks by status, priority, assignee, due date, or free text
 - Get detailed information about specific tasks
 - List distinct filter values that exist in the data (getDistinctValues for assignee, status, or priority)
 - Navigate the user to app pages (use the navigate tool)
-- Create, update, and delete tasks (when the user is allowed)
+- Create, update, delete, and bulk-update task status (when the user is allowed)
 - Check who is logged in and what they can do (getCurrentUserContext)
 - Look up app name, version, and deployment environment (getAppRuntimeInfo)
 - Refresh the page data after mutations (use the invalidateRouter tool)
@@ -52,6 +53,7 @@ Each task has:
 - status: pending | in-progress | done | cancelled
 - priority: low | medium | high | critical
 - assignee: email of the assigned person
+- dueDate: optional calendar date YYYY-MM-DD. Overdue means that date is before the user's local today and the status is pending or in-progress
 - createdAt / updatedAt: timestamps
 - createdBy: email of the creator
 - lastModifiedBy: email of the last editor
@@ -62,14 +64,14 @@ Each task has:
 - When it would help to open a page for the user, call the **navigate** tool with \`to\` and optional \`search\`. You can also include a link in your message.
 
 ## Mutations and data refresh
-- After **createTask**, **updateTask**, or **deleteTask**, always call **invalidateRouter** so the user sees the latest data without refreshing the page.
+- After **createTask**, **updateTask**, **updateTasksStatus**, or **deleteTask**, always call **invalidateRouter** so the user sees the latest data without refreshing the page.
 
 ## Permissions and errors
 - Call **getCurrentUserContext** to see who is logged in and what they can do (create / edit / delete).
-- You can **createTask**, **updateTask**, and **deleteTask**. If the user is not allowed, the tool returns an error with a \`code\`: 401 (not logged in), 403 (only the task creator can edit/delete), or 404 (task not found). When you get 401, tell the user they need to log in to perform that action. When you get 403, tell them only the task creator can edit or delete that task.
+- You can **createTask**, **updateTask**, **updateTasksStatus**, and **deleteTask**. If the user is not allowed, the tool returns an error with a \`code\`: 401 (not logged in), 403 (only the task creator can edit/delete), or 404 (task not found). **updateTasksStatus** returns updated rows and refused rows. When you get 401, tell the user they need to log in to perform that action. When you get 403, tell them only the task creator can edit or delete that task. Name any refused titles from a bulk update.
 
 ## Guidelines
-- Use the getTasks tool with filters when the user asks about tasks matching criteria.
+- Use the getTasks tool with filters when the user asks about tasks matching criteria. For overdue or "what is due", pass asOf from Browser Context as YYYY-MM-DD and sort "due". "Assigned to me" for a real user sets assignee to their email and navigates to /tasks with that search.
 - Use the getTask tool when the user asks about a specific task.
 - Use getDistinctValues to discover real filter options (e.g. assignees), and getUserProfile to resolve display names and roles from emails.
 - Format responses clearly using markdown.
@@ -91,11 +93,11 @@ This deployment uses the **fully agentic** concept: a thin shell with a prompt a
 const AGENTIC_SYSTEM_PROMPT = `You are a helpful task management assistant. You have access to tools that let you query the task database, create/update/delete tasks, and render interactive task views in the conversation.
 
 ## Capabilities
-- Search and filter tasks by status, priority, assignee, or free text (getTasks)
+- Search and filter tasks by status, priority, assignee, due date, or free text (getTasks)
 - Get detailed information about specific tasks (getTask)
 - List distinct filter values that exist in the data (getDistinctValues for assignee, status, or priority)
 - Render a task list or task detail as an interactive inline view (showTasksView, showTaskView)
-- Create, update, and delete tasks (when the user is allowed)
+- Create, update, delete, and bulk-update task status (when the user is allowed)
 - Check who is logged in and what they can do (getCurrentUserContext)
 - Look up app name, version, and deployment environment (getAppRuntimeInfo)
 
@@ -107,18 +109,20 @@ Each task has:
 - status: pending | in-progress | done | cancelled
 - priority: low | medium | high | critical
 - assignee: email of the assigned person
+- dueDate: optional calendar date YYYY-MM-DD. Overdue means that date is before the user's local today and the status is pending or in-progress
 - createdAt / updatedAt: timestamps
 - createdBy: email of the creator
 - lastModifiedBy: email of the last editor
 
 ## Views and follow-ups
 - Prefer **showTasksView** and **showTaskView** when the user should see a list or detail. Do not describe pages or routes — views appear inline in the thread.
-- When the user asks for a table, call **showTasksView** with presentation "table". When they ask for cards or a grid, use presentation "cards". Otherwise omit presentation so the view uses cards.
-- After **createTask**, **updateTask**, or **deleteTask**, call **showTasksView** or **showTaskView** again so the user sees fresh data. There is no page refresh tool.
+- When the user asks for a table, call **showTasksView** with presentation "table". Cards or a grid use "cards". A kanban or status board uses "kanban". A timeline or schedule by due date uses "timeline". Otherwise omit presentation so the view uses cards.
+- After **createTask**, **updateTask**, **updateTasksStatus**, or **deleteTask**, call **showTasksView** or **showTaskView** again so the user sees fresh data. There is no page refresh tool.
+- A request to change several tasks uses **updateTasksStatus** once. Pass asOf from Browser Context when showing overdue tasks.
 
 ## Permissions and errors
 - Call **getCurrentUserContext** to see who is logged in and what they can do (create / edit / delete).
-- You can **createTask**, **updateTask**, and **deleteTask**. If the user is not allowed, the tool returns an error with a \`code\`: 401 (not logged in), 403 (only the task creator can edit/delete), or 404 (task not found). When you get 401, tell the user they need to log in to perform that action. When you get 403, tell them only the task creator can edit or delete that task.
+- You can **createTask**, **updateTask**, **updateTasksStatus**, and **deleteTask**. If the user is not allowed, the tool returns an error with a \`code\`: 401 (not logged in), 403 (only the task creator can edit/delete), or 404 (task not found). **updateTasksStatus** returns updated rows and refused rows. When you get 401, tell the user they need to log in. When you get 403, tell them only the task creator can change that task. Name any refused titles.
 
 ## Guidelines
 - Use getDistinctValues to discover real filter options (e.g. assignees), and getUserProfile to resolve display names and roles from emails.
@@ -127,7 +131,7 @@ Each task has:
 
 ## Answers
 - Greetings and questions about what you can do stay as text. Do not call showTasksView or showTaskView for them.
-- "My tasks" means every task. The current user is often unauthenticated and has no assignee. Set assignee only when the user names a person.
+- "My tasks" means every task. Set assignee only when the user names a person. "Assigned to me" uses their email only when Current User says they are not a test user.
 - After showTasksView or showTaskView, write one short sentence. Do not repeat titles, statuses, priorities, or emails — the inline view shows them.
 - Trust the tool result. If it contains tasks, do not say the list is empty.
 - When the user asks to open one task, call showTaskView with its taskId before any text. Do not answer with links or a list of other tasks.
@@ -159,7 +163,11 @@ function buildSystemPrompt(
 - Email: ${user.email || 'not authenticated'}
 - Role: ${role}
 - Test user: ${isTestUser ? 'yes (auto-generated demo identity)' : 'no'}
-- Never pass this email as an assignee filter. A demo visitor is not assigned tasks. "My tasks" means every task.`)
+- ${
+		isTestUser
+			? 'Never pass this email as an assignee filter. A demo visitor is not assigned tasks. "My tasks" and "assigned to me" mean every task.'
+			: `When the user says "assigned to me", set assignee to ${user.email || 'their email'}. "My tasks" with no person named means every task.`
+	}`)
 
 	if (browserContext) {
 		const formattedDate = new Date(browserContext.currentTime).toLocaleString(browserContext.locale, {
@@ -168,11 +176,19 @@ function buildSystemPrompt(
 			timeStyle: 'long',
 		})
 
+		const localDate = new Intl.DateTimeFormat('en-CA', {
+			timeZone: browserContext.timezone,
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit',
+		}).format(new Date(browserContext.currentTime))
+
 		sections.push(`
 ## Browser Context
 - Timezone: ${browserContext.timezone}
 - Locale: ${browserContext.locale}
-- Current date and time: ${formattedDate}`)
+- Current date and time: ${formattedDate}
+- Local calendar date (asOf): ${localDate}`)
 
 		const currentPath = browserContext.currentPathname
 		const currentSearch = browserContext.currentSearch
@@ -249,6 +265,7 @@ export const Route = createFileRoute('/api/chat')({
 					getCurrentUserContextTool,
 					createTaskTool,
 					updateTaskTool,
+					updateTasksStatusTool,
 					deleteTaskTool,
 				]
 				const tools =

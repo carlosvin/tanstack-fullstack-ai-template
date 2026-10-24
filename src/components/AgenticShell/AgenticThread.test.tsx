@@ -65,7 +65,7 @@ describe('AgenticThread open task', () => {
 				<AgenticThread />
 			</MantineProvider>,
 		)
-		fireEvent.click(await screen.findByRole('button', { name: /Fix timeline display issue/ }))
+		fireEvent.click(await screen.findByRole('button', { name: /^Fix timeline display issue/ }))
 		expect(await screen.findByRole('button', { name: 'All tasks' })).toBeTruthy()
 		expect(screen.getAllByText('The timeline view is not displaying correctly.')).toHaveLength(2)
 		expect(getTask).not.toHaveBeenCalled()

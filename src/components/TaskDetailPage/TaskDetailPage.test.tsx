@@ -23,14 +23,26 @@ const sampleTask: Task = {
 describe('TaskDetailPage', () => {
 	it('shows an empty state when the task is missing', () => {
 		renderWithProviders(
-			<TaskDetailPage task={null} isCreator={false} onEdit={() => undefined} onDelete={() => undefined} />,
+			<TaskDetailPage
+				task={null}
+				isCreator={false}
+				today="2026-10-17"
+				onEdit={() => undefined}
+				onDelete={() => undefined}
+			/>,
 		)
 		expect(screen.getByText('Task not found')).toBeTruthy()
 	})
 
 	it('shows edit and delete only for the creator', () => {
 		renderWithProviders(
-			<TaskDetailPage task={sampleTask} isCreator onEdit={() => undefined} onDelete={() => undefined} />,
+			<TaskDetailPage
+				task={sampleTask}
+				isCreator
+				today="2026-10-17"
+				onEdit={() => undefined}
+				onDelete={() => undefined}
+			/>,
 		)
 		expect(screen.getByRole('heading', { name: 'Set up project repository' })).toBeTruthy()
 		expect(screen.getByRole('button', { name: 'Edit' })).toBeTruthy()

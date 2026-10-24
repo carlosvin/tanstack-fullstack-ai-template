@@ -20,7 +20,9 @@ const sampleTask: Task = {
 
 describe('DashboardPage', () => {
 	it('renders the workspace title and a recent task', () => {
-		renderWithProviders(<DashboardPage tasks={[sampleTask]} appName="TaskHub" appVersion="1.0.0" env="development" />)
+		renderWithProviders(
+			<DashboardPage tasks={[sampleTask]} appName="TaskHub" appVersion="1.0.0" env="development" today="2026-10-17" />,
+		)
 
 		expect(screen.getByText('Dashboard')).toBeTruthy()
 		expect(screen.getByText('Set up project repository')).toBeTruthy()

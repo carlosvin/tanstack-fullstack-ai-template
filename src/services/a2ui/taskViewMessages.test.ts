@@ -1,7 +1,13 @@
 import { A2uiMessageProcessor, type ServerToClientMessage } from '@a2ui-bridge/core'
 import { describe, expect, it } from 'vitest'
 import type { Task } from '../schemas/schemas'
-import { acceptA2uiMessages, buildTaskViewMessages, promptFromA2uiAction } from './taskViewMessages'
+import {
+	acceptA2uiMessages,
+	buildTaskViewMessages,
+	bulkStatusPrompt,
+	promptFromA2uiAction,
+	taskViewIntent,
+} from './taskViewMessages'
 
 const task: Task = {
 	id: 'task-1',
@@ -81,6 +87,54 @@ describe('buildTaskViewMessages', () => {
 		expect(() => processor.processMessages(messages)).not.toThrow()
 	})
 
+	it('shows a due date and a select control without a second open button', () => {
+		const dated = { ...task, dueDate: '2026-10-01' }
+		const text = visibleText(buildTaskViewMessages({ tasks: [dated], asOf: '2026-10-17' })).join(' ')
+		expect(text).toContain('Overdue 2026-10-01')
+		expect(text).toContain('Select Ship the report')
+		expect(text).toContain('Mark selected done')
+		const selected = visibleText(buildTaskViewMessages({ tasks: [dated], asOf: '2026-10-17' }, ['task-1'])).join(' ')
+		expect(selected).toContain('Selected Ship the report')
+	})
+
+	it('draws a kanban lane for each status', () => {
+		const other = { ...task, id: 'task-2', title: 'File the notes', status: 'done' as const }
+		const text = visibleText(buildTaskViewMessages({ tasks: [task, other], presentation: 'kanban' })).join(' ')
+		expect(text).toContain('Pending')
+		expect(text).toContain('In Progress')
+		expect(text).toContain('Done')
+		expect(text).toContain('Cancelled')
+		expect(text).toContain('Ship the report')
+		expect(text).toContain('File the notes')
+		expect(text).toContain('None')
+		expect(text).not.toContain('task-1')
+		const processor = new A2uiMessageProcessor()
+		expect(() =>
+			processor.processMessages(buildTaskViewMessages({ tasks: [task], presentation: 'kanban' })),
+		).not.toThrow()
+	})
+
+	it('draws a timeline with overdue dates before unscheduled tasks', () => {
+		const later = { ...task, id: 'task-2', title: 'File the notes', dueDate: '2026-11-15', status: 'pending' as const }
+		const dated = { ...task, dueDate: '2026-10-01' }
+		const open = { ...task, id: 'task-3', title: 'Clear the inbox' }
+		const flat = JSON.stringify(
+			buildTaskViewMessages({ tasks: [open, later, dated], presentation: 'timeline', asOf: '2026-10-17' }),
+		)
+		expect(flat.indexOf('Overdue 2026-10-01')).toBeLessThan(flat.indexOf('Due 2026-11-15'))
+		expect(flat.indexOf('Due 2026-11-15')).toBeLessThan(flat.indexOf('No due date'))
+		expect(flat).toContain('Clear the inbox')
+		expect(visibleText(buildTaskViewMessages({ tasks: [open], presentation: 'timeline' })).join(' ')).not.toContain(
+			'task-3',
+		)
+		const processor = new A2uiMessageProcessor()
+		expect(() =>
+			processor.processMessages(
+				buildTaskViewMessages({ tasks: [dated], presentation: 'timeline', asOf: '2026-10-17' }),
+			),
+		).not.toThrow()
+	})
+
 	it('says when no rows match', () => {
 		expect(visibleText(buildTaskViewMessages({ tasks: [] })).join(' ')).toContain('No tasks match')
 	})
@@ -143,5 +197,29 @@ describe('promptFromA2uiAction', () => {
 				timestamp: '2026-01-01T00:00:00.000Z',
 			}),
 		).toBeNull()
+	})
+
+	it('turns a selected set into one status prompt and ignores an empty set', () => {
+		const payload = { tasks: [task] }
+		expect(bulkStatusPrompt(payload, ['task-1'], 'done')).toBe(
+			'Set the status of these tasks to done: Ship the report. Task ids: task-1.',
+		)
+		expect(bulkStatusPrompt(payload, [], 'done')).toBeNull()
+		expect(
+			taskViewIntent({
+				actionName: 'mark-selected',
+				sourceComponentId: 'bulk-done',
+				timestamp: '2026-01-01T00:00:00.000Z',
+				context: { status: 'done' },
+			}),
+		).toEqual({ kind: 'mark-selected', status: 'done' })
+		expect(
+			taskViewIntent({
+				actionName: 'toggle-select',
+				sourceComponentId: 't0-select',
+				timestamp: '2026-01-01T00:00:00.000Z',
+				context: { taskId: 'task-1' },
+			}),
+		).toEqual({ kind: 'toggle', taskId: 'task-1' })
 	})
 })
