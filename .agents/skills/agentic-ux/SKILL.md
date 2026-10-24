@@ -19,7 +19,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "0.3.0"
+  version: "0.4.0"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -115,9 +115,9 @@ The declared UI kit chooses how a tool result becomes a view. Read the kit from 
 
 ### Mantine catalog
 
-This template's kit is Mantine 9 and `lucide-react`. Render task views with `useA2uiProcessor` and `Surface`. Pass a narrowed `createComponentMapping` (`Column`, `Row`, `Card`, `Text`, `Title`, `Badge`, `Button`, `Timeline`, `TimelineItem`, plus `Table`, `TableHead`, `TableBody`, `TableRow`, `TableHeaderCell`, and `TableCell`). Unknown component types render nothing. Do not register the rest of Mantine. Each type is one A2UI node the host maps onto one component. The model returns task data and does not pick components.
+This template's kit is Mantine 9 and `lucide-react`. Render task views with `useA2uiProcessor` and `Surface`. `createComponentMapping` registers every A2UI component type that has a Mantine adapter: layout, typography, inputs, feedback, overlays, navigation, data display, and disclosure, plus the aliases in that map (`Column`, `Row`, `Card`, `Text`, `Title`, `Badge`, `Button`, `Timeline`, `TimelineItem`, `Table`, `TableHead`, `TableBody`, `TableRow`, `TableHeaderCell`, `TableCell`, and the rest of the catalog). Unknown component types render nothing. Each type is one A2UI node the host maps onto one component. The model returns task data and does not pick components.
 
-`@a2ui-bridge/react-mantine@0.1.0` peers `@mantine/core` `^8` and `@tabler/icons-react`. Do not add that package, and do not add a second icon library. Keep `@a2ui-bridge/core` and `@a2ui-bridge/react`, and map those six-plus-button types onto Mantine 9 in the host so the existing `MantineProvider` supplies theme and color scheme.
+`@a2ui-bridge/react-mantine@0.1.0` peers `@mantine/core` `^8` and `@tabler/icons-react`. Do not add that package, and do not add a second icon library. Keep `@a2ui-bridge/core` and `@a2ui-bridge/react`. The host ports that catalog onto Mantine 9 and `lucide-react` so the existing `MantineProvider` supplies theme and color scheme.
 
 `showTasksView` and `showTaskView` return task data only. `showTasksView` also returns `presentation`. `"table"` draws one row per task. `"cards"` or omitting it draws the card list. `"kanban"` draws one lane per status. `"timeline"` draws one item per due date, with tasks that have no date last. That choice is not part of the repository filter. `buildTaskViewMessages` turns the payload into A2UI messages. `acceptA2uiMessages` drops any component type outside the catalog before `processMessages`. People-facing text uses `literalString`. No raw ids. A list row is one control for the whole card, not a separate "Open" button. A table uses those table nodes. The title cell is the open button. Header cells name the columns. When more than 20 tasks match, the heading keeps the full count and a note says how many rows are shown. An empty result says no rows match and suggests dropping the filter.
 

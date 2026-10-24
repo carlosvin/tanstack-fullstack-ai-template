@@ -108,6 +108,60 @@ describe('AgenticA2uiSurface', () => {
 		expect(onAction).toHaveBeenCalledWith(expect.objectContaining({ actionName: 'back-to-list' }))
 	})
 
+	it('renders catalog adapters beyond the task cards and drops an unknown type', async () => {
+		render(
+			<MantineProvider>
+				<AgenticA2uiSurface
+					messages={[
+						{
+							surfaceUpdate: {
+								surfaceId: '@default',
+								components: [
+									{
+										id: 'root',
+										component: {
+											Column: { children: { explicitList: ['alert', 'progress', 'acc', 'mystery'] } },
+										},
+									},
+									{
+										id: 'alert',
+										component: {
+											Alert: {
+												title: { literalString: 'Heads up' },
+												message: { literalString: 'All set' },
+											},
+										},
+									},
+									{ id: 'progress', component: { Progress: { value: { literalNumber: 40 } } } },
+									{ id: 'acc', component: { Accordion: { children: { explicitList: ['item'] } } } },
+									{
+										id: 'item',
+										component: {
+											AccordionItem: {
+												title: { literalString: 'Details' },
+												value: { literalString: 'details' },
+												child: 'body',
+											},
+										},
+									},
+									{ id: 'body', component: { Text: { text: { literalString: 'Inside the accordion' } } } },
+									{ id: 'mystery', component: { Sparkline: { text: { literalString: 'Should not appear' } } } },
+								],
+							},
+						},
+						{ beginRendering: { surfaceId: '@default', root: 'root' } },
+					]}
+					onAction={vi.fn()}
+				/>
+			</MantineProvider>,
+		)
+		expect(await screen.findByText('Heads up')).toBeTruthy()
+		expect(screen.getByText('All set')).toBeTruthy()
+		expect(screen.getByRole('progressbar')).toBeTruthy()
+		expect(screen.getByRole('button', { name: 'Details' })).toBeTruthy()
+		expect(screen.queryByText('Should not appear')).toBeNull()
+	})
+
 	it('renders nothing for a component type outside the catalog', async () => {
 		render(
 			<MantineProvider>
