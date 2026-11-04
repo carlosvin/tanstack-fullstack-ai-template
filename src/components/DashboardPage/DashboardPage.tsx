@@ -1,10 +1,10 @@
 import { Badge, Card, Container, Group, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core'
 import { CheckCircle, Circle, Clock, ListTodo, type LucideIcon } from 'lucide-react'
-import type { Task, TaskStatus } from '../../types'
-import { formatCalendarDate } from '../../utils/calendarDate'
-import { priorityColor, priorityLabel, statusColor, statusLabel } from '../../utils/taskDisplay'
-import { isTaskOverdue } from '../../utils/taskDue'
-import { Link } from '../Link/Link'
+import { Link } from '@/components/Link/Link'
+import type { Task, TaskStatus } from '@/services/schemas/schemas'
+import { formatCalendarDate } from '@/utils/calendarDate'
+import { priorityColor, priorityLabel, statusColor, statusLabel } from '@/utils/taskDisplay'
+import { isTaskOverdue } from '@/utils/taskDue'
 
 interface DashboardStat {
 	label: string

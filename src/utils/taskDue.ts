@@ -1,4 +1,4 @@
-import type { TaskStatus } from '../types'
+import type { TaskStatus } from '@/services/schemas/schemas'
 
 const OPEN_STATUSES = new Set<TaskStatus>(['pending', 'in-progress'])
 

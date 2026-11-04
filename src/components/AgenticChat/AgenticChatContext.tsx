@@ -2,8 +2,8 @@ import { createChatClientOptions } from '@tanstack/ai-client'
 import type { UIMessage } from '@tanstack/ai-react'
 import { fetchServerSentEvents, useChat } from '@tanstack/ai-react'
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useRef, useState } from 'react'
-import type { BrowserContext } from '../../types'
-import { captureAgenticBrowserContext } from '../../utils/browserContext'
+import type { BrowserContext } from '@/services/schemas/schemas'
+import { captureAgenticBrowserContext } from '@/utils/browserContext'
 
 export interface AgenticChatContextValue {
 	messages: UIMessage[]

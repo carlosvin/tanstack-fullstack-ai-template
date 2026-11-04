@@ -1,4 +1,4 @@
-import type { ObservabilityService } from './types'
+import type { ObservabilityService } from '@/services/observability/types'
 
 type SentryLike = {
 	startSpan: <T>(options: { name: string }, fn: () => T) => T

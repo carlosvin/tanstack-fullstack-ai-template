@@ -5,7 +5,7 @@ import type { UIResourcePart } from '@tanstack/ai'
 import { render, screen } from '@testing-library/react'
 import { useEffect } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { AgenticMcpRenderer, mcpFrameTitle, toMcpToolResult } from './AgenticMcpRenderer'
+import { AgenticMcpRenderer, mcpFrameTitle, toMcpToolResult } from '@/components/AgenticMcp/AgenticMcpRenderer'
 
 vi.mock('@tanstack/ai-react', () => ({
 	useMcpAppBridge: () => ({

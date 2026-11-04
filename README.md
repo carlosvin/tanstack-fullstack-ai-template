@@ -237,7 +237,7 @@ src/
 │   │   ├── types.ts            # ObservabilityService interface
 │   │   ├── sentry.ts           # Sentry implementation
 │   │   ├── noop.ts             # No-op implementation
-│   │   └── index.ts            # Factory
+│   │   └── getObservability.ts # Factory
 │   └── db/mongoClient.server.ts # MongoDB singleton (server-only)
 ├── utils/
 │   ├── auth.ts                 # requireAuth(), requireGroup()
@@ -293,7 +293,7 @@ Create a new class implementing `AIAdapterService` from `src/services/ai/types.t
 ### Swapping Observability
 
 1. Create a new class implementing `ObservabilityService` from `src/services/observability/types.ts`.
-2. Update the factory in `src/services/observability/index.ts`.
+2. Update the factory in `src/services/observability/getObservability.ts`.
 3. Update `instrument.server.mts` (and rebuild so `.output/server/instrument.server.mjs` reflects the change) for server-side init.
 
 ### Swapping the UI Library

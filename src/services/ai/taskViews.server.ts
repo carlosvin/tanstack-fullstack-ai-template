@@ -6,15 +6,15 @@
  */
 
 import { toolDefinition } from '@tanstack/ai'
-import { isDemoTestEmail } from '../../utils/testAuth.server'
-import { getTask, getTasks } from '../api/serverFns'
+import { createSafeServerTool } from '@/services/ai/serverTool'
+import { getTask, getTasks } from '@/services/api/serverFns'
 import {
 	type ShowTasksViewInput,
 	ShowTasksViewInputSchema,
 	type TaskFilter,
 	TaskIdInputSchema,
-} from '../schemas/schemas'
-import { createSafeServerTool } from './serverTool'
+} from '@/services/schemas/schemas'
+import { isDemoTestEmail } from '@/utils/testAuth.server'
 
 /** Demo visitors are not assignees. Drop that filter so "my tasks" shows the list. */
 export function withoutDemoAssignee(filter: TaskFilter): TaskFilter {

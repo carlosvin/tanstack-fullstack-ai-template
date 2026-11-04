@@ -17,13 +17,17 @@ import { useDebouncedCallback } from '@mantine/hooks'
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { z } from 'zod'
+import { Link } from '@/components/Link/Link'
 import {
+	type AssigneeOption,
 	OptionalTaskPrioritySchema,
 	OptionalTaskStatusSchema,
+	type Task,
 	TaskDueFilterSchema,
-} from '../../services/schemas/schemas'
-import type { AssigneeOption, Task, TaskStatus, TasksListSearch } from '../../types'
-import { formatCalendarDate } from '../../utils/calendarDate'
+	type TaskStatus,
+	type TasksListSearch,
+} from '@/services/schemas/schemas'
+import { formatCalendarDate } from '@/utils/calendarDate'
 import {
 	priorityColor,
 	priorityLabel,
@@ -31,9 +35,8 @@ import {
 	statusColor,
 	statusLabel,
 	statusSelectOptions,
-} from '../../utils/taskDisplay'
-import { isTaskOverdue } from '../../utils/taskDue'
-import { Link } from '../Link/Link'
+} from '@/utils/taskDisplay'
+import { isTaskOverdue } from '@/utils/taskDue'
 
 const DUE_OPTIONS = [
 	{ value: 'overdue', label: 'Overdue' },

@@ -9,7 +9,7 @@
  * Server functions map between these and the tools-layer schemas.
  */
 import { z } from 'zod'
-import { TASK_DUE_FILTERS, TASK_PRIORITIES, TASK_SORTS, TASK_STATUSES } from '../../constants/options'
+import { TASK_DUE_FILTERS, TASK_PRIORITIES, TASK_SORTS, TASK_STATUSES } from '@/constants/options'
 
 // ---------------------------------------------------------------------------
 // User Profile (persisted document shape)

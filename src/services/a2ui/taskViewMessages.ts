@@ -7,10 +7,10 @@
 
 import type { ServerToClientMessage, UserAction } from '@a2ui-bridge/core'
 import { z } from 'zod'
-import { TASK_STATUSES } from '../../constants/options'
-import { statusLabel } from '../../utils/taskDisplay'
-import { type Task, TaskSchema, type TaskStatus, TaskStatusSchema } from '../schemas/schemas'
-import { isAllowedA2uiComponent } from './mantineCatalog'
+import { TASK_STATUSES } from '@/constants/options'
+import { isAllowedA2uiComponent } from '@/services/a2ui/mantineCatalog'
+import { type Task, TaskSchema, type TaskStatus, TaskStatusSchema } from '@/services/schemas/schemas'
+import { statusLabel } from '@/utils/taskDisplay'
 
 const MAX_TASKS = 20
 const MAX_TITLE = 120

@@ -1,13 +1,13 @@
 import { A2uiMessageProcessor, type ServerToClientMessage } from '@a2ui-bridge/core'
 import { describe, expect, it } from 'vitest'
-import type { Task } from '../schemas/schemas'
 import {
 	acceptA2uiMessages,
 	buildTaskViewMessages,
 	bulkStatusPrompt,
 	promptFromA2uiAction,
 	taskViewIntent,
-} from './taskViewMessages'
+} from '@/services/a2ui/taskViewMessages'
+import type { Task } from '@/services/schemas/schemas'
 
 const task: Task = {
 	id: 'task-1',

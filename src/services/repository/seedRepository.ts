@@ -1,3 +1,6 @@
+import type { DistinctValueField } from '@/constants/options'
+import { resolveCreateLastModifiedBy } from '@/services/repository/traceability'
+import type { Repository, TraceabilityContext } from '@/services/repository/types'
 import {
 	parseDistinctValues,
 	parseTaskRepo,
@@ -5,7 +8,7 @@ import {
 	parseTaskRepoOrNull,
 	parseUserProfileRepoOrNull,
 	toUserAccessRepo,
-} from '../schemas/repoParsers'
+} from '@/services/schemas/repoParsers'
 import {
 	type TaskRepo,
 	type TaskRepoFilter,
@@ -13,10 +16,8 @@ import {
 	type UserAccessRepo,
 	type UserProfileRepo,
 	UserProfileRepoSchema,
-} from '../schemas/repository'
-import { matchesDueFilter, sortTasks, taskUpdateFields, taskWriteFields } from './taskQuery'
-import { resolveCreateLastModifiedBy } from './traceability'
-import type { DistinctValueField, Repository, TraceabilityContext } from './types'
+} from '@/services/schemas/repository'
+import { matchesDueFilter, sortTasks, taskUpdateFields, taskWriteFields } from '@/services/repository/taskQuery'
 
 /** Sample seed data for development without a database. */
 const SEED_TASKS: TaskRepo[] = [

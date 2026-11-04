@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { taskListRequest, withoutDemoAssignee } from './taskViews.server'
+import { taskListRequest, withoutDemoAssignee } from '@/services/ai/taskViews.server'
 
 describe('task view tools', () => {
 	it('drops a demo visitor email from the task list filter', () => {

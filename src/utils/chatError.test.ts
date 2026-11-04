@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { friendlyChatError } from './chatError'
+import { friendlyChatError } from '@/utils/chatError'
 
 describe('friendlyChatError', () => {
 	it('hides a provider 503 payload', () => {

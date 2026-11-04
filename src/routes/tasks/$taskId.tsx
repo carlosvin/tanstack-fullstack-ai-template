@@ -1,10 +1,10 @@
 import { createFileRoute, Outlet, useLoaderData, useRouter } from '@tanstack/react-router'
-import { TaskDetailPage } from '../../components/TaskDetailPage/TaskDetailPage'
-import { processResponse } from '../../services/api/processResponse'
-import { deleteTask, getTask } from '../../services/api/serverFns'
-import { confirmDelete } from '../../utils/confirmDelete'
-import { notifyProcessed } from '../../utils/notifyProcessed'
-import { useCalendarToday } from '../../utils/useCalendarToday'
+import { TaskDetailPage } from '@/components/TaskDetailPage/TaskDetailPage'
+import { processResponse } from '@/services/api/processResponse'
+import { deleteTask, getTask } from '@/services/api/serverFns'
+import { confirmDelete } from '@/utils/confirmDelete'
+import { notifyProcessed } from '@/utils/notifyProcessed'
+import { useCalendarToday } from '@/utils/useCalendarToday'
 
 export const Route = createFileRoute('/tasks/$taskId')({
 	staticData: {

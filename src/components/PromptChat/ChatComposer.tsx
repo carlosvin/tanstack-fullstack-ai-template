@@ -1,6 +1,6 @@
 import { ActionIcon, Group, Stack, Text, Textarea, Tooltip } from '@mantine/core'
 import { Send, Square, Trash2 } from 'lucide-react'
-import { usePromptChat } from './PromptChatContext'
+import { usePromptChat } from '@/components/PromptChat/PromptChatContext'
 
 interface ChatComposerProps {
 	/** Runs after the message is submitted (e.g. navigate home) so browser context is captured first. */

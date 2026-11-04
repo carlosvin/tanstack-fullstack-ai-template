@@ -1,6 +1,6 @@
 import { Modal, Stack, Text } from '@mantine/core'
-import type { Task, TaskInput } from '../../types'
-import { TaskForm } from '../TaskForm/TaskForm'
+import { TaskForm } from '@/components/TaskForm/TaskForm'
+import type { Task, TaskInput } from '@/services/schemas/schemas'
 
 export interface EditTaskPageProps {
 	task: Task | null

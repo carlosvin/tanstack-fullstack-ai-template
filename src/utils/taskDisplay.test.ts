@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { TASK_PRIORITIES, TASK_STATUSES } from '../constants/options'
+import { TASK_PRIORITIES, TASK_STATUSES } from '@/constants/options'
 import {
 	priorityColor,
 	priorityLabel,
@@ -7,7 +7,7 @@ import {
 	statusColor,
 	statusLabel,
 	statusSelectOptions,
-} from './taskDisplay'
+} from '@/utils/taskDisplay'
 
 describe('taskDisplay', () => {
 	it('maps every closed-vocabulary status to a color and label', () => {

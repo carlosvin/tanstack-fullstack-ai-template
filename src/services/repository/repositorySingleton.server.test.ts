@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const dispose = vi.fn(async () => {})
 const openMongoRepositoryScope = vi.fn()
 
-vi.mock('../../env/webEnv.server', () => ({
+vi.mock('@/env/webEnv.server', () => ({
 	webServerEnv: {
 		REPOSITORY_TYPE: 'mongo',
 		MONGODB_URI: 'mongodb://localhost/app',
@@ -11,7 +11,7 @@ vi.mock('../../env/webEnv.server', () => ({
 	},
 }))
 
-vi.mock('../db/mongoClient.server', () => ({
+vi.mock('@/services/db/mongoClient.server', () => ({
 	openMongoRepositoryScope,
 }))
 
@@ -20,7 +20,7 @@ describe('repositorySingleton', () => {
 		vi.resetModules()
 		dispose.mockClear()
 		openMongoRepositoryScope.mockReset()
-		const mod = await import('./repositorySingleton.server')
+		const mod = await import('@/services/repository/repositorySingleton.server')
 		mod.resetRepositorySingletonForTests()
 	})
 
@@ -33,7 +33,9 @@ describe('repositorySingleton', () => {
 				}),
 		)
 
-		const { ensureRepository, closeRepositorySingleton } = await import('./repositorySingleton.server')
+		const { ensureRepository, closeRepositorySingleton } = await import(
+			'@/services/repository/repositorySingleton.server'
+		)
 		const repoPromise = ensureRepository()
 		const closePromise = closeRepositorySingleton()
 
@@ -49,12 +51,12 @@ describe('repositorySingleton', () => {
 
 	it('leaves the seed singleton intact when closeRepositorySingleton runs', async () => {
 		vi.resetModules()
-		vi.doMock('../../env/webEnv.server', () => ({
+		vi.doMock('@/env/webEnv.server', () => ({
 			webServerEnv: { REPOSITORY_TYPE: 'seed' },
 		}))
 
 		const { ensureRepository, closeRepositorySingleton, resetRepositorySingletonForTests } = await import(
-			'./repositorySingleton.server'
+			'@/services/repository/repositorySingleton.server'
 		)
 		resetRepositorySingletonForTests()
 

@@ -1,4 +1,4 @@
-import type { TraceabilityContext } from './types'
+import type { TraceabilityContext } from '@/services/repository/types'
 
 /** Build a create-side audit context from the authenticated user's email. */
 export function createWriteTrace(email: string): TraceabilityContext {

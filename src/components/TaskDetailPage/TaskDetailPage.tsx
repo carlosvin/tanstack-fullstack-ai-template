@@ -1,10 +1,10 @@
 import { Badge, Button, Card, Container, Group, Stack, Text, Title } from '@mantine/core'
 import { ArrowLeft, Calendar, Pencil, Trash2, User } from 'lucide-react'
-import type { Task } from '../../types'
-import { formatCalendarDate } from '../../utils/calendarDate'
-import { priorityColor, priorityLabel, statusColor, statusLabel } from '../../utils/taskDisplay'
-import { isTaskOverdue } from '../../utils/taskDue'
-import { Link } from '../Link/Link'
+import { Link } from '@/components/Link/Link'
+import type { Task } from '@/services/schemas/schemas'
+import { formatCalendarDate } from '@/utils/calendarDate'
+import { priorityColor, priorityLabel, statusColor, statusLabel } from '@/utils/taskDisplay'
+import { isTaskOverdue } from '@/utils/taskDue'
 
 export interface TaskDetailPageProps {
 	task: Task | null

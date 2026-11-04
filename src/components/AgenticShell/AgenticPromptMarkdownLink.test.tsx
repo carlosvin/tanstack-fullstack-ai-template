@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { renderWithProviders } from '../../test-utils/renderWithRouter'
-import { AgenticPromptMarkdownLink } from './AgenticPromptMarkdownLink'
+import { AgenticPromptMarkdownLink } from '@/components/AgenticShell/AgenticPromptMarkdownLink'
+import { renderWithProviders } from '@/test-utils/renderWithRouter'
 
 describe('AgenticPromptMarkdownLink', () => {
 	it('uses the follow-up prompt when a task link has no label', () => {

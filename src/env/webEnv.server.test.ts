@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { getShellSession, getWebServerEnv, WebServerEnvSchema } from '@/env/webEnv.server'
+import { ShellSessionSchema } from '@/services/schemas/shellSession'
 import pkg from '../../package.json' with { type: 'json' }
-import { ShellSessionSchema } from '../services/schemas/shellSession'
-import { getShellSession, getWebServerEnv, WebServerEnvSchema } from './webEnv.server'
 
 describe('webEnv', () => {
 	it('builds shellSession from webServerEnv and package.json once', () => {

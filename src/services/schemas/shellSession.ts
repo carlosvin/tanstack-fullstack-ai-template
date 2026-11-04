@@ -6,7 +6,11 @@
  * the lazy env parse live in `src/env/webEnv.server.ts`.
  */
 import { z } from 'zod'
-import { OptionalDeploymentEnvSchema, OptionalLogLevelSchema, OptionalTrimmedStringSchema } from './runtimeEnv'
+import {
+	OptionalDeploymentEnvSchema,
+	OptionalLogLevelSchema,
+	OptionalTrimmedStringSchema,
+} from '@/services/schemas/runtimeEnv'
 
 export const AppMetaSchema = z.object({
 	name: z.string().min(1).describe('Human-readable application name from DISPLAY_NAME env (default: TaskHub).'),

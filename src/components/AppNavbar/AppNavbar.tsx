@@ -1,8 +1,8 @@
 import { AppShell, NavLink, ScrollArea, Text, Tooltip } from '@mantine/core'
 import { Code, LayoutDashboard, ListTodo, Sparkles } from 'lucide-react'
-import type { AppMeta, PromptConcept } from '../../services/schemas/shellSession'
-import type { CurrentUser } from '../../types'
-import { Link } from '../Link/Link'
+import { Link } from '@/components/Link/Link'
+import type { CurrentUser } from '@/services/schemas/schemas'
+import type { AppMeta, PromptConcept } from '@/services/schemas/shellSession'
 
 interface AppNavbarProps {
 	pathname: string
