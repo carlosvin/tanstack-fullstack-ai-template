@@ -19,6 +19,7 @@ import {
 import { getTask } from '@/services/api/serverFns'
 import { TASK_DETAIL_UI_URI, TASKS_LIST_UI_URI } from '@/services/mcpUi/mcpUiResource'
 import { findRememberedTask } from '@/services/repository/conversationTasks'
+import { useCalendarToday } from '@/utils/useCalendarToday'
 
 const AGENTIC_STARTERS = ['Show my tasks', 'Show pending tasks', 'Show overdue tasks']
 
@@ -114,6 +115,7 @@ function retryPrompt(uri: string, toolInput: Record<string, unknown> | undefined
  */
 export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number }) {
 	const { messages, isLoading, sendMessage } = useAgenticChat()
+	const today = useCalendarToday()
 	const [opened, setOpened] = useState<OpenedDetail[]>([])
 	const viewportRef = useRef<HTMLDivElement>(null)
 
@@ -129,11 +131,11 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 		const id = crypto.randomUUID()
 		setOpened((prev) => [
 			...prev,
-			{ id, title, taskId, resultText: remembered ? JSON.stringify({ task: remembered }) : '' },
+			{ id, title, taskId, resultText: remembered ? JSON.stringify({ task: remembered, asOf: today }) : '' },
 		])
 		if (remembered) return
 		void getTask({ data: { taskId } }).then((task) => {
-			const resultText = JSON.stringify(task ? { task } : { error: 'Task not found.', code: 404 })
+			const resultText = JSON.stringify(task ? { task, asOf: today } : { error: 'Task not found.', code: 404 })
 			setOpened((prev) => prev.map((item) => (item.id === id ? { ...item, resultText } : item)))
 		})
 	}
@@ -192,6 +194,7 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 									<TaskViewResult
 										key={view.callId}
 										resultText={view.resultText}
+										asOf={today}
 										onPrompt={handlePrompt}
 										onRetry={() => handlePrompt(view.retryPrompt)}
 									/>
@@ -225,6 +228,7 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 								{item.resultText ? (
 									<TaskViewResult
 										resultText={item.resultText}
+										asOf={today}
 										onPrompt={handlePrompt}
 										onRetry={() =>
 											handlePrompt(`Open the detail view for ${item.title}. The task id is ${item.taskId}.`)
@@ -257,15 +261,17 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 
 function TaskViewResult({
 	resultText,
+	asOf,
 	onPrompt,
 	onRetry,
 }: {
 	resultText: string
+	asOf: string
 	onPrompt: (text: string) => void
 	onRetry: () => void
 }) {
 	const [selected, setSelected] = useState<string[]>([])
-	const messages = useMemo(() => buildTaskViewMessages(resultText, selected), [resultText, selected])
+	const messages = useMemo(() => buildTaskViewMessages(resultText, selected, asOf), [resultText, selected, asOf])
 
 	useEffect(() => {
 		setSelected([])

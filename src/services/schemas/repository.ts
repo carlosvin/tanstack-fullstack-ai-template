@@ -50,10 +50,10 @@ const CalendarDateRepoSchema = z
 
 export const TaskRepoInputSchema = z.object({
 	title: z.string().min(1),
-	description: z.string().optional(),
+	description: z.string().nullable().optional(),
 	status: z.enum(TASK_STATUSES).default('pending'),
 	priority: z.enum(TASK_PRIORITIES).default('medium'),
-	assignee: z.string().optional(),
+	assignee: z.string().nullable().optional(),
 	dueDate: CalendarDateRepoSchema.nullable().optional(),
 })
 

@@ -9,6 +9,7 @@ import { toolDefinition } from '@tanstack/ai'
 import { createSafeServerTool } from '@/services/ai/serverTool'
 import { getTask, getTasks } from '@/services/api/serverFns'
 import {
+	CalendarDateSchema,
 	type ShowTasksViewInput,
 	ShowTasksViewInputSchema,
 	type TaskFilter,
@@ -56,11 +57,15 @@ export const showTaskViewTool = createSafeServerTool(
 		name: 'showTaskView',
 		description:
 			'Show one task inline. Call this when the user opens or names a single task. Pass taskId. Returns the task. Do not list other tasks instead.',
-		inputSchema: TaskIdInputSchema,
+		inputSchema: TaskIdInputSchema.extend({
+			asOf: CalendarDateSchema.optional().describe(
+				'Local calendar date YYYY-MM-DD from browser context, so the detail badge can say Overdue.',
+			),
+		}),
 	}),
 	async (args) => {
-		const task = await getTask({ data: args })
+		const task = await getTask({ data: { taskId: args.taskId } })
 		if (!task) return { error: 'Task not found.', code: 404 }
-		return { task }
+		return { task, ...(args.asOf ? { asOf: args.asOf } : {}) }
 	},
 )

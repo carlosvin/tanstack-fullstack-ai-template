@@ -65,11 +65,12 @@ export const getAssigneeOptions = createServerFn({ method: 'GET' })
 		const emails = await getObservability({}).startSpan('getAssigneeOptions', () =>
 			context.repository.getDistinctValues('assignee'),
 		)
-		const options = []
-		for (const email of emails) {
-			const profile = await context.repository.getUserProfile(email)
-			options.push({ email, name: profile?.name })
-		}
+		const options = await Promise.all(
+			emails.map(async (email) => {
+				const profile = await context.repository.getUserProfile(email)
+				return { email, name: profile?.name }
+			}),
+		)
 		return AssigneeOptionListSchema.parse(options)
 	})
 

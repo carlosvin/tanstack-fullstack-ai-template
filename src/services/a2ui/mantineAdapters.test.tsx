@@ -1,7 +1,13 @@
 import { MantineProvider } from '@mantine/core'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { PasswordInputAdapter, PinInputAdapter } from '@/services/a2ui/mantineAdapters'
+import {
+	DateTimeInputAdapter,
+	PasswordInputAdapter,
+	PinInputAdapter,
+	PopoverAdapter,
+	TabsAdapter,
+} from '@/services/a2ui/mantineAdapters'
 
 describe('secret field adapters', () => {
 	it('does not copy a password into an action', () => {
@@ -58,5 +64,58 @@ describe('secret field adapters', () => {
 
 		expect(onAction).not.toHaveBeenCalled()
 		expect(JSON.stringify(onAction.mock.calls)).not.toContain('1234')
+	})
+
+	it('associates a date input with its label', () => {
+		render(
+			<MantineProvider>
+				<DateTimeInputAdapter
+					node={{
+						id: 'due',
+						type: 'DateTimeInput',
+						properties: { label: { literalString: 'Due date' }, required: { literalBool: true } },
+					}}
+					onAction={vi.fn()}
+					surfaceId="@default"
+					components={{}}
+				/>
+			</MantineProvider>,
+		)
+		expect(screen.getByLabelText(/Due date/)).toBeTruthy()
+	})
+
+	it('puts popover content in a dropdown and tab labels in a tab list', async () => {
+		render(
+			<MantineProvider>
+				<PopoverAdapter
+					node={{ id: 'pop', type: 'Popover', properties: {} }}
+					onAction={vi.fn()}
+					surfaceId="@default"
+					components={{}}
+				>
+					<button type="button">Open menu</button>
+					<span>Hidden note</span>
+				</PopoverAdapter>
+				<TabsAdapter
+					node={{
+						id: 'tabs',
+						type: 'Tabs',
+						properties: {
+							defaultValue: { literalString: 'one' },
+							tabs: [{ value: 'one', label: 'First tab' }],
+						},
+					}}
+					onAction={vi.fn()}
+					surfaceId="@default"
+					components={{}}
+				>
+					<span>Panel copy</span>
+				</TabsAdapter>
+			</MantineProvider>,
+		)
+		expect(screen.getByRole('tab', { name: 'First tab' })).toBeTruthy()
+		expect(screen.getByText('Panel copy')).toBeTruthy()
+		fireEvent.click(screen.getByRole('button', { name: 'Open menu' }))
+		expect(await screen.findByText('Hidden note')).toBeTruthy()
 	})
 })

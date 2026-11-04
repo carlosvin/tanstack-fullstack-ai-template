@@ -711,7 +711,11 @@ function readAsOf(data: object): string | undefined {
 	return data.asOf
 }
 
-export function buildTaskViewMessages(payload: unknown, selectedIds: readonly string[] = []): ServerToClientMessage[] {
+export function buildTaskViewMessages(
+	payload: unknown,
+	selectedIds: readonly string[] = [],
+	fallbackAsOf?: string,
+): ServerToClientMessage[] {
 	let data: unknown = payload
 	if (typeof payload === 'string') {
 		try {
@@ -739,7 +743,7 @@ export function buildTaskViewMessages(payload: unknown, selectedIds: readonly st
 	if ('task' in data) {
 		const parsed = TaskSchema.safeParse(data.task)
 		if (!parsed.success) return note('This view has no data yet.')
-		return detailMessages(parsed.data, readAsOf(data))
+		return detailMessages(parsed.data, readAsOf(data) ?? fallbackAsOf)
 	}
 	return note('This view has no data yet.')
 }

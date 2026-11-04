@@ -80,7 +80,7 @@ describe('TasksPage', () => {
 			/>,
 		)
 
-		fireEvent.click(screen.getByRole('checkbox', { name: 'Select visible' }))
+		fireEvent.click(screen.getByRole('checkbox', { name: /Select visible/ }))
 		expect(onUpdateSearch).toHaveBeenCalledWith({ selected: ['hidden', 'visible-a', 'visible-b'] }, true)
 	})
 
@@ -104,7 +104,7 @@ describe('TasksPage', () => {
 			/>,
 		)
 
-		fireEvent.click(screen.getByRole('checkbox', { name: 'Select visible' }))
+		fireEvent.click(screen.getByRole('checkbox', { name: /Select visible/ }))
 		expect(onUpdateSearch).toHaveBeenCalledWith({ selected: ['hidden'] }, true)
 	})
 
@@ -129,12 +129,42 @@ describe('TasksPage', () => {
 			/>,
 		)
 
-		fireEvent.click(screen.getByRole('checkbox', { name: 'Select visible' }))
+		fireEvent.click(screen.getByRole('checkbox', { name: /Select visible/ }))
 		const next = onUpdateSearch.mock.calls[0]?.[0].selected as string[]
 		expect(next).toHaveLength(50)
 		expect(next[0]).toBe('hidden-0')
 		expect(next).toContain('visible-a')
 		expect(next).not.toContain('visible-b')
+	})
+
+	it('checks the capped visible set and clears it on the next click', () => {
+		const onUpdateSearch = vi.fn()
+		const tasks = Array.from({ length: 51 }, (_, index) => ({
+			...sampleTask,
+			id: `visible-${index}`,
+			title: `Visible ${index}`,
+		}))
+		renderWithProviders(
+			<TasksPage
+				tasks={tasks}
+				assignees={[]}
+				search={{}}
+				isAuth
+				isTestUser={false}
+				today="2026-11-01"
+				currentUserEmail="alice@example.com"
+				onUpdateSearch={onUpdateSearch}
+				onDeleteTask={() => undefined}
+				onBulkStatus={() => undefined}
+			/>,
+		)
+
+		expect(screen.getByText(/Select visible \(50 of 51\)/)).toBeTruthy()
+		fireEvent.click(screen.getByRole('checkbox', { name: /Select visible/ }))
+		const next = onUpdateSearch.mock.calls[0]?.[0].selected as string[]
+		expect(next).toHaveLength(50)
+		expect(next[0]).toBe('visible-0')
+		expect(next).not.toContain('visible-50')
 	})
 
 	it('refuses a new row once 50 ids are already selected', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { TaskRepo } from '../schemas/repository'
-import { isTaskOverdue, matchesDueFilter, sortTasks } from './taskQuery'
+import { isTaskOverdue, matchesDueFilter, sortTasks, taskUpdateFields } from './taskQuery'
 
 const open: TaskRepo = {
 	id: 'task-1',
@@ -38,5 +38,19 @@ describe('task due filters', () => {
 			'task-3',
 		])
 		expect(sortTasks([later, open], { status: 'pending' }).map((task) => task.id)).toEqual(['task-2', 'task-1'])
+	})
+
+	it('keeps an explicit updated sort ahead of the implicit due order', () => {
+		const older = { ...open, id: 'older', updatedAt: '2026-01-01T00:00:00.000Z' }
+		const newer = { ...open, id: 'newer', dueDate: '2026-12-01', updatedAt: '2026-06-01T00:00:00.000Z' }
+		expect(
+			sortTasks([older, newer], { due: 'overdue', sort: 'updated', asOf: '2026-11-01' }).map((task) => task.id),
+		).toEqual(['newer', 'older'])
+	})
+
+	it('clears description and assignee when the patch says so and leaves omitted fields alone', () => {
+		expect(taskUpdateFields({ description: null, assignee: '' }).unset).toEqual(['description', 'assignee'])
+		expect(taskUpdateFields({ status: 'done' }).unset).toEqual([])
+		expect(taskUpdateFields({ description: 'Keep me' }).set.description).toBe('Keep me')
 	})
 })

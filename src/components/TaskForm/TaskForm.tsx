@@ -66,8 +66,8 @@ export function TaskForm({ initialValues, onSubmit, loading = false, submitLabel
 			TaskInputSchema.parse({
 				...values,
 				title: values.title.trim(),
-				description: values.description?.trim() || undefined,
-				assignee: values.assignee?.trim() || undefined,
+				description: values.description?.trim() || null,
+				assignee: values.assignee?.trim() || null,
 				dueDate: values.dueDate?.trim() || null,
 			}),
 		)

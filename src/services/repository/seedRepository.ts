@@ -182,14 +182,14 @@ export class SeedRepository implements Repository {
 		const index = this.tasks.findIndex((t) => t.id === taskId)
 		if (index === -1) return null
 
-		const { set, unsetDueDate } = taskUpdateFields(input)
+		const { set, unset } = taskUpdateFields(input)
 		const next: TaskRepo = {
 			...this.tasks[index],
 			...set,
 			updatedAt: new Date().toISOString(),
 			...(trace?.lastModifiedBy ? { lastModifiedBy: trace.lastModifiedBy } : {}),
 		}
-		if (unsetDueDate) delete next.dueDate
+		for (const field of unset) delete next[field]
 		this.tasks[index] = parseTaskRepo(next)
 		return this.tasks[index]
 	}

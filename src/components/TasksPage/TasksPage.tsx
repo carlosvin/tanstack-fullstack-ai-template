@@ -64,21 +64,31 @@ function assigneeLabel(option: AssigneeOption): string {
 	return option.name ? `${option.name} (${option.email})` : option.email
 }
 
-/** Keep ids outside the current result. Add or remove only visible ids, and stop at {@link MAX_SELECTED}. */
+function idsHiddenFrom(selected: readonly string[], visibleIds: readonly string[]): string[] {
+	const visible = new Set(visibleIds)
+	return selected.filter((id) => !visible.has(id))
+}
+
+/** Visible ids that fit with the hidden selection, in list order, up to {@link MAX_SELECTED}. */
+function visibleSelectionTarget(selected: readonly string[], visibleIds: readonly string[]): string[] {
+	const hidden = idsHiddenFrom(selected, visibleIds)
+	const target: string[] = []
+	for (const id of visibleIds) {
+		if (hidden.length + target.length >= MAX_SELECTED) break
+		target.push(id)
+	}
+	return target
+}
+
+/** Keep ids outside the current result. Add or remove only the capped visible ids. */
 function selectionAfterVisibleToggle(
 	selected: readonly string[],
 	visibleIds: readonly string[],
 	selectAll: boolean,
 ): string[] {
-	const visible = new Set(visibleIds)
-	const hidden = selected.filter((id) => !visible.has(id))
+	const hidden = idsHiddenFrom(selected, visibleIds)
 	if (!selectAll) return hidden
-	const next = [...hidden]
-	for (const id of visibleIds) {
-		if (next.length >= MAX_SELECTED) break
-		if (!next.includes(id)) next.push(id)
-	}
-	return next
+	return [...hidden, ...visibleSelectionTarget(selected, visibleIds)]
 }
 
 export function TasksPage({
@@ -97,7 +107,12 @@ export function TasksPage({
 	const urlSearch = search.search ?? ''
 	const selected = search.selected ?? []
 	const visibleIds = tasks.map((task) => task.id)
-	const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selected.includes(id))
+	const visibleTarget = visibleSelectionTarget(selected, visibleIds)
+	const allVisibleSelected = visibleTarget.length > 0 && visibleTarget.every((id) => selected.includes(id))
+	const selectVisibleLabel =
+		visibleIds.length > visibleTarget.length
+			? `Select visible (${visibleTarget.length} of ${visibleIds.length})`
+			: 'Select visible'
 	const mine = Boolean(currentUserEmail) && search.assignee === currentUserEmail
 	const [bulkStatus, setBulkStatus] = useState<TaskStatus>('done')
 
@@ -204,7 +219,7 @@ export function TasksPage({
 						wrap="wrap"
 					>
 						<Checkbox
-							label="Select visible"
+							label={selectVisibleLabel}
 							checked={allVisibleSelected}
 							onChange={() => {
 								const next = selectionAfterVisibleToggle(selected, visibleIds, !allVisibleSelected)

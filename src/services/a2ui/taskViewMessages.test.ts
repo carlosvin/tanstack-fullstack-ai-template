@@ -91,6 +91,8 @@ describe('buildTaskViewMessages', () => {
 		const dated = { ...task, dueDate: '2026-10-01' }
 		const text = visibleText(buildTaskViewMessages({ tasks: [dated], asOf: '2026-10-17' })).join(' ')
 		expect(text).toContain('Overdue 2026-10-01')
+		const detail = visibleText(buildTaskViewMessages({ task: dated }, [], '2026-10-17')).join(' ')
+		expect(detail).toContain('Overdue 2026-10-01')
 		expect(text).toContain('Select Ship the report')
 		expect(text).toContain('Mark selected done')
 		const selected = visibleText(buildTaskViewMessages({ tasks: [dated], asOf: '2026-10-17' }, ['task-1'])).join(' ')

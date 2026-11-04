@@ -146,10 +146,18 @@ export const TaskSortSchema = z
 
 export const TaskInputSchema = z.object({
 	title: z.string().min(1).describe('Short title summarizing the task'),
-	description: z.string().optional().describe('Detailed description of what needs to be done'),
+	description: z
+		.string()
+		.nullable()
+		.optional()
+		.describe('Detailed description of what needs to be done. Null or an empty string clears it.'),
 	status: TaskStatusSchema.default('pending').describe('Current status of the task'),
 	priority: TaskPrioritySchema.default('medium').describe('Priority level of the task'),
-	assignee: z.string().optional().describe('Email of the person assigned to this task'),
+	assignee: z
+		.string()
+		.nullable()
+		.optional()
+		.describe('Email of the person assigned to this task. Null or an empty string clears it.'),
 	dueDate: CalendarDateSchema.nullable()
 		.optional()
 		.describe('Optional calendar due date, YYYY-MM-DD. Null clears it. Done and cancelled tasks are never overdue.'),
@@ -271,7 +279,7 @@ export const TaskIdInputSchema = z.object({
 
 export const UpdateTaskInputSchema = TaskIdInputSchema.extend({
 	updates: TaskInputSchema.partial().describe(
-		'Fields to update (title, description, status, priority, assignee, dueDate). Null dueDate clears the date.',
+		'Fields to update (title, description, status, priority, assignee, dueDate). Null clears dueDate, description, or assignee. Omit a field to leave it unchanged.',
 	),
 })
 

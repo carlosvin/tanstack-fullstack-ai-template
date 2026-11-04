@@ -9,10 +9,27 @@ interface StoredTask {
 	status: string
 	priority: string
 	assignee?: string
+	dueDate?: string
 	createdAt: string
 	updatedAt: string
 	createdBy?: string
 	lastModifiedBy?: string
+}
+
+function matchesField(value: unknown, expected: unknown): boolean {
+	if (!expected || typeof expected !== 'object' || Array.isArray(expected)) return value === expected
+	const ops = expected as Record<string, unknown>
+	if ('$regex' in ops) {
+		const pattern = ops as { $regex: string; $options?: string }
+		return new RegExp(pattern.$regex, pattern.$options).test(String(value ?? ''))
+	}
+	if ('$in' in ops && Array.isArray(ops.$in) && !ops.$in.includes(value)) return false
+	if ('$lt' in ops && !(typeof value === 'string' && typeof ops.$lt === 'string' && value < ops.$lt)) return false
+	if ('$lte' in ops && !(typeof value === 'string' && typeof ops.$lte === 'string' && value <= ops.$lte)) return false
+	if ('$type' in ops && ops.$type === 'string' && typeof value !== 'string') return false
+	if ('$exists' in ops && (value !== undefined) !== ops.$exists) return false
+	if ('$nin' in ops && Array.isArray(ops.$nin) && ops.$nin.includes(value)) return false
+	return '$in' in ops || '$lt' in ops || '$lte' in ops || '$type' in ops || '$exists' in ops || '$nin' in ops
 }
 
 function matches(doc: StoredTask, filter: Record<string, unknown>): boolean {
@@ -21,12 +38,11 @@ function matches(doc: StoredTask, filter: Record<string, unknown>): boolean {
 			if (!expected.some((clause) => matches(doc, clause as Record<string, unknown>))) return false
 			continue
 		}
-		if (expected && typeof expected === 'object' && '$regex' in expected) {
-			const pattern = expected as { $regex: string; $options?: string }
-			if (!new RegExp(pattern.$regex, pattern.$options).test(String(doc[key as keyof StoredTask] ?? ''))) return false
+		if (key === '$and' && Array.isArray(expected)) {
+			if (!expected.every((clause) => matches(doc, clause as Record<string, unknown>))) return false
 			continue
 		}
-		if (doc[key as keyof StoredTask] !== expected) return false
+		if (!matchesField(doc[key as keyof StoredTask], expected)) return false
 	}
 	return true
 }
@@ -98,7 +114,13 @@ describe('MongoTaskRepository', () => {
 		await repository.createIndexes()
 		expect(indexes).toEqual([
 			{ key: { id: 1 }, options: { unique: true } },
+			{ key: { updatedAt: -1 }, options: undefined },
+			{ key: { status: 1, dueDate: 1 }, options: undefined },
+			{ key: { dueDate: 1, updatedAt: -1 }, options: undefined },
 			{ key: { id: 1 }, options: { unique: true } },
+			{ key: { updatedAt: -1 }, options: undefined },
+			{ key: { status: 1, dueDate: 1 }, options: undefined },
+			{ key: { dueDate: 1, updatedAt: -1 }, options: undefined },
 		])
 	})
 
@@ -116,6 +138,16 @@ describe('MongoTaskRepository', () => {
 		const updated = await repository.updateTask(created.id, { status: 'done' }, { lastModifiedBy: 'grace@example.com' })
 		expect(updated?.status).toBe('done')
 		expect(updated?.lastModifiedBy).toBe('grace@example.com')
+		const past = await repository.createTask({
+			title: 'Past',
+			status: 'in-progress',
+			priority: 'low',
+			dueDate: '2026-10-01',
+		})
+		await repository.createTask({ title: 'Later', status: 'pending', priority: 'low', dueDate: '2026-12-01' })
+		const overdue = await repository.getTasks({ due: 'overdue', asOf: '2026-11-01' })
+		expect(overdue.map((task) => task.id)).toEqual([past.id])
+
 		expect(await repository.deleteTask(created.id)).toBe(true)
 		expect(await repository.getTask(created.id)).toBeNull()
 	})

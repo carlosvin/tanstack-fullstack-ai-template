@@ -694,27 +694,21 @@ function DateTimeInputComponent({
 	// Determine input type based on enabled fields
 	const inputType = enableDate && enableTime ? 'datetime-local' : enableTime ? 'time' : 'date'
 
-	return React.createElement(asComponent(Box), {}, [
-		label &&
-			React.createElement(asComponent(Text), { key: 'label', size: 'sm', fw: 400, mb: 4 }, [
-				label,
-				required && React.createElement(asComponent(Text), { key: 'req', span: true, c: 'red', ml: 2 }, '*'),
-			]),
-		React.createElement(TextInput, {
-			key: 'input',
-			type: inputType,
-			defaultValue: value,
-			description: description,
-			error: error,
-			disabled: disabled,
-			onChange: (e: React.ChangeEvent<HTMLInputElement>) => onChange?.(e.target.value),
-			styles: {
-				input: {
-					cursor: 'pointer',
-				},
+	return React.createElement(TextInput, {
+		label,
+		required,
+		type: inputType,
+		defaultValue: value,
+		description,
+		error,
+		disabled,
+		onChange: (e: React.ChangeEvent<HTMLInputElement>) => onChange?.(e.target.value),
+		styles: {
+			input: {
+				cursor: 'pointer',
 			},
-		}),
-	])
+		},
+	})
 }
 
 export const DateTimeInputAdapter = createAdapter(DateTimeInputComponent as ComponentType, {
@@ -1333,8 +1327,32 @@ export const TooltipAdapter = createAdapter(Tooltip, {
 	displayName: 'TooltipAdapter',
 })
 
-/** Popover adapter */
-export const PopoverAdapter = createAdapter(Popover, {
+function childList(children: React.ReactNode): React.ReactNode[] {
+	return React.Children.toArray(children)
+}
+
+/** Popover adapter. The first child is the target; the rest sit in the dropdown. */
+function PopoverView({
+	position,
+	withArrow,
+	shadow,
+	children,
+}: {
+	position?: React.ComponentProps<typeof Popover>['position']
+	withArrow?: boolean
+	shadow?: string
+	children?: React.ReactNode
+}) {
+	const items = childList(children)
+	return React.createElement(
+		Popover,
+		{ position, withArrow, shadow: shadow as React.ComponentProps<typeof Popover>['shadow'] },
+		React.createElement(asComponent(Popover.Target), null, React.createElement('span', null, items[0] ?? null)),
+		React.createElement(asComponent(Popover.Dropdown), null, React.createElement('div', null, items.slice(1))),
+	)
+}
+
+export const PopoverAdapter = createAdapter(PopoverView as ComponentType, {
 	mapProps: (a2ui, ctx) => ({
 		position: extractValue(a2ui.position) ?? 'bottom',
 		withArrow: extractValue(a2ui.withArrow) ?? true,
@@ -1344,8 +1362,38 @@ export const PopoverAdapter = createAdapter(Popover, {
 	displayName: 'PopoverAdapter',
 })
 
-/** Menu adapter */
-export const MenuAdapter = createAdapter(Menu, {
+export const PopoverTargetAdapter = createAdapter(asComponent(Popover.Target), {
+	mapProps: (_a2ui, ctx) => ({ children: React.createElement('span', {}, ctx.children) }),
+	displayName: 'PopoverTargetAdapter',
+})
+
+export const PopoverDropdownAdapter = createAdapter(asComponent(Popover.Dropdown), {
+	mapProps: (_a2ui, ctx) => ({ children: ctx.children }),
+	displayName: 'PopoverDropdownAdapter',
+})
+
+/** Menu adapter. The first child opens the menu; the rest are the dropdown. */
+function MenuView({
+	position,
+	withArrow,
+	shadow,
+	children,
+}: {
+	position?: React.ComponentProps<typeof Menu>['position']
+	withArrow?: boolean
+	shadow?: string
+	children?: React.ReactNode
+}) {
+	const items = childList(children)
+	return React.createElement(
+		Menu,
+		{ position, withArrow, shadow: shadow as React.ComponentProps<typeof Menu>['shadow'] },
+		React.createElement(asComponent(Menu.Target), null, React.createElement('span', null, items[0] ?? null)),
+		React.createElement(asComponent(Menu.Dropdown), null, React.createElement('div', null, items.slice(1))),
+	)
+}
+
+export const MenuAdapter = createAdapter(MenuView as ComponentType, {
 	mapProps: (a2ui, ctx) => ({
 		shadow: extractValue(a2ui.shadow) ?? 'md',
 		position: extractValue(a2ui.position) ?? 'bottom-start',
@@ -1353,6 +1401,26 @@ export const MenuAdapter = createAdapter(Menu, {
 		children: ctx.children,
 	}),
 	displayName: 'MenuAdapter',
+})
+
+export const MenuTargetAdapter = createAdapter(asComponent(Menu.Target), {
+	mapProps: (_a2ui, ctx) => ({ children: React.createElement('span', {}, ctx.children) }),
+	displayName: 'MenuTargetAdapter',
+})
+
+export const MenuDropdownAdapter = createAdapter(asComponent(Menu.Dropdown), {
+	mapProps: (_a2ui, ctx) => ({ children: ctx.children }),
+	displayName: 'MenuDropdownAdapter',
+})
+
+export const MenuItemAdapter = createAdapter(asComponent(Menu.Item), {
+	mapProps: (a2ui, ctx) => ({
+		disabled: extractValue(a2ui.disabled) ?? false,
+		color: extractValue(a2ui.color),
+		onClick: createActionHandler(a2ui.action, ctx),
+		children: extractValue(a2ui.label) ?? extractValue(a2ui.text) ?? ctx.children,
+	}),
+	displayName: 'MenuItemAdapter',
 })
 
 /** Modal/Dialog adapter */
@@ -1390,20 +1458,85 @@ export const DrawerAdapter = createAdapter(asComponent(Paper), {
 // NAVIGATION ADAPTERS
 // ============================================================================
 
-/** Tabs adapter */
-export const TabsAdapter = createAdapter(Tabs, {
+function tabSpecs(value: unknown): Array<{ value: string; label: string }> {
+	if (!Array.isArray(value)) return []
+	return value.flatMap((item) => {
+		if (typeof item === 'string' && item.length > 0) return [{ value: item, label: item }]
+		if (!item || typeof item !== 'object') return []
+		const record = item as { value?: unknown; label?: unknown; id?: unknown; text?: unknown }
+		const tabValue = typeof record.value === 'string' ? record.value : typeof record.id === 'string' ? record.id : ''
+		if (!tabValue) return []
+		const label =
+			typeof record.label === 'string' ? record.label : typeof record.text === 'string' ? record.text : tabValue
+		return [{ value: tabValue, label }]
+	})
+}
+
+/** Tabs adapter. A `tabs` list builds Tabs.List; panel children stay inside Tabs. */
+function TabsView({
+	defaultValue,
+	orientation,
+	variant,
+	color,
+	tabs,
+	children,
+}: {
+	defaultValue?: string | null
+	orientation?: 'horizontal' | 'vertical'
+	variant?: 'default' | 'outline' | 'pills'
+	color?: string
+	tabs?: Array<{ value: string; label: string }>
+	children?: React.ReactNode
+}) {
+	const specs = tabs ?? []
+	return React.createElement(
+		Tabs,
+		{
+			defaultValue: defaultValue ?? specs[0]?.value ?? null,
+			orientation,
+			variant,
+			color,
+		},
+		specs.length > 0
+			? React.createElement(
+					asComponent(Tabs.List),
+					null,
+					specs.map((tab) =>
+						React.createElement(asComponent(Tabs.Tab), { key: tab.value, value: tab.value }, tab.label),
+					),
+				)
+			: null,
+		children,
+	)
+}
+
+export const TabsAdapter = createAdapter(TabsView as ComponentType, {
 	mapProps: (a2ui, ctx) => ({
 		defaultValue: extractValue(a2ui.defaultValue) ?? extractValue(a2ui.defaultTab),
 		orientation: extractValue(a2ui.orientation) ?? 'horizontal',
 		variant: extractValue(a2ui.variant) ?? 'default',
 		color: extractValue(a2ui.color),
+		tabs: tabSpecs(extractValue(a2ui.tabs) ?? a2ui.tabs),
 		children: ctx.children,
 	}),
 	displayName: 'TabsAdapter',
 })
 
+export const TabsListAdapter = createAdapter(asComponent(Tabs.List), {
+	mapProps: (_a2ui, ctx) => ({ children: ctx.children }),
+	displayName: 'TabsListAdapter',
+})
+
+export const TabAdapter = createAdapter(asComponent(Tabs.Tab), {
+	mapProps: (a2ui, ctx) => ({
+		value: extractValue(a2ui.value) ?? extractValue(a2ui.id) ?? '',
+		children: extractValue(a2ui.label) ?? extractValue(a2ui.text) ?? ctx.children,
+	}),
+	displayName: 'TabAdapter',
+})
+
 /** TabPanel adapter */
-export const TabPanelAdapter = createAdapter(Tabs.Panel, {
+export const TabPanelAdapter = createAdapter(asComponent(Tabs.Panel), {
 	mapProps: (a2ui, ctx) => ({
 		value: extractValue(a2ui.value) ?? extractValue(a2ui.id),
 		children: ctx.children,
