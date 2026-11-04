@@ -1,9 +1,9 @@
 import { MantineProvider } from '@mantine/core'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { buildTaskViewMessages } from '../../services/a2ui/taskViewMessages'
-import type { Task } from '../../services/schemas/schemas'
-import { AgenticA2uiSurface } from './AgenticA2uiSurface'
+import { AgenticA2uiSurface } from '@/components/AgenticA2ui/AgenticA2uiSurface'
+import { buildTaskViewMessages } from '@/services/a2ui/taskViewMessages'
+import type { Task } from '@/services/schemas/schemas'
 
 const task: Task = {
 	id: 'task-1',

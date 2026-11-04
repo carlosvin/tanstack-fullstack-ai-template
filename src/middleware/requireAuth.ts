@@ -7,8 +7,8 @@
  * downstream without casts.
  */
 import { createMiddleware } from '@tanstack/react-start'
-import { requireAuth } from '../utils/auth'
-import { authMiddleware } from './auth'
+import { authMiddleware } from '@/middleware/auth'
+import { requireAuth } from '@/utils/auth'
 
 export const requireAuthMiddleware = createMiddleware({ type: 'function' })
 	.middleware([authMiddleware])

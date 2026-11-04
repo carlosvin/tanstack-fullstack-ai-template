@@ -1,15 +1,11 @@
 import { chat, convertMessagesToModelMessages, maxIterations, toServerSentEventsResponse } from '@tanstack/ai'
 import { createFileRoute } from '@tanstack/react-router'
 import { getRouterInstance } from '@tanstack/react-start'
-import { getShellSession } from '../../env/webEnv.server'
-import { getAIAdapterService } from '../../services/ai/adapter'
-import {
-	buildAppNavigation,
-	getNavigationPromptSection,
-	matchUserFacingRoute,
-} from '../../services/ai/navigationManifest'
-import { rememberSeedTasks } from '../../services/ai/seedConversation.server'
-import { showTasksViewTool, showTaskViewTool } from '../../services/ai/taskViews.server'
+import { getShellSession } from '@/env/webEnv.server'
+import { getAIAdapterService } from '@/services/ai/adapter'
+import { buildAppNavigation, getNavigationPromptSection, matchUserFacingRoute } from '@/services/ai/navigationManifest'
+import { rememberSeedTasks } from '@/services/ai/seedConversation.server'
+import { showTasksViewTool, showTaskViewTool } from '@/services/ai/taskViews.server'
 import {
 	createTaskTool,
 	deleteTaskTool,
@@ -23,12 +19,16 @@ import {
 	invalidateRouterToolDef,
 	navigateToolDef,
 	updateTaskTool,
-} from '../../services/ai/tools'
-import { getObservability } from '../../services/observability'
-import { BrowserContextSchema } from '../../services/schemas/schemas'
-import type { PromptConcept } from '../../services/schemas/shellSession'
-import type { BrowserContext, UserIdentity, UserProfile } from '../../types'
-import { createServerLogger } from '../../utils/serverLogger'
+} from '@/services/ai/tools'
+import { getObservability } from '@/services/observability/getObservability'
+import {
+	type BrowserContext,
+	BrowserContextSchema,
+	type UserIdentity,
+	type UserProfile,
+} from '@/services/schemas/schemas'
+import type { PromptConcept } from '@/services/schemas/shellSession'
+import { createServerLogger } from '@/utils/serverLogger'
 
 const log = createServerLogger('apiChat')
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { OptionalTaskPrioritySchema, OptionalTaskStatusSchema } from './schemas'
+import { OptionalTaskPrioritySchema, OptionalTaskStatusSchema } from '@/services/schemas/schemas'
 
 describe('optional closed-vocabulary schemas', () => {
 	it('parses known statuses with Schema.parse and treats empty widget values as omitted', () => {

@@ -1,9 +1,9 @@
 import { Anchor, Badge, Container, Group, Paper, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core'
 import { Bot, Sparkles } from 'lucide-react'
-import type { Task } from '../../types'
-import { suggestedPrompts } from '../../utils/suggestedPrompts'
-import { Link } from '../Link/Link'
-import { usePromptChat } from '../PromptChat/PromptChatContext'
+import { Link } from '@/components/Link/Link'
+import { usePromptChat } from '@/components/PromptChat/PromptChatContext'
+import type { Task } from '@/services/schemas/schemas'
+import { suggestedPrompts } from '@/utils/suggestedPrompts'
 
 interface PromptFirstHeroProps {
 	tasks?: Task[]

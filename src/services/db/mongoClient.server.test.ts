@@ -1,6 +1,6 @@
 import type { MongoClient } from 'mongodb'
 import { describe, expect, it, vi } from 'vitest'
-import { openMongoRepositoryScope } from './mongoClient.server'
+import { openMongoRepositoryScope } from '@/services/db/mongoClient.server'
 
 function fakeClient(createIndex: (key: Record<string, number>, options?: { unique?: boolean }) => Promise<string>) {
 	const deleteMany = vi.fn()

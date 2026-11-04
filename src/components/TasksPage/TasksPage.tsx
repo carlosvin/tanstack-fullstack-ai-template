@@ -14,8 +14,13 @@ import {
 } from '@mantine/core'
 import { useDebouncedCallback } from '@mantine/hooks'
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
-import { OptionalTaskPrioritySchema, OptionalTaskStatusSchema } from '../../services/schemas/schemas'
-import type { Task, TaskFilter } from '../../types'
+import { Link } from '@/components/Link/Link'
+import {
+	OptionalTaskPrioritySchema,
+	OptionalTaskStatusSchema,
+	type Task,
+	type TaskFilter,
+} from '@/services/schemas/schemas'
 import {
 	priorityColor,
 	priorityLabel,
@@ -23,8 +28,7 @@ import {
 	statusColor,
 	statusLabel,
 	statusSelectOptions,
-} from '../../utils/taskDisplay'
-import { Link } from '../Link/Link'
+} from '@/utils/taskDisplay'
 
 export interface TasksPageProps {
 	tasks: Task[]

@@ -1,5 +1,5 @@
-import type { ProcessedResponse } from '../../types'
-import { HttpError } from '../../utils/httpError'
+import type { ProcessedResponse } from '@/services/schemas/schemas'
+import { HttpError } from '@/utils/httpError'
 
 /**
  * Wraps a mutation server function call and normalizes thrown errors into a

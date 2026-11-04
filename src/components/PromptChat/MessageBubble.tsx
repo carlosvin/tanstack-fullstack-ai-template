@@ -3,9 +3,9 @@ import type { UIMessage } from '@tanstack/ai-react'
 import { Bot } from 'lucide-react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { MarkdownLink } from './MarkdownLink'
-import styles from './PromptChat.module.css'
-import { getToolLabel } from './toolLabels'
+import { MarkdownLink } from '@/components/PromptChat/MarkdownLink'
+import styles from '@/components/PromptChat/PromptChat.module.css'
+import { getToolLabel } from '@/components/PromptChat/toolLabels'
 
 type MarkdownLinkComponent = React.ComponentType<{ href?: string; children?: React.ReactNode }>
 

@@ -1,6 +1,6 @@
 import { type Db, MongoClient } from 'mongodb'
-import { MongoRepository } from '../repository/mongoRepository.server'
-import type { Repository } from '../repository/types'
+import { MongoRepository } from '@/services/repository/mongoRepository.server'
+import type { Repository } from '@/services/repository/types'
 
 export type MongoConnector = (uri: string) => Promise<MongoClient>
 

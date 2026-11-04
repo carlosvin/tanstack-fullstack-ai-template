@@ -1,8 +1,14 @@
 import type { Collection, Db, Filter } from 'mongodb'
-import { parseDistinctValues, parseTaskRepo, parseTaskRepoList, parseTaskRepoOrNull } from '../schemas/repoParsers'
-import type { TaskRepo, TaskRepoFilter, TaskRepoInput } from '../schemas/repository'
-import { resolveCreateLastModifiedBy } from './traceability'
-import type { DistinctValueField, IndexableRepository, TraceabilityContext } from './types'
+import type { DistinctValueField } from '@/constants/options'
+import { resolveCreateLastModifiedBy } from '@/services/repository/traceability'
+import type { IndexableRepository, TraceabilityContext } from '@/services/repository/types'
+import {
+	parseDistinctValues,
+	parseTaskRepo,
+	parseTaskRepoList,
+	parseTaskRepoOrNull,
+} from '@/services/schemas/repoParsers'
+import type { TaskRepo, TaskRepoFilter, TaskRepoInput } from '@/services/schemas/repository'
 
 const TASKS_COLLECTION = 'tasks'
 

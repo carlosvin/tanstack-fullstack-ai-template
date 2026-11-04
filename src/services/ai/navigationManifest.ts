@@ -2,7 +2,7 @@
  * App navigation for the AI assistant, derived from the live router
  * (`routesById` + `validateSearch` + route `staticData.description`).
  */
-import type { FileRouteTypes } from '../../routeTree.gen'
+import type { FileRouteTypes } from '@/routeTree.gen'
 
 export interface RouteSearchParam {
 	name: string

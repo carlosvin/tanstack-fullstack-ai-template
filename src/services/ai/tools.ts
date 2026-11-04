@@ -9,6 +9,7 @@
  */
 import { toolDefinition } from '@tanstack/ai'
 import { z } from 'zod'
+import { createSafeServerTool } from '@/services/ai/serverTool'
 import {
 	createTask,
 	deleteTask,
@@ -20,7 +21,7 @@ import {
 	getUserAccess,
 	getUserProfile,
 	updateTask,
-} from '../api/serverFns'
+} from '@/services/api/serverFns'
 import {
 	AppRuntimeInfoSchema,
 	DistinctValuesInputSchema,
@@ -30,8 +31,7 @@ import {
 	TasksListSearchSchema,
 	UpdateTaskInputSchema,
 	UserProfileByEmailSchema,
-} from '../schemas/schemas'
-import { createSafeServerTool } from './serverTool'
+} from '@/services/schemas/schemas'
 
 // ---------------------------------------------------------------------------
 // Tasks (queries)

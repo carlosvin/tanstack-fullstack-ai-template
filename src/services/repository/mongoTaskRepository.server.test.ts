@@ -1,6 +1,6 @@
 import type { Db } from 'mongodb'
 import { describe, expect, it } from 'vitest'
-import { MongoTaskRepository } from './mongoTaskRepository.server'
+import { MongoTaskRepository } from '@/services/repository/mongoTaskRepository.server'
 
 interface StoredTask {
 	id: string

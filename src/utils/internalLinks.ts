@@ -1,5 +1,5 @@
 import type { LinkProps } from '@tanstack/react-router'
-import { matchUserFacingRoute } from '../services/ai/navigationManifest'
+import { matchUserFacingRoute } from '@/services/ai/navigationManifest'
 
 export function isInternalPath(href: string): boolean {
 	if (href.startsWith('/')) {

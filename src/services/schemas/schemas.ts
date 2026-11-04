@@ -8,9 +8,9 @@
  * for types that are validated at runtime.
  */
 import { z } from 'zod'
-import { DISTINCT_VALUE_FIELDS, TASK_PRIORITIES, TASK_STATUSES } from '../../constants/options'
-import { OptionalDeploymentEnvSchema } from './runtimeEnv'
-import { AppMetaSchema } from './shellSession'
+import { DISTINCT_VALUE_FIELDS, TASK_PRIORITIES, TASK_STATUSES } from '@/constants/options'
+import { OptionalDeploymentEnvSchema } from '@/services/schemas/runtimeEnv'
+import { AppMetaSchema } from '@/services/schemas/shellSession'
 
 // ---------------------------------------------------------------------------
 // Enums

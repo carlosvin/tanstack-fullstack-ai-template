@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildAccessTicket } from './accessTicket'
+import { buildAccessTicket } from '@/services/auth/accessTicket'
 
 describe('buildAccessTicket', () => {
 	it('merges identity groups and profile role', () => {

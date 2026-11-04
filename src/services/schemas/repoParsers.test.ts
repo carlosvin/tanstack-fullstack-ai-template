@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseTaskRepo, parseTaskRepoOrNull, parseUserProfileRepoOrNull } from './repoParsers'
+import { parseTaskRepo, parseTaskRepoOrNull, parseUserProfileRepoOrNull } from '@/services/schemas/repoParsers'
 
 describe('repoParsers', () => {
 	it('parseTaskRepo validates persisted task documents', () => {

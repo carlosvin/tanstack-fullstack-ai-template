@@ -1,5 +1,5 @@
-import type { TaskRepo, UserAccessRepo, UserProfileRepo } from './repository'
-import { TaskSchema, UserAccessSchema, UserProfileSchema } from './schemas'
+import type { TaskRepo, UserAccessRepo, UserProfileRepo } from '@/services/schemas/repository'
+import { TaskSchema, UserAccessSchema, UserProfileSchema } from '@/services/schemas/schemas'
 
 /** Repository row → tools/API task shape. */
 export function toToolTask(row: TaskRepo) {

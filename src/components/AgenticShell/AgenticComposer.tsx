@@ -1,7 +1,7 @@
 import { ActionIcon, Alert, Group, Stack, Textarea, Tooltip } from '@mantine/core'
 import { Send, Square, Trash2 } from 'lucide-react'
-import { friendlyChatError } from '../../utils/chatError'
-import { useAgenticChat } from '../AgenticChat/AgenticChatContext'
+import { useAgenticChat } from '@/components/AgenticChat/AgenticChatContext'
+import { friendlyChatError } from '@/utils/chatError'
 
 /** Bottom-pinned composer for the agentic shell: Enter sends, Shift+Enter newline. */
 export function AgenticComposer() {

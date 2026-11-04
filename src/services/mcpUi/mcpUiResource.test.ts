@@ -5,8 +5,8 @@ import {
 	MAX_MCP_UI_HTML_CHARS,
 	TASK_DETAIL_UI_URI,
 	TASKS_LIST_UI_URI,
-} from './mcpUiResource'
-import { assertMcpUiHtmlWithinCap, readMcpUiResource, registerRawHtmlView } from './mcpUiResources'
+} from '@/services/mcpUi/mcpUiResource'
+import { assertMcpUiHtmlWithinCap, readMcpUiResource, registerRawHtmlView } from '@/services/mcpUi/mcpUiResources'
 
 describe('mcpUiResource', () => {
 	it('allowlists only ui:// task URIs', () => {

@@ -6,7 +6,7 @@ import {
 	UserAccessRepoSchema,
 	type UserProfileRepo,
 	UserProfileRepoSchema,
-} from './repository'
+} from '@/services/schemas/repository'
 
 /** MongoDB / external document → repository-layer task (validated). */
 export function parseTaskRepo(doc: unknown): TaskRepo {

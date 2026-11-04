@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createWriteTrace, resolveCreateLastModifiedBy, updateWriteTrace } from './traceability'
+import { createWriteTrace, resolveCreateLastModifiedBy, updateWriteTrace } from '@/services/repository/traceability'
 
 describe('traceability helpers', () => {
 	it('createWriteTrace sets createdBy', () => {
