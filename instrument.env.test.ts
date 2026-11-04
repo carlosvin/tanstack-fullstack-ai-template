@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { DeploymentEnvSchema as RuntimeDeploymentEnvSchema } from '@/services/schemas/runtimeEnv'
 import { resolveSentryBootstrapEnv } from './instrument.env.mjs'
 import { DeploymentEnvSchema as SharedDeploymentEnvSchema } from './instrument.env.shared.mjs'
-import { DeploymentEnvSchema as RuntimeDeploymentEnvSchema } from './src/services/schemas/runtimeEnv'
 
 const ORIGINAL_ENV = { ...process.env }
 const TESTED_KEYS = ['ENV', 'NODE_ENV', 'SENTRY_DSN'] as const

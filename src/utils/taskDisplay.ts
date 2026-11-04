@@ -1,5 +1,5 @@
-import { TASK_PRIORITIES, TASK_STATUSES } from '../constants/options'
-import type { TaskPriority, TaskStatus } from '../types'
+import { TASK_PRIORITIES, TASK_STATUSES } from '@/constants/options'
+import type { TaskPriority, TaskStatus } from '@/services/schemas/schemas'
 
 const STATUS_COLOR = {
 	pending: 'yellow',

@@ -14,7 +14,7 @@
 import pino, { type Logger } from 'pino'
 import pinoPretty from 'pino-pretty'
 
-import type { DeploymentEnv, LogLevel } from '../services/schemas/runtimeEnv'
+import type { DeploymentEnv, LogLevel } from '@/services/schemas/runtimeEnv'
 
 export type ModuleLoggerOptions = {
 	/** Deployment label validated by the caller's env schema. */

@@ -1,10 +1,10 @@
 import { MantineProvider } from '@mantine/core'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { AgenticChatProvider } from '../AgenticChat/AgenticChatContext'
-import { AgenticShell } from './AgenticShell'
+import { AgenticChatProvider } from '@/components/AgenticChat/AgenticChatContext'
+import { AgenticShell } from '@/components/AgenticShell/AgenticShell'
 
-vi.mock('./AgenticComposer', () => ({
+vi.mock('@/components/AgenticShell/AgenticComposer', () => ({
 	AgenticComposer: () => (
 		<button type="button" aria-label="Send">
 			Send

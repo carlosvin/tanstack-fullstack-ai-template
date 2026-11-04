@@ -1,10 +1,10 @@
 import { fireEvent, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { renderWithProviders } from '../../test-utils/renderWithRouter'
-import { Header } from './Header'
+import { Header } from '@/components/Header/Header'
+import { renderWithProviders } from '@/test-utils/renderWithRouter'
 
-vi.mock('../Link/Link', () => ({
+vi.mock('@/components/Link/Link', () => ({
 	Link: ({ children, to }: { children: ReactNode; to: string }) => <a href={to}>{children}</a>,
 }))
 

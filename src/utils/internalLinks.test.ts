@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isInternalPath, toInternalRouterLinkTarget } from './internalLinks'
+import { isInternalPath, toInternalRouterLinkTarget } from '@/utils/internalLinks'
 
 describe('isInternalPath', () => {
 	it('accepts root and task routes', () => {

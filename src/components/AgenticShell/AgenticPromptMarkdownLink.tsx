@@ -1,7 +1,7 @@
 import { UnstyledButton } from '@mantine/core'
 import type { ReactNode } from 'react'
-import { isInternalPath, toInternalRouterLinkTarget } from '../../utils/internalLinks'
-import { MarkdownLink } from '../PromptChat/MarkdownLink'
+import { MarkdownLink } from '@/components/PromptChat/MarkdownLink'
+import { isInternalPath, toInternalRouterLinkTarget } from '@/utils/internalLinks'
 
 function hasVisibleLabel(children: ReactNode): boolean {
 	if (children == null || children === false) return false

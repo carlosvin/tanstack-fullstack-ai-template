@@ -7,7 +7,7 @@
  * Replaying tool results restores those tasks before the next read.
  */
 
-import { type TaskRepo, TaskRepoSchema } from '../schemas/repository'
+import { type TaskRepo, TaskRepoSchema } from '@/services/schemas/repository'
 
 export interface ConversationTaskState {
 	tasks: TaskRepo[]

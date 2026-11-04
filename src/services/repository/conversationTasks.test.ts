@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { applySeedConversation } from '../ai/seedConversation.server'
-import { conversationTaskState, findRememberedTask } from './conversationTasks'
-import { SeedRepository } from './seedRepository'
+import { applySeedConversation } from '@/services/ai/seedConversation.server'
+import { conversationTaskState, findRememberedTask } from '@/services/repository/conversationTasks'
+import { SeedRepository } from '@/services/repository/seedRepository'
 
 const created = {
 	id: 'task-7',

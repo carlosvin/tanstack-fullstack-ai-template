@@ -7,8 +7,8 @@
 
 import type { ServerToClientMessage, UserAction } from '@a2ui-bridge/core'
 import { z } from 'zod'
-import { type Task, TaskSchema } from '../schemas/schemas'
-import { isAllowedA2uiComponent } from './mantineCatalog'
+import { isAllowedA2uiComponent } from '@/services/a2ui/mantineCatalog'
+import { type Task, TaskSchema } from '@/services/schemas/schemas'
 
 const MAX_TASKS = 20
 const MAX_TITLE = 120

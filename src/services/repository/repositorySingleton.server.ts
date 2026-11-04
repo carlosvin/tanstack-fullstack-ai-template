@@ -1,8 +1,8 @@
-import { webServerEnv } from '../../env/webEnv.server'
-import { createServerLogger } from '../../utils/serverLogger'
-import { openMongoRepositoryScope } from '../db/mongoClient.server'
-import { SeedRepository } from './seedRepository'
-import type { Repository } from './types'
+import { webServerEnv } from '@/env/webEnv.server'
+import { openMongoRepositoryScope } from '@/services/db/mongoClient.server'
+import { SeedRepository } from '@/services/repository/seedRepository'
+import type { Repository } from '@/services/repository/types'
+import { createServerLogger } from '@/utils/serverLogger'
 
 const log = createServerLogger('repository')
 

@@ -1,6 +1,6 @@
 import { Modal } from '@mantine/core'
-import type { TaskInput } from '../../types'
-import { TaskForm } from '../TaskForm/TaskForm'
+import { TaskForm } from '@/components/TaskForm/TaskForm'
+import type { TaskInput } from '@/services/schemas/schemas'
 
 export interface NewTaskPageProps {
 	loading: boolean

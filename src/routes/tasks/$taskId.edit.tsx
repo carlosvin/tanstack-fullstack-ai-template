@@ -1,10 +1,10 @@
 import { createFileRoute, getRouteApi, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { EditTaskPage } from '../../components/EditTaskPage/EditTaskPage'
-import { processResponse } from '../../services/api/processResponse'
-import { updateTask } from '../../services/api/serverFns'
-import type { TaskInput } from '../../types'
-import { notifyProcessed } from '../../utils/notifyProcessed'
+import { EditTaskPage } from '@/components/EditTaskPage/EditTaskPage'
+import { processResponse } from '@/services/api/processResponse'
+import { updateTask } from '@/services/api/serverFns'
+import type { TaskInput } from '@/services/schemas/schemas'
+import { notifyProcessed } from '@/utils/notifyProcessed'
 
 const parentRoute = getRouteApi('/tasks/$taskId')
 

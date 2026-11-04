@@ -1,11 +1,11 @@
 import { screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { renderWithProviders } from '../../test-utils/renderWithRouter'
-import type { Task } from '../../types'
-import { DashboardPage } from './DashboardPage'
+import { DashboardPage } from '@/components/DashboardPage/DashboardPage'
+import type { Task } from '@/services/schemas/schemas'
+import { renderWithProviders } from '@/test-utils/renderWithRouter'
 
-vi.mock('../Link/Link', () => ({
+vi.mock('@/components/Link/Link', () => ({
 	Link: ({ children, to }: { children: ReactNode; to: string }) => <a href={to}>{children}</a>,
 }))
 

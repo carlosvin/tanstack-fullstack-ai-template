@@ -3,10 +3,10 @@ import type { UIMessage } from '@tanstack/ai-react'
 import { fetchServerSentEvents, useChat } from '@tanstack/ai-react'
 import { useRouter } from '@tanstack/react-router'
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useRef, useState } from 'react'
-import { invalidateRouterToolDef, navigateToolDef } from '../../services/ai/tools'
-import type { BrowserContext } from '../../types'
-import { captureBrowserContext } from '../../utils/browserContext'
-import { toInternalRouterLinkTarget } from '../../utils/internalLinks'
+import { invalidateRouterToolDef, navigateToolDef } from '@/services/ai/tools'
+import type { BrowserContext } from '@/services/schemas/schemas'
+import { captureBrowserContext } from '@/utils/browserContext'
+import { toInternalRouterLinkTarget } from '@/utils/internalLinks'
 
 export interface PromptChatContextValue {
 	messages: UIMessage[]
