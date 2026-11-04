@@ -773,9 +773,9 @@ export const NumberInputAdapter = createAdapter(asComponent(NumberInput), {
 	displayName: 'NumberInputAdapter',
 })
 
-/** PasswordInput adapter */
+/** PasswordInput adapter. The secret stays in the field and is not copied into an action. */
 export const PasswordInputAdapter = createAdapter(PasswordInput, {
-	mapProps: (a2ui, ctx) => ({
+	mapProps: (a2ui) => ({
 		label: extractValue(a2ui.label) ?? 'Password',
 		placeholder: extractValue(a2ui.placeholder) ?? 'Enter password',
 		description: extractValue(a2ui.description),
@@ -784,16 +784,6 @@ export const PasswordInputAdapter = createAdapter(PasswordInput, {
 		disabled: extractValue(a2ui.disabled) ?? false,
 		defaultValue: extractValue(a2ui.defaultValue) ?? extractValue(a2ui.value),
 		styles: inputLabelStyles,
-		onChange: a2ui.onChange
-			? (e: React.ChangeEvent<HTMLInputElement>) => {
-					ctx.onAction({
-						actionName: a2ui.onChange.name,
-						sourceComponentId: ctx.componentId,
-						timestamp: new Date().toISOString(),
-						context: { value: e.target.value },
-					})
-				}
-			: undefined,
 	}),
 	displayName: 'PasswordInputAdapter',
 })
@@ -852,9 +842,9 @@ export const FileInputAdapter = createAdapter(FileInput, {
 	displayName: 'FileInputAdapter',
 })
 
-/** PinInput adapter - for OTP/PIN entry */
+/** PinInput adapter. The PIN stays in the field and is not copied into an action. */
 export const PinInputAdapter = createAdapter(PinInput, {
-	mapProps: (a2ui, ctx) => ({
+	mapProps: (a2ui) => ({
 		length: extractValue(a2ui.length) ?? 4,
 		type: extractValue(a2ui.type) ?? 'number',
 		mask: extractValue(a2ui.mask) ?? false,
@@ -862,16 +852,6 @@ export const PinInputAdapter = createAdapter(PinInput, {
 		disabled: extractValue(a2ui.disabled) ?? false,
 		error: !!extractValue(a2ui.error),
 		oneTimeCode: extractValue(a2ui.oneTimeCode) ?? true,
-		onComplete: a2ui.onComplete
-			? (value: string) => {
-					ctx.onAction({
-						actionName: a2ui.onComplete.name,
-						sourceComponentId: ctx.componentId,
-						timestamp: new Date().toISOString(),
-						context: { value },
-					})
-				}
-			: undefined,
 	}),
 	displayName: 'PinInputAdapter',
 })

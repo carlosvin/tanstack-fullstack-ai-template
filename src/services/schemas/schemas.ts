@@ -8,9 +8,16 @@
  * for types that are validated at runtime.
  */
 import { z } from 'zod'
-import { DISTINCT_VALUE_FIELDS, TASK_DUE_FILTERS, TASK_PRIORITIES, TASK_SORTS, TASK_STATUSES } from '@/constants/options'
+import {
+	DISTINCT_VALUE_FIELDS,
+	TASK_DUE_FILTERS,
+	TASK_PRIORITIES,
+	TASK_SORTS,
+	TASK_STATUSES,
+} from '@/constants/options'
 import { OptionalDeploymentEnvSchema } from '@/services/schemas/runtimeEnv'
 import { AppMetaSchema } from '@/services/schemas/shellSession'
+import { isRealCalendarDate } from '@/utils/calendarDate'
 
 // ---------------------------------------------------------------------------
 // Enums
@@ -126,6 +133,7 @@ export type AppRuntimeInfo = z.infer<typeof AppRuntimeInfoSchema>
 export const CalendarDateSchema = z
 	.string()
 	.regex(/^\d{4}-\d{2}-\d{2}$/)
+	.refine(isRealCalendarDate, 'Invalid calendar date')
 	.describe('Calendar date in YYYY-MM-DD')
 
 export const TaskDueFilterSchema = z

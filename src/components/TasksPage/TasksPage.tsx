@@ -38,6 +38,8 @@ import {
 } from '@/utils/taskDisplay'
 import { isTaskOverdue } from '@/utils/taskDue'
 
+const MAX_SELECTED = 50
+
 const DUE_OPTIONS = [
 	{ value: 'overdue', label: 'Overdue' },
 	{ value: 'scheduled', label: 'Has a due date' },
@@ -60,6 +62,23 @@ export interface TasksPageProps {
 
 function assigneeLabel(option: AssigneeOption): string {
 	return option.name ? `${option.name} (${option.email})` : option.email
+}
+
+/** Keep ids outside the current result. Add or remove only visible ids, and stop at {@link MAX_SELECTED}. */
+function selectionAfterVisibleToggle(
+	selected: readonly string[],
+	visibleIds: readonly string[],
+	selectAll: boolean,
+): string[] {
+	const visible = new Set(visibleIds)
+	const hidden = selected.filter((id) => !visible.has(id))
+	if (!selectAll) return hidden
+	const next = [...hidden]
+	for (const id of visibleIds) {
+		if (next.length >= MAX_SELECTED) break
+		if (!next.includes(id)) next.push(id)
+	}
+	return next
 }
 
 export function TasksPage({
@@ -187,9 +206,10 @@ export function TasksPage({
 						<Checkbox
 							label="Select visible"
 							checked={allVisibleSelected}
-							onChange={() =>
-								onUpdateSearch({ selected: allVisibleSelected ? undefined : visibleIds.slice(0, 50) }, true)
-							}
+							onChange={() => {
+								const next = selectionAfterVisibleToggle(selected, visibleIds, !allVisibleSelected)
+								onUpdateSearch({ selected: next.length > 0 ? next : undefined }, true)
+							}}
 						/>
 						{selected.length > 0 ? (
 							<Group gap="sm" align="flex-end" wrap="wrap">
@@ -222,7 +242,7 @@ export function TasksPage({
 					<Stack gap="xs">
 						{tasks.map((task) => {
 							const isCreator = isAuth && task.createdBy === currentUserEmail
-							const overdue = isTaskOverdue(task, today)
+							const overdue = isTaskOverdue(task, search.asOf ?? today)
 							return (
 								<Card key={task.id} withBorder padding="md">
 									<Group justify="space-between" wrap="wrap" gap="sm">
@@ -233,7 +253,10 @@ export function TasksPage({
 												onChange={() => {
 													const next = selected.includes(task.id)
 														? selected.filter((id) => id !== task.id)
-														: [...selected, task.id].slice(0, 50)
+														: selected.length >= MAX_SELECTED
+															? selected
+															: [...selected, task.id]
+													if (next === selected) return
 													onUpdateSearch({ selected: next.length > 0 ? next : undefined }, true)
 												}}
 											/>

@@ -5,6 +5,7 @@ import { repositoryMiddleware } from '@/middleware/repository'
 import { requireAuthMiddleware } from '@/middleware/requireAuth'
 import { webEnvMiddleware } from '@/middleware/webEnv'
 import { getAIAdapterService } from '@/services/ai/adapter'
+import { applyBulkStatus } from '@/services/api/bulkTaskStatus'
 import { getObservability } from '@/services/observability/getObservability'
 import { createWriteTrace, updateWriteTrace } from '@/services/repository/traceability'
 import { TaskRepoFilterSchema, TaskRepoInputSchema } from '@/services/schemas/repository'
@@ -22,7 +23,6 @@ import {
 } from '@/services/schemas/schemas'
 import { toToolTask, toToolUserAccess, toToolUserProfile } from '@/services/schemas/taskMappers'
 import { HttpError } from '@/utils/httpError'
-import { applyBulkStatus } from '@/services/api/bulkTaskStatus'
 
 // ============================================================================
 // Queries (GET) — accessed from route loaders and AI tools

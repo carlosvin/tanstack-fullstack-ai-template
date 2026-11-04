@@ -10,6 +10,7 @@
  */
 import { z } from 'zod'
 import { TASK_DUE_FILTERS, TASK_PRIORITIES, TASK_SORTS, TASK_STATUSES } from '@/constants/options'
+import { isRealCalendarDate } from '@/utils/calendarDate'
 
 // ---------------------------------------------------------------------------
 // User Profile (persisted document shape)
@@ -42,7 +43,10 @@ export type UserAccessRepo = z.infer<typeof UserAccessRepoSchema>
 // Task (persisted document shape)
 // ---------------------------------------------------------------------------
 
-const CalendarDateRepoSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+const CalendarDateRepoSchema = z
+	.string()
+	.regex(/^\d{4}-\d{2}-\d{2}$/)
+	.refine(isRealCalendarDate, 'Invalid calendar date')
 
 export const TaskRepoInputSchema = z.object({
 	title: z.string().min(1),

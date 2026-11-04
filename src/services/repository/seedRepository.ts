@@ -1,4 +1,5 @@
 import type { DistinctValueField } from '@/constants/options'
+import { matchesDueFilter, sortTasks, taskUpdateFields, taskWriteFields } from '@/services/repository/taskQuery'
 import { resolveCreateLastModifiedBy } from '@/services/repository/traceability'
 import type { Repository, TraceabilityContext } from '@/services/repository/types'
 import {
@@ -17,7 +18,6 @@ import {
 	type UserProfileRepo,
 	UserProfileRepoSchema,
 } from '@/services/schemas/repository'
-import { matchesDueFilter, sortTasks, taskUpdateFields, taskWriteFields } from '@/services/repository/taskQuery'
 
 /** Sample seed data for development without a database. */
 const SEED_TASKS: TaskRepo[] = [
