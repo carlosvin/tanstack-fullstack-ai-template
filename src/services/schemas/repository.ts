@@ -9,7 +9,8 @@
  * Server functions map between these and the tools-layer schemas.
  */
 import { z } from 'zod'
-import { TASK_PRIORITIES, TASK_STATUSES } from '@/constants/options'
+import { TASK_DUE_FILTERS, TASK_PRIORITIES, TASK_SORTS, TASK_STATUSES } from '@/constants/options'
+import { CALENDAR_DATE_PATTERN, isRealCalendarDate } from '@/utils/calendarDate'
 
 // ---------------------------------------------------------------------------
 // User Profile (persisted document shape)
@@ -42,12 +43,18 @@ export type UserAccessRepo = z.infer<typeof UserAccessRepoSchema>
 // Task (persisted document shape)
 // ---------------------------------------------------------------------------
 
+const CalendarDateRepoSchema = z
+	.string()
+	.regex(CALENDAR_DATE_PATTERN)
+	.refine(isRealCalendarDate, 'Invalid calendar date')
+
 export const TaskRepoInputSchema = z.object({
 	title: z.string().min(1),
-	description: z.string().optional(),
+	description: z.string().nullable().optional(),
 	status: z.enum(TASK_STATUSES).default('pending'),
 	priority: z.enum(TASK_PRIORITIES).default('medium'),
-	assignee: z.string().optional(),
+	assignee: z.string().nullable().optional(),
+	dueDate: CalendarDateRepoSchema.nullable().optional(),
 })
 
 export type TaskRepoInput = z.infer<typeof TaskRepoInputSchema>
@@ -71,6 +78,10 @@ export const TaskRepoFilterSchema = z.object({
 	priority: z.enum(TASK_PRIORITIES).optional(),
 	assignee: z.string().optional(),
 	search: z.string().optional(),
+	due: z.enum(TASK_DUE_FILTERS).optional(),
+	asOf: CalendarDateRepoSchema.optional(),
+	dueOnOrBefore: CalendarDateRepoSchema.optional(),
+	sort: z.enum(TASK_SORTS).optional(),
 })
 
 export type TaskRepoFilter = z.infer<typeof TaskRepoFilterSchema>

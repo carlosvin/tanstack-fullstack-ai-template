@@ -7,13 +7,14 @@ test.describe('Dashboard', () => {
 		await expect(page.getByText('Overview of your task management workspace.')).toBeVisible()
 	})
 
-	test('shows four stat cards', async ({ page }) => {
+	test('shows status and overdue counts', async ({ page }) => {
 		await page.goto('/')
 
 		await expect(page.getByText('Total').first()).toBeVisible()
 		await expect(page.getByText('Pending').first()).toBeVisible()
 		await expect(page.getByText('In Progress').first()).toBeVisible()
 		await expect(page.getByText('Done').first()).toBeVisible()
+		await expect(page.getByText('Overdue').first()).toBeVisible()
 	})
 
 	test('stat tiles navigate to tasks with status filters', async ({ page }) => {

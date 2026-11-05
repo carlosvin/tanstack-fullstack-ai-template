@@ -36,6 +36,23 @@ test.describe('Task list', () => {
 		await expect(page.getByText('Design database schema')).not.toBeVisible()
 	})
 
+	test('filters overdue tasks by calendar date', async ({ page }) => {
+		await page.goto('/tasks?due=overdue&asOf=2026-10-17')
+
+		await expect(page.getByText('Design database schema')).toBeVisible()
+		await expect(page.getByText('Implement authentication')).toBeVisible()
+		await expect(page.getByText('Write API documentation')).not.toBeVisible()
+		await expect(page.getByText('Set up project repository')).not.toBeVisible()
+	})
+
+	test('filters by assignee via URL', async ({ page }) => {
+		await page.goto('/tasks?assignee=alice@example.com')
+
+		await expect(page.getByText('Set up project repository')).toBeVisible()
+		await expect(page.getByText('Implement authentication')).toBeVisible()
+		await expect(page.getByText('Design database schema')).not.toBeVisible()
+	})
+
 	test('combines multiple filters', async ({ page }) => {
 		await page.goto('/tasks?status=pending&priority=critical')
 

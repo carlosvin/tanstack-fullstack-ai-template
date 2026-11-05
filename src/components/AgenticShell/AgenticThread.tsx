@@ -10,12 +10,18 @@ import { AgenticMcpRenderer } from '@/components/AgenticMcp/AgenticMcpRenderer'
 import { AgenticPromptMarkdownLink } from '@/components/AgenticShell/AgenticPromptMarkdownLink'
 import styles from '@/components/AgenticShell/AgenticThread.module.css'
 import { MessageBubble } from '@/components/PromptChat/MessageBubble'
-import { buildTaskViewMessages, promptFromA2uiAction } from '@/services/a2ui/taskViewMessages'
+import {
+	buildTaskViewMessages,
+	bulkStatusPrompt,
+	promptFromA2uiAction,
+	taskViewIntent,
+} from '@/services/a2ui/taskViewMessages'
 import { getTask } from '@/services/api/serverFns'
 import { TASK_DETAIL_UI_URI, TASKS_LIST_UI_URI } from '@/services/mcpUi/mcpUiResource'
 import { findRememberedTask } from '@/services/repository/conversationTasks'
+import { useCalendarToday } from '@/utils/useCalendarToday'
 
-const AGENTIC_STARTERS = ['Show my tasks', 'Show pending tasks', 'Show high priority tasks']
+const AGENTIC_STARTERS = ['Show my tasks', 'Show pending tasks', 'Show overdue tasks']
 
 const DETAIL_PROMPT = /^Open the detail view for (.+)\. The task id is ([^\s.]+)\.$/
 
@@ -109,6 +115,7 @@ function retryPrompt(uri: string, toolInput: Record<string, unknown> | undefined
  */
 export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number }) {
 	const { messages, isLoading, sendMessage } = useAgenticChat()
+	const today = useCalendarToday()
 	const [opened, setOpened] = useState<OpenedDetail[]>([])
 	const viewportRef = useRef<HTMLDivElement>(null)
 
@@ -124,18 +131,13 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 		const id = crypto.randomUUID()
 		setOpened((prev) => [
 			...prev,
-			{ id, title, taskId, resultText: remembered ? JSON.stringify({ task: remembered }) : '' },
+			{ id, title, taskId, resultText: remembered ? JSON.stringify({ task: remembered, asOf: today }) : '' },
 		])
 		if (remembered) return
 		void getTask({ data: { taskId } }).then((task) => {
-			const resultText = JSON.stringify(task ? { task } : { error: 'Task not found.', code: 404 })
+			const resultText = JSON.stringify(task ? { task, asOf: today } : { error: 'Task not found.', code: 404 })
 			setOpened((prev) => prev.map((item) => (item.id === id ? { ...item, resultText } : item)))
 		})
-	}
-
-	function handleAction(action: UserAction) {
-		const prompt = promptFromA2uiAction(action)
-		if (prompt) handlePrompt(prompt)
 	}
 
 	useEffect(() => {
@@ -192,7 +194,8 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 									<TaskViewResult
 										key={view.callId}
 										resultText={view.resultText}
-										onAction={handleAction}
+										asOf={today}
+										onPrompt={handlePrompt}
 										onRetry={() => handlePrompt(view.retryPrompt)}
 									/>
 								))}
@@ -225,7 +228,8 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 								{item.resultText ? (
 									<TaskViewResult
 										resultText={item.resultText}
-										onAction={handleAction}
+										asOf={today}
+										onPrompt={handlePrompt}
 										onRetry={() =>
 											handlePrompt(`Open the detail view for ${item.title}. The task id is ${item.taskId}.`)
 										}
@@ -257,13 +261,36 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 
 function TaskViewResult({
 	resultText,
-	onAction,
+	asOf,
+	onPrompt,
 	onRetry,
 }: {
 	resultText: string
-	onAction: (action: UserAction) => void
+	asOf: string
+	onPrompt: (text: string) => void
 	onRetry: () => void
 }) {
-	const messages = useMemo(() => buildTaskViewMessages(resultText), [resultText])
+	const [selected, setSelected] = useState<string[]>([])
+	const messages = useMemo(() => buildTaskViewMessages(resultText, selected, asOf), [resultText, selected, asOf])
+
+	function onAction(action: UserAction) {
+		const prompt = promptFromA2uiAction(action)
+		if (prompt) {
+			onPrompt(prompt)
+			return
+		}
+		const intent = taskViewIntent(action)
+		if (intent.kind === 'toggle') {
+			setSelected((current) =>
+				current.includes(intent.taskId) ? current.filter((id) => id !== intent.taskId) : [...current, intent.taskId],
+			)
+			return
+		}
+		if (intent.kind === 'mark-selected') {
+			const next = bulkStatusPrompt(resultText, selected, intent.status)
+			if (next) onPrompt(next)
+		}
+	}
+
 	return <AgenticA2uiSurface messages={messages} onAction={onAction} onRetry={onRetry} />
 }

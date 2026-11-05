@@ -50,6 +50,19 @@ describe('conversationTaskState', () => {
 		expect(findRememberedTask(messages, 'task-7')?.title).toBe('Fix timeline display issue')
 	})
 
+	it('replays a bulk status result from the updated rows', () => {
+		const changed = { ...created, status: 'done' as const, updatedAt: '2026-10-13T00:00:00.000Z' }
+		const messages = thread([
+			call('create', 'createTask', { title: created.title }),
+			result('create', { task: created }),
+			call('bulk', 'updateTasksStatus', { taskIds: [created.id], status: 'done' }),
+			result('bulk', { updated: [changed], refused: [], message: 'Updated 1.' }),
+			call('list', 'showTasksView', { status: 'pending' }),
+			result('list', { tasks: [], presentation: 'cards' }),
+		])
+		expect(findRememberedTask(messages, created.id)?.status).toBe('done')
+	})
+
 	it('drops a deleted task and ignores a failed delete', () => {
 		const createdThread = thread([
 			call('create', 'createTask', { title: created.title }),

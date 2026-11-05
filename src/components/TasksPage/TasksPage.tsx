@@ -3,6 +3,7 @@ import {
 	Badge,
 	Button,
 	Card,
+	Checkbox,
 	Container,
 	Flex,
 	Group,
@@ -14,13 +15,20 @@ import {
 } from '@mantine/core'
 import { useDebouncedCallback } from '@mantine/hooks'
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { z } from 'zod'
 import { Link } from '@/components/Link/Link'
+import { MAX_BULK_TASK_SELECTION } from '@/constants/options'
 import {
+	type AssigneeOption,
 	OptionalTaskPrioritySchema,
 	OptionalTaskStatusSchema,
 	type Task,
-	type TaskFilter,
+	TaskDueFilterSchema,
+	type TaskStatus,
+	type TasksListSearch,
 } from '@/services/schemas/schemas'
+import { formatCalendarDate } from '@/utils/calendarDate'
 import {
 	priorityColor,
 	priorityLabel,
@@ -29,18 +37,91 @@ import {
 	statusLabel,
 	statusSelectOptions,
 } from '@/utils/taskDisplay'
+import { isTaskOverdue } from '@/utils/taskDue'
+
+const DUE_OPTIONS = [
+	{ value: 'overdue', label: 'Overdue' },
+	{ value: 'scheduled', label: 'Has a due date' },
+	{ value: 'unscheduled', label: 'No due date' },
+]
 
 export interface TasksPageProps {
 	tasks: Task[]
-	search: TaskFilter
+	assignees: AssigneeOption[]
+	search: TasksListSearch
 	isAuth: boolean
+	isTestUser: boolean
+	today: string
 	currentUserEmail?: string
-	onUpdateSearch: (updates: Partial<TaskFilter>, replace?: boolean) => void
+	bulkLoading?: boolean
+	onUpdateSearch: (updates: Partial<TasksListSearch>, replace?: boolean) => void
 	onDeleteTask: (task: Task) => void
+	onBulkStatus: (status: TaskStatus) => void
 }
 
-export function TasksPage({ tasks, search, isAuth, currentUserEmail, onUpdateSearch, onDeleteTask }: TasksPageProps) {
-	const urlSearch = search.search ?? ''
+function idsHiddenFrom(selected: readonly string[], visibleIds: readonly string[]): string[] {
+	const visible = new Set(visibleIds)
+	return selected.filter((id) => !visible.has(id))
+}
+
+/** Visible ids that fit with the hidden selection, in list order, up to {@link MAX_BULK_TASK_SELECTION}. */
+function visibleSelectionTarget(selected: readonly string[], visibleIds: readonly string[]): string[] {
+	const hidden = idsHiddenFrom(selected, visibleIds)
+	const target: string[] = []
+	for (const id of visibleIds) {
+		if (hidden.length + target.length >= MAX_BULK_TASK_SELECTION) break
+		if (!target.includes(id)) target.push(id)
+	}
+	return target
+}
+
+/** Keep ids outside the current result. Add or remove only the capped visible ids. */
+function selectionAfterVisibleToggle(
+	selected: readonly string[],
+	visibleIds: readonly string[],
+	selectAll: boolean,
+): string[] {
+	const hidden = idsHiddenFrom(selected, visibleIds)
+	if (!selectAll) return hidden
+	return [...hidden, ...visibleSelectionTarget(selected, visibleIds)]
+}
+
+export function TasksPage({
+	tasks,
+	assignees,
+	search,
+	isAuth,
+	isTestUser,
+	today,
+	currentUserEmail,
+	bulkLoading = false,
+	onUpdateSearch,
+	onDeleteTask,
+	onBulkStatus,
+}: TasksPageProps) {
+	const selected = search.selected ?? []
+	const selectedSet = useMemo(() => new Set(selected), [selected])
+	const visibleIds = useMemo(() => tasks.map((task) => task.id), [tasks])
+	const visibleTarget = useMemo(() => visibleSelectionTarget(selected, visibleIds), [selected, visibleIds])
+	const allVisibleSelected = visibleTarget.length > 0 && visibleTarget.every((id) => selectedSet.has(id))
+	const selectVisibleLabel =
+		visibleIds.length > visibleTarget.length
+			? `Select visible (${visibleTarget.length} of ${visibleIds.length})`
+			: 'Select visible'
+	const assigneeOptions = useMemo(
+		() =>
+			assignees.map((option) => ({
+				value: option.email,
+				label: option.name ? `${option.name} (${option.email})` : option.email,
+			})),
+		[assignees],
+	)
+	const assigneeNames = useMemo(
+		() => new Map(assignees.flatMap((option) => (option.name ? [[option.email, option.name] as const] : []))),
+		[assignees],
+	)
+	const mine = Boolean(currentUserEmail) && search.assignee === currentUserEmail
+	const [bulkStatus, setBulkStatus] = useState<TaskStatus>('done')
 
 	const debouncedSearch = useDebouncedCallback((value: string) => {
 		const next = value || undefined
@@ -76,7 +157,7 @@ export function TasksPage({ tasks, search, isAuth, currentUserEmail, onUpdateSea
 					<TextInput
 						placeholder="Search tasks..."
 						leftSection={<Search size={16} />}
-						defaultValue={urlSearch}
+						defaultValue={search.search ?? ''}
 						onChange={(e) => debouncedSearch(e.currentTarget.value)}
 						w={{ base: '100%', sm: 'auto' }}
 						flex={1}
@@ -97,7 +178,83 @@ export function TasksPage({ tasks, search, isAuth, currentUserEmail, onUpdateSea
 						onChange={(val) => onUpdateSearch({ priority: OptionalTaskPrioritySchema.parse(val) })}
 						w={{ base: '100%', sm: 150 }}
 					/>
+					<Select
+						placeholder="Due"
+						aria-label="Due"
+						clearable
+						data={DUE_OPTIONS}
+						value={search.due ?? null}
+						onChange={(val) => {
+							const due = TaskDueFilterSchema.optional().parse(val ?? undefined)
+							onUpdateSearch({ due, asOf: due === 'overdue' ? today : undefined })
+						}}
+						w={{ base: '100%', sm: 170 }}
+					/>
+					<Select
+						placeholder="Assignee"
+						aria-label="Assignee"
+						clearable
+						data={assigneeOptions}
+						value={search.assignee ?? null}
+						onChange={(val) =>
+							onUpdateSearch({
+								assignee: z
+									.string()
+									.min(1)
+									.optional()
+									.parse(val ?? undefined),
+							})
+						}
+						w={{ base: '100%', sm: 220 }}
+					/>
+					{isAuth && !isTestUser && currentUserEmail ? (
+						<Button
+							variant={mine ? 'filled' : 'light'}
+							onClick={() => onUpdateSearch({ assignee: mine ? undefined : currentUserEmail })}
+							w={{ base: '100%', sm: 'auto' }}
+						>
+							Assigned to me
+						</Button>
+					) : null}
 				</Flex>
+
+				{isAuth && tasks.length > 0 ? (
+					<Flex
+						gap="sm"
+						align={{ base: 'stretch', sm: 'center' }}
+						direction={{ base: 'column', sm: 'row' }}
+						wrap="wrap"
+					>
+						<Checkbox
+							label={selectVisibleLabel}
+							checked={allVisibleSelected}
+							onChange={() => {
+								const next = selectionAfterVisibleToggle(selected, visibleIds, !allVisibleSelected)
+								onUpdateSearch({ selected: next.length > 0 ? next : undefined }, true)
+							}}
+						/>
+						{selected.length > 0 ? (
+							<Group gap="sm" align="flex-end" wrap="wrap">
+								<Text size="sm" c="dimmed">
+									{selected.length} selected
+								</Text>
+								<Select
+									aria-label="Status for selected tasks"
+									data={statusSelectOptions}
+									value={bulkStatus}
+									w={{ base: '100%', sm: 160 }}
+									onChange={(value) => {
+										const parsed = OptionalTaskStatusSchema.parse(value)
+										if (parsed) setBulkStatus(parsed)
+									}}
+								/>
+								<Button loading={bulkLoading} onClick={() => onBulkStatus(bulkStatus)}>
+									Update status
+								</Button>
+							</Group>
+						) : null}
+					</Flex>
+				) : null}
 
 				{tasks.length === 0 ? (
 					<Text c="dimmed" ta="center" py="xl">
@@ -107,9 +264,25 @@ export function TasksPage({ tasks, search, isAuth, currentUserEmail, onUpdateSea
 					<Stack gap="xs">
 						{tasks.map((task) => {
 							const isCreator = isAuth && task.createdBy === currentUserEmail
+							const overdue = isTaskOverdue(task, search.asOf ?? today)
 							return (
 								<Card key={task.id} withBorder padding="md">
 									<Group justify="space-between" wrap="wrap" gap="sm">
+										{isAuth ? (
+											<Checkbox
+												aria-label={`Select ${task.title}`}
+												checked={selectedSet.has(task.id)}
+												onChange={() => {
+													const next = selectedSet.has(task.id)
+														? selected.filter((id) => id !== task.id)
+														: selected.length >= MAX_BULK_TASK_SELECTION
+															? selected
+															: [...selected, task.id]
+													if (next === selected) return
+													onUpdateSearch({ selected: next.length > 0 ? next : undefined }, true)
+												}}
+											/>
+										) : null}
 										<Link
 											to="/tasks/$taskId"
 											params={{ taskId: task.id }}
@@ -134,9 +307,14 @@ export function TasksPage({ tasks, search, isAuth, currentUserEmail, onUpdateSea
 												<Group gap="sm" wrap="wrap">
 													{task.assignee && (
 														<Text size="xs" c="dimmed">
-															{task.assignee}
+															{assigneeNames.get(task.assignee) ?? task.assignee}
 														</Text>
 													)}
+													{task.dueDate ? (
+														<Text size="xs" c={overdue ? 'red' : 'dimmed'}>
+															{overdue ? 'Overdue' : 'Due'} {formatCalendarDate(task.dueDate)}
+														</Text>
+													) : null}
 													<Badge variant="dot" color={statusColor(task.status)}>
 														{statusLabel(task.status)}
 													</Badge>

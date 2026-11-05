@@ -38,7 +38,7 @@ describe('AgenticA2uiSurface', () => {
 	it('opens the named task from the card without showing the id', async () => {
 		const onAction = vi.fn()
 		renderSurface('light', onAction)
-		const card = await screen.findByRole('button', { name: /Ship the report/ })
+		const card = await screen.findByRole('button', { name: /^Ship the report/ })
 		expect(card.textContent).not.toContain('task-1')
 		const label = card.querySelector('[class*="label"]')
 		expect(label?.getAttribute('style') ?? '').toMatch(/text-align:\s*left/)
@@ -66,6 +66,34 @@ describe('AgenticA2uiSurface', () => {
 		expect(screen.queryByText('task-1')).toBeNull()
 	})
 
+	it('renders kanban lanes and a timeline item', async () => {
+		const { unmount } = render(
+			<MantineProvider>
+				<AgenticA2uiSurface
+					messages={buildTaskViewMessages({ tasks: [task], presentation: 'kanban' })}
+					onAction={vi.fn()}
+				/>
+			</MantineProvider>,
+		)
+		expect(await screen.findByText('Pending')).toBeTruthy()
+		expect(screen.getByText('Ship the report')).toBeTruthy()
+		expect(screen.getAllByText('None')).toHaveLength(3)
+		unmount()
+		render(
+			<MantineProvider>
+				<AgenticA2uiSurface
+					messages={buildTaskViewMessages({
+						tasks: [{ ...task, dueDate: '2026-10-01' }],
+						presentation: 'timeline',
+						asOf: '2026-10-17',
+					})}
+					onAction={vi.fn()}
+				/>
+			</MantineProvider>,
+		)
+		expect(await screen.findAllByText('Overdue 2026-10-01')).toHaveLength(2)
+	})
+
 	it('renders the detail view and sends the list action', async () => {
 		const onAction = vi.fn()
 		render(
@@ -78,6 +106,60 @@ describe('AgenticA2uiSurface', () => {
 		expect(screen.queryByText('task-1')).toBeNull()
 		fireEvent.click(screen.getByRole('button', { name: 'All tasks' }))
 		expect(onAction).toHaveBeenCalledWith(expect.objectContaining({ actionName: 'back-to-list' }))
+	})
+
+	it('renders catalog adapters beyond the task cards and drops an unknown type', async () => {
+		render(
+			<MantineProvider>
+				<AgenticA2uiSurface
+					messages={[
+						{
+							surfaceUpdate: {
+								surfaceId: '@default',
+								components: [
+									{
+										id: 'root',
+										component: {
+											Column: { children: { explicitList: ['alert', 'progress', 'acc', 'mystery'] } },
+										},
+									},
+									{
+										id: 'alert',
+										component: {
+											Alert: {
+												title: { literalString: 'Heads up' },
+												message: { literalString: 'All set' },
+											},
+										},
+									},
+									{ id: 'progress', component: { Progress: { value: { literalNumber: 40 } } } },
+									{ id: 'acc', component: { Accordion: { children: { explicitList: ['item'] } } } },
+									{
+										id: 'item',
+										component: {
+											AccordionItem: {
+												title: { literalString: 'Details' },
+												value: { literalString: 'details' },
+												child: 'body',
+											},
+										},
+									},
+									{ id: 'body', component: { Text: { text: { literalString: 'Inside the accordion' } } } },
+									{ id: 'mystery', component: { Sparkline: { text: { literalString: 'Should not appear' } } } },
+								],
+							},
+						},
+						{ beginRendering: { surfaceId: '@default', root: 'root' } },
+					]}
+					onAction={vi.fn()}
+				/>
+			</MantineProvider>,
+		)
+		expect(await screen.findByText('Heads up')).toBeTruthy()
+		expect(screen.getByText('All set')).toBeTruthy()
+		expect(screen.getByRole('progressbar')).toBeTruthy()
+		expect(screen.getByRole('button', { name: 'Details' })).toBeTruthy()
+		expect(screen.queryByText('Should not appear')).toBeNull()
 	})
 
 	it('renders nothing for a component type outside the catalog', async () => {

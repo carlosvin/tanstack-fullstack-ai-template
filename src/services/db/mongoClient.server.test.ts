@@ -27,9 +27,12 @@ describe('openMongoRepositoryScope', () => {
 		const { client, close, deleteMany, indexes } = fakeClient(createIndex)
 		const scope = await openMongoRepositoryScope('mongodb://localhost/app', 'app', async () => client)
 
-		expect(createIndex).toHaveBeenCalledTimes(2)
+		expect(createIndex).toHaveBeenCalledTimes(5)
 		expect(indexes).toEqual([
 			{ name: 'tasks', key: { id: 1 }, options: { unique: true } },
+			{ name: 'tasks', key: { updatedAt: -1 }, options: undefined },
+			{ name: 'tasks', key: { status: 1, dueDate: 1 }, options: undefined },
+			{ name: 'tasks', key: { dueDate: 1, updatedAt: -1 }, options: undefined },
 			{
 				name: 'users',
 				key: { email: 1 },

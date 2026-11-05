@@ -2,16 +2,19 @@ import { Badge, Button, Card, Container, Group, Stack, Text, Title } from '@mant
 import { ArrowLeft, Calendar, Pencil, Trash2, User } from 'lucide-react'
 import { Link } from '@/components/Link/Link'
 import type { Task } from '@/services/schemas/schemas'
+import { formatCalendarDate } from '@/utils/calendarDate'
 import { priorityColor, priorityLabel, statusColor, statusLabel } from '@/utils/taskDisplay'
+import { isTaskOverdue } from '@/utils/taskDue'
 
 export interface TaskDetailPageProps {
 	task: Task | null
 	isCreator: boolean
+	today: string
 	onEdit: () => void
 	onDelete: () => void
 }
 
-export function TaskDetailPage({ task, isCreator, onEdit, onDelete }: TaskDetailPageProps) {
+export function TaskDetailPage({ task, isCreator, today, onEdit, onDelete }: TaskDetailPageProps) {
 	if (!task) {
 		return (
 			<Container size="sm" py="xl">
@@ -76,6 +79,14 @@ export function TaskDetailPage({ task, isCreator, onEdit, onDelete }: TaskDetail
 									<Text size="sm">{task.assignee}</Text>
 								</Group>
 							)}
+							{task.dueDate ? (
+								<Group gap="xs">
+									<Calendar size={16} />
+									<Text size="sm" c={isTaskOverdue(task, today) ? 'red' : 'dimmed'}>
+										{isTaskOverdue(task, today) ? 'Overdue' : 'Due'} {formatCalendarDate(task.dueDate)}
+									</Text>
+								</Group>
+							) : null}
 							<Group gap="xs">
 								<Calendar size={16} />
 								<Text size="sm" c="dimmed">

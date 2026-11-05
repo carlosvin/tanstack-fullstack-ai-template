@@ -8,9 +8,17 @@
  * for types that are validated at runtime.
  */
 import { z } from 'zod'
-import { DISTINCT_VALUE_FIELDS, TASK_PRIORITIES, TASK_STATUSES } from '@/constants/options'
+import {
+	DISTINCT_VALUE_FIELDS,
+	MAX_BULK_TASK_SELECTION,
+	TASK_DUE_FILTERS,
+	TASK_PRIORITIES,
+	TASK_SORTS,
+	TASK_STATUSES,
+} from '@/constants/options'
 import { OptionalDeploymentEnvSchema } from '@/services/schemas/runtimeEnv'
 import { AppMetaSchema } from '@/services/schemas/shellSession'
+import { CALENDAR_DATE_PATTERN, isRealCalendarDate } from '@/utils/calendarDate'
 
 // ---------------------------------------------------------------------------
 // Enums
@@ -122,12 +130,38 @@ export type AppRuntimeInfo = z.infer<typeof AppRuntimeInfoSchema>
 // Task — the sample domain entity
 // ---------------------------------------------------------------------------
 
+/** Calendar date with no time and no timezone shift. `null` clears a stored due date. */
+export const CalendarDateSchema = z
+	.string()
+	.regex(CALENDAR_DATE_PATTERN)
+	.refine(isRealCalendarDate, 'Invalid calendar date')
+	.describe('Calendar date in YYYY-MM-DD')
+
+export const TaskDueFilterSchema = z
+	.enum(TASK_DUE_FILTERS)
+	.describe('overdue = open and due before asOf; unscheduled = no due date; scheduled = has a due date')
+
+export const TaskSortSchema = z
+	.enum(TASK_SORTS)
+	.describe('Use due to list the soonest due date first. Omit to keep recently updated first.')
+
 export const TaskInputSchema = z.object({
 	title: z.string().min(1).describe('Short title summarizing the task'),
-	description: z.string().optional().describe('Detailed description of what needs to be done'),
+	description: z
+		.string()
+		.nullable()
+		.optional()
+		.describe('Detailed description of what needs to be done. Null or an empty string clears it.'),
 	status: TaskStatusSchema.default('pending').describe('Current status of the task'),
 	priority: TaskPrioritySchema.default('medium').describe('Priority level of the task'),
-	assignee: z.string().optional().describe('Email of the person assigned to this task'),
+	assignee: z
+		.string()
+		.nullable()
+		.optional()
+		.describe('Email of the person assigned to this task. Null or an empty string clears it.'),
+	dueDate: CalendarDateSchema.nullable()
+		.optional()
+		.describe('Optional calendar due date, YYYY-MM-DD. Null clears it. Done and cancelled tasks are never overdue.'),
 })
 
 export type TaskInput = z.infer<typeof TaskInputSchema>
@@ -156,15 +190,23 @@ export const TaskFilterSchema = z.object({
 			'Assignee email, only when the user names that person. Omit for "my tasks" and for an unauthenticated user.',
 		),
 	search: z.string().optional().describe('Full-text search over tasks'),
+	due: TaskDueFilterSchema.optional(),
+	asOf: CalendarDateSchema.optional().describe(
+		'Local calendar date YYYY-MM-DD used to decide overdue. Take the date from the user timezone in browser context.',
+	),
+	dueOnOrBefore: CalendarDateSchema.optional().describe(
+		'Keep tasks whose due date is on or before this YYYY-MM-DD date',
+	),
+	sort: TaskSortSchema.optional(),
 })
 
 export type TaskFilter = z.infer<typeof TaskFilterSchema>
 
 /** How showTasksView draws the list. Cards are the default. */
 export const TaskListPresentationSchema = z
-	.enum(['cards', 'table'])
+	.enum(['cards', 'table', 'kanban', 'timeline'])
 	.describe(
-		'How to draw the list. Use "table" when the user asks for a table. Use "cards" when they ask for cards or a grid. Omit for the card grid.',
+		'How to draw the list. "table" for a table. "kanban" for status lanes. "timeline" for due-date groups. "cards" or omit for the card grid.',
 	)
 
 export const ShowTasksViewInputSchema = TaskFilterSchema.extend({
@@ -173,8 +215,45 @@ export const ShowTasksViewInputSchema = TaskFilterSchema.extend({
 
 export type ShowTasksViewInput = z.infer<typeof ShowTasksViewInputSchema>
 
-/** URL search params for the tasks list (subset of TaskFilter without assignee). */
-export const TasksListSearchSchema = TaskFilterSchema.pick({ status: true, priority: true, search: true })
+/** URL search for the tasks list, including assignee, due filters, and bulk selection. */
+export const TasksListSearchSchema = TaskFilterSchema.extend({
+	selected: z
+		.array(z.string().min(1))
+		.max(MAX_BULK_TASK_SELECTION)
+		.optional()
+		.describe('Task ids selected for a bulk status change. Omitted from the task query.'),
+})
+
+export type TasksListSearch = z.infer<typeof TasksListSearchSchema>
+
+export const AssigneeOptionSchema = z.object({
+	email: z.string().describe('Assignee email present on at least one task'),
+	name: z.string().optional().describe('Profile display name when the repository has one'),
+})
+
+export type AssigneeOption = z.infer<typeof AssigneeOptionSchema>
+
+export const AssigneeOptionListSchema = z.array(AssigneeOptionSchema)
+
+export const BulkTaskStatusInputSchema = z.object({
+	taskIds: z.array(z.string().min(1)).min(1).max(MAX_BULK_TASK_SELECTION).describe('Task ids to update'),
+	status: TaskStatusSchema.describe('Status to set on every task the caller created'),
+})
+
+export type BulkTaskStatusInput = z.infer<typeof BulkTaskStatusInputSchema>
+
+export const BulkTaskStatusRefusalSchema = z.object({
+	taskId: z.string().describe('Task id that was not changed'),
+	title: z.string().optional().describe('Task title when the row exists'),
+	reason: z.string().describe('Why this row was left unchanged'),
+})
+
+export const BulkTaskStatusResultSchema = z.object({
+	updated: z.array(TaskSchema).describe('Tasks whose status changed'),
+	refused: z.array(BulkTaskStatusRefusalSchema).describe('Tasks left unchanged'),
+})
+
+export type BulkTaskStatusResult = z.infer<typeof BulkTaskStatusResultSchema>
 
 /** Filterable task fields that support distinct-value discovery against real data. */
 export const DistinctValueFieldSchema = z
@@ -200,7 +279,9 @@ export const TaskIdInputSchema = z.object({
 })
 
 export const UpdateTaskInputSchema = TaskIdInputSchema.extend({
-	updates: TaskInputSchema.partial().describe('Fields to update (title, description, status, priority, assignee)'),
+	updates: TaskInputSchema.partial().describe(
+		'Fields to update (title, description, status, priority, assignee, dueDate). Null clears dueDate, description, or assignee. Omit a field to leave it unchanged.',
+	),
 })
 
 export type UpdateTaskInput = z.infer<typeof UpdateTaskInputSchema>

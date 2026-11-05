@@ -1,5 +1,6 @@
-import type { Collection, Db, Filter } from 'mongodb'
-import type { DistinctValueField } from '@/constants/options'
+import type { Collection, Db, Filter, UpdateFilter } from 'mongodb'
+import { type DistinctValueField, OPEN_TASK_STATUSES } from '@/constants/options'
+import { matchesDueFilter, sortTasks, taskUpdateFields, taskWriteFields } from '@/services/repository/taskQuery'
 import { resolveCreateLastModifiedBy } from '@/services/repository/traceability'
 import type { IndexableRepository, TraceabilityContext } from '@/services/repository/types'
 import {
@@ -9,8 +10,39 @@ import {
 	parseTaskRepoOrNull,
 } from '@/services/schemas/repoParsers'
 import type { TaskRepo, TaskRepoFilter, TaskRepoInput } from '@/services/schemas/repository'
+import { calendarToday } from '@/utils/calendarDate'
 
 const TASKS_COLLECTION = 'tasks'
+
+/** Due-date clauses that Mongo can reject before the documents are read. */
+function taskMongoFilter(filter?: Readonly<TaskRepoFilter>, asOf?: string): Filter<TaskRepo> {
+	const parts: Filter<TaskRepo>[] = []
+	if (filter?.status) parts.push({ status: filter.status })
+	if (filter?.priority) parts.push({ priority: filter.priority })
+	if (filter?.assignee) parts.push({ assignee: filter.assignee })
+	if (filter?.search) {
+		parts.push({
+			$or: [
+				{ title: { $regex: filter.search, $options: 'i' } },
+				{ description: { $regex: filter.search, $options: 'i' } },
+			],
+		})
+	}
+	if (filter?.due === 'overdue') {
+		parts.push({
+			dueDate: { $lt: asOf ?? calendarToday('UTC'), $type: 'string' },
+			status: { $in: [...OPEN_TASK_STATUSES] },
+		})
+	}
+	if (filter?.due === 'unscheduled') {
+		parts.push({ $or: [{ dueDate: { $exists: false } }, { dueDate: null }] })
+	}
+	if (filter?.due === 'scheduled') parts.push({ dueDate: { $type: 'string' } })
+	if (filter?.dueOnOrBefore) parts.push({ dueDate: { $lte: filter.dueOnOrBefore, $type: 'string' } })
+	if (parts.length === 0) return {}
+	if (parts.length === 1) return parts[0]
+	return { $and: parts }
+}
 
 export interface TaskCollectionRepository extends IndexableRepository {
 	getTasks(filter?: Readonly<TaskRepoFilter>): Promise<TaskRepo[]>
@@ -35,23 +67,17 @@ export class MongoTaskRepository implements TaskCollectionRepository {
 
 	async createIndexes(): Promise<void> {
 		await this.collection.createIndex({ id: 1 }, { unique: true })
+		await this.collection.createIndex({ updatedAt: -1 })
+		await this.collection.createIndex({ status: 1, dueDate: 1 })
+		await this.collection.createIndex({ dueDate: 1, updatedAt: -1 })
 	}
 
 	async getTasks(filter?: Readonly<TaskRepoFilter>): Promise<TaskRepo[]> {
-		const query: Filter<TaskRepo> = {}
-
-		if (filter?.status) query.status = filter.status
-		if (filter?.priority) query.priority = filter.priority
-		if (filter?.assignee) query.assignee = filter.assignee
-		if (filter?.search) {
-			query.$or = [
-				{ title: { $regex: filter.search, $options: 'i' } },
-				{ description: { $regex: filter.search, $options: 'i' } },
-			]
-		}
-
+		const asOf = filter?.asOf ?? calendarToday('UTC')
+		const query = taskMongoFilter(filter, asOf)
 		const rows = await this.collection.find(query).sort({ updatedAt: -1 }).toArray()
-		return parseTaskRepoList(rows)
+		const matched = parseTaskRepoList(rows).filter((task) => matchesDueFilter(task, filter, asOf))
+		return sortTasks(matched, filter)
 	}
 
 	async getTask(taskId: string): Promise<TaskRepo | null> {
@@ -67,7 +93,7 @@ export class MongoTaskRepository implements TaskCollectionRepository {
 	async createTask(input: Readonly<TaskRepoInput>, trace?: Readonly<TraceabilityContext>): Promise<TaskRepo> {
 		const now = new Date().toISOString()
 		const task: TaskRepo = {
-			...input,
+			...taskWriteFields(input),
 			id: crypto.randomUUID(),
 			createdAt: now,
 			updatedAt: now,
@@ -83,17 +109,18 @@ export class MongoTaskRepository implements TaskCollectionRepository {
 		input: Readonly<Partial<TaskRepoInput>>,
 		trace?: Readonly<TraceabilityContext>,
 	): Promise<TaskRepo | null> {
-		const result = await this.collection.findOneAndUpdate(
-			{ id: taskId },
-			{
-				$set: {
-					...input,
-					updatedAt: new Date().toISOString(),
-					...(trace?.lastModifiedBy ? { lastModifiedBy: trace.lastModifiedBy } : {}),
-				},
+		const { set, unset } = taskUpdateFields(input)
+		const update: UpdateFilter<TaskRepo> = {
+			$set: {
+				...set,
+				updatedAt: new Date().toISOString(),
+				...(trace?.lastModifiedBy ? { lastModifiedBy: trace.lastModifiedBy } : {}),
 			},
-			{ returnDocument: 'after' },
-		)
+		}
+		if (unset.length > 0) {
+			update.$unset = Object.fromEntries(unset.map((field) => [field, '']))
+		}
+		const result = await this.collection.findOneAndUpdate({ id: taskId }, update, { returnDocument: 'after' })
 		return parseTaskRepoOrNull(result)
 	}
 

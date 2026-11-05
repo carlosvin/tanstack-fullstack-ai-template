@@ -5,10 +5,13 @@ import { repositoryMiddleware } from '@/middleware/repository'
 import { requireAuthMiddleware } from '@/middleware/requireAuth'
 import { webEnvMiddleware } from '@/middleware/webEnv'
 import { getAIAdapterService } from '@/services/ai/adapter'
+import { applyBulkStatus } from '@/services/api/bulkTaskStatus'
 import { getObservability } from '@/services/observability/getObservability'
 import { createWriteTrace, updateWriteTrace } from '@/services/repository/traceability'
 import { TaskRepoFilterSchema, TaskRepoInputSchema } from '@/services/schemas/repository'
 import {
+	AssigneeOptionListSchema,
+	BulkTaskStatusInputSchema,
 	CurrentUserSchema,
 	DistinctValueListSchema,
 	DistinctValuesInputSchema,
@@ -53,6 +56,22 @@ export const getDistinctValues = createServerFn({ method: 'GET' })
 			context.repository.getDistinctValues(data.field),
 		)
 		return DistinctValueListSchema.parse(values)
+	})
+
+/** Distinct assignees labeled with a profile name when the repository has one. */
+export const getAssigneeOptions = createServerFn({ method: 'GET' })
+	.middleware([repositoryMiddleware])
+	.handler(async ({ context }) => {
+		const emails = await getObservability({}).startSpan('getAssigneeOptions', () =>
+			context.repository.getDistinctValues('assignee'),
+		)
+		const options = await Promise.all(
+			emails.map(async (email) => {
+				const profile = await context.repository.getUserProfile(email)
+				return { email, name: profile?.name }
+			}),
+		)
+		return AssigneeOptionListSchema.parse(options)
 	})
 
 /** Fetch a user profile by email. */
@@ -139,6 +158,16 @@ export const updateTask = createServerFn({ method: 'POST' })
 		)
 		return row ? toToolTask(row) : null
 	})
+
+/** Set one status on many tasks. Each row is checked for the creator. */
+export const updateTasksStatus = createServerFn({ method: 'POST' })
+	.middleware([requireAuthMiddleware, invalidateMiddleware])
+	.inputValidator(BulkTaskStatusInputSchema)
+	.handler(async ({ data, context }) =>
+		getObservability({}).startSpan('updateTasksStatus', () =>
+			applyBulkStatus(context.repository, context.accessTicket, data),
+		),
+	)
 
 /** Delete a task. Only the creator may delete. */
 export const deleteTask = createServerFn({ method: 'POST' })

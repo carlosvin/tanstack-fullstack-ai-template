@@ -2,11 +2,15 @@ import { Button, Select, Stack, Textarea, TextInput } from '@mantine/core'
 import { schemaResolver, useForm } from '@mantine/form'
 import { useEffect } from 'react'
 import { z } from 'zod'
-import { type TaskInput, TaskInputSchema } from '@/services/schemas/schemas'
+import { CalendarDateSchema, type TaskInput, TaskInputSchema } from '@/services/schemas/schemas'
 import { prioritySelectOptions, statusSelectOptions } from '@/utils/taskDisplay'
 
 const taskFormSchema = TaskInputSchema.extend({
 	title: z.string().trim().min(1, { error: 'Title is required' }),
+	dueDate: z.preprocess(
+		(value) => (value == null || value === '' ? undefined : value),
+		CalendarDateSchema.nullable().optional(),
+	),
 })
 
 const defaultValues: TaskInput = {
@@ -15,6 +19,7 @@ const defaultValues: TaskInput = {
 	status: 'pending',
 	priority: 'medium',
 	assignee: '',
+	dueDate: '',
 }
 
 interface TaskFormProps {
@@ -31,6 +36,7 @@ function toFormValues(initialValues?: Partial<TaskInput>): TaskInput {
 		status: initialValues?.status ?? defaultValues.status,
 		priority: initialValues?.priority ?? defaultValues.priority,
 		assignee: initialValues?.assignee ?? defaultValues.assignee,
+		dueDate: initialValues?.dueDate || defaultValues.dueDate,
 	}
 }
 
@@ -50,6 +56,7 @@ export function TaskForm({ initialValues, onSubmit, loading = false, submitLabel
 		initialValues?.status,
 		initialValues?.priority,
 		initialValues?.assignee,
+		initialValues?.dueDate,
 		form.setValues,
 		initialValues,
 	])
@@ -59,8 +66,9 @@ export function TaskForm({ initialValues, onSubmit, loading = false, submitLabel
 			TaskInputSchema.parse({
 				...values,
 				title: values.title.trim(),
-				description: values.description?.trim() || undefined,
-				assignee: values.assignee?.trim() || undefined,
+				description: values.description?.trim() || null,
+				assignee: values.assignee?.trim() || null,
+				dueDate: values.dueDate?.trim() || null,
 			}),
 		)
 	})
@@ -95,6 +103,7 @@ export function TaskForm({ initialValues, onSubmit, loading = false, submitLabel
 					key={form.key('assignee')}
 					{...form.getInputProps('assignee')}
 				/>
+				<TextInput type="date" label="Due date" key={form.key('dueDate')} {...form.getInputProps('dueDate')} />
 				<Button type="submit" loading={loading}>
 					{submitLabel}
 				</Button>

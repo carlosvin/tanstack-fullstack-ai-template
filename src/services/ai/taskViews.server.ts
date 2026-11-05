@@ -9,6 +9,7 @@ import { toolDefinition } from '@tanstack/ai'
 import { createSafeServerTool } from '@/services/ai/serverTool'
 import { getTask, getTasks } from '@/services/api/serverFns'
 import {
+	CalendarDateSchema,
 	type ShowTasksViewInput,
 	ShowTasksViewInputSchema,
 	type TaskFilter,
@@ -24,11 +25,16 @@ export function withoutDemoAssignee(filter: TaskFilter): TaskFilter {
 }
 
 /** Split the view choice from the repository filter. A table is opt-in. */
-export function taskListRequest(args: ShowTasksViewInput): { filter: TaskFilter; presentation: 'cards' | 'table' } {
+export function taskListRequest(args: ShowTasksViewInput): {
+	filter: TaskFilter
+	presentation: 'cards' | 'table' | 'kanban' | 'timeline'
+} {
 	const { presentation, ...filter } = args
+	const view =
+		presentation === 'table' || presentation === 'kanban' || presentation === 'timeline' ? presentation : 'cards'
 	return {
 		filter: withoutDemoAssignee(filter),
-		presentation: presentation === 'table' ? 'table' : 'cards',
+		presentation: view,
 	}
 }
 
@@ -36,13 +42,13 @@ export const showTasksViewTool = createSafeServerTool(
 	toolDefinition({
 		name: 'showTasksView',
 		description:
-			'Show the task list inline. Set presentation to "table" when the user asks for a table. Set presentation to "cards" when they ask for cards or a grid. Omit presentation for the card grid. Prefer this over getTasks when the user needs to see tasks. Returns the tasks and the presentation.',
+			'Show the task list inline. Set presentation to "table" for a table, "kanban" for a status board, "timeline" for due dates, or "cards" for a card grid. Omit presentation for the card grid. Prefer this over getTasks when the user needs to see tasks. Returns the tasks and the presentation.',
 		inputSchema: ShowTasksViewInputSchema,
 	}),
 	async (args) => {
 		const { filter, presentation } = taskListRequest(args)
 		const tasks = await getTasks({ data: filter })
-		return { tasks, presentation }
+		return { tasks, presentation, ...(filter.asOf ? { asOf: filter.asOf } : {}) }
 	},
 )
 
@@ -51,11 +57,15 @@ export const showTaskViewTool = createSafeServerTool(
 		name: 'showTaskView',
 		description:
 			'Show one task inline. Call this when the user opens or names a single task. Pass taskId. Returns the task. Do not list other tasks instead.',
-		inputSchema: TaskIdInputSchema,
+		inputSchema: TaskIdInputSchema.extend({
+			asOf: CalendarDateSchema.optional().describe(
+				'Local calendar date YYYY-MM-DD from browser context, so the detail badge can say Overdue.',
+			),
+		}),
 	}),
 	async (args) => {
-		const task = await getTask({ data: args })
+		const task = await getTask({ data: { taskId: args.taskId } })
 		if (!task) return { error: 'Task not found.', code: 404 }
-		return { task }
+		return { task, ...(args.asOf ? { asOf: args.asOf } : {}) }
 	},
 )

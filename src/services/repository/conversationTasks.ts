@@ -44,6 +44,7 @@ function tasksInPayload(payload: unknown): TaskRepo[] {
 	if (Array.isArray(payload)) return payload.flatMap((item) => tasksInPayload(item))
 	if (!isRecord(payload) || 'error' in payload) return []
 	if (Array.isArray(payload.tasks)) return payload.tasks.flatMap((item) => tasksInPayload(item))
+	if (Array.isArray(payload.updated)) return payload.updated.flatMap((item) => tasksInPayload(item))
 	const candidate = 'task' in payload ? payload.task : payload
 	const parsed = TaskRepoSchema.safeParse(candidate)
 	return parsed.success ? [parsed.data] : []
