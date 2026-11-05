@@ -222,6 +222,9 @@ export const TasksListSearchSchema = TaskFilterSchema.extend({
 		.max(MAX_BULK_TASK_SELECTION)
 		.optional()
 		.describe('Task ids selected for a bulk status change. Omitted from the task query.'),
+	bulkStatus: TaskStatusSchema.optional().describe(
+		'Target status selected in the bulk action toolbar. Defaults to done when omitted.',
+	),
 })
 
 export type TasksListSearch = z.infer<typeof TasksListSearchSchema>

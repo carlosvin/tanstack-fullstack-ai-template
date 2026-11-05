@@ -1,6 +1,5 @@
 import { Button, Select, Stack, Textarea, TextInput } from '@mantine/core'
 import { schemaResolver, useForm } from '@mantine/form'
-import { useEffect } from 'react'
 import { z } from 'zod'
 import { CalendarDateSchema, type TaskInput, TaskInputSchema } from '@/services/schemas/schemas'
 import { prioritySelectOptions, statusSelectOptions } from '@/utils/taskDisplay'
@@ -47,19 +46,6 @@ export function TaskForm({ initialValues, onSubmit, loading = false, submitLabel
 		initialValues: toFormValues(initialValues),
 		validate: schemaResolver(taskFormSchema, { sync: true }),
 	})
-
-	useEffect(() => {
-		form.setValues(toFormValues(initialValues))
-	}, [
-		initialValues?.title,
-		initialValues?.description,
-		initialValues?.status,
-		initialValues?.priority,
-		initialValues?.assignee,
-		initialValues?.dueDate,
-		form.setValues,
-		initialValues,
-	])
 
 	const handleSubmit = form.onSubmit((values) => {
 		onSubmit(

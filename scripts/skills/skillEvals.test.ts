@@ -83,7 +83,7 @@ async function createMinimalWorkspace(overrides: Record<string, string> = {}) {
 		FIXTURE_SKILLS.map((skill) => {
 			const extra =
 				skill.id === 'tanstack-promptable-fullstack-app-template'
-					? '## Fixed vs swappable stack\n'
+					? '## Fixed vs swappable stack\n## URL-Recoverable State & Prop-Driven Components\nOverusing useState and useEffect is a code smell.\n'
 					: skill.id === 'reference-tech-stack'
 						? '## Stack map\n'
 						: ''
@@ -284,6 +284,18 @@ Do not pick one.
 		expect(result.pass).toBe(false)
 		if (!result.pass) {
 			expect(result.files).toContain('src/services/repository/mongoRepository.server.ts')
+		}
+	})
+
+	it('fails when a page component uses useState or useEffect instead of URL-recoverable props', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'src/components/TasksPage/TasksPage.tsx':
+				"import { useState } from 'react'\nexport function TasksPage() { const [s, setS] = useState('done'); return s }\n",
+		})
+		const result = await runEval(rootDir, 'architecture-url-recoverable-state')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(result.files).toContain('src/components/TasksPage/TasksPage.tsx')
 		}
 	})
 })

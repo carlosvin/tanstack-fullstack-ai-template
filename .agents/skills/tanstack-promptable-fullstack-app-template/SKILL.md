@@ -110,7 +110,7 @@ Pick **one validator library** per app and use it consistently across router sea
 
 ## Common failure modes (avoid these)
 
-- **Route state in React state:** filters, tabs, or selections in `useState` instead of validated URL search params + `loaderDeps`.
+- **Route state in React state (`useState` / `useEffect` overuse):** putting filters, tabs, selections, modal routes, or bulk action drafts in `useState`, or using `useEffect` to sync router/loader state into local state. Overusing `useState` and `useEffect` in route/page components is a code smell — recover page state from the URL path and validated search params, and pass loader data + URL state down as props to isolated, testable components.
 - **Navigate on every search keystroke:** binding a free-text search input to URL search params with `navigate` on each `onChange` re-runs loaders and drops characters. Use an uncontrolled input + debounced callback (see **Special Patterns**).
 - **Repository schemas at the wrong edge:** importing repository-layer schemas into UI, tools, or AI tool inputs — use tools-layer schemas only.
 - **Server function without a tool:** adding `createServerFn` but skipping `toolDefinition` + `createSafeServerTool` for the same capability.
@@ -142,7 +142,7 @@ Pick **one validator library** per app and use it consistently across router sea
 5. **Repository vs tools:** Repository implementations use repository-layer schemas only. **Server functions and AI tools share the same tools-layer schemas** (`.inputValidator` / `toolDefinition` inputSchema). TanStack AI parses tool arguments with `inputSchema` before server `execute` and before client `.client()` handlers, so those handlers receive the parsed value and pass it through. UI and AI consume tools-layer types only — never import repository schemas at those edges.
 6. **Server functions:** GET queries throw on failure; POST mutations chain `.middleware([requireAuthMiddleware, invalidateMiddleware])`; handlers return data or throw `HttpError`; callers normalize with `processResponse` / `safeToolHandler` / `createSafeServerTool`.
 7. **Routes:** Thin route files (`createFileRoute`, `validateSearch`, `loaderDeps`, `loader`, `component`); page UI in `src/components/`. **Loaders** fetch via server functions — no `useEffect` data fetching for route data.
-8. **URL-as-state:** Filters, tabs, selections in validated **search** params; use `loaderDeps` so only relevant search fields key the loader cache.
+8. **URL-as-state:** Recover filters, sort, selection, bulk-action choices, and modal routes from the path and `validateSearch`. Copying that state into `useState` with `useEffect` is a **code smell**. Keep UI-only fields (`selected`, `bulkStatus`) out of `loaderDeps`. Page components take loader data, search, and callbacks as props; reset a form with `key`, not an effect. Ephemeral chrome (mobile nav, side chat, drafts, spinners) stays local.
 9. **Router config bundle:** ship a project-local `Link` wrapper with `search: true` default (use it for every internal link) **and** these router defaults together: `defaultStaleTime`, `defaultPreload: 'intent'`, `defaultPreloadStaleTime: 0`, `scrollRestoration: true`, `notFoundComponent`.
 10. **Auth ticket built in middleware:** auth middleware enriches `ctx.context` with a repository-built ticket (e.g. `context.repository.getUserAccess(email)`) carrying identity, roles, and guards; `Repository` mutations accept a `TraceabilityContext` (`createdBy`, `lastModifiedBy`, …) constructed from that ticket so writes are attributed consistently across UI and AI.
 11. **AI tool coverage:** expose **every** repository method as a server AI tool via `createSafeServerTool`; add **distinct-values** tools for enum-ish filters; expose `navigate` and `invalidateRouter` as client tools.
@@ -166,7 +166,7 @@ Scan before changing code:
 - **Writes use `TraceabilityContext`:** pass audit fields from the ticket (or stock `context.user.email`) through a single context object on `Repository` mutations — avoid sprinkling raw `email` arguments. Repository implementations must **persist** `createdBy` / `lastModifiedBy` from that context onto the entity.
 - **Navigation is one decision:** ship the **router defaults bundle** and the **project `Link` wrapper** (`search: true`) together so URL state survives navigation.
 - **AI stack is complete:** every repo method → server tool + safe handler; client **`navigate`** / **`invalidateRouter`**; root **`getAIAvailability()`**; chat payload includes **`browserContext`**; **`chat({ agentLoopStrategy: maxIterations(N) })`**.
-- **Routes:** **`validateSearch`** + **`loaderDeps`**; duplicate **`beforeLoad`** / shared loaders only on **parent** layouts.
+- **Routes:** **`validateSearch`** + **`loaderDeps`**; duplicate **`beforeLoad`** / shared loaders only on **parent** layouts; recover page state from URL path + search params and pass props to isolated components instead of `useState` / `useEffect`.
 - **Metadata discipline:** schema field descriptions for narrative copy; structured extras for units/formats; closed vocabularies = `as const` tuple + schema enum + inferred type.
 - **Server boundaries:** loaders call `serverFns` only — no `process.env` secrets, DB drivers, or repo imports in route files; `*.server.ts` for DB drivers / Node SDKs; `createServerOnlyFn` for non-RPC infra; `importProtection` updated for new node packages.
 - **Request context:** middleware validates once; handlers **chain middleware** and read `context.*` directly — no runtime context helpers, no context casts, no Register; browser sees only **`getBrowserShellSession`** output (env bootstrap: **`observability-and-env`**).
@@ -266,6 +266,16 @@ Add your DB driver and auth/crypto libraries when they are not isolated in `*.se
 | “Loader ran on SSR so it’s server-only” | Loaders re-run on client navigations. |
 | “Dynamic import in the loader is enough” | Route module static imports still enter the client graph. |
 | “One-line `process.env` read won’t matter” | Isomorphic code can expose env reads to the client bundle. |
+| “`useState` + `useEffect` is simpler for this page filter/selection” | Local React state is lost on refresh, cannot be deep-linked or driven by AI `navigate`, and couples components to effects instead of pure props. |
+
+## URL-Recoverable State & Prop-Driven Components
+
+Refresh, share, and AI `navigate` restore filters, sort, selection, `bulkStatus`, and modal routes (`/tasks/new`, `/tasks/$taskId/edit`) from the path or `validateSearch`. Mirroring that state with `useState` / `useEffect` is a code smell.
+
+- Put recoverable fields in `validateSearch`. Put only server-query fields in `loaderDeps`.
+- Page components receive data, search, and callbacks as props. Reset forms with `key={`${id}-${updatedAt}`}`, not an effect.
+- Ephemeral chrome stays local: mobile nav open, side-chat open, drafts, spinners, resize, and scroll.
+- Close the mobile nav from link clicks and when `pathname` changes (back, forward, or client-tool `navigate`).
 
 ## Schema Boundaries
 

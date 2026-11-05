@@ -94,6 +94,7 @@ export function AppLayout({ currentUser, shellSession, aiAvailable = false, chil
 				<Header
 					navOpened={navOpened}
 					onToggleNav={toggleNav}
+					onNavigate={closeNav}
 					appMeta={shellSession.app}
 					aiAvailable={aiAvailable}
 					promptConcept={promptConcept}

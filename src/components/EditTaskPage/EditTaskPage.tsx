@@ -13,7 +13,13 @@ export function EditTaskPage({ task, loading, onClose, onSubmit }: EditTaskPageP
 	return (
 		<Modal opened onClose={onClose} title="Edit task">
 			{task ? (
-				<TaskForm initialValues={task} onSubmit={onSubmit} loading={loading} submitLabel="Update" />
+				<TaskForm
+					key={`${task.id}-${task.updatedAt}`}
+					initialValues={task}
+					onSubmit={onSubmit}
+					loading={loading}
+					submitLabel="Update"
+				/>
 			) : (
 				<Stack>
 					<Text c="dimmed">Task not found.</Text>

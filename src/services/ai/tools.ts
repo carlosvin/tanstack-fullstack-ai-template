@@ -30,6 +30,7 @@ import {
 	TaskFilterSchema,
 	TaskIdInputSchema,
 	TaskInputSchema,
+	TasksListSearchSchema,
 	UpdateTaskInputSchema,
 	UserProfileByEmailSchema,
 } from '@/services/schemas/schemas'
@@ -105,13 +106,13 @@ export const getUserAccessTool = createSafeServerTool(getUserAccessToolDef, asyn
 // Client tools — definition-only (implementations in ChatDrawer.tsx)
 // ---------------------------------------------------------------------------
 
-const NavigateSearchSchema = TaskFilterSchema.optional()
+const NavigateSearchSchema = TasksListSearchSchema.omit({ selected: true }).optional()
 
 /** Input schema for the navigate client tool. */
 export const NavigateInputSchema = z.object({
 	to: z.string().describe('Path to navigate to (e.g. /, /tasks, /tasks/123)'),
 	search: NavigateSearchSchema.describe(
-		'Optional query params for /tasks: status, priority, assignee, search, due, asOf, dueOnOrBefore, sort',
+		'Optional query params for /tasks: status, priority, assignee, search, due, asOf, dueOnOrBefore, sort, bulkStatus',
 	),
 })
 

@@ -19,9 +19,11 @@ import type { ReactNode } from 'react'
  * ```
  */
 export function renderWithProviders(ui: ReactNode) {
-	return render(
-		<MantineProvider>
-			<ModalsProvider>{ui}</ModalsProvider>
-		</MantineProvider>,
-	)
+	return render(ui, {
+		wrapper: ({ children }: { children: ReactNode }) => (
+			<MantineProvider>
+				<ModalsProvider>{children}</ModalsProvider>
+			</MantineProvider>
+		),
+	})
 }

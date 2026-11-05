@@ -207,4 +207,25 @@ describe('TasksPage', () => {
 		expect(screen.queryByText(/^Overdue /)).toBeNull()
 		expect(screen.getByText(/^Due /)).toBeTruthy()
 	})
+
+	it('recovers bulkStatus from URL search params and submits it', () => {
+		const onBulkStatus = vi.fn()
+		renderWithProviders(
+			<TasksPage
+				tasks={[sampleTask]}
+				assignees={[]}
+				search={{ selected: ['task-1'], bulkStatus: 'in-progress' }}
+				isAuth
+				isTestUser={false}
+				today="2026-11-01"
+				currentUserEmail="alice@example.com"
+				onUpdateSearch={() => undefined}
+				onDeleteTask={() => undefined}
+				onBulkStatus={onBulkStatus}
+			/>,
+		)
+
+		fireEvent.click(screen.getByRole('button', { name: 'Update status' }))
+		expect(onBulkStatus).toHaveBeenCalledWith('in-progress')
+	})
 })

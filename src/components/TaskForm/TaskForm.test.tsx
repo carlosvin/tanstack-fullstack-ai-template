@@ -25,4 +25,28 @@ describe('TaskForm', () => {
 		expect(onSubmit).not.toHaveBeenCalled()
 		expect(screen.getByText('Title is required')).toBeTruthy()
 	})
+
+	it('resets uncontrolled values when remounted with a new key on entity update', () => {
+		const { rerender } = renderWithProviders(
+			<TaskForm
+				key="task-1-v1"
+				initialValues={{ title: 'Original title', status: 'pending', priority: 'low' }}
+				onSubmit={vi.fn()}
+				submitLabel="Update"
+			/>,
+		)
+
+		expect((screen.getByPlaceholderText('Task title') as HTMLInputElement).value).toBe('Original title')
+
+		rerender(
+			<TaskForm
+				key="task-1-v2"
+				initialValues={{ title: 'Updated title', status: 'done', priority: 'high' }}
+				onSubmit={vi.fn()}
+				submitLabel="Update"
+			/>,
+		)
+
+		expect((screen.getByPlaceholderText('Task title') as HTMLInputElement).value).toBe('Updated title')
+	})
 })

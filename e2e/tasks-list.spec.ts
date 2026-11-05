@@ -53,6 +53,13 @@ test.describe('Task list', () => {
 		await expect(page.getByText('Design database schema')).not.toBeVisible()
 	})
 
+	test('recovers bulk selection and bulk target status from URL', async ({ page }) => {
+		await page.goto('/tasks?selected=task-1&selected=task-2&bulkStatus=in-progress')
+
+		await expect(page.getByText('2 selected')).toBeVisible()
+		await expect(page.getByRole('combobox', { name: 'Status for selected tasks' })).toHaveValue('In Progress')
+	})
+
 	test('combines multiple filters', async ({ page }) => {
 		await page.goto('/tasks?status=pending&priority=critical')
 

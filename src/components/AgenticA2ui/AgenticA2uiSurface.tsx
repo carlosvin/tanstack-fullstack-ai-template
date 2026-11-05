@@ -1,7 +1,7 @@
 import type { ServerToClientMessage, UserAction } from '@a2ui-bridge/core'
 import { Surface, useA2uiProcessor } from '@a2ui-bridge/react'
 import { Alert, Button, Paper, Stack, Text } from '@mantine/core'
-import { useEffect, useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import { mantineTaskCatalog } from '@/services/a2ui/mantineCatalog'
 import { acceptA2uiMessages } from '@/services/a2ui/taskViewMessages'
 
@@ -15,7 +15,7 @@ export function AgenticA2uiSurface({ messages, onAction, onRetry }: AgenticA2uiS
 	const processor = useA2uiProcessor()
 	const [failed, setFailed] = useState(false)
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		try {
 			processor.clearSurfaces()
 			processor.processMessages(acceptA2uiMessages(messages))
