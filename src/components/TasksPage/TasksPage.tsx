@@ -15,7 +15,7 @@ import {
 } from '@mantine/core'
 import { useDebouncedCallback } from '@mantine/hooks'
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { z } from 'zod'
 import { Link } from '@/components/Link/Link'
 import { MAX_BULK_TASK_SELECTION } from '@/constants/options'
@@ -121,7 +121,7 @@ export function TasksPage({
 		[assignees],
 	)
 	const mine = Boolean(currentUserEmail) && search.assignee === currentUserEmail
-	const [bulkStatus, setBulkStatus] = useState<TaskStatus>('done')
+	const bulkStatus: TaskStatus = search.bulkStatus ?? 'done'
 
 	const debouncedSearch = useDebouncedCallback((value: string) => {
 		const next = value || undefined
@@ -245,7 +245,7 @@ export function TasksPage({
 									w={{ base: '100%', sm: 160 }}
 									onChange={(value) => {
 										const parsed = OptionalTaskStatusSchema.parse(value)
-										if (parsed) setBulkStatus(parsed)
+										if (parsed) onUpdateSearch({ bulkStatus: parsed === 'done' ? undefined : parsed }, true)
 									}}
 								/>
 								<Button loading={bulkLoading} onClick={() => onBulkStatus(bulkStatus)}>

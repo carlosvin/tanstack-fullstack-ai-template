@@ -117,6 +117,7 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 	const { messages, isLoading, sendMessage } = useAgenticChat()
 	const today = useCalendarToday()
 	const [opened, setOpened] = useState<OpenedDetail[]>([])
+	const visibleOpened = messages.length === 0 ? [] : opened
 	const viewportRef = useRef<HTMLDivElement>(null)
 
 	function handlePrompt(text: string) {
@@ -130,7 +131,7 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 		const remembered = findRememberedTask(messages, taskId)
 		const id = crypto.randomUUID()
 		setOpened((prev) => [
-			...prev,
+			...(messages.length === 0 ? [] : prev),
 			{ id, title, taskId, resultText: remembered ? JSON.stringify({ task: remembered, asOf: today }) : '' },
 		])
 		if (remembered) return
@@ -139,10 +140,6 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 			setOpened((prev) => prev.map((item) => (item.id === id ? { ...item, resultText } : item)))
 		})
 	}
-
-	useEffect(() => {
-		if (messages.length === 0) setOpened([])
-	}, [messages.length])
 
 	useEffect(() => {
 		const el = viewportRef.current
@@ -216,7 +213,7 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 							</Stack>
 						)
 					})}
-					{opened.map((item) => {
+					{visibleOpened.map((item) => {
 						const userMessage: UIMessage = {
 							id: item.id,
 							role: 'user',

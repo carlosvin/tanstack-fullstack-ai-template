@@ -84,7 +84,7 @@ function TasksRoute() {
 						navigate({
 							to: '/tasks',
 							replace: true,
-							search: (prev) => TasksListSearchSchema.parse({ ...prev, selected: undefined }),
+							search: (prev) => TasksListSearchSchema.parse({ ...prev, selected: undefined, bulkStatus: undefined }),
 						})
 					})
 				}}

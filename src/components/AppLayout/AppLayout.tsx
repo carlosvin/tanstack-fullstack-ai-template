@@ -42,13 +42,6 @@ export function AppLayout({ currentUser, shellSession, aiAvailable = false, chil
 	const [footerHeight, setFooterHeight] = useState(PROMPT_FIRST_FOOTER_MIN_HEIGHT)
 	const footerMeasureRef = useRef<HTMLDivElement>(null)
 	const pathname = useRouterState({ select: (s) => s.location.pathname })
-	const previousPathname = useRef(pathname)
-
-	useEffect(() => {
-		if (previousPathname.current === pathname) return
-		previousPathname.current = pathname
-		closeNav()
-	}, [pathname, closeNav])
 
 	useEffect(() => {
 		if (!showPromptFirstFooter) return
@@ -94,6 +87,7 @@ export function AppLayout({ currentUser, shellSession, aiAvailable = false, chil
 				<Header
 					navOpened={navOpened}
 					onToggleNav={toggleNav}
+					onNavigate={closeNav}
 					appMeta={shellSession.app}
 					aiAvailable={aiAvailable}
 					promptConcept={promptConcept}

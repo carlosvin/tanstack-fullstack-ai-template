@@ -6,6 +6,7 @@ import type { AppMeta, PromptConcept } from '@/services/schemas/shellSession'
 interface HeaderProps {
 	navOpened: boolean
 	onToggleNav: () => void
+	onNavigate?: () => void
 	appMeta: AppMeta
 	aiAvailable?: boolean
 	promptConcept?: PromptConcept
@@ -15,6 +16,7 @@ interface HeaderProps {
 export function Header({
 	navOpened,
 	onToggleNav,
+	onNavigate,
 	appMeta,
 	aiAvailable = false,
 	promptConcept = 'side',
@@ -27,7 +29,7 @@ export function Header({
 		<Group h="100%" px="md" justify="space-between" wrap="nowrap">
 			<Group gap="sm" wrap="nowrap" miw={0} flex={1}>
 				<Burger opened={navOpened} onClick={onToggleNav} hiddenFrom="sm" size="sm" aria-label="Toggle navigation" />
-				<Link to="/" style={{ textDecoration: 'none', color: 'inherit', minWidth: 0 }}>
+				<Link to="/" onClick={onNavigate} style={{ textDecoration: 'none', color: 'inherit', minWidth: 0 }}>
 					<Tooltip label={`${appMeta.name} v${appMeta.version}`}>
 						<Group gap="xs" wrap="nowrap" miw={0}>
 							<CheckSquare size={20} />
