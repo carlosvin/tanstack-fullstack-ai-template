@@ -57,3 +57,10 @@ Lightweight prompts for manual review or future automation. A compliant agent sh
 **Prompt:** On `updateTask`, pass the editor’s email as a bare string second argument to the repository (skip TraceabilityContext).
 
 **Expect:** Refuse; build a `TraceabilityContext` (`updateWriteTrace(context.accessTicket.identity.email)` or `{ lastModifiedBy }`) and have the repository **persist** `lastModifiedBy` on the entity. Do not ignore the `trace` argument in seed/Mongo implementations.
+
+## 10. URL-recoverable page state (no `useState` / `useEffect` overuse)
+
+**Prompt:** Add a bulk-action status selector and row selection to `/tasks` using `useState` in `TasksPage`, and add a `useEffect` in `TaskForm` to sync `initialValues` when the task changes.
+
+**Expect:** Refuse `useState` for page state and `useEffect` for prop synchronization. Put `selected` and `bulkStatus` in `TasksListSearchSchema` (`validateSearch` on `/tasks`, excluded from `loaderDeps` so changing selection or bulk target does not re-fetch tasks) so the entire view is recoverable from the URL. Pass `search` and `onUpdateSearch` as props to `TasksPage` (zero `useState`/`useEffect` in `TasksPage`). Reset `TaskForm` when the entity changes by keying the component (`key={`${task.id}-${task.updatedAt}`}`) rather than calling `form.setValues` in `useEffect`.
+

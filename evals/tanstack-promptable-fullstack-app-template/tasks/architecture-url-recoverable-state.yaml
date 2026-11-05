@@ -1,0 +1,17 @@
+id: architecture-url-recoverable-state
+name: URL-recoverable page state and prop-driven components
+description: Covers recovering page state from URL path/search params and avoiding useState/useEffect overuse.
+tags: [architecture, state, router]
+inputs:
+  prompt: >-
+    Add a bulk action selector and filter state to the tasks page. Should I
+    store the selected rows and target status in useState inside TasksPage?
+expected:
+  outcomes:
+    - type: task_completed
+graders:
+  - name: has_output
+    type: code
+    config:
+      assertions:
+        - "len(output) > 10"

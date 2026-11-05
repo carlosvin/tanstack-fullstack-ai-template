@@ -495,6 +495,66 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 			},
 		},
 		{
+			id: 'architecture-url-recoverable-state',
+			skill: 'tanstack-promptable-fullstack-app-template',
+			description:
+				'Page state is recoverable from URL path/search params; page components avoid useState/useEffect overuse',
+			async run() {
+				const { agentSkillsDir } = getSkillPaths(rootDir)
+				const skillMdPath = path.join(agentSkillsDir, 'tanstack-promptable-fullstack-app-template', 'SKILL.md')
+				try {
+					const skillMd = await readText(skillMdPath)
+					if (!/URL-Recoverable State/.test(skillMd) || !/code smell/i.test(skillMd)) {
+						return fail(
+							'Architecture skill must document URL-Recoverable State and flag useState/useEffect overuse as a code smell',
+						)
+					}
+				} catch {
+					// App-only fixtures may omit skill markdown.
+				}
+
+				const pageComponents = [
+					'src/components/DashboardPage/DashboardPage.tsx',
+					'src/components/TasksPage/TasksPage.tsx',
+					'src/components/TaskDetailPage/TaskDetailPage.tsx',
+					'src/components/EditTaskPage/EditTaskPage.tsx',
+					'src/components/NewTaskPage/NewTaskPage.tsx',
+					'src/components/TaskForm/TaskForm.tsx',
+				]
+				const hookViolations = []
+				for (const rel of pageComponents) {
+					try {
+						const content = await readText(path.join(rootDir, rel))
+						if (/\buseState\b|\buseEffect\b/.test(content)) {
+							hookViolations.push(rel)
+						}
+					} catch {
+						// App-only fixtures may omit page components.
+					}
+				}
+				if (hookViolations.length > 0) {
+					return fail(
+						'Page and form components must be prop-driven and recover state from URL without useState/useEffect',
+						hookViolations,
+					)
+				}
+
+				const schemasPath = path.join(rootDir, 'src/services/schemas/schemas.ts')
+				try {
+					const schemas = await readText(schemasPath)
+					if (/TasksListSearchSchema/.test(schemas) && !/bulkStatus:/.test(schemas)) {
+						return fail(
+							'TasksListSearchSchema must include bulkStatus so bulk action state is recoverable from the URL',
+						)
+					}
+				} catch {
+					// App-only fixtures may omit schemas.
+				}
+
+				return pass()
+			},
+		},
+		{
 			id: 'architecture-outbound-tool-mapping',
 			skill: 'tanstack-promptable-fullstack-app-template',
 			description: 'serverFns maps repository rows through toToolTask / toToolUserProfile',
