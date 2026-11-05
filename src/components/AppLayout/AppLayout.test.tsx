@@ -65,4 +65,19 @@ describe('AppLayout', () => {
 		expect(router.state.location.pathname).toBe('/tasks')
 		expect(burger.querySelector('[data-opened]')).toBeNull()
 	})
+
+	it('closes the mobile nav when the pathname changes without a nav click', async () => {
+		const router = await renderAppLayout()
+		const burger = screen.getByRole('button', { name: 'Toggle navigation' })
+
+		fireEvent.click(burger)
+		expect(burger.querySelector('[data-opened]')).toBeTruthy()
+
+		await act(async () => {
+			await router.navigate({ to: '/tasks' })
+		})
+
+		expect(router.state.location.pathname).toBe('/tasks')
+		expect(burger.querySelector('[data-opened]')).toBeNull()
+	})
 })

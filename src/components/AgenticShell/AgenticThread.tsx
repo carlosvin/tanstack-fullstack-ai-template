@@ -117,7 +117,12 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 	const { messages, isLoading, sendMessage } = useAgenticChat()
 	const today = useCalendarToday()
 	const [opened, setOpened] = useState<OpenedDetail[]>([])
-	const visibleOpened = messages.length === 0 ? [] : opened
+	const hasMessages = messages.length > 0
+	const [hadMessages, setHadMessages] = useState(hasMessages)
+	if (hasMessages !== hadMessages) {
+		setHadMessages(hasMessages)
+		if (!hasMessages) setOpened([])
+	}
 	const viewportRef = useRef<HTMLDivElement>(null)
 
 	function handlePrompt(text: string) {
@@ -213,7 +218,7 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 							</Stack>
 						)
 					})}
-					{visibleOpened.map((item) => {
+					{opened.map((item) => {
 						const userMessage: UIMessage = {
 							id: item.id,
 							role: 'user',

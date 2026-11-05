@@ -1,7 +1,7 @@
 import type { ServerToClientMessage, UserAction } from '@a2ui-bridge/core'
 import { Surface, useA2uiProcessor } from '@a2ui-bridge/react'
 import { Alert, Button, Paper, Stack, Text } from '@mantine/core'
-import { useMemo } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import { mantineTaskCatalog } from '@/services/a2ui/mantineCatalog'
 import { acceptA2uiMessages } from '@/services/a2ui/taskViewMessages'
 
@@ -13,14 +13,16 @@ interface AgenticA2uiSurfaceProps {
 
 export function AgenticA2uiSurface({ messages, onAction, onRetry }: AgenticA2uiSurfaceProps) {
 	const processor = useA2uiProcessor()
-	const failed = useMemo(() => {
+	const [failed, setFailed] = useState(false)
+
+	useLayoutEffect(() => {
 		try {
 			processor.clearSurfaces()
 			processor.processMessages(acceptA2uiMessages(messages))
-			return false
+			setFailed(false)
 		} catch {
 			// ZodError from acceptA2uiMessages, or Error from the processor (invalid node or a cycle).
-			return true
+			setFailed(true)
 		}
 	}, [messages, processor])
 

@@ -53,10 +53,13 @@ const chatMessages: UIMessage[] = [
 
 import { AgenticThread } from '@/components/AgenticShell/AgenticThread'
 
+const initialMessages: UIMessage[] = [...chatMessages]
+
 describe('AgenticThread open task', () => {
 	beforeEach(() => {
 		sendMessage.mockClear()
 		getTask.mockClear()
+		chatMessages.splice(0, chatMessages.length, ...initialMessages.map((message) => structuredClone(message)))
 	})
 
 	it('opens a created task from the thread when the repository no longer has it', async () => {
@@ -70,5 +73,37 @@ describe('AgenticThread open task', () => {
 		expect(screen.getAllByText('The timeline view is not displaying correctly.')).toHaveLength(2)
 		expect(getTask).not.toHaveBeenCalled()
 		expect(sendMessage).not.toHaveBeenCalled()
+	})
+
+	it('drops opened task details after the conversation is cleared', async () => {
+		const { rerender } = render(
+			<MantineProvider>
+				<AgenticThread />
+			</MantineProvider>,
+		)
+		fireEvent.click(await screen.findByRole('button', { name: /^Fix timeline display issue/ }))
+		expect(await screen.findByRole('button', { name: 'All tasks' })).toBeTruthy()
+
+		chatMessages.splice(0, chatMessages.length)
+		rerender(
+			<MantineProvider>
+				<AgenticThread />
+			</MantineProvider>,
+		)
+		expect(screen.queryByRole('button', { name: 'All tasks' })).toBeNull()
+
+		chatMessages.push({
+			id: 'next',
+			role: 'user',
+			parts: [{ type: 'text', content: 'Show overdue tasks' }],
+		})
+		rerender(
+			<MantineProvider>
+				<AgenticThread />
+			</MantineProvider>,
+		)
+
+		expect(screen.getByText('Show overdue tasks')).toBeTruthy()
+		expect(screen.queryByRole('button', { name: 'All tasks' })).toBeNull()
 	})
 })
