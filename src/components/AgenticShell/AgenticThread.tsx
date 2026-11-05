@@ -273,10 +273,6 @@ function TaskViewResult({
 	const [selected, setSelected] = useState<string[]>([])
 	const messages = useMemo(() => buildTaskViewMessages(resultText, selected, asOf), [resultText, selected, asOf])
 
-	useEffect(() => {
-		setSelected([])
-	}, [])
-
 	function onAction(action: UserAction) {
 		const prompt = promptFromA2uiAction(action)
 		if (prompt) {

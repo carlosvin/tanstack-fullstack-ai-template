@@ -15,9 +15,10 @@ import {
 } from '@mantine/core'
 import { useDebouncedCallback } from '@mantine/hooks'
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { z } from 'zod'
 import { Link } from '@/components/Link/Link'
+import { MAX_BULK_TASK_SELECTION } from '@/constants/options'
 import {
 	type AssigneeOption,
 	OptionalTaskPrioritySchema,
@@ -37,8 +38,6 @@ import {
 	statusSelectOptions,
 } from '@/utils/taskDisplay'
 import { isTaskOverdue } from '@/utils/taskDue'
-
-const MAX_SELECTED = 50
 
 const DUE_OPTIONS = [
 	{ value: 'overdue', label: 'Overdue' },
@@ -60,22 +59,18 @@ export interface TasksPageProps {
 	onBulkStatus: (status: TaskStatus) => void
 }
 
-function assigneeLabel(option: AssigneeOption): string {
-	return option.name ? `${option.name} (${option.email})` : option.email
-}
-
 function idsHiddenFrom(selected: readonly string[], visibleIds: readonly string[]): string[] {
 	const visible = new Set(visibleIds)
 	return selected.filter((id) => !visible.has(id))
 }
 
-/** Visible ids that fit with the hidden selection, in list order, up to {@link MAX_SELECTED}. */
+/** Visible ids that fit with the hidden selection, in list order, up to {@link MAX_BULK_TASK_SELECTION}. */
 function visibleSelectionTarget(selected: readonly string[], visibleIds: readonly string[]): string[] {
 	const hidden = idsHiddenFrom(selected, visibleIds)
 	const target: string[] = []
 	for (const id of visibleIds) {
-		if (hidden.length + target.length >= MAX_SELECTED) break
-		target.push(id)
+		if (hidden.length + target.length >= MAX_BULK_TASK_SELECTION) break
+		if (!target.includes(id)) target.push(id)
 	}
 	return target
 }
@@ -104,15 +99,27 @@ export function TasksPage({
 	onDeleteTask,
 	onBulkStatus,
 }: TasksPageProps) {
-	const urlSearch = search.search ?? ''
 	const selected = search.selected ?? []
-	const visibleIds = tasks.map((task) => task.id)
-	const visibleTarget = visibleSelectionTarget(selected, visibleIds)
-	const allVisibleSelected = visibleTarget.length > 0 && visibleTarget.every((id) => selected.includes(id))
+	const selectedSet = useMemo(() => new Set(selected), [selected])
+	const visibleIds = useMemo(() => tasks.map((task) => task.id), [tasks])
+	const visibleTarget = useMemo(() => visibleSelectionTarget(selected, visibleIds), [selected, visibleIds])
+	const allVisibleSelected = visibleTarget.length > 0 && visibleTarget.every((id) => selectedSet.has(id))
 	const selectVisibleLabel =
 		visibleIds.length > visibleTarget.length
 			? `Select visible (${visibleTarget.length} of ${visibleIds.length})`
 			: 'Select visible'
+	const assigneeOptions = useMemo(
+		() =>
+			assignees.map((option) => ({
+				value: option.email,
+				label: option.name ? `${option.name} (${option.email})` : option.email,
+			})),
+		[assignees],
+	)
+	const assigneeNames = useMemo(
+		() => new Map(assignees.flatMap((option) => (option.name ? [[option.email, option.name] as const] : []))),
+		[assignees],
+	)
 	const mine = Boolean(currentUserEmail) && search.assignee === currentUserEmail
 	const [bulkStatus, setBulkStatus] = useState<TaskStatus>('done')
 
@@ -150,7 +157,7 @@ export function TasksPage({
 					<TextInput
 						placeholder="Search tasks..."
 						leftSection={<Search size={16} />}
-						defaultValue={urlSearch}
+						defaultValue={search.search ?? ''}
 						onChange={(e) => debouncedSearch(e.currentTarget.value)}
 						w={{ base: '100%', sm: 'auto' }}
 						flex={1}
@@ -187,7 +194,7 @@ export function TasksPage({
 						placeholder="Assignee"
 						aria-label="Assignee"
 						clearable
-						data={assignees.map((option) => ({ value: option.email, label: assigneeLabel(option) }))}
+						data={assigneeOptions}
 						value={search.assignee ?? null}
 						onChange={(val) =>
 							onUpdateSearch({
@@ -264,11 +271,11 @@ export function TasksPage({
 										{isAuth ? (
 											<Checkbox
 												aria-label={`Select ${task.title}`}
-												checked={selected.includes(task.id)}
+												checked={selectedSet.has(task.id)}
 												onChange={() => {
-													const next = selected.includes(task.id)
+													const next = selectedSet.has(task.id)
 														? selected.filter((id) => id !== task.id)
-														: selected.length >= MAX_SELECTED
+														: selected.length >= MAX_BULK_TASK_SELECTION
 															? selected
 															: [...selected, task.id]
 													if (next === selected) return
@@ -300,7 +307,7 @@ export function TasksPage({
 												<Group gap="sm" wrap="wrap">
 													{task.assignee && (
 														<Text size="xs" c="dimmed">
-															{assignees.find((option) => option.email === task.assignee)?.name ?? task.assignee}
+															{assigneeNames.get(task.assignee) ?? task.assignee}
 														</Text>
 													)}
 													{task.dueDate ? (

@@ -1787,12 +1787,3 @@ export const AnchorAdapter = createAdapter(asComponent(Anchor), {
 	}),
 	displayName: 'AnchorAdapter',
 })
-
-// ============================================================================
-// FALLBACK ADAPTER
-// ============================================================================
-
-/** Fallback for unknown component types */
-export function FallbackComponent() {
-	return null
-}

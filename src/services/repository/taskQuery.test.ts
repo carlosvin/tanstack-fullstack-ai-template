@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import type { TaskRepo } from '../schemas/repository'
-import { isTaskOverdue, matchesDueFilter, sortTasks, taskUpdateFields } from './taskQuery'
+import { matchesDueFilter, sortTasks, taskUpdateFields } from '@/services/repository/taskQuery'
+import type { TaskRepo } from '@/services/schemas/repository'
+import { isTaskOverdue } from '@/utils/taskDue'
 
 const open: TaskRepo = {
 	id: 'task-1',

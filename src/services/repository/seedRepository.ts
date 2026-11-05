@@ -18,6 +18,7 @@ import {
 	type UserProfileRepo,
 	UserProfileRepoSchema,
 } from '@/services/schemas/repository'
+import { calendarToday } from '@/utils/calendarDate'
 
 /** Sample seed data for development without a database. */
 const SEED_TASKS: TaskRepo[] = [
@@ -116,22 +117,17 @@ export class SeedRepository implements Repository {
 	private nextId = SEED_TASKS.length + 1
 
 	async getTasks(filter?: TaskRepoFilter): Promise<TaskRepo[]> {
-		let result = [...this.tasks]
-
-		if (filter?.status) {
-			result = result.filter((t) => t.status === filter.status)
-		}
-		if (filter?.priority) {
-			result = result.filter((t) => t.priority === filter.priority)
-		}
-		if (filter?.assignee) {
-			result = result.filter((t) => t.assignee === filter.assignee)
-		}
-		if (filter?.search) {
-			const q = filter.search.toLowerCase()
-			result = result.filter((t) => t.title.toLowerCase().includes(q) || t.description?.toLowerCase().includes(q))
-		}
-		result = result.filter((task) => matchesDueFilter(task, filter))
+		const query = filter?.search?.toLowerCase()
+		const asOf = filter?.asOf ?? calendarToday('UTC')
+		const result = this.tasks.filter((task) => {
+			if (filter?.status && task.status !== filter.status) return false
+			if (filter?.priority && task.priority !== filter.priority) return false
+			if (filter?.assignee && task.assignee !== filter.assignee) return false
+			if (query && !task.title.toLowerCase().includes(query) && !task.description?.toLowerCase().includes(query)) {
+				return false
+			}
+			return matchesDueFilter(task, filter, asOf)
+		})
 
 		return parseTaskRepoList(sortTasks(result, filter))
 	}

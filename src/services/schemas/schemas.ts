@@ -10,6 +10,7 @@
 import { z } from 'zod'
 import {
 	DISTINCT_VALUE_FIELDS,
+	MAX_BULK_TASK_SELECTION,
 	TASK_DUE_FILTERS,
 	TASK_PRIORITIES,
 	TASK_SORTS,
@@ -17,7 +18,7 @@ import {
 } from '@/constants/options'
 import { OptionalDeploymentEnvSchema } from '@/services/schemas/runtimeEnv'
 import { AppMetaSchema } from '@/services/schemas/shellSession'
-import { isRealCalendarDate } from '@/utils/calendarDate'
+import { CALENDAR_DATE_PATTERN, isRealCalendarDate } from '@/utils/calendarDate'
 
 // ---------------------------------------------------------------------------
 // Enums
@@ -132,7 +133,7 @@ export type AppRuntimeInfo = z.infer<typeof AppRuntimeInfoSchema>
 /** Calendar date with no time and no timezone shift. `null` clears a stored due date. */
 export const CalendarDateSchema = z
 	.string()
-	.regex(/^\d{4}-\d{2}-\d{2}$/)
+	.regex(CALENDAR_DATE_PATTERN)
 	.refine(isRealCalendarDate, 'Invalid calendar date')
 	.describe('Calendar date in YYYY-MM-DD')
 
@@ -218,7 +219,7 @@ export type ShowTasksViewInput = z.infer<typeof ShowTasksViewInputSchema>
 export const TasksListSearchSchema = TaskFilterSchema.extend({
 	selected: z
 		.array(z.string().min(1))
-		.max(50)
+		.max(MAX_BULK_TASK_SELECTION)
 		.optional()
 		.describe('Task ids selected for a bulk status change. Omitted from the task query.'),
 })
@@ -235,7 +236,7 @@ export type AssigneeOption = z.infer<typeof AssigneeOptionSchema>
 export const AssigneeOptionListSchema = z.array(AssigneeOptionSchema)
 
 export const BulkTaskStatusInputSchema = z.object({
-	taskIds: z.array(z.string().min(1)).min(1).max(50).describe('Task ids to update'),
+	taskIds: z.array(z.string().min(1)).min(1).max(MAX_BULK_TASK_SELECTION).describe('Task ids to update'),
 	status: TaskStatusSchema.describe('Status to set on every task the caller created'),
 })
 

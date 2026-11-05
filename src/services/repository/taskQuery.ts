@@ -1,15 +1,14 @@
-import { calendarToday } from '../../utils/calendarDate'
-import { isTaskOverdue } from '../../utils/taskDue'
-import type { TaskRepo, TaskRepoFilter, TaskRepoInput } from '../schemas/repository'
-
-export { isTaskOverdue }
+import type { TaskRepo, TaskRepoFilter, TaskRepoInput } from '@/services/schemas/repository'
+import { calendarToday } from '@/utils/calendarDate'
+import { isTaskOverdue } from '@/utils/taskDue'
 
 export function matchesDueFilter(
 	task: Pick<TaskRepo, 'dueDate' | 'status'>,
 	filter: TaskRepoFilter | undefined,
+	resolvedAsOf?: string,
 ): boolean {
 	if (!filter) return true
-	const asOf = filter.asOf ?? calendarToday('UTC')
+	const asOf = resolvedAsOf ?? filter.asOf ?? calendarToday('UTC')
 	if (filter.due === 'overdue' && !isTaskOverdue(task, asOf)) return false
 	if (filter.due === 'unscheduled' && task.dueDate) return false
 	if (filter.due === 'scheduled' && !task.dueDate) return false
@@ -44,11 +43,15 @@ export function sortTasks<T extends Pick<TaskRepo, 'dueDate' | 'updatedAt'>>(
 }
 
 type ClearableText = 'description' | 'assignee'
+export type TaskFieldUnset = 'dueDate' | ClearableText
+type TaskRepoWriteFields = Omit<TaskRepoInput, TaskFieldUnset> & {
+	dueDate?: string
+	description?: string
+	assignee?: string
+}
 
 /** Drop null and empty optional fields so creates do not persist a clear marker. */
-export function taskWriteFields(
-	input: TaskRepoInput,
-): Omit<TaskRepoInput, 'dueDate' | ClearableText> & { dueDate?: string; description?: string; assignee?: string } {
+export function taskWriteFields(input: TaskRepoInput): TaskRepoWriteFields {
 	const { dueDate, description, assignee, ...rest } = input
 	return {
 		...rest,
@@ -58,18 +61,12 @@ export function taskWriteFields(
 	}
 }
 
-export type TaskFieldUnset = 'dueDate' | ClearableText
-
 /** Split a partial update into fields to set and fields the caller cleared. */
 export function taskUpdateFields(input: Partial<TaskRepoInput>): {
-	set: Partial<
-		Omit<TaskRepoInput, 'dueDate' | ClearableText> & { dueDate?: string; description?: string; assignee?: string }
-	>
+	set: Partial<TaskRepoWriteFields>
 	unset: TaskFieldUnset[]
 } {
-	const set: Partial<
-		Omit<TaskRepoInput, 'dueDate' | ClearableText> & { dueDate?: string; description?: string; assignee?: string }
-	> = {}
+	const set: Partial<TaskRepoWriteFields> = {}
 	const unset: TaskFieldUnset[] = []
 	if ('dueDate' in input) {
 		if (typeof input.dueDate === 'string') set.dueDate = input.dueDate

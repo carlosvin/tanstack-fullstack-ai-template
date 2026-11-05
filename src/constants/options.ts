@@ -1,6 +1,9 @@
 /** Task statuses available in the application. */
 export const TASK_STATUSES = ['pending', 'in-progress', 'done', 'cancelled'] as const
 
+/** Open statuses that can be overdue. */
+export const OPEN_TASK_STATUSES = ['pending', 'in-progress'] as const
+
 /** Task priority levels. */
 export const TASK_PRIORITIES = ['low', 'medium', 'high', 'critical'] as const
 
@@ -9,6 +12,9 @@ export const TASK_DUE_FILTERS = ['overdue', 'unscheduled', 'scheduled'] as const
 
 /** List order. `due` puts the soonest calendar date first. */
 export const TASK_SORTS = ['updated', 'due'] as const
+
+/** Maximum tasks selected or updated in one bulk status action. */
+export const MAX_BULK_TASK_SELECTION = 50
 
 /** Task fields that support distinct-value discovery for filters. */
 export const DISTINCT_VALUE_FIELDS = ['assignee', 'status', 'priority'] as const

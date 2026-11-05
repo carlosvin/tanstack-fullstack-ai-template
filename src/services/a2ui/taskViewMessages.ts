@@ -10,7 +10,9 @@ import { z } from 'zod'
 import { TASK_STATUSES } from '@/constants/options'
 import { isAllowedA2uiComponent } from '@/services/a2ui/mantineCatalog'
 import { type Task, TaskSchema, type TaskStatus, TaskStatusSchema } from '@/services/schemas/schemas'
+import { isRealCalendarDate } from '@/utils/calendarDate'
 import { statusLabel } from '@/utils/taskDisplay'
+import { isTaskOverdue } from '@/utils/taskDue'
 
 const MAX_TASKS = 20
 const MAX_TITLE = 120
@@ -272,7 +274,7 @@ function note(text: string): ServerToClientMessage[] {
 
 function dueLabel(task: Task, asOf?: string): string | null {
 	if (!task.dueDate) return null
-	const overdue = Boolean(asOf && task.dueDate < asOf && task.status !== 'done' && task.status !== 'cancelled')
+	const overdue = Boolean(asOf && isTaskOverdue(task, asOf))
 	return overdue ? `Overdue ${task.dueDate}` : `Due ${task.dueDate}`
 }
 
@@ -471,6 +473,13 @@ function tableMessages(
 ): ServerToClientMessage[] {
 	const shown = tasks.slice(0, MAX_TASKS)
 	const childIds = ['heading', 'table']
+	const bodyIds: string[] = []
+	const rowNodes: ComponentInstance[] = []
+	for (const [index, task] of shown.entries()) {
+		const row = tableRow(task, index, asOf, selectedIds)
+		bodyIds.push(row.rootId)
+		rowNodes.push(...row.nodes)
+	}
 	const nodes: ComponentInstance[] = [
 		titleNode('heading', tasks.length === 1 ? '1 task' : `${tasks.length} tasks`),
 		{
@@ -491,9 +500,9 @@ function tableMessages(
 		...tableCell('h-priority', 'Priority', true),
 		...tableCell('h-assignee', 'Assignee', true),
 		...tableCell('h-select', 'Select', true),
-		{ id: 'tbody', component: { TableBody: { children: { explicitList: [] } } } },
+		{ id: 'tbody', component: { TableBody: { children: { explicitList: bodyIds } } } },
+		...rowNodes,
 	]
-	const bodyIds: string[] = []
 	if (shown.length === 0) {
 		childIds.push('empty-title', 'empty-note')
 		nodes.push(
@@ -501,13 +510,6 @@ function tableMessages(
 			textNode('empty-note', 'Try another filter, or ask to see every task.', 'body'),
 		)
 	}
-	for (const [index, task] of shown.entries()) {
-		const row = tableRow(task, index, asOf, selectedIds)
-		bodyIds.push(row.rootId)
-		nodes.push(...row.nodes)
-	}
-	const body = nodes.find((node) => node.id === 'tbody')
-	if (body) body.component = { TableBody: { children: { explicitList: bodyIds } } }
 	if (tasks.length > shown.length) {
 		childIds.push('overflow')
 		nodes.push(
@@ -606,8 +608,8 @@ function timelineGroups(tasks: Task[]): Array<{ dueDate: string | null; tasks: T
 
 function timelineHeading(dueDate: string | null, group: Task[], asOf?: string): string {
 	if (!dueDate) return 'No due date'
-	const open = group.some((task) => task.status !== 'done' && task.status !== 'cancelled')
-	return asOf && dueDate < asOf && open ? `Overdue ${dueDate}` : `Due ${dueDate}`
+	const overdue = Boolean(asOf && group.some((task) => isTaskOverdue(task, asOf)))
+	return overdue ? `Overdue ${dueDate}` : `Due ${dueDate}`
 }
 
 function timelineMessages(
@@ -707,8 +709,20 @@ function parseTasks(value: unknown): Task[] | null {
 }
 
 function readAsOf(data: object): string | undefined {
-	if (!('asOf' in data) || typeof data.asOf !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(data.asOf)) return undefined
+	if (!('asOf' in data) || typeof data.asOf !== 'string' || !isRealCalendarDate(data.asOf)) return undefined
 	return data.asOf
+}
+
+function parseTaskViewPayload(payload: unknown): object | null {
+	let data: unknown = payload
+	if (typeof payload === 'string') {
+		try {
+			data = JSON.parse(payload)
+		} catch {
+			return null
+		}
+	}
+	return typeof data === 'object' && data !== null && !Array.isArray(data) ? data : null
 }
 
 export function buildTaskViewMessages(
@@ -716,15 +730,8 @@ export function buildTaskViewMessages(
 	selectedIds: readonly string[] = [],
 	fallbackAsOf?: string,
 ): ServerToClientMessage[] {
-	let data: unknown = payload
-	if (typeof payload === 'string') {
-		try {
-			data = JSON.parse(payload)
-		} catch {
-			return note('This view has no data yet.')
-		}
-	}
-	if (typeof data !== 'object' || data === null) return note('This view has no data yet.')
+	const data = parseTaskViewPayload(payload)
+	if (!data) return note('This view has no data yet.')
 	if ('error' in data && typeof data.error === 'string') return note(clip(data.error, 240))
 	if ('tasks' in data) {
 		const tasks = parseTasks(data.tasks)
@@ -786,18 +793,12 @@ export function taskViewIntent(action: UserAction): TaskViewIntent {
 
 /** Follow-up the model turns into updateTasksStatus. Empty selection sends nothing. */
 export function bulkStatusPrompt(payload: unknown, selectedIds: readonly string[], status: TaskStatus): string | null {
-	let data: unknown = payload
-	if (typeof payload === 'string') {
-		try {
-			data = JSON.parse(payload)
-		} catch {
-			return null
-		}
-	}
-	if (typeof data !== 'object' || data === null || !('tasks' in data)) return null
+	const data = parseTaskViewPayload(payload)
+	if (!data || !('tasks' in data)) return null
 	const tasks = parseTasks(data.tasks)
 	if (!tasks) return null
-	const chosen = tasks.filter((task) => selectedIds.includes(task.id))
+	const selected = new Set(selectedIds)
+	const chosen = tasks.filter((task) => selected.has(task.id))
 	if (chosen.length === 0) return null
 	const titles = chosen.map((task) => clip(task.title, 80)).join(', ')
 	const ids = chosen.map((task) => clip(task.id, 80)).join(', ')

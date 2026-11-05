@@ -1,5 +1,5 @@
 import type { Collection, Db, Filter, UpdateFilter } from 'mongodb'
-import type { DistinctValueField } from '@/constants/options'
+import { type DistinctValueField, OPEN_TASK_STATUSES } from '@/constants/options'
 import { matchesDueFilter, sortTasks, taskUpdateFields, taskWriteFields } from '@/services/repository/taskQuery'
 import { resolveCreateLastModifiedBy } from '@/services/repository/traceability'
 import type { IndexableRepository, TraceabilityContext } from '@/services/repository/types'
@@ -13,10 +13,9 @@ import type { TaskRepo, TaskRepoFilter, TaskRepoInput } from '@/services/schemas
 import { calendarToday } from '@/utils/calendarDate'
 
 const TASKS_COLLECTION = 'tasks'
-const OPEN_TASK_STATUSES = ['pending', 'in-progress'] as const
 
 /** Due-date clauses that Mongo can reject before the documents are read. */
-function taskMongoFilter(filter?: Readonly<TaskRepoFilter>): Filter<TaskRepo> {
+function taskMongoFilter(filter?: Readonly<TaskRepoFilter>, asOf?: string): Filter<TaskRepo> {
 	const parts: Filter<TaskRepo>[] = []
 	if (filter?.status) parts.push({ status: filter.status })
 	if (filter?.priority) parts.push({ priority: filter.priority })
@@ -30,8 +29,10 @@ function taskMongoFilter(filter?: Readonly<TaskRepoFilter>): Filter<TaskRepo> {
 		})
 	}
 	if (filter?.due === 'overdue') {
-		const asOf = filter.asOf ?? calendarToday('UTC')
-		parts.push({ dueDate: { $lt: asOf, $type: 'string' }, status: { $in: [...OPEN_TASK_STATUSES] } })
+		parts.push({
+			dueDate: { $lt: asOf ?? calendarToday('UTC'), $type: 'string' },
+			status: { $in: [...OPEN_TASK_STATUSES] },
+		})
 	}
 	if (filter?.due === 'unscheduled') {
 		parts.push({ $or: [{ dueDate: { $exists: false } }, { dueDate: null }] })
@@ -39,7 +40,7 @@ function taskMongoFilter(filter?: Readonly<TaskRepoFilter>): Filter<TaskRepo> {
 	if (filter?.due === 'scheduled') parts.push({ dueDate: { $type: 'string' } })
 	if (filter?.dueOnOrBefore) parts.push({ dueDate: { $lte: filter.dueOnOrBefore, $type: 'string' } })
 	if (parts.length === 0) return {}
-	if (parts.length === 1) return parts[0] ?? {}
+	if (parts.length === 1) return parts[0]
 	return { $and: parts }
 }
 
@@ -72,9 +73,10 @@ export class MongoTaskRepository implements TaskCollectionRepository {
 	}
 
 	async getTasks(filter?: Readonly<TaskRepoFilter>): Promise<TaskRepo[]> {
-		const query = taskMongoFilter(filter)
+		const asOf = filter?.asOf ?? calendarToday('UTC')
+		const query = taskMongoFilter(filter, asOf)
 		const rows = await this.collection.find(query).sort({ updatedAt: -1 }).toArray()
-		const matched = parseTaskRepoList(rows).filter((task) => matchesDueFilter(task, filter))
+		const matched = parseTaskRepoList(rows).filter((task) => matchesDueFilter(task, filter, asOf))
 		return sortTasks(matched, filter)
 	}
 
