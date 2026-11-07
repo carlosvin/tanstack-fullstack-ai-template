@@ -41,7 +41,7 @@ This template publishes **multiple** skills. If only **this** skill is installed
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env
   ```
 
-- **`agentic-ux`** (companion) — Fully agentic tool-only shell. Mantine views are A2UI surfaces. Raw documents stay MCP UI resources. Install when the deployment has no domain screens.
+- **`agentic-ux`** (companion) — Fully agentic tool-only shell. Mantine views are declarative A2UI surfaces. Install when the deployment has no domain screens.
   ```bash
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill agentic-ux
   ```
@@ -163,7 +163,7 @@ This template implements prompt-first when `PROMPT_CONCEPT=prompt-first` (see `s
 
 ### Switching & coexistence: extending the agentic chat core across `side` and `prompt-first`
 
-The two route-based concepts (`prompt-first` and `side`) are extensions of the **fully agentic** dynamic chat component (companion **`agentic-ux`**). Every AI chat panel in the codebase renders dynamic A2UI surfaces (`AgenticA2uiSurface`) and sandboxed MCP UI resources (`AgenticMcpRenderer`) alongside assistant markdown:
+The two route-based concepts (`prompt-first` and `side`) are extensions of the **fully agentic** dynamic chat component (companion **`agentic-ux`**). Every AI chat panel in the codebase renders dynamic A2UI surfaces (`AgenticA2uiSurface`) alongside assistant markdown:
 
 - **Shared dynamic chat rendering (`src/components/AgenticShell/AgenticThread.tsx`, `src/components/PromptChat/ChatThread.tsx`):** `ChatThread` reuses `AgenticMessageItems` and `useInlineDetailViews` from `AgenticThread`, so `showTasksView` and `showTaskView` render interactive cards, tables, kanban lanes, timelines, and single-click detail views inside both `ChatDrawer` (`side`) and `PromptFirstLanding` (`prompt-first`).
 - **Shared route-aware chat context (`src/components/PromptChat/PromptChatContext.tsx`):** Both `side` and `prompt-first` mount `PromptChatProvider` once in `AppLayout` when `aiAvailable` is true. It extends the agentic chat capabilities with router-aware `browserContext` capture and client `navigate` and `invalidateRouter` tools.

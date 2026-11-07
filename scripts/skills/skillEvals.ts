@@ -1063,7 +1063,7 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 			id: 'agentic-ux-shell-contract',
 			skill: 'agentic-ux',
 			description:
-				'Agentic skill recipe matches the example shell: metadata._meta.ui.resourceUri, AppRenderer, no route chrome',
+				'Agentic skill recipe matches the example shell: declarative A2UI Surface, no route chrome, no iframe',
 			async run() {
 				const { agentSkillsDir } = getSkillPaths(rootDir)
 				let skillMd: string
@@ -1075,22 +1075,11 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 				const missing = []
 				if (!/## Shell/.test(skillMd)) missing.push('Shell section')
 				if (!/## View strategy/.test(skillMd)) missing.push('View strategy section')
-				if (!/## MCP UI rendering/.test(skillMd)) missing.push('MCP UI rendering section')
 				if (!/@a2ui-bridge\/react/.test(skillMd) || !/createComponentMapping/.test(skillMd)) {
 					missing.push('Mantine A2UI catalog recipe')
 				}
 				if (!/Unknown component types render nothing/.test(skillMd)) missing.push('unknown component rule')
 				if (!/## Security/.test(skillMd)) missing.push('Security section')
-				if (!/metadata\._meta\.ui\.resourceUri/.test(skillMd)) missing.push('metadata._meta.ui.resourceUri recipe')
-				if (!/createUIResource/.test(skillMd)) missing.push('createUIResource recipe')
-				if (!/AppRenderer/.test(skillMd)) missing.push('AppRenderer recipe')
-				if (!/resources\/read/.test(skillMd)) missing.push('resources/read recipe')
-				if (!/createMCPServer/.test(skillMd) || !/createMCPClient/.test(skillMd)) {
-					missing.push('TanStack MCP registration recipe')
-				}
-				if (!/toolResult/.test(skillMd)) missing.push('toolResult recipe')
-				if (!/sandbox_proxy\.html/.test(skillMd)) missing.push('sandbox proxy recipe')
-				if (!/only inside the MCP UI iframe/.test(skillMd)) missing.push('iframe-only render rule')
 				if (!/No `ChatDrawer`, `PromptBar`, `AppNavbar`/.test(skillMd)) missing.push('no route-component reuse rule')
 				if (!/docs\/help\.md/.test(skillMd) || !/sentence case/.test(skillMd)) {
 					missing.push('hero and tool-status rules')
@@ -1099,11 +1088,11 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 				if (!/one short sentence/.test(skillMd) || !/demo visitor/.test(skillMd)) {
 					missing.push('answer and demo-assignee rules')
 				}
-				if (!/without waiting|do not send another model turn/.test(skillMd)) {
+				if (!/without waiting|without sending another model turn|without another model turn/.test(skillMd)) {
 					missing.push('direct detail-open rule')
 				}
 				if (!/bare colon/.test(skillMd)) missing.push('empty markdown-link label rule')
-				if (!/No raw ids/.test(skillMd)) missing.push('guest card presentation rule')
+				if (!/No raw ids/.test(skillMd)) missing.push('card presentation rule')
 				if (!/\*\*`agentic-ux`\*\*\s*\(companion\)/.test(skillMd) && !/agentic-ux/.test(skillMd)) {
 					missing.push('companion wiring')
 				}
@@ -1121,9 +1110,7 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 				const messages = await readText(path.join(rootDir, 'src/services/a2ui/taskViewMessages.ts'))
 				const catalog = await readText(path.join(rootDir, 'src/services/a2ui/mantineCatalog.tsx'))
 				const chatRoute = await readText(path.join(rootDir, 'src/routes/api/chat.ts'))
-				const renderer = await readText(path.join(rootDir, 'src/components/AgenticMcp/AgenticMcpRenderer.tsx'))
 				const surface = await readText(path.join(rootDir, 'src/components/AgenticA2ui/AgenticA2uiSurface.tsx'))
-				const resources = await readText(path.join(rootDir, 'src/services/mcpUi/mcpUiResources.ts'))
 				const shell = await readText(path.join(rootDir, 'src/components/AgenticShell/AgenticShell.tsx'))
 				const thread = await readText(path.join(rootDir, 'src/components/AgenticShell/AgenticThread.tsx'))
 				const composer = await readText(path.join(rootDir, 'src/components/AgenticShell/AgenticComposer.tsx'))
@@ -1143,12 +1130,6 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 				}
 				if (!/Surface/.test(surface) || !/mantineTaskCatalog/.test(surface) || !/acceptA2uiMessages/.test(surface)) {
 					drift.push('AgenticA2uiSurface must render Surface through the Mantine catalog after acceptA2uiMessages')
-				}
-				if (!/AppRenderer/.test(renderer) || !/sandbox_proxy\.html/.test(renderer) || !/toolResult/.test(renderer)) {
-					drift.push('AgenticMcpRenderer must render AppRenderer through sandbox_proxy.html with toolResult')
-				}
-				if (!/createUIResource/.test(resources) || !/readMcpUiResource/.test(resources)) {
-					drift.push('mcpUiResources must register raw documents with createUIResource and readMcpUiResource')
 				}
 				if (!/buildTaskViewMessages/.test(messages) || !/open-task/.test(messages)) {
 					drift.push('task view messages must be built from tool data with an open-task action')
@@ -1188,6 +1169,9 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 				}
 				if (!/buildTaskViewMessages/.test(thread) || !/promptFromA2uiAction/.test(thread)) {
 					drift.push('the thread must render task data through the A2UI surface')
+				}
+				if (/AgenticMcpRenderer|sandbox_proxy/.test(thread)) {
+					drift.push('the thread must not render iframe MCP UI documents')
 				}
 				if (drift.length > 0) {
 					return fail('Agentic example drifted from the agentic-ux recipe', drift)

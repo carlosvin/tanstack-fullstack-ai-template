@@ -49,7 +49,7 @@ This template publishes **multiple** skills. If only **this** skill is installed
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill promptable-ux
   ```
 
-- **`agentic-ux`** (companion) — Fully agentic tool-only shell. Catalog views are declarative surfaces. Raw documents stay MCP UI resources. Install when the deployment has no domain screens.
+- **`agentic-ux`** (companion) — Fully agentic tool-only shell. Catalog views are declarative surfaces from tool data. Install when the deployment has no domain screens.
   ```bash
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill agentic-ux
   ```
@@ -92,7 +92,7 @@ The UX companion skills cover three experiences. One experience per deployment.
 |------------|-----------------|--------|
 | **side** | **`promptable-ux`** | Domain screens, with the prompt hidden until opened |
 | **prompt-first** | **`promptable-ux`** | Bottom-pinned composer, conversation stage, and domain routes |
-| **agentic** | **`agentic-ux`** | Thin shell only. No domain screens. Catalog views are declarative surfaces from tool data. Raw documents stay MCP UI resources. The guest kind follows the declared kit |
+| **agentic** | **`agentic-ux`** | Thin shell only. No domain screens. Catalog views are declarative surfaces from tool data. The guest kind follows the declared kit |
 
 When the app already sets `PROMPT_CONCEPT` or already mounts one shell, keep that declaration. This template's three sites stay as they are: side (unset or `side`), prompt-first, and agentic. Do not change those env values because of this question.
 
@@ -100,7 +100,7 @@ When it is not clear which user experience to implement, ask which of the three 
 
 ### Tri-modal UX architecture (4 seams, 1 shared core)
 
-All three UX concepts (`agentic`, `prompt-first`, and `side`) share **one dynamic AI chat component** (`AgenticMessageItems` + `useInlineDetailViews`, rendering assistant markdown, interactive A2UI surfaces via `AgenticA2uiSurface`, and sandboxed MCP UI resources via `AgenticMcpRenderer`). Think of **fully agentic** as the core AI conversation surface, and **`prompt-first`** and **`side`** as route-enabled extensions that embed that same dynamic chat component inside a router-driven application shell (`PromptFirstLanding` + `PromptBar`, or `ChatDrawer`).
+All three UX concepts (`agentic`, `prompt-first`, and `side`) share **one dynamic AI chat component** (`AgenticMessageItems` + `useInlineDetailViews`, rendering assistant markdown and interactive A2UI surfaces via `AgenticA2uiSurface`). Think of **fully agentic** as the core AI conversation surface, and **`prompt-first`** and **`side`** as route-enabled extensions that embed that same dynamic chat component inside a router-driven application shell (`PromptFirstLanding` + `PromptBar`, or `ChatDrawer`).
 
 One codebase can ship one declared experience or all three experiences across deployments (`PROMPT_CONCEPT=side | prompt-first | agentic`) without duplicating domain logic, schemas, repositories, server functions, or dynamic chat rendering. Keep the shared foundation identical and branch only at these four seams using exhaustive `Record<PromptConcept, ...>` / `satisfies` maps so TypeScript enforces coverage of all three modes:
 

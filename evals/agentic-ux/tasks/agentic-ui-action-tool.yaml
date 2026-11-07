@@ -3,7 +3,7 @@ name: UI action tool call
 description: Covers USE FOR dynamic tool UI.
 tags: [ux, trigger]
 inputs:
-  prompt: What happens when a sandboxed UI widget triggers a tool action?
+  prompt: What happens when a dynamic tool UI surface triggers an action in the agentic shell?
 expected:
   outcomes:
     - type: task_completed

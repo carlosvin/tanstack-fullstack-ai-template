@@ -70,8 +70,8 @@ CI runs this in `.github/workflows/skills.yml` with a pinned `waza` binary. Conf
 
 ### `agentic-ux`
 
-- Skill documents the shell, the Mantine A2UI catalog, MCP UI rendering for raw documents, and security rules
-- The example shell follows that recipe (`Surface` plus the Mantine catalog for task data, `AppRenderer` for raw HTML, no route chrome)
+- Skill documents the shell, the Mantine A2UI catalog, UI actions, and security rules
+- The example shell follows that recipe (`Surface` plus the Mantine catalog for task data, no route chrome, no HTML injection)
 
 ## Manual pressure scenarios
 

@@ -17,8 +17,7 @@ interface ChatThreadProps {
 /**
  * Shared conversation thread used by `ChatDrawer` (`side`) and `PromptFirstLanding` (`prompt-first`).
  * Reuses `AgenticMessageItems` and `useInlineDetailViews` from `AgenticThread` so every AI panel renders
- * dynamic A2UI surfaces (`AgenticA2uiSurface`) and sandboxed MCP UI resources (`AgenticMcpRenderer`),
- * while keeping client-side route `MarkdownLink` navigation.
+ * dynamic A2UI surfaces (`AgenticA2uiSurface`), while keeping client-side route `MarkdownLink` navigation.
  */
 export function ChatThread({
 	emptyHint = 'Ask me anything about your tasks!',

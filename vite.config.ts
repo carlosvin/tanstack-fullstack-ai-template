@@ -28,19 +28,6 @@ export default defineConfig(({ command }) => ({
 		exclude: [...configDefaults.exclude, 'e2e/**'],
 	},
 	plugins: [
-		{
-			// Same guest paths as the Netlify [[headers]] in netlify.toml.
-			name: 'mcp-guest-cors',
-			configureServer(server) {
-				server.middlewares.use((req, res, next) => {
-					const path = req.url?.split('?')[0]
-					if (path === '/mcp-app.js') {
-						res.setHeader('Access-Control-Allow-Origin', '*')
-					}
-					next()
-				})
-			},
-		},
 		devtools(),
 		nitro(),
 		viteTsConfigPaths({ projects: ['./tsconfig.json'] }),
