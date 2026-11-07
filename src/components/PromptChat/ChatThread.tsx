@@ -1,7 +1,7 @@
 import { Button, Group, Loader, ScrollArea, Stack, Text } from '@mantine/core'
-import { useCallback, useEffect, useRef } from 'react'
 import { AgenticMessageItems } from '@/components/AgenticShell/AgenticThread'
 import { usePromptChat } from '@/components/PromptChat/PromptChatContext'
+import { ScrollAnchor } from '@/components/ScrollAnchor/ScrollAnchor'
 import { suggestedPrompts } from '@/utils/suggestedPrompts'
 
 interface ChatThreadProps {
@@ -9,7 +9,6 @@ interface ChatThreadProps {
 	/** Definite viewport height for scrollable thread (prompt-first landing). */
 	scrollHeight?: string | number
 	maxHeight?: string | number
-	viewportRef?: React.RefObject<HTMLDivElement | null>
 	showSuggestions?: boolean
 }
 
@@ -22,30 +21,23 @@ export function ChatThread({
 	emptyHint = 'Ask me anything about your tasks!',
 	scrollHeight,
 	maxHeight,
-	viewportRef: externalViewportRef,
 	showSuggestions = true,
 }: ChatThreadProps) {
 	const { messages, isLoading, opened, handlePrompt, today } = usePromptChat()
-	const internalViewport = useRef<HTMLDivElement>(null)
-	const viewportRef = externalViewportRef ?? internalViewport
-
-	const scrollToBottom = useCallback(() => {
-		const el = viewportRef.current
-		if (el && typeof el.scrollTo === 'function') {
-			el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
-		}
-	}, [viewportRef])
-
-	useEffect(() => {
-		scrollToBottom()
-	}, [scrollToBottom])
+	const last = messages.at(-1)
+	const scrollSignal = [
+		messages.length,
+		last?.id ?? '',
+		last?.parts.length ?? 0,
+		opened.map((item) => `${item.id}:${item.resultText ? 1 : 0}`).join(','),
+		isLoading ? '1' : '0',
+	].join('|')
 
 	return (
 		<ScrollArea
 			flex={scrollHeight ? undefined : 1}
 			h={scrollHeight}
 			mah={scrollHeight ? undefined : maxHeight}
-			viewportRef={viewportRef}
 			type="auto"
 		>
 			<Stack gap="md" p="xs">
@@ -74,6 +66,7 @@ export function ChatThread({
 						</Text>
 					</Group>
 				)}
+				{messages.length > 0 || isLoading || opened.length > 0 ? <ScrollAnchor signal={scrollSignal} /> : null}
 			</Stack>
 		</ScrollArea>
 	)

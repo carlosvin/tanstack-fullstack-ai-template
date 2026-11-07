@@ -3,12 +3,13 @@ import { Box, Group, Loader, ScrollArea, SimpleGrid, Stack, Text, ThemeIcon, Tit
 import type { ToolResultPart } from '@tanstack/ai'
 import type { UIMessage } from '@tanstack/ai-react'
 import { Bot } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { AgenticA2uiSurface } from '@/components/AgenticA2ui/AgenticA2uiSurface'
 import { useAgenticChat } from '@/components/AgenticChat/AgenticChatContext'
 import { AgenticPromptMarkdownLink } from '@/components/AgenticShell/AgenticPromptMarkdownLink'
 import styles from '@/components/AgenticShell/AgenticThread.module.css'
 import { MessageBubble } from '@/components/PromptChat/MessageBubble'
+import { ScrollAnchor } from '@/components/ScrollAnchor/ScrollAnchor'
 import {
 	buildTaskViewMessages,
 	bulkStatusPrompt,
@@ -217,19 +218,19 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 	const { messages, isLoading, sendMessage } = useAgenticChat()
 	const today = useCalendarToday()
 	const { opened, handlePrompt } = useInlineDetailViews(messages, sendMessage, today)
-	const viewportRef = useRef<HTMLDivElement>(null)
-
-	useEffect(() => {
-		const el = viewportRef.current
-		if (!el || typeof el.scrollTo !== 'function') return
-		if (messages.length === 0 && !isLoading) return
-		el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
-	}, [messages, isLoading])
+	const last = messages.at(-1)
+	const scrollSignal = [
+		messages.length,
+		last?.id ?? '',
+		last?.parts.length ?? 0,
+		opened.map((item) => `${item.id}:${item.resultText ? 1 : 0}`).join(','),
+		isLoading ? '1' : '0',
+	].join('|')
 
 	const isEmpty = messages.length === 0
 
 	return (
-		<ScrollArea h={scrollHeight} viewportRef={viewportRef} type="auto" classNames={{ content: styles.content }}>
+		<ScrollArea h={scrollHeight} type="auto" classNames={{ content: styles.content }}>
 			<Box className={`${styles.stage} ${isEmpty ? styles.empty : ''}`}>
 				<Stack gap="md" p="xs" w="100%">
 					{isEmpty && (
@@ -271,6 +272,7 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 							</Text>
 						</Group>
 					)}
+					{!isEmpty || isLoading || opened.length > 0 ? <ScrollAnchor signal={scrollSignal} /> : null}
 				</Stack>
 			</Box>
 		</ScrollArea>
