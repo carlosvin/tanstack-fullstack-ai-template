@@ -18,7 +18,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.3.1"
+  version: "1.3.2"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -79,11 +79,11 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 | | Promptable UI (side) | Prompt-first |
 |--|----------------------|--------------|
-| What the user sees first | The domain screen (dashboard, list, detail) | The prompt |
+| What the user sees first | The domain screen (dashboard, list, detail) | The conversation stage (hero or thread) |
 | Prompt visibility | Hidden until the user opens it | Always on screen. It is the entry point |
-| Panel | Side drawer, or a bottom panel. May cover a narrow viewport | Not a panel. It is the top of the page |
-| How areas are reached | App navigation, plus the prompt once opened | The prompt, and a top-to-bottom overview the user drills into |
-| Best for | Data-dense apps where browsing is primary and the prompt assists | A clean overview the user drills into, with the prompt leading |
+| Panel | Side drawer, or a bottom panel. May cover a narrow viewport | Not a panel. Bottom-pinned composer (`AppShell.Footer`) |
+| How areas are reached | App navigation, plus the prompt once opened | The prompt, markdown links, navigate, and dedicated drill-down routes |
+| Best for | Data-dense apps where browsing is primary and the prompt assists | A conversation-first landing the user drills into from the prompt |
 | This template | **Default** (`PROMPT_CONCEPT=side` or unset) | Second Netlify site with `PROMPT_CONCEPT=prompt-first` |
 
 **One concept per app.** A hidden drawer plus a second always-visible prompt is a mixed concept. Do not build it.

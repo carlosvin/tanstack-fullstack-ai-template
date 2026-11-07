@@ -18,5 +18,6 @@ export function captureAgenticBrowserContext(): BrowserContext {
 		timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 		locale: navigator.language,
 		currentTime: new Date().toISOString(),
+		surface: 'agentic',
 	}
 }

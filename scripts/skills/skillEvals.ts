@@ -278,11 +278,16 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 		{
 			id: 'observability-browser-shell-loader',
 			skill: 'observability-and-env',
-			description: 'Root loader calls getBrowserShellSession()',
+			description: 'Root route loads getBrowserShellSession once and exposes it to the loader',
 			async run() {
 				const root = await readText(path.join(rootDir, 'src/routes/__root.tsx'))
 				if (!/getBrowserShellSession\s*\(/.test(root)) {
-					return fail('src/routes/__root.tsx must call getBrowserShellSession() in the loader')
+					return fail('src/routes/__root.tsx must call getBrowserShellSession()')
+				}
+				if (!/context\.shellSession/.test(root) && !/loader:[\s\S]*getBrowserShellSession\s*\(/.test(root)) {
+					return fail(
+						'src/routes/__root.tsx must expose shellSession to the loader (beforeLoad context or a loader call)',
+					)
 				}
 				return pass()
 			},
@@ -562,6 +567,27 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 				const serverFns = await readText(path.join(rootDir, 'src/services/api/serverFns.ts'))
 				if (!/toToolTask/.test(serverFns) || !/toToolUserProfile/.test(serverFns)) {
 					return fail('serverFns.ts must map repository output through tools-layer parsers')
+				}
+				return pass()
+			},
+		},
+		{
+			id: 'architecture-assignee-options-tool',
+			skill: 'tanstack-promptable-fullstack-app-template',
+			description: 'getAssigneeOptions server fn has a matching AI tool and is wired into /api/chat',
+			async run() {
+				const serverFns = await readText(path.join(rootDir, 'src/services/api/serverFns.ts'))
+				if (!/export const getAssigneeOptions = createServerFn/.test(serverFns)) {
+					return pass()
+				}
+				const tools = await readText(path.join(rootDir, 'src/services/ai/tools.ts'))
+				const chat = await readText(path.join(rootDir, 'src/routes/api/chat.ts'))
+				if (!/getAssigneeOptionsTool/.test(tools) || !/name:\s*'getAssigneeOptions'/.test(tools)) {
+					return fail('tools.ts must define getAssigneeOptionsTool for the getAssigneeOptions server fn')
+				}
+				const dataToolsMatch = chat.match(/const dataTools\s*=\s*\[([\s\S]*?)\]/)
+				if (!dataToolsMatch || !/\bgetAssigneeOptionsTool\b/.test(dataToolsMatch[1])) {
+					return fail('api/chat.ts must register getAssigneeOptionsTool in the dataTools array')
 				}
 				return pass()
 			},
@@ -1186,6 +1212,41 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 				}
 				if (drift.length > 0) {
 					return fail('Agentic example drifted from the agentic-ux recipe', drift)
+				}
+				return pass()
+			},
+		},
+		{
+			id: 'agentic-browser-context-surface',
+			skill: 'agentic-ux',
+			description: 'Agentic browserContext includes a surface marker and omits location fields',
+			async run() {
+				const schema = await readText(path.join(rootDir, 'src/services/schemas/schemas.ts'))
+				const capture = await readText(path.join(rootDir, 'src/utils/browserContext.ts'))
+				if (!/surface:\s*z[\s\S]*literal\('agentic'\)/.test(schema) && !/surface:[\s\S]*'agentic'/.test(schema)) {
+					return fail('BrowserContextSchema must allow an agentic surface marker')
+				}
+				if (!/surface:\s*'agentic'/.test(capture) || !/captureAgenticBrowserContext/.test(capture)) {
+					return fail('captureAgenticBrowserContext must set surface: "agentic"')
+				}
+				if (/function captureAgenticBrowserContext[\s\S]*currentPathname/.test(capture)) {
+					return fail('captureAgenticBrowserContext must omit location fields')
+				}
+				return pass()
+			},
+		},
+		{
+			id: 'agentic-domain-route-redirect',
+			skill: 'agentic-ux',
+			description: 'Root beforeLoad redirects domain routes to / when promptConcept is agentic',
+			async run() {
+				const root = await readText(path.join(rootDir, 'src/routes/__root.tsx'))
+				if (
+					!/beforeLoad:/.test(root) ||
+					!/promptConcept === 'agentic'/.test(root) ||
+					!/redirect\(\{\s*to:\s*'\/'\s*\}\)/.test(root)
+				) {
+					return fail('__root.tsx must redirect non-/ user routes to / when promptConcept is agentic')
 				}
 				return pass()
 			},

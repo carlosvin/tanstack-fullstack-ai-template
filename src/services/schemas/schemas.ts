@@ -105,6 +105,10 @@ export const BrowserContextSchema = z.object({
 	timezone: z.string().describe('IANA timezone of the user browser, e.g. "America/New_York"'),
 	locale: z.string().describe('Browser locale, e.g. "en-US"'),
 	currentTime: z.string().describe('ISO 8601 timestamp of the current time in the user browser'),
+	surface: z
+		.literal('agentic')
+		.optional()
+		.describe('Set to "agentic" when the client is the fully agentic shell (no in-app routes).'),
 	currentPathname: z.string().optional().describe('Current browser pathname, e.g. "/tasks/abc123"'),
 	currentSearch: z.string().optional().describe('Current browser query string, e.g. "?status=done"'),
 	currentHref: z

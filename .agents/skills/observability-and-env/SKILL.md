@@ -19,7 +19,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.8.2"
+  version: "1.8.3"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -425,8 +425,8 @@ export const getBrowserShellSession = createServerFn({ method: 'GET' })
 
 export const getAIAvailability = createServerFn({ method: 'GET' })
   .middleware([webEnvMiddleware])
-  .handler(async ({ context }) => ({
-    available: Boolean(context.serverEnv.GEMINI_API_KEY),
+  .handler(async () => ({
+    available: getAIAdapterService().isConfigured(),
   }))
 ```
 

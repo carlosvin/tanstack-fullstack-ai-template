@@ -5,7 +5,7 @@ import { ColorSchemeScript, createTheme, MantineProvider } from '@mantine/core'
 import { ModalsProvider } from '@mantine/modals'
 import { Notifications } from '@mantine/notifications'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import { createRootRoute, HeadContent, Scripts } from '@tanstack/react-router'
+import { createRootRoute, HeadContent, redirect, Scripts } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { useEffect } from 'react'
 import { AppLayout } from '@/components/AppLayout/AppLayout'
@@ -15,13 +15,26 @@ import { getAIAvailability, getBrowserShellSession, getCurrentUser } from '@/ser
 import { watchNetlifyHud } from '@/utils/netlifyHud'
 
 export const Route = createRootRoute({
-	loader: async () => {
-		const [currentUser, shellSession, aiAvailability] = await Promise.all([
-			getCurrentUser(),
-			getBrowserShellSession(),
-			getAIAvailability(),
-		])
-		return { currentUser, shellSession, aiAvailable: aiAvailability.available }
+	beforeLoad: async ({ location }) => {
+		// One shell-session fetch for the guard and the loader (avoids a second round trip).
+		const shellSession = await getBrowserShellSession()
+		// Agentic deployments have no domain screens — keep the shell on `/`.
+		if (
+			shellSession.promptConcept === 'agentic' &&
+			!location.pathname.startsWith('/api/') &&
+			location.pathname !== '/'
+		) {
+			throw redirect({ to: '/' })
+		}
+		return { shellSession }
+	},
+	loader: async ({ context }) => {
+		const [currentUser, aiAvailability] = await Promise.all([getCurrentUser(), getAIAvailability()])
+		return {
+			currentUser,
+			shellSession: context.shellSession,
+			aiAvailable: aiAvailability.available,
+		}
 	},
 	head: ({ loaderData }) => {
 		const appName = loaderData?.shellSession.app.name ?? 'TaskHub'

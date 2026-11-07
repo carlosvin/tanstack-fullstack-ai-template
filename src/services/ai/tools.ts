@@ -5,7 +5,7 @@
  * ensuring a single code path for validation, auth, observability, and data access.
  *
  * Client tools (navigate, invalidateRouter) are definition-only here;
- * their implementations live in ChatDrawer.tsx using the TanStack AI client tools API.
+ * their `.client()` implementations live in PromptChatContext.tsx (side + prompt-first).
  */
 import { toolDefinition } from '@tanstack/ai'
 import { z } from 'zod'
@@ -13,6 +13,7 @@ import { createSafeServerTool } from '@/services/ai/serverTool'
 import {
 	createTask,
 	deleteTask,
+	getAssigneeOptions,
 	getBrowserShellSession,
 	getCurrentUser,
 	getDistinctValues,
@@ -73,6 +74,16 @@ const getDistinctValuesToolDef = toolDefinition({
 export const getDistinctValuesTool = createSafeServerTool(getDistinctValuesToolDef, async (args) =>
 	getDistinctValues({ data: args }),
 )
+
+const getAssigneeOptionsToolDef = toolDefinition({
+	name: 'getAssigneeOptions',
+	description:
+		'List assignees currently present on tasks, each with a display name when the repository has a profile. Prefer this when building labeled assignee filters; use getDistinctValues + getUserProfile when you need roles or a single profile lookup.',
+	inputSchema: z.object({}),
+})
+
+/** AI server tool: labeled assignee options for filters. */
+export const getAssigneeOptionsTool = createSafeServerTool(getAssigneeOptionsToolDef, async () => getAssigneeOptions())
 
 // ---------------------------------------------------------------------------
 // User profile lookup

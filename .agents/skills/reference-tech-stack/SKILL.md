@@ -19,7 +19,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.5.0"
+  version: "1.5.1"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -89,7 +89,7 @@ coupling into the architecture skill.
 | Icons | **lucide-react** | One icon library; do not mix Tabler | AGENTS.md §3 |
 | Database | **MongoDB + seed** | `mongodb`; in-memory seed when unset | AGENTS.md §6; `src/services/repository/` |
 | Auth | **JWT header** | `jose` (unsigned/`alg:none` accepted in template); `Authorization` header | AGENTS.md §5 |
-| AI adapter | **OpenAI** | `@tanstack/ai-openai`; `OPENAI_API_KEY` | AGENTS.md §8 |
+| AI adapter | **Gemini → OpenAI/Gateway → Azure** | `@tanstack/ai-gemini` + `@tanstack/ai-openai`; first configured provider wins (`GEMINI_API_KEY`, then `OPENAI_API_KEY` / Netlify AI Gateway, then Azure) | AGENTS.md §8; `src/services/ai/adapter.ts` |
 | Chat markdown | **react-markdown + remark-gfm** | GFM tables/links/code in `ChatDrawer` | AGENTS.md §8 |
 | Logging | **pino** (+ `pino-pretty` in TTY) | Via `createServerLogger` | **`observability-and-env`**; AGENTS.md §9 |
 | Error tracking | **Sentry** | `@sentry/tanstackstart-react`; `SENTRY_DSN` | **`observability-and-env`**; AGENTS.md §9 |
