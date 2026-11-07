@@ -1,9 +1,8 @@
 import { Button, Group, Loader, ScrollArea, Stack, Text } from '@mantine/core'
 import { useCallback, useEffect, useRef } from 'react'
-import { AgenticMessageItems, useInlineDetailViews } from '@/components/AgenticShell/AgenticThread'
+import { AgenticMessageItems } from '@/components/AgenticShell/AgenticThread'
 import { usePromptChat } from '@/components/PromptChat/PromptChatContext'
 import { suggestedPrompts } from '@/utils/suggestedPrompts'
-import { useCalendarToday } from '@/utils/useCalendarToday'
 
 interface ChatThreadProps {
 	emptyHint?: string
@@ -16,8 +15,8 @@ interface ChatThreadProps {
 
 /**
  * Shared conversation thread used by `ChatDrawer` (`side`) and `PromptFirstLanding` (`prompt-first`).
- * Reuses `AgenticMessageItems` and `useInlineDetailViews` from `AgenticThread` so every AI panel renders
- * dynamic A2UI surfaces (`AgenticA2uiSurface`), while keeping client-side route `MarkdownLink` navigation.
+ * Renders `AgenticMessageItems` from the agentic core. Opened A2UI detail views live in
+ * `PromptChatProvider` (via `useInlineDetailViews`) so they survive route remounts with the conversation.
  */
 export function ChatThread({
 	emptyHint = 'Ask me anything about your tasks!',
@@ -26,9 +25,7 @@ export function ChatThread({
 	viewportRef: externalViewportRef,
 	showSuggestions = true,
 }: ChatThreadProps) {
-	const { messages, isLoading, sendMessage } = usePromptChat()
-	const today = useCalendarToday()
-	const { opened, handlePrompt } = useInlineDetailViews(messages, sendMessage, today)
+	const { messages, isLoading, opened, handlePrompt, today } = usePromptChat()
 	const internalViewport = useRef<HTMLDivElement>(null)
 	const viewportRef = externalViewportRef ?? internalViewport
 

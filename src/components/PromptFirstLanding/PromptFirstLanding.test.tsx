@@ -12,6 +12,9 @@ vi.mock('@/components/PromptChat/PromptChatContext', () => ({
 		messages: mockMessages,
 		isLoading: false,
 		sendMessage: vi.fn(),
+		opened: [],
+		handlePrompt: vi.fn(),
+		today: '2025-01-16',
 	}),
 }))
 

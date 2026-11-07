@@ -21,7 +21,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.35.1"
+  version: "1.35.2"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -94,20 +94,20 @@ The UX companion skills cover three experiences. One experience per deployment.
 | **prompt-first** | **`promptable-ux`** | Bottom-pinned composer, conversation stage, and domain routes |
 | **agentic** | **`agentic-ux`** | Thin shell only. No domain screens. Catalog views are declarative surfaces from tool data. The guest kind follows the declared kit |
 
-When the app already sets `PROMPT_CONCEPT` or already mounts one shell, keep that declaration. This template's three sites stay as they are: side (unset or `side`), prompt-first, and agentic. Do not change those env values because of this question.
+When the app already sets `PROMPT_CONCEPT` or already mounts one shell, keep that declaration. This template's three sites stay as they are: side (unset or `side`), prompt-first, and agentic.
 
 When it is not clear which user experience to implement, ask which of the three to build and wait for an answer. Do not pick one. Do not place a prompt, add domain screens, or start an agentic shell until the developer chooses.
 
 ### Tri-modal UX architecture (4 seams, 1 shared core)
 
-All three UX concepts (`agentic`, `prompt-first`, and `side`) share **one dynamic AI chat component** (`AgenticMessageItems` + `useInlineDetailViews`, rendering assistant markdown and interactive A2UI surfaces via `AgenticA2uiSurface`). Think of **fully agentic** as the core AI conversation surface, and **`prompt-first`** and **`side`** as route-enabled extensions that embed that same dynamic chat component inside a router-driven application shell (`PromptFirstLanding` + `PromptBar`, or `ChatDrawer`).
+`agentic` owns the shared dynamic chat core (`AgenticMessageItems` + `useInlineDetailViews` → `AgenticA2uiSurface`). `prompt-first` and `side` embed that core in route chrome (`ChatThread` + `PromptChatProvider`, which owns opened details). Branch only at four seams with exhaustive `Record<PromptConcept, …>` / `satisfies` maps (`PROMPT_CONCEPT=side | prompt-first | agentic`):
 
-One codebase can ship one declared experience or all three experiences across deployments (`PROMPT_CONCEPT=side | prompt-first | agentic`) without duplicating domain logic, schemas, repositories, server functions, or dynamic chat rendering. Keep the shared foundation identical and branch only at these four seams using exhaustive `Record<PromptConcept, ...>` / `satisfies` maps so TypeScript enforces coverage of all three modes:
+1. **Env & session** (`shellSession.ts`, `webEnv.server.ts`): `PromptConceptSchema`, parse `PROMPT_CONCEPT`, project `promptConcept` via `getBrowserShellSession` (`observability-and-env`).
+2. **Root shell** (`AppLayout.tsx`): read `shellSession.promptConcept` — `AgenticChatProvider` + `AgenticShell` for agentic; `PromptChatProvider` + `ChatDrawer` / `PromptBar` for side / prompt-first (`promptable-ux` / `agentic-ux`).
+3. **Home route** (`routes/index.tsx`): exhaustive home map — overview loaders for side/prompt-first; agentic returns `[]` / `null` (shell owns the stage).
+4. **Chat endpoint** (`routes/api/chat.ts`): shared `dataTools` (CRUD + `showTasksViewTool` / `showTaskViewTool`); add `navigate` / `invalidateRouter` and route system prompts only for side/prompt-first.
 
-1. **Seam 1 — Env & session (`src/services/schemas/shellSession.ts`, `src/env/webEnv.server.ts`):** Define `PromptConceptSchema = z.enum(['side', 'prompt-first', 'agentic'])`, parse `PROMPT_CONCEPT` once in `WebServerEnvSchema`, and project `promptConcept` onto `ShellSessionSchema` via `getBrowserShellSession` (companion **`observability-and-env`**).
-2. **Seam 2 — Root shell (`src/components/AppLayout/AppLayout.tsx`):** Read `shellSession.promptConcept`. When `agentic`, render `AgenticChatProvider` + `AgenticShell` (the standalone agentic chat surface, companion **`agentic-ux`**). When `side` or `prompt-first`, extend that dynamic chat surface (`ChatThread` reusing `AgenticMessageItems` + `useInlineDetailViews`) with `PromptChatProvider` (adding client `navigate` and `invalidateRouter` tools) and `AppShell` route chrome — mounting `ChatDrawer` for `side` and `AppShell.Footer` (`PromptBar`) for `prompt-first` (companion **`promptable-ux`**).
-3. **Seam 3 — Home route (`src/routes/index.tsx`):** Branch both the loader and the home component through exhaustive `Record<PromptConcept, ...>` maps (`satisfies Record<PromptConcept, ...>`). `side` and `prompt-first` load overview data (`loadHomeTasks`); `agentic` returns `[]` without querying. `SideHome` renders the overview page, `PromptFirstHome` renders the conversation landing (`PromptFirstLanding` -> `ChatThread`) when `aiAvailable` is true (with overview fallback when AI is off), and `AgenticHome` returns `null` because the root `AgenticShell` owns the stage.
-4. **Seam 4 — Chat endpoint (`src/routes/api/chat.ts`):** Share `dataTools` — including every repository CRUD tool, `getDistinctValues`, and the dynamic view tools (`showTasksViewTool`, `showTaskViewTool`) — across all three modes so every chat panel can render dynamic A2UI surfaces. Branch only the route client tools (`navigateToolDef` + `invalidateRouterToolDef` added for `side` and `prompt-first`) and the system prompt (`BASE_SYSTEM_PROMPT` + `navigationSection` [+ `PROMPT_FIRST_LAYOUT`] vs `AGENTIC_SYSTEM_PROMPT` + `AGENTIC_LAYOUT`).
+Full seam notes: [references/tri-modal-ux.md](./references/tri-modal-ux.md).
 
 ## Fixed vs swappable stack
 
@@ -121,24 +121,14 @@ Pick **one validator library** per app and use it consistently across router sea
 
 ## Common failure modes (avoid these)
 
-- **Route state in React state (`useState` / `useEffect` overuse):** putting filters, tabs, selections, modal routes, or bulk action drafts in `useState`, or using `useEffect` to sync router/loader state into local state. Overusing `useState` and `useEffect` in route/page components is a code smell — recover page state from the URL path and validated search params, and pass loader data + URL state down as props to isolated, testable components.
-- **Navigate on every search keystroke:** binding a free-text search input to URL search params with `navigate` on each `onChange` re-runs loaders and drops characters. Use an uncontrolled input + debounced callback (see **Special Patterns**).
-- **Repository schemas at the wrong edge:** importing repository-layer schemas into UI, tools, or AI tool inputs — use tools-layer schemas only.
-- **Server function without a tool:** adding `createServerFn` but skipping `toolDefinition` + `createSafeServerTool` for the same capability.
-- **Parse only half the boundary:** validating inbound tools input but returning raw repo rows to UI/AI without tools-layer `Schema.parse` on the way out.
-- **Hand-rolled boundary parsers:** `Array.find` on a const tuple, a homemade type guard, or `as` to turn DB/API/widget strings into domain unions instead of `Schema.parse()` (URL params: `validateSearch`).
-- **UI-only auth:** hiding buttons in components but skipping guards in server handlers.
-- **Type escape hatches:** `any`, loose `Record<string, unknown>`, or `as` after `Schema.parse` — fix types instead of recasting.
-- **Duplicated parent work:** copying a parent layout’s `beforeLoad`, loader, or expensive read into each child route.
-- **Server logic in loaders:** `process.env` secrets, DB drivers, or repository imports inside a route `loader` or route file top-level imports.
-- **Wrong server primitive:** `createServerFn` for internal singletons that must never be RPC-callable — use `createServerOnlyFn` instead.
-- **Leaky module graph:** server modules without `*.server.ts` or `import '@tanstack/react-start/server-only'` pulled into files consumed by UI.
-- **Runtime context guards:** `getShellAuthContext`, `getAccessTicket`, `accessTicketFrom`, or property-presence checks on middleware-assembled `context` — chain the middleware and read `ctx.context` directly (Start infers types).
-- **Context type bypasses:** `context as AuthContext`, `as unknown`, or `as any` on request context — chain middleware so TypeScript infers context.
-- **Secrets in the browser:** returning `serverEnv` or raw env to loaders/components — project through `shellSession` only.
-- **Barrel or relative in-src imports:** an `index.ts` that only re-exports, or a `../` import of a module under `src/`. Import the defining file with `@/`. `routes/**/index.tsx` stays, because file routing requires that name.
-- **Prompt chrome invented here:** choosing a drawer, a prompt-first page, or an agentic shell inside this skill. When it is not clear which user experience to implement, ask **Choose a UX** and wait, then load **`promptable-ux`** or **`agentic-ux`**. This template's sites already declare their concepts.
-- **UX chosen without an answer:** starting side, prompt-first, or agentic chrome when the experience is not clear. Ask which of the three to build and wait.
+- **URL-recoverable state ignored:** filters/tabs/modals in `useState`/`useEffect`, or `navigate` on every search keystroke — use `validateSearch` + props; debounce free-text (Special Patterns).
+- **Wrong schema edge / half-parse:** repository schemas in UI/tools; inbound-only parse; `Array.find`/`as` instead of `Schema.parse` / `validateSearch`.
+- **Server fn without a tool; UI-only auth; type escape hatches** (`any`, loose `Record`, `as` after parse).
+- **Duplicated parent work; server logic in loaders** (`process.env` secrets, DB/repo imports in route files).
+- **Wrong primitive / leaky graph:** `createServerFn` for non-RPC singletons (use `createServerOnlyFn`); missing `*.server.ts` / `server-only` import.
+- **Runtime context guards or casts** on middleware context; leaking `serverEnv` to the browser (use `shellSession`).
+- **Barrel / relative in-src imports** — import defining files with `@/` (`routes/**/index.tsx` stays).
+- **Prompt chrome / UX invented here** — ask **Choose a UX** and wait; load **`promptable-ux`** or **`agentic-ux`**; keep declared `PROMPT_CONCEPT`.
 
 ## Core Contract
 
@@ -350,21 +340,11 @@ Widget libraries often type `onChange` as `string | null`. That is still an untr
 **Boundary mapping (mandatory):** layer switches happen only in mapper functions; **inbound** tool payloads become repo inputs with `RepoLayerSchema.parse(...)`, **outbound** repo documents become tools/API shapes with `ToolsLayerSchema.parse(...)`.
 
 ```typescript
-// Inbound — tools-layer → repository-layer before calling the repo
 function toRepoCreateInput(tool: z.infer<typeof TaskCreateToolSchema>): TaskRepoInput {
-  return TaskRepoInputSchema.parse({
-    title: tool.title,
-    status: tool.status,
-  })
+  return TaskRepoInputSchema.parse({ title: tool.title, status: tool.status })
 }
-
-// Outbound — repository row → tools-layer response for server fn + AI
 function toToolTask(row: TaskRepo): z.infer<typeof TaskToolSchema> {
-  return TaskToolSchema.parse({
-    id: row.id,
-    title: row.title,
-    status: row.status,
-  })
+  return TaskToolSchema.parse({ id: row.id, title: row.title, status: row.status })
 }
 ```
 
@@ -372,26 +352,8 @@ function toToolTask(row: TaskRepo): z.infer<typeof TaskToolSchema> {
 
 ```typescript
 type TaskStatus = 'pending' | 'done'
-
-const STATUS_LABEL = {
-  pending: 'Pending',
-  done: 'Done',
-} as const satisfies Record<TaskStatus, string>
-
-function assertNever(x: never): never {
-  throw new Error(`Unexpected ${String(x)}`)
-}
-
-function labelForStatus(status: TaskStatus): string {
-  switch (status) {
-    case 'pending':
-      return STATUS_LABEL.pending
-    case 'done':
-      return STATUS_LABEL.done
-    default:
-      return assertNever(status)
-  }
-}
+const STATUS_LABEL = { pending: 'Pending', done: 'Done' } as const satisfies Record<TaskStatus, string>
+function assertNever(x: never): never { throw new Error(`Unexpected ${String(x)}`) }
 ```
 
 **Virtual / computed fields:** If semantics cannot live in schema metadata, keep a small registry next to the derivation and expose `explainField` — do not duplicate fields already described by schemas.
@@ -460,24 +422,12 @@ Implementations must **persist** audit fields from the trace onto the entity (`c
 Auth for writes lives on **POST server functions** (`requireAuthMiddleware`), not on a second repository type.
 
 ```typescript
-interface TraceabilityContext {
-  createdBy?: string
-  lastModifiedBy?: string
-}
-
+interface TraceabilityContext { createdBy?: string; lastModifiedBy?: string }
 interface Repository {
   getTasks(filter?: TaskRepoFilter): Promise<TaskRepoOutput[]>
-  getTask(id: string): Promise<TaskRepoOutput | null>
-  getDistinctValues(field: string): Promise<string[]>
-  getUserProfile(email: string): Promise<UserProfile | null>
-  getUserAccess(email: string): Promise<UserAccessRepo | null>
   createTask(input: TaskRepoInput, trace?: TraceabilityContext): Promise<TaskRepoOutput>
-  updateTask(
-    id: string,
-    input: Partial<TaskRepoInput>,
-    trace?: TraceabilityContext,
-  ): Promise<TaskRepoOutput | null>
-  deleteTask(id: string): Promise<boolean>
+  updateTask(id: string, input: Partial<TaskRepoInput>, trace?: TraceabilityContext): Promise<TaskRepoOutput | null>
+  // … getTask / getDistinctValues / getUserProfile / getUserAccess / deleteTask
 }
 ```
 
@@ -493,20 +443,10 @@ interface Repository {
 
 ### Per-entity 3-UX checklist
 
-When adding a new domain entity (for example `Project`, `Invoice`, or `Ticket`), build **Part A** once (including its dynamic A2UI view tools and messages so every AI chat panel can render it), then wire **Part B** when the deployment includes route-based screens (`side` or `prompt-first`):
+Add Part A once for every UX; add Part B only when the deployment includes route screens (`side` / `prompt-first`). Details: [references/tri-modal-ux.md](./references/tri-modal-ux.md).
 
-- **Part A — Core agentic foundation (100% reused across `agentic`, `prompt-first`, and `side`):**
-  1. **Three-layer schemas + mappers:** Add Layer 1 DB shapes in `src/services/schemas/repository.ts` and boundary parsers in `repoParsers.ts`, Layer 2 API/tool shapes with `.describe()` in `src/services/schemas/schemas.ts`, Layer 3 URL search schemas, and pure inbound/outbound `Schema.parse()` mappers.
-  2. **Repository contract + implementations:** Add collection owner (`createIndexes()`, private collection field) in `src/services/repository/`, wire into the `Repository` facade with `TraceabilityContext` on writes, and implement in both seed and database repositories.
-  3. **Server functions (`src/services/api/serverFns.ts`):** Export GET queries (`repositoryMiddleware`) and POST mutations (`requireAuthMiddleware`, `invalidateMiddleware`), mapping outputs through outbound `Schema.parse()` mappers.
-  4. **Server AI tools & dynamic view tools (`src/services/ai/tools.ts`, `src/services/ai/<entity>Views.server.ts`):** Wrap every `serverFns.ts` export with `toolDefinition` + `createSafeServerTool` (including `getDistinctValues`) and define data-only `show<Entities>ViewTool` / `show<Entity>ViewTool` (stripping demo visitor emails and separating `presentation` from repository filters). Register all of them in `dataTools` in `src/routes/api/chat.ts`.
-  5. **Deterministic A2UI builder & shared thread rendering (`src/services/a2ui/<entity>ViewMessages.ts`, `src/components/AgenticShell/AgenticThread.tsx`):** Map tool payloads into allowlisted A2UI component trees validated by `acceptA2uiMessages` (cards, table, kanban, timeline, detail) and render them in `AgenticMessageItems` (`AgenticThread.tsx`, shared by `ChatThread.tsx`) so all three chat panels render interactive surfaces and open single-id details without an extra model turn.
-
-- **Part B — Route-based extension (`side` & `prompt-first` in companion `promptable-ux`):**
-  1. **Thin routes (`src/routes/<entity>/`):** Add list, detail, create, and edit routes with `staticData.description`, `validateSearch`, `loaderDeps`, and isomorphic loaders calling `serverFns.ts`.
-  2. **Prop-driven components (`src/components/<Entity>Page/`):** Render loader data and URL search state via props with no `useState` / `useEffect` for recoverable state; reset forms with `key`.
-  3. **Navigation manifest & location context:** Add the route pattern to `UserFacingTo` in `src/services/ai/navigationManifest.ts` and resolve dynamic `current<Entity>Id` in `buildSystemPrompt` (`src/routes/api/chat.ts`) so client `navigate` and `invalidateRouter` tools and markdown links work alongside inline views.
-  4. **Prompt-first landing (`PromptFirstHero`):** When supporting `prompt-first`, expose summary counts or starter prompts on the landing hero while keeping `/<entity>` for drill-down.
+- **Part A — Core (all three modes):** three-layer schemas + mappers → repository + `TraceabilityContext` writes → `serverFns.ts` → `toolDefinition` / `createSafeServerTool` + `show*ViewTool` in shared `dataTools` → A2UI builders rendered by `AgenticMessageItems` (and `PromptChatProvider`’s `useInlineDetailViews` for side/prompt-first).
+- **Part B — Route extension:** thin `validateSearch` routes + prop-driven pages → `UserFacingTo` / `buildSystemPrompt` location context → optional prompt-first landing summaries. Keep `/<entity>` for drill-down.
 
 ## Special Patterns (use when the feature applies)
 
@@ -515,27 +455,15 @@ When adding a new domain entity (for example `Project`, `Invoice`, or `Ticket`),
 - **Debounced free-text search (URL-as-state):** Keep filters in validated search params + `loaderDeps`, but do **not** control free-text search from the URL on every keystroke. Use an uncontrolled text input (`defaultValue` from the current search param) and a debounced callback — your UI library's debounce hook, `@tanstack/pacer`, or a small local helper — to `navigate({ replace: true, search })` only after the user pauses. Discrete filters (dropdowns, tabs, segmented controls) may navigate immediately. Call `navigate` from the debounce callback — do not watch a debounced value in `useEffect` just to navigate. **UI-agnostic:** this skill does not prescribe a component library; follow the project's UI kit in **AGENTS.md §3** for concrete input/select components.
 
   ```typescript
-  const updateSearch = (updates: Partial<Search>, replace = false) => {
-    navigate({
-      to: '/tasks',
-      replace,
-      search: (prev) => ({ ...prev, ...updates }),
-    })
-  }
-
-  const debouncedSearch = debounce((value: string) => {
-    const next = value || undefined
-    if (next === search.search) return
-    updateSearch({ search: next }, true)
-  }, 300)
-
-// Render with your project's text input component (not prescribed here)
-<input
-  type="search"
-  defaultValue={search.search ?? ''}
-  onChange={(e) => debouncedSearch(e.currentTarget.value)}
-/>
-  ```
+const updateSearch = (updates: Partial<Search>, replace = false) => {
+  navigate({ to: '/tasks', replace, search: (prev) => ({ ...prev, ...updates }) })
+}
+const debouncedSearch = debounce((value: string) => {
+  const next = value || undefined
+  if (next === search.search) return
+  updateSearch({ search: next }, true)
+}, 300)
+```
 
 - **Help surface:** single `docs/help.md` can back `/help`, an AI tool, and suggested prompts (see AGENTS.md).
 - **Distinct values:** `getDistinctValues` → GET server fn → read-only AI tool so filters match real data.
@@ -552,17 +480,12 @@ When adding a new domain entity (for example `Project`, `Invoice`, or `Ticket`),
 
 | Need | Where |
 |------|--------|
-| UI kit and styling | §3 + **`reference-tech-stack`** |
-| Prompt concepts, mobile first, assistant markdown | **`promptable-ux`** + §3 and §8 |
-| Fully agentic shell | **`agentic-ux`** |
+| UI kit / packages / lint-test tooling | §3, §10–§11, §15 + **`reference-tech-stack`** |
+| Prompt concepts / agentic shell | **`promptable-ux`**, **`agentic-ux`**, §3, §8 |
 | Auth, middleware, guards | §5 |
-| AI adapters, chat client, tools, prompts | §8 |
-| Observability and env bridge | §9 + **`observability-and-env`** |
-| Lint, unit/E2E test runners | §10–§11 + **`reference-tech-stack`** |
-| Full validation checklist (format, lint, test, build) | §15 |
-| Public runtime config (`shellSession`, not `window.__ENV__`) | §13 + **`observability-and-env`** |
-| Opinionated package map for this template | **`reference-tech-stack`** |
-| Repository ownership, indexes, stale cleanup, resource lifetime | **`repository-architecture`** |
+| AI adapters, chat, tools, prompts | §8 |
+| Observability, env, `shellSession` | §9, §13 + **`observability-and-env`** |
+| Repository ownership / indexes / lifetime | **`repository-architecture`** |
 
 ## Verification
 

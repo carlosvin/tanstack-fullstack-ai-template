@@ -23,7 +23,7 @@ const AGENTIC_STARTERS = ['Show my tasks', 'Show pending tasks', 'Show overdue t
 
 const DETAIL_PROMPT = /^Open the detail view for (.+)\. The task id is ([^\s.]+)\.$/
 
-interface OpenedDetail {
+export interface OpenedDetail {
 	id: string
 	title: string
 	taskId: string

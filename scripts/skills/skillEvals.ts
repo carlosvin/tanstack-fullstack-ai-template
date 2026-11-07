@@ -667,19 +667,18 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 				const layoutPath = path.join(rootDir, 'src/components/AppLayout/AppLayout.tsx')
 				try {
 					const layout = await readText(layoutPath)
-					if (/shellSession\.promptConcept/.test(layout)) {
-						if (
-							!/AgenticChatProvider/.test(layout) ||
-							!/AgenticShell/.test(layout) ||
-							!/PromptChatProvider/.test(layout) ||
-							!/ChatDrawer/.test(layout) ||
-							!/PromptBar/.test(layout)
-						) {
-							return fail(
-								'AppLayout.tsx must wire AgenticChatProvider + AgenticShell for agentic and PromptChatProvider + ChatDrawer / PromptBar for side and prompt-first',
-								['src/components/AppLayout/AppLayout.tsx'],
-							)
-						}
+					if (
+						!/shellSession\.promptConcept/.test(layout) ||
+						!/AgenticChatProvider/.test(layout) ||
+						!/AgenticShell/.test(layout) ||
+						!/PromptChatProvider/.test(layout) ||
+						!/ChatDrawer/.test(layout) ||
+						!/PromptBar/.test(layout)
+					) {
+						return fail(
+							'AppLayout.tsx must select shellSession.promptConcept and wire AgenticChatProvider + AgenticShell for agentic and PromptChatProvider + ChatDrawer / PromptBar for side and prompt-first',
+							['src/components/AppLayout/AppLayout.tsx'],
+						)
 					}
 				} catch {
 					// App-only fixtures may omit AppLayout.tsx.
@@ -688,18 +687,17 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 				const chatRoutePath = path.join(rootDir, 'src/routes/api/chat.ts')
 				try {
 					const chatRoute = await readText(chatRoutePath)
-					if (/promptConcept/.test(chatRoute)) {
-						if (
-							!/PROMPT_FIRST_LAYOUT/.test(chatRoute) ||
-							!/AGENTIC_SYSTEM_PROMPT/.test(chatRoute) ||
-							!/showTasksViewTool/.test(chatRoute) ||
-							!/navigateToolDef/.test(chatRoute)
-						) {
-							return fail(
-								'src/routes/api/chat.ts must branch system prompts and tools across side, prompt-first, and agentic',
-								['src/routes/api/chat.ts'],
-							)
-						}
+					if (
+						!/promptConcept/.test(chatRoute) ||
+						!/PROMPT_FIRST_LAYOUT/.test(chatRoute) ||
+						!/AGENTIC_SYSTEM_PROMPT/.test(chatRoute) ||
+						!/showTasksViewTool/.test(chatRoute) ||
+						!/navigateToolDef/.test(chatRoute)
+					) {
+						return fail(
+							'src/routes/api/chat.ts must select promptConcept and branch system prompts and tools across side, prompt-first, and agentic',
+							['src/routes/api/chat.ts'],
+						)
 					}
 				} catch {
 					// App-only fixtures may omit chat.ts.
@@ -708,14 +706,27 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 				const chatThreadPath = path.join(rootDir, 'src/components/PromptChat/ChatThread.tsx')
 				try {
 					const chatThread = await readText(chatThreadPath)
-					if (!/AgenticMessageItems/.test(chatThread) || !/useInlineDetailViews/.test(chatThread)) {
+					if (!/AgenticMessageItems/.test(chatThread)) {
 						return fail(
-							'ChatThread.tsx must reuse AgenticMessageItems and useInlineDetailViews from AgenticThread so side and prompt-first extend the core agentic chat surface',
+							'ChatThread.tsx must reuse AgenticMessageItems from AgenticThread so side and prompt-first extend the core agentic chat surface',
 							['src/components/PromptChat/ChatThread.tsx'],
 						)
 					}
 				} catch {
 					// App-only fixtures may omit ChatThread.tsx.
+				}
+
+				const promptChatPath = path.join(rootDir, 'src/components/PromptChat/PromptChatContext.tsx')
+				try {
+					const promptChat = await readText(promptChatPath)
+					if (!/useInlineDetailViews/.test(promptChat)) {
+						return fail(
+							'PromptChatContext.tsx must own useInlineDetailViews so opened A2UI details survive route remounts with the conversation',
+							['src/components/PromptChat/PromptChatContext.tsx'],
+						)
+					}
+				} catch {
+					// App-only fixtures may omit PromptChatContext.tsx.
 				}
 
 				return pass()

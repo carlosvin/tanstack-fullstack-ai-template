@@ -3,10 +3,12 @@ import type { UIMessage } from '@tanstack/ai-react'
 import { fetchServerSentEvents, useChat } from '@tanstack/ai-react'
 import { useRouter } from '@tanstack/react-router'
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useRef, useState } from 'react'
+import { type OpenedDetail, useInlineDetailViews } from '@/components/AgenticShell/AgenticThread'
 import { invalidateRouterToolDef, navigateToolDef } from '@/services/ai/tools'
 import type { BrowserContext } from '@/services/schemas/schemas'
 import { captureBrowserContext } from '@/utils/browserContext'
 import { toInternalRouterLinkTarget } from '@/utils/internalLinks'
+import { useCalendarToday } from '@/utils/useCalendarToday'
 
 export interface PromptChatContextValue {
 	messages: UIMessage[]
@@ -19,6 +21,10 @@ export interface PromptChatContextValue {
 	handleKeyDown: (e: React.KeyboardEvent) => void
 	stop: () => void
 	clear: () => void
+	/** Inline A2UI detail views opened from cards; survives route remounts with this provider. */
+	opened: OpenedDetail[]
+	handlePrompt: (text: string) => void
+	today: string
 }
 
 const PromptChatContext = createContext<PromptChatContextValue | null>(null)
@@ -34,6 +40,7 @@ export function usePromptChat(): PromptChatContextValue {
 export function PromptChatProvider({ children }: { children: ReactNode }) {
 	const [input, setInput] = useState('')
 	const router = useRouter()
+	const today = useCalendarToday()
 
 	const navigateClient = navigateToolDef.client((args) => {
 		const path = args.to.startsWith('/') ? args.to : `/${args.to}`
@@ -98,6 +105,10 @@ export function PromptChatProvider({ children }: { children: ReactNode }) {
 		[isLoading, sendMessage],
 	)
 
+	// Keep opened details on the root-mounted provider so prompt-first ChatThread remounts
+	// (navigating away from `/` and back) do not discard them while messages survive.
+	const { opened, handlePrompt } = useInlineDetailViews(messages, sendPrompt, today)
+
 	const handleKeyDown = useCallback(
 		(e: React.KeyboardEvent) => {
 			if (e.key === 'Enter' && !e.shiftKey) {
@@ -120,8 +131,24 @@ export function PromptChatProvider({ children }: { children: ReactNode }) {
 			handleKeyDown,
 			stop,
 			clear,
+			opened,
+			handlePrompt,
+			today,
 		}),
-		[messages, isLoading, error, input, sendPrompt, handleSubmit, handleKeyDown, stop, clear],
+		[
+			messages,
+			isLoading,
+			error,
+			input,
+			sendPrompt,
+			handleSubmit,
+			handleKeyDown,
+			stop,
+			clear,
+			opened,
+			handlePrompt,
+			today,
+		],
 	)
 
 	return <PromptChatContext.Provider value={value}>{children}</PromptChatContext.Provider>
