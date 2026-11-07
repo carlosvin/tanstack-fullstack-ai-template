@@ -321,4 +321,15 @@ Do not pick one.
 			expect(result.files).toContain('src/routes/index.tsx')
 		}
 	})
+
+	it('fails when ChatThread does not reuse AgenticMessageItems from AgenticThread', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'src/components/PromptChat/ChatThread.tsx': 'export function ChatThread() { return null }\n',
+		})
+		const result = await runEval(rootDir, 'architecture-three-ux-seams')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(result.files).toContain('src/components/PromptChat/ChatThread.tsx')
+		}
+	})
 })

@@ -63,4 +63,33 @@ describe('PromptFirstLanding', () => {
 		// And still no dashboard stacked below!
 		expect(screen.queryByText('Recent Tasks')).toBeNull()
 	})
+
+	it('renders dynamic A2UI task surfaces inside the prompt-first thread', async () => {
+		mockMessages = [
+			{
+				id: 'm1',
+				role: 'assistant',
+				parts: [
+					{
+						type: 'tool-call',
+						id: 'call-1',
+						name: 'showTasksView',
+						arguments: '{}',
+						input: {},
+						state: 'complete',
+					} as unknown as { type: string; content: string },
+					{
+						type: 'tool-result',
+						toolCallId: 'call-1',
+						content: JSON.stringify({ tasks: sampleTasks, presentation: 'cards' }),
+						state: 'complete',
+					} as unknown as { type: string; content: string },
+				],
+			},
+		]
+
+		renderWithProviders(<PromptFirstLanding tasks={sampleTasks} />)
+
+		expect(await screen.findByRole('button', { name: /^Task 1/ })).toBeTruthy()
+	})
 })

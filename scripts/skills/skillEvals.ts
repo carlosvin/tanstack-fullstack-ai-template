@@ -705,6 +705,19 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 					// App-only fixtures may omit chat.ts.
 				}
 
+				const chatThreadPath = path.join(rootDir, 'src/components/PromptChat/ChatThread.tsx')
+				try {
+					const chatThread = await readText(chatThreadPath)
+					if (!/AgenticMessageItems/.test(chatThread) || !/useInlineDetailViews/.test(chatThread)) {
+						return fail(
+							'ChatThread.tsx must reuse AgenticMessageItems and useInlineDetailViews from AgenticThread so side and prompt-first extend the core agentic chat surface',
+							['src/components/PromptChat/ChatThread.tsx'],
+						)
+					}
+				} catch {
+					// App-only fixtures may omit ChatThread.tsx.
+				}
+
 				return pass()
 			},
 		},

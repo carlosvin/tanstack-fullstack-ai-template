@@ -109,13 +109,47 @@ function retryPrompt(uri: string, toolInput: Record<string, unknown> | undefined
 	return 'Please show that view again'
 }
 
+export function TaskViewResult({
+	resultText,
+	asOf,
+	onPrompt,
+	onRetry,
+}: {
+	resultText: string
+	asOf: string
+	onPrompt: (text: string) => void
+	onRetry: () => void
+}) {
+	const [selected, setSelected] = useState<string[]>([])
+	const messages = useMemo(() => buildTaskViewMessages(resultText, selected, asOf), [resultText, selected, asOf])
+
+	function onAction(action: UserAction) {
+		const prompt = promptFromA2uiAction(action)
+		if (prompt) {
+			onPrompt(prompt)
+			return
+		}
+		const intent = taskViewIntent(action)
+		if (intent.kind === 'toggle') {
+			setSelected((current) =>
+				current.includes(intent.taskId) ? current.filter((id) => id !== intent.taskId) : [...current, intent.taskId],
+			)
+			return
+		}
+		if (intent.kind === 'mark-selected') {
+			const next = bulkStatusPrompt(resultText, selected, intent.status)
+			if (next) onPrompt(next)
+		}
+	}
+
+	return <AgenticA2uiSurface messages={messages} onAction={onAction} onRetry={onRetry} />
+}
+
 /**
- * Conversation stage for the agentic shell: assistant markdown, Mantine A2UI
- * task views, and any raw MCP UI document. Text-only results stay markdown.
+ * Shared hook for opening an inline task detail view from an A2UI card/row action
+ * without sending an extra model turn. Used across all 3 chat panels (`agentic`, `prompt-first`, and `side`).
  */
-export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number }) {
-	const { messages, isLoading, sendMessage } = useAgenticChat()
-	const today = useCalendarToday()
+export function useInlineDetailViews(messages: UIMessage[], sendMessage: (text: string) => void, today: string) {
 	const [opened, setOpened] = useState<OpenedDetail[]>([])
 	const hasMessages = messages.length > 0
 	const [hadMessages, setHadMessages] = useState(hasMessages)
@@ -123,7 +157,6 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 		setHadMessages(hasMessages)
 		if (!hasMessages) setOpened([])
 	}
-	const viewportRef = useRef<HTMLDivElement>(null)
 
 	function handlePrompt(text: string) {
 		const match = DETAIL_PROMPT.exec(text)
@@ -145,6 +178,102 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 			setOpened((prev) => prev.map((item) => (item.id === id ? { ...item, resultText } : item)))
 		})
 	}
+
+	return { opened, handlePrompt }
+}
+
+/**
+ * Shared dynamic message list: renders each message's markdown bubble, inline A2UI task views,
+ * sandboxed MCP UI resources, and any inline detail views opened directly from cards.
+ * Reused by `AgenticThread` (`agentic`), `PromptFirstLanding` (`prompt-first`), and `ChatDrawer` (`side`).
+ */
+export function AgenticMessageItems({
+	messages,
+	opened,
+	today,
+	onPrompt,
+	markdownLinkComponent,
+}: {
+	messages: UIMessage[]
+	opened: OpenedDetail[]
+	today: string
+	onPrompt: (text: string) => void
+	markdownLinkComponent?: React.ComponentType<{ href?: string; children?: React.ReactNode }>
+}) {
+	return (
+		<>
+			{messages.map((msg) => {
+				const resources = msg.role === 'user' ? [] : messageUiResources(msg)
+				const views = msg.role === 'user' ? [] : taskViewResults(msg)
+				return (
+					<Stack key={msg.id} gap="sm">
+						<MessageBubble message={msg} markdownLinkComponent={markdownLinkComponent} />
+						{views.map((view) => (
+							<TaskViewResult
+								key={view.callId}
+								resultText={view.resultText}
+								asOf={today}
+								onPrompt={onPrompt}
+								onRetry={() => onPrompt(view.retryPrompt)}
+							/>
+						))}
+						{resources.map((part) => {
+							const context = toolContext(msg, part.toolCallId)
+							return (
+								<AgenticMcpRenderer
+									key={`${part.toolCallId}-${part.resource.uri}`}
+									part={part}
+									toolInput={context.toolInput}
+									toolResultText={context.resultText}
+									toolFailed={context.toolFailed}
+									onPrompt={onPrompt}
+									onRetry={() => onPrompt(retryPrompt(part.resource.uri, context.toolInput))}
+								/>
+							)
+						})}
+					</Stack>
+				)
+			})}
+			{opened.map((item) => {
+				const userMessage: UIMessage = {
+					id: item.id,
+					role: 'user',
+					parts: [{ type: 'text', content: item.title }],
+				}
+				return (
+					<Stack key={item.id} gap="sm">
+						<MessageBubble message={userMessage} markdownLinkComponent={markdownLinkComponent} />
+						{item.resultText ? (
+							<TaskViewResult
+								resultText={item.resultText}
+								asOf={today}
+								onPrompt={onPrompt}
+								onRetry={() => onPrompt(`Open the detail view for ${item.title}. The task id is ${item.taskId}.`)}
+							/>
+						) : (
+							<Group gap="xs">
+								<Loader size="xs" />
+								<Text size="xs" c="dimmed">
+									Opening {item.title}
+								</Text>
+							</Group>
+						)}
+					</Stack>
+				)
+			})}
+		</>
+	)
+}
+
+/**
+ * Conversation stage for the agentic shell: assistant markdown, Mantine A2UI
+ * task views, and any raw MCP UI document. Text-only results stay markdown.
+ */
+export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number }) {
+	const { messages, isLoading, sendMessage } = useAgenticChat()
+	const today = useCalendarToday()
+	const { opened, handlePrompt } = useInlineDetailViews(messages, sendMessage, today)
+	const viewportRef = useRef<HTMLDivElement>(null)
 
 	useEffect(() => {
 		const el = viewportRef.current
@@ -183,70 +312,13 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 							</SimpleGrid>
 						</Stack>
 					)}
-					{messages.map((msg) => {
-						const resources = msg.role === 'user' ? [] : messageUiResources(msg)
-						const views = msg.role === 'user' ? [] : taskViewResults(msg)
-						return (
-							<Stack key={msg.id} gap="sm">
-								<MessageBubble
-									message={msg}
-									markdownLinkComponent={(props) => <AgenticPromptMarkdownLink {...props} onPrompt={handlePrompt} />}
-								/>
-								{views.map((view) => (
-									<TaskViewResult
-										key={view.callId}
-										resultText={view.resultText}
-										asOf={today}
-										onPrompt={handlePrompt}
-										onRetry={() => handlePrompt(view.retryPrompt)}
-									/>
-								))}
-								{resources.map((part) => {
-									const context = toolContext(msg, part.toolCallId)
-									return (
-										<AgenticMcpRenderer
-											key={`${part.toolCallId}-${part.resource.uri}`}
-											part={part}
-											toolInput={context.toolInput}
-											toolResultText={context.resultText}
-											toolFailed={context.toolFailed}
-											onPrompt={handlePrompt}
-											onRetry={() => handlePrompt(retryPrompt(part.resource.uri, context.toolInput))}
-										/>
-									)
-								})}
-							</Stack>
-						)
-					})}
-					{opened.map((item) => {
-						const userMessage: UIMessage = {
-							id: item.id,
-							role: 'user',
-							parts: [{ type: 'text', content: item.title }],
-						}
-						return (
-							<Stack key={item.id} gap="sm">
-								<MessageBubble message={userMessage} />
-								{item.resultText ? (
-									<TaskViewResult
-										resultText={item.resultText}
-										asOf={today}
-										onPrompt={handlePrompt}
-										onRetry={() =>
-											handlePrompt(`Open the detail view for ${item.title}. The task id is ${item.taskId}.`)
-										}
-									/>
-								) : (
-									<Group gap="xs">
-										<Loader size="xs" />
-										<Text size="xs" c="dimmed">
-											Opening {item.title}
-										</Text>
-									</Group>
-								)}
-							</Stack>
-						)
-					})}
+					<AgenticMessageItems
+						messages={messages}
+						opened={opened}
+						today={today}
+						onPrompt={handlePrompt}
+						markdownLinkComponent={(props) => <AgenticPromptMarkdownLink {...props} onPrompt={handlePrompt} />}
+					/>
 					{isLoading && messages[messages.length - 1]?.role === 'user' && (
 						<Group gap="xs">
 							<Loader size="xs" />
@@ -259,40 +331,4 @@ export function AgenticThread({ scrollHeight }: { scrollHeight?: string | number
 			</Box>
 		</ScrollArea>
 	)
-}
-
-function TaskViewResult({
-	resultText,
-	asOf,
-	onPrompt,
-	onRetry,
-}: {
-	resultText: string
-	asOf: string
-	onPrompt: (text: string) => void
-	onRetry: () => void
-}) {
-	const [selected, setSelected] = useState<string[]>([])
-	const messages = useMemo(() => buildTaskViewMessages(resultText, selected, asOf), [resultText, selected, asOf])
-
-	function onAction(action: UserAction) {
-		const prompt = promptFromA2uiAction(action)
-		if (prompt) {
-			onPrompt(prompt)
-			return
-		}
-		const intent = taskViewIntent(action)
-		if (intent.kind === 'toggle') {
-			setSelected((current) =>
-				current.includes(intent.taskId) ? current.filter((id) => id !== intent.taskId) : [...current, intent.taskId],
-			)
-			return
-		}
-		if (intent.kind === 'mark-selected') {
-			const next = bulkStatusPrompt(resultText, selected, intent.status)
-			if (next) onPrompt(next)
-		}
-	}
-
-	return <AgenticA2uiSurface messages={messages} onAction={onAction} onRetry={onRetry} />
 }

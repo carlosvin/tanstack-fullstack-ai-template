@@ -39,6 +39,7 @@ const BASE_SYSTEM_PROMPT = `You are a helpful task management assistant. You hav
 - Search and filter tasks by status, priority, assignee, due date, or free text
 - Get detailed information about specific tasks
 - List distinct filter values that exist in the data (getDistinctValues for assignee, status, or priority)
+- Render a task list or task detail as an interactive inline view (showTasksView, showTaskView)
 - Navigate the user to app pages (use the navigate tool)
 - Create, update, delete, and bulk-update task status (when the user is allowed)
 - Check who is logged in and what they can do (getCurrentUserContext)
@@ -267,11 +268,10 @@ export const Route = createFileRoute('/api/chat')({
 					updateTaskTool,
 					updateTasksStatusTool,
 					deleteTaskTool,
+					showTasksViewTool,
+					showTaskViewTool,
 				]
-				const tools =
-					promptConcept === 'agentic'
-						? [...dataTools, showTasksViewTool, showTaskViewTool]
-						: [...dataTools, navigateToolDef, invalidateRouterToolDef]
+				const tools = promptConcept === 'agentic' ? dataTools : [...dataTools, navigateToolDef, invalidateRouterToolDef]
 
 				const stream = chat({
 					adapter,

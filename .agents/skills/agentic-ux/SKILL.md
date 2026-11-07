@@ -123,16 +123,16 @@ This template's kit is Mantine 9 and `lucide-react`. Render task views with `use
 
 `onAction` follows **UI actions**. `open-task` with one id opens that detail view without another model turn. When the thread already returned that task, the detail is that task. A missing id is loaded from the repository. The seed repository replays tasks from earlier tool results at the start of the next chat turn, because a new serverless instance does not keep the in-memory write. `back-to-list` is an ordinary prompt. Any other action name is ignored.
 
-### What is shared vs isolated in a multi-UX codebase
+### How `prompt-first` and `side` extend this agentic chat core
 
-When a single repository supports `side`, `prompt-first`, and `agentic` deployments via `shellSession.promptConcept`:
+The three UX patterns form a layered hierarchy where **fully agentic** defines the core dynamic AI chat component (`AgenticMessageItems` + `useInlineDetailViews`, rendering assistant markdown, A2UI surfaces via `AgenticA2uiSurface`, and sandboxed MCP UI resources via `AgenticMcpRenderer`), and **`prompt-first`** and **`side`** extend that exact chat component with router-driven domain screens:
 
 - **Isolated at runtime in `agentic`:** `AppLayout` returns `AgenticChatProvider` + `AgenticShell` before building route chrome, so `ChatDrawer`, `PromptBar`, `Header`, and `AppNavbar` never mount. In `src/routes/index.tsx`, `loadHomeTasks.agentic` returns `[]` without querying and `AgenticHome` returns `null`.
-- **Shared at the code level:** All 3-layer schemas, repositories, `serverFns.ts`, `dataTools` in `src/services/ai/tools.ts`, plus leaf message helpers (`MessageBubble`, `toolLabels`, `friendlyChatError`, `useCalendarToday`) are shared across all UX modes.
-- **Repeatable 3-step recipe for adding a new domain entity to `agentic`:**
-  1. **View tools (`src/services/ai/<entity>Views.server.ts`):** Add data-only `show<Entities>ViewTool` and `show<Entity>ViewTool` calling the shared `serverFns.ts` queries, stripping demo visitor emails on list filters, and separating `presentation` (`cards | table | kanban | timeline`) from the repository filter. Register both tools in the `agentic` branch of `src/routes/api/chat.ts`.
+- **Reused across all 3 chat panels (`agentic`, `prompt-first`, and `side`):** `ChatThread` (`src/components/PromptChat/ChatThread.tsx`) reuses `AgenticMessageItems` and `useInlineDetailViews` from `AgenticThread.tsx`. In `src/routes/api/chat.ts`, `dataTools` includes `showTasksViewTool` and `showTaskViewTool` for all three modes, while `side` and `prompt-first` add `navigateToolDef`, `invalidateRouterToolDef`, and route `MarkdownLink` navigation on top.
+- **Repeatable 3-step recipe for adding a new domain entity's dynamic UI across all 3 chat panels:**
+  1. **View tools (`src/services/ai/<entity>Views.server.ts`):** Add data-only `show<Entities>ViewTool` and `show<Entity>ViewTool` calling the shared `serverFns.ts` queries, stripping demo visitor emails on list filters, and separating `presentation` (`cards | table | kanban | timeline`) from the repository filter. Register both tools in `dataTools` in `src/routes/api/chat.ts` so every UX mode receives them.
   2. **A2UI message builder (`src/services/a2ui/<entity>ViewMessages.ts`):** Turn the tool payload into allowlisted A2UI messages validated with `acceptA2uiMessages` and sealed component ids, emitting `open-<entity>`, `back-to-list`, `toggle-select`, and `mark-selected` actions.
-  3. **Thread surface (`src/components/AgenticShell/AgenticThread.tsx`):** Match the new view tools in `AgenticThread`, add sentence-case status labels in `toolLabels.ts`, and resolve single-id `open-<entity>` actions from remembered thread payloads (or `get<Entity>`) without sending another model turn.
+  3. **Shared thread surface (`src/components/AgenticShell/AgenticThread.tsx`):** Match the new view tools in `AgenticMessageItems` (which automatically powers `AgenticThread`, `PromptFirstLanding`, and `ChatDrawer`), add sentence-case status labels in `toolLabels.ts`, and resolve single-id `open-<entity>` actions from remembered thread payloads (or `get<Entity>`) without sending another model turn.
 
 ## MCP UI rendering
 

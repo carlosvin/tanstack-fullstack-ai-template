@@ -1,6 +1,7 @@
-import { ActionIcon, Group, Stack, Text, Textarea, Tooltip } from '@mantine/core'
+import { ActionIcon, Alert, Group, Stack, Textarea, Tooltip } from '@mantine/core'
 import { Send, Square, Trash2 } from 'lucide-react'
 import { usePromptChat } from '@/components/PromptChat/PromptChatContext'
+import { friendlyChatError } from '@/utils/chatError'
 
 interface ChatComposerProps {
 	/** Runs after the message is submitted (e.g. navigate home) so browser context is captured first. */
@@ -26,9 +27,9 @@ export function ChatComposer({ onAfterSubmit }: ChatComposerProps = {}) {
 	return (
 		<Stack gap="xs" w="100%">
 			{error ? (
-				<Text size="sm" c="red" role="alert">
-					{error.message}
-				</Text>
+				<Alert color="red" variant="light" p="xs" role="alert">
+					{friendlyChatError(error)}
+				</Alert>
 			) : null}
 			<Group gap="xs" align="flex-end" wrap="nowrap">
 				{messages.length > 0 && (
