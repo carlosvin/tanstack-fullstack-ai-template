@@ -5,7 +5,7 @@ import { ColorSchemeScript, createTheme, MantineProvider } from '@mantine/core'
 import { ModalsProvider } from '@mantine/modals'
 import { Notifications } from '@mantine/notifications'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import { createRootRoute, HeadContent, Scripts } from '@tanstack/react-router'
+import { createRootRoute, HeadContent, redirect, Scripts } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { useEffect } from 'react'
 import { AppLayout } from '@/components/AppLayout/AppLayout'
@@ -15,6 +15,14 @@ import { getAIAvailability, getBrowserShellSession, getCurrentUser } from '@/ser
 import { watchNetlifyHud } from '@/utils/netlifyHud'
 
 export const Route = createRootRoute({
+	beforeLoad: async ({ location }) => {
+		// Agentic deployments have no domain screens — keep the shell on `/`.
+		if (location.pathname.startsWith('/api/') || location.pathname === '/') return
+		const { promptConcept } = await getBrowserShellSession()
+		if (promptConcept === 'agentic') {
+			throw redirect({ to: '/' })
+		}
+	},
 	loader: async () => {
 		const [currentUser, shellSession, aiAvailability] = await Promise.all([
 			getCurrentUser(),

@@ -10,6 +10,7 @@ import {
 	createTaskTool,
 	deleteTaskTool,
 	getAppRuntimeInfoTool,
+	getAssigneeOptionsTool,
 	getCurrentUserContextTool,
 	getDistinctValuesTool,
 	getTasksTool,
@@ -74,16 +75,16 @@ Each task has:
 ## Guidelines
 - Use the getTasks tool with filters when the user asks about tasks matching criteria. For overdue or "what is due", pass asOf from Browser Context as YYYY-MM-DD and sort "due". "Assigned to me" for a real user sets assignee to their email and navigates to /tasks with that search.
 - Use the getTask tool when the user asks about a specific task.
-- Use getDistinctValues to discover real filter options (e.g. assignees), and getUserProfile to resolve display names and roles from emails.
+- Use getAssigneeOptions for labeled assignee filters, or getDistinctValues plus getUserProfile when you need roles or a single profile.
 - Format responses clearly using markdown.
 - When listing tasks, include their status and priority.
 - Be concise but thorough.`
 
 const PROMPT_FIRST_LAYOUT = `## Prompt-first layout
-This deployment uses the **prompt-first** concept: the user always sees the prompt bar at the top, then an overview on \`/\` and drill-down routes below.
+This deployment uses the **prompt-first** concept: the conversation stage fills the main viewport, and the prompt composer stays pinned at the bottom (\`AppShell.Footer\`).
+- On \`/\`, the empty state is a conversation hero with starter prompts — not a stacked dashboard under the composer.
 - Prefer markdown links and the **navigate** tool to open \`/tasks\`, filtered lists, and task detail pages.
-- The home dashboard summarizes counts — link to \`/tasks\` with \`search\` params rather than repeating full tables in chat.
-- After navigation, the prompt stays visible; "this task" resolves from Current Location on detail routes.`
+- After navigation, the bottom composer stays visible; "this task" resolves from Current Location on detail routes.`
 
 const AGENTIC_LAYOUT = `## Fully agentic layout
 This deployment uses the **fully agentic** concept: a thin shell with a prompt and a response surface. There are no app pages, no navigation, and no overview dashboard.
@@ -184,18 +185,23 @@ function buildSystemPrompt(
 			day: '2-digit',
 		}).format(new Date(browserContext.currentTime))
 
+		const surfaceLines =
+			browserContext.surface === 'agentic'
+				? ['- Surface: agent shell (no in-app routes; do not resolve "this item" from a URL)']
+				: []
+
 		sections.push(`
 ## Browser Context
 - Timezone: ${browserContext.timezone}
 - Locale: ${browserContext.locale}
 - Current date and time: ${formattedDate}
-- Local calendar date (asOf): ${localDate}`)
+- Local calendar date (asOf): ${localDate}${surfaceLines.length > 0 ? `\n${surfaceLines.join('\n')}` : ''}`)
 
 		const currentPath = browserContext.currentPathname
 		const currentSearch = browserContext.currentSearch
 		const currentHref = browserContext.currentHref
 
-		if (currentPath || currentSearch || currentHref) {
+		if (browserContext.surface !== 'agentic' && (currentPath || currentSearch || currentHref)) {
 			const fullPath = `${currentPath ?? ''}${currentSearch ?? ''}` || 'unknown'
 			const matchedRoute = currentPath ? matchUserFacingRoute(currentPath) : null
 			const currentTaskId = matchedRoute?.params?.taskId
@@ -260,6 +266,7 @@ export const Route = createFileRoute('/api/chat')({
 					getTasksTool,
 					getTaskTool,
 					getDistinctValuesTool,
+					getAssigneeOptionsTool,
 					getUserProfileTool,
 					getUserAccessTool,
 					getAppRuntimeInfoTool,

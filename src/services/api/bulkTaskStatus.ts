@@ -1,9 +1,13 @@
-import { HttpError } from '../../utils/httpError'
-import type { AccessTicket } from '../auth/accessTicket'
-import { updateWriteTrace } from '../repository/traceability'
-import type { Repository } from '../repository/types'
-import { type BulkTaskStatusInput, type BulkTaskStatusResult, BulkTaskStatusResultSchema } from '../schemas/schemas'
-import { toToolTask } from '../schemas/taskMappers'
+import type { AccessTicket } from '@/services/auth/accessTicket'
+import { updateWriteTrace } from '@/services/repository/traceability'
+import type { Repository } from '@/services/repository/types'
+import {
+	type BulkTaskStatusInput,
+	type BulkTaskStatusResult,
+	BulkTaskStatusResultSchema,
+} from '@/services/schemas/schemas'
+import { toToolTask } from '@/services/schemas/taskMappers'
+import { HttpError } from '@/utils/httpError'
 
 /** Set one status on many tasks. Each row is accepted only for its creator. */
 export async function applyBulkStatus(
