@@ -21,7 +21,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.35.2"
+  version: "1.35.3"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -145,7 +145,7 @@ Pick **one validator library** per app and use it consistently across router sea
 7. **Routes:** Thin route files (`createFileRoute`, `validateSearch`, `loaderDeps`, `loader`, `component`); page UI in `src/components/`. **Loaders** fetch via server functions — no `useEffect` data fetching for route data.
 8. **URL-as-state:** Recover filters, sort, selection, bulk-action choices, and modal routes from the path and `validateSearch`. Copying that state into `useState` with `useEffect` is a **code smell**. Keep UI-only fields (`selected`, `bulkStatus`) out of `loaderDeps`. Page components take loader data, search, and callbacks as props; reset a form with `key`, not an effect. Ephemeral chrome (mobile nav, side chat, drafts, spinners) stays local.
 9. **Router config bundle:** ship a project-local `Link` wrapper with `search: true` default (use it for every internal link) **and** these router defaults together: `defaultStaleTime`, `defaultPreload: 'intent'`, `defaultPreloadStaleTime: 0`, `scrollRestoration: true`, `notFoundComponent`.
-10. **Auth ticket built in middleware:** auth middleware enriches `ctx.context` with a repository-built ticket (e.g. `context.repository.getUserAccess(email)`) carrying identity, roles, and guards; `Repository` mutations accept a `TraceabilityContext` (`createdBy`, `lastModifiedBy`, …) constructed from that ticket so writes are attributed consistently across UI and AI.
+10. **Auth ticket built in middleware:** auth middleware enriches `ctx.context` with a repository-built ticket (this template: `context.repository.getUserProfile(email)` into `buildAccessTicket`; apps may use `getUserAccess` when roles live there) carrying identity, roles, and guards; `Repository` mutations accept a `TraceabilityContext` (`createdBy`, `lastModifiedBy`, …) constructed from that ticket so writes are attributed consistently across UI and AI.
 11. **AI tool coverage:** expose **every** repository method as a server AI tool via `createSafeServerTool`; add **distinct-values** tools for enum-ish filters; expose `navigate` and `invalidateRouter` as client tools.
 12. **Promptable by default:** root loader checks `getAIAvailability()` and only mounts the prompt UI when configured (no disabled state). Where that UI sits is companion **`promptable-ux`** (this template: hidden side panel). Chat input includes a `browserContext` (timezone, locale, path) consumed by `buildSystemPrompt` alongside the auth ticket.
 13. **Bound the agent loop:** every `chat()` call sets `agentLoopStrategy: maxIterations(N)` explicitly (default `N=10`); tune after measuring — do not rely on the framework default.
@@ -163,7 +163,7 @@ Scan before changing code:
 - **Trust boundaries use the validator:** repository implementations `Schema.parse` DB documents / API JSON; routes use `validateSearch`; untyped widget values use the same schema `.parse()` — no `Array.find` / homemade parsers that duplicate enums.
 - **No type erasure:** after `Schema.parse` / `validateSearch`, carry **schema-inferred types** through server functions, repos, tools, and components — do not widen back to `Record<string, unknown>` / `any`.
 - **Repository interfaces = repo-layer types only:** mapping lives beside schemas / mappers — not in React components.
-- **Auth ticket is repository-backed and server-enforced:** middleware builds the ticket from the injected repository (e.g. `context.repository.getUserAccess(email)`); guards run in **server handlers**, never UI-only.
+- **Auth ticket is repository-backed and server-enforced:** middleware builds the ticket from the injected repository (this template: `getUserProfile` → `buildAccessTicket`; or `getUserAccess` when that is the role source); guards run in **server handlers**, never UI-only.
 - **Writes use `TraceabilityContext`:** pass audit fields from the ticket (or stock `context.user.email`) through a single context object on `Repository` mutations — avoid sprinkling raw `email` arguments. Repository implementations must **persist** `createdBy` / `lastModifiedBy` from that context onto the entity.
 - **Navigation is one decision:** ship the **router defaults bundle** and the **project `Link` wrapper** (`search: true`) together so URL state survives navigation.
 - **AI stack is complete:** every repo method → server tool + safe handler; client **`navigate`** / **`invalidateRouter`**; root **`getAIAvailability()`**; chat payload includes **`browserContext`**; **`chat({ agentLoopStrategy: maxIterations(N) })`**.

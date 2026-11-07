@@ -207,12 +207,15 @@ Routes live in `src/routes/`; tree is auto-generated in `routeTree.gen.ts`. Rout
 
 | File | Role |
 |------|------|
-| `src/services/ai/adapter.ts` | Provider implementation |
+| `src/services/ai/adapter.ts` | Provider implementation (Gemini → OpenAI/Gateway → Azure) |
 | `src/services/ai/tools.ts` | Server + client tool definitions |
 | `src/services/ai/serverTool.ts` | `createSafeServerTool` / `safeToolHandler` |
 | `src/services/ai/navigationManifest.ts` | AI route matching + prompt section; `buildAppNavigation(router)` from `routesById` |
 | `src/routes/api/chat.ts` | SSE endpoint, `BASE_SYSTEM_PROMPT`, `buildSystemPrompt` |
-| `src/components/ChatDrawer/ChatDrawer.tsx` | `useChat`, client tools, markdown rendering |
+| `src/components/PromptChat/PromptChatContext.tsx` | Side + prompt-first: `useChat`, client `navigate` / `invalidateRouter`, `browserContext` |
+| `src/components/AgenticChat/AgenticChatContext.tsx` | Agentic: `useChat` without route client tools |
+| `src/components/AgenticShell/AgenticThread.tsx` | Shared markdown + A2UI thread (`AgenticMessageItems`) used by all three shells |
+| `src/components/ChatDrawer/ChatDrawer.tsx` | Side chrome only (drawer wrapping shared `ChatThread` / `ChatComposer`) |
 
 **Promptable gating (skill #12):** root loader calls `getAIAvailability()`; `AppLayout` / `Header` mount chat UI only when configured (no disabled placeholder).
 
@@ -232,19 +235,18 @@ interface AIAdapterService {
 
 | Provider | Adapter package | Required env var(s) | Notes |
 |----------|----------------|---------------------|-------|
-| OpenRouter (recommended) | `@tanstack/ai-openrouter` | `OPENROUTER_API_KEY` | 300+ models with a single API key |
-| OpenAI (default) | `@tanstack/ai-openai` | `OPENAI_API_KEY` | GPT series; `openaiText('gpt-5.2')` or `createOpenaiChat(key, config)` |
-| Anthropic | `@tanstack/ai-anthropic` | `ANTHROPIC_API_KEY` | Claude series; `anthropicText('claude-sonnet-4-5')` |
-| Google Gemini | `@tanstack/ai-gemini` | `GEMINI_API_KEY` | Gemini series |
+| OpenRouter (recommended for greenfield) | `@tanstack/ai-openrouter` | `OPENROUTER_API_KEY` | 300+ models with a single API key |
+| Google Gemini | `@tanstack/ai-gemini` | `GEMINI_API_KEY` | First match in this template’s `adapter.ts` |
+| OpenAI / Netlify AI Gateway | `@tanstack/ai-openai` | `OPENAI_API_KEY` (or gateway placeholders) | Second match; gateway via `OPENAI_BASE_URL` / Netlify vars |
+| Anthropic | `@tanstack/ai-anthropic` | `ANTHROPIC_API_KEY` | Claude series |
+| Azure OpenAI | `@tanstack/ai-openai` | `AZURE_OPENAI_*` | Third match in this template |
 | Ollama (local) | `@tanstack/ai-ollama` | `OLLAMA_BASE_URL` | Local models, no API key needed |
 | Groq | `@tanstack/ai-groq` | `GROQ_API_KEY` | Fast inference |
 | xAI Grok | `@tanstack/ai-grok` | `GROK_API_KEY` | Grok series |
 
-Install only the chosen adapter package (e.g. `pnpm add @tanstack/ai-openai`), implement the corresponding `AIAdapterService` class in `src/services/ai/adapter.ts`, and configure the matching env vars. Do not assume OpenAI without asking.
+Install only the chosen adapter package(s), implement `AIAdapterService` in `src/services/ai/adapter.ts`, and configure the matching env vars.
 
-Each adapter package exposes a convenience function (`openaiText`, `anthropicText`, etc.) that reads the API key from the environment automatically, and a `create*` factory (`createOpenaiChat`, `createAnthropicChat`, etc.) for explicit key configuration. Use the convenience function for simplicity; use the factory when you need custom base URLs or multi-tenant setups.
-
-The default implementation uses `@tanstack/ai-openai` with plain OpenAI. Set `OPENAI_API_KEY` to enable AI chat. Optionally set `OPENAI_MODEL` (default: `gpt-4o`) and `OPENAI_BASE_URL` for Azure OpenAI, proxies, or compatible APIs.
+This reference app’s `adapter.ts` selects the first configured provider: **Gemini → OpenAI / Netlify AI Gateway → Azure OpenAI**. Set `GEMINI_API_KEY` (or `OPENAI_API_KEY` / Azure vars) to enable AI chat. Optionally set `GEMINI_MODEL`, `OPENAI_MODEL` (default: `gpt-4o`), and `OPENAI_BASE_URL` for proxies or compatible APIs.
 
 ### Server Tools
 
@@ -252,12 +254,12 @@ Definitions in `src/services/ai/tools.ts` — each calls the same `serverFns.ts`
 
 ### Client Tools
 
-Client tools execute in the browser and are defined in `src/services/ai/tools.ts` (definition-only, no `.server()` call) with implementations in [ChatDrawer](src/components/ChatDrawer/ChatDrawer.tsx) using `clientTools()` from `@tanstack/ai-client`:
+Client tools execute in the browser and are defined in `src/services/ai/tools.ts` (definition-only, no `.server()` call) with `.client()` implementations in [PromptChatContext](src/components/PromptChat/PromptChatContext.tsx) using `clientTools()` from `@tanstack/ai-client` (side + prompt-first only; agentic omits them):
 
 - **navigate**: Triggers `router.navigate()` in the browser. Accepts `to` (path) and optional `search` (query params). Validates paths via `matchUserFacingRoute()` (`$param` patterns from `UserFacingTo`).
 - **invalidateRouter**: Calls `router.invalidate()` to refresh page data. The AI calls this after mutation tools so the user sees updated data.
 
-When adding client tools: export the `toolDefinition(...)` from `tools.ts`, pass it to `chat()` in the chat endpoint, and add a `.client()` implementation in `ChatDrawer.tsx` via `clientTools()`.
+When adding client tools: export the `toolDefinition(...)` from `tools.ts`, pass it to `chat()` in the chat endpoint for side/prompt-first, and add a `.client()` implementation in `PromptChatContext.tsx` via `clientTools()`.
 
 ### Chat Client Setup
 
@@ -293,7 +295,7 @@ When routes or `validateSearch` schemas change, set `staticData.description` on 
 
 ### AI System Prompt Context
 
-`buildSystemPrompt()` in `src/routes/api/chat.ts` merges `BASE_SYSTEM_PROMPT`, navigation manifest, and dynamic blocks (Current User, Browser Context, Current Location). Client sends `browserContext` from `ChatDrawer`; server validates with `BrowserContextSchema` in `schemas.ts`.
+`buildSystemPrompt()` in `src/routes/api/chat.ts` merges `BASE_SYSTEM_PROMPT`, navigation manifest, and dynamic blocks (Current User, Browser Context, Current Location). Clients send `browserContext` from `PromptChatContext` / `AgenticChatContext` (agentic sets `surface: 'agentic'` and omits path fields); server validates with `BrowserContextSchema` in `schemas.ts`.
 
 When adding dynamic route segments, add pattern-matching in `buildSystemPrompt()` so the AI can resolve "this task" to the current id.
 
@@ -324,7 +326,7 @@ The chat endpoint is a TanStack Start file-based route at `/api/chat` with two s
 
 **POST handler flow:** check adapter → parse `{ messages, browserContext }` → `buildSystemPrompt` → assemble tools → `chat({ …, agentLoopStrategy: maxIterations(N) })` → SSE via `toServerSentEventsResponse`. Set `maxIterations` explicitly (skill **Core Contract** #13).
 
-When modifying: add server tools to the `tools` array; add client tool defs and wire `.client()` in `ChatDrawer`; update `BASE_SYSTEM_PROMPT` and `navigationManifest.ts` when domain or routes change.
+When modifying: add server tools to the `tools` array; add client tool defs and wire `.client()` in `PromptChatContext` for side/prompt-first; update `BASE_SYSTEM_PROMPT` and `navigationManifest.ts` when domain or routes change.
 
 ## 9. Observability
 
