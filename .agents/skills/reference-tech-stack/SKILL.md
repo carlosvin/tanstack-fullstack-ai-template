@@ -47,7 +47,7 @@ This template publishes **multiple** skills. If only **this** skill is installed
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill promptable-ux
   ```
 
-- **`agentic-ux`** (companion) — Fully agentic tool-only shell. Mantine views render as A2UI surfaces. Raw documents stay MCP UI resources via `@mcp-ui/client` and `@mcp-ui/server`.
+- **`agentic-ux`** (companion) — Fully agentic tool-only shell. Mantine views render as declarative A2UI surfaces.
   ```bash
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill agentic-ux
   ```
@@ -97,7 +97,7 @@ coupling into the architecture skill.
 | Unit tests | **Vitest** + Testing Library | jsdom; `renderWithProviders` | AGENTS.md §10 |
 | E2E | **Playwright** | Chromium; seed repo; auth via JWT headers | AGENTS.md §10 |
 | Deploy | **Netlify** | `@netlify/vite-plugin-tanstack-start`; Git deploy previews | AGENTS.md CI/CD; `netlify.toml` |
-| Agentic UI | **A2UI + MCP Apps** | Mantine task views: `@a2ui-bridge/core` and `@a2ui-bridge/react` `Surface` with a local Mantine 9 catalog (`Column`, `Row`, `Card`, `Text`, `Title`, `Badge`, `Button`). Do not add `@a2ui-bridge/react-mantine` (Mantine 8 and Tabler). Raw HTML documents: `@mcp-ui/server` `createUIResource`, `@mcp-ui/client` `AppRenderer`, sandbox `public/sandbox_proxy.html`. | **`agentic-ux`** |
+| Agentic UI | **A2UI** | Mantine task views: `@a2ui-bridge/core` and `@a2ui-bridge/react` `Surface` with a local Mantine 9 catalog (`Column`, `Row`, `Card`, `Text`, `Title`, `Badge`, `Button`, `Table`, `Timeline`). Do not add `@a2ui-bridge/react-mantine` (Mantine 8 and Tabler). | **`agentic-ux`** |
 | Package manager | **pnpm** | Lockfile committed | AGENTS.md §12 / §15 |
 
 **Fixed (not listed as choices):** TanStack **Start**, **Router**, **AI**, and CLI — owned by the architecture skill.

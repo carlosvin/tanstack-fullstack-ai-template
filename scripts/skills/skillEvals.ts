@@ -607,6 +607,132 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 			},
 		},
 		{
+			id: 'architecture-three-ux-seams',
+			skill: 'tanstack-promptable-fullstack-app-template',
+			description:
+				'All 3 UX modes (side, prompt-first, agentic) are wired across the 4 seams: shellSession, AppLayout, routes/index.tsx, and routes/api/chat.ts',
+			async run() {
+				const { agentSkillsDir } = getSkillPaths(rootDir)
+				try {
+					const archSkill = await readText(
+						path.join(agentSkillsDir, 'tanstack-promptable-fullstack-app-template', 'SKILL.md'),
+					)
+					if (!/Tri-modal UX architecture/i.test(archSkill) || !/Per-entity 3-UX checklist/i.test(archSkill)) {
+						return fail(
+							'Architecture skill must document Tri-modal UX architecture (4 seams) and the Per-entity 3-UX checklist',
+						)
+					}
+				} catch {
+					// App-only fixtures may omit skill markdown.
+				}
+
+				const shellSessionPath = path.join(rootDir, 'src/services/schemas/shellSession.ts')
+				try {
+					const shellSession = await readText(shellSessionPath)
+					if (
+						!/PromptConceptSchema/.test(shellSession) ||
+						!/'side'/.test(shellSession) ||
+						!/'prompt-first'/.test(shellSession) ||
+						!/'agentic'/.test(shellSession) ||
+						!/promptConcept:\s*PromptConceptSchema/.test(shellSession)
+					) {
+						return fail(
+							'shellSession.ts must define PromptConceptSchema with side, prompt-first, and agentic and expose promptConcept on ShellSessionSchema',
+							['src/services/schemas/shellSession.ts'],
+						)
+					}
+				} catch {
+					// App-only fixtures may omit shellSession.ts.
+				}
+
+				const homeRoutePath = path.join(rootDir, 'src/routes/index.tsx')
+				try {
+					const homeRoute = await readText(homeRoutePath)
+					if (
+						!/Record<PromptConcept/.test(homeRoute) ||
+						!/satisfies\s+Record<PromptConcept/.test(homeRoute) ||
+						!/side:/.test(homeRoute) ||
+						!/'prompt-first':/.test(homeRoute) ||
+						!/agentic:/.test(homeRoute)
+					) {
+						return fail(
+							'src/routes/index.tsx must exhaustively map all 3 PromptConcept values with Record<PromptConcept, ...>',
+							['src/routes/index.tsx'],
+						)
+					}
+				} catch {
+					// App-only fixtures may omit routes/index.tsx.
+				}
+
+				const layoutPath = path.join(rootDir, 'src/components/AppLayout/AppLayout.tsx')
+				try {
+					const layout = await readText(layoutPath)
+					if (
+						!/shellSession\.promptConcept/.test(layout) ||
+						!/AgenticChatProvider/.test(layout) ||
+						!/AgenticShell/.test(layout) ||
+						!/PromptChatProvider/.test(layout) ||
+						!/ChatDrawer/.test(layout) ||
+						!/PromptBar/.test(layout)
+					) {
+						return fail(
+							'AppLayout.tsx must select shellSession.promptConcept and wire AgenticChatProvider + AgenticShell for agentic and PromptChatProvider + ChatDrawer / PromptBar for side and prompt-first',
+							['src/components/AppLayout/AppLayout.tsx'],
+						)
+					}
+				} catch {
+					// App-only fixtures may omit AppLayout.tsx.
+				}
+
+				const chatRoutePath = path.join(rootDir, 'src/routes/api/chat.ts')
+				try {
+					const chatRoute = await readText(chatRoutePath)
+					if (
+						!/promptConcept/.test(chatRoute) ||
+						!/PROMPT_FIRST_LAYOUT/.test(chatRoute) ||
+						!/AGENTIC_SYSTEM_PROMPT/.test(chatRoute) ||
+						!/showTasksViewTool/.test(chatRoute) ||
+						!/navigateToolDef/.test(chatRoute)
+					) {
+						return fail(
+							'src/routes/api/chat.ts must select promptConcept and branch system prompts and tools across side, prompt-first, and agentic',
+							['src/routes/api/chat.ts'],
+						)
+					}
+				} catch {
+					// App-only fixtures may omit chat.ts.
+				}
+
+				const chatThreadPath = path.join(rootDir, 'src/components/PromptChat/ChatThread.tsx')
+				try {
+					const chatThread = await readText(chatThreadPath)
+					if (!/AgenticMessageItems/.test(chatThread)) {
+						return fail(
+							'ChatThread.tsx must reuse AgenticMessageItems from AgenticThread so side and prompt-first extend the core agentic chat surface',
+							['src/components/PromptChat/ChatThread.tsx'],
+						)
+					}
+				} catch {
+					// App-only fixtures may omit ChatThread.tsx.
+				}
+
+				const promptChatPath = path.join(rootDir, 'src/components/PromptChat/PromptChatContext.tsx')
+				try {
+					const promptChat = await readText(promptChatPath)
+					if (!/useInlineDetailViews/.test(promptChat)) {
+						return fail(
+							'PromptChatContext.tsx must own useInlineDetailViews so opened A2UI details survive route remounts with the conversation',
+							['src/components/PromptChat/PromptChatContext.tsx'],
+						)
+					}
+				} catch {
+					// App-only fixtures may omit PromptChatContext.tsx.
+				}
+
+				return pass()
+			},
+		},
+		{
 			id: 'architecture-traceability-context',
 			skill: 'tanstack-promptable-fullstack-app-template',
 			description: 'Writes pass TraceabilityContext; repos persist createdBy/lastModifiedBy',
@@ -948,7 +1074,7 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 			id: 'agentic-ux-shell-contract',
 			skill: 'agentic-ux',
 			description:
-				'Agentic skill recipe matches the example shell: metadata._meta.ui.resourceUri, AppRenderer, no route chrome',
+				'Agentic skill recipe matches the example shell: declarative A2UI Surface, no route chrome, no iframe',
 			async run() {
 				const { agentSkillsDir } = getSkillPaths(rootDir)
 				let skillMd: string
@@ -960,22 +1086,11 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 				const missing = []
 				if (!/## Shell/.test(skillMd)) missing.push('Shell section')
 				if (!/## View strategy/.test(skillMd)) missing.push('View strategy section')
-				if (!/## MCP UI rendering/.test(skillMd)) missing.push('MCP UI rendering section')
 				if (!/@a2ui-bridge\/react/.test(skillMd) || !/createComponentMapping/.test(skillMd)) {
 					missing.push('Mantine A2UI catalog recipe')
 				}
 				if (!/Unknown component types render nothing/.test(skillMd)) missing.push('unknown component rule')
 				if (!/## Security/.test(skillMd)) missing.push('Security section')
-				if (!/metadata\._meta\.ui\.resourceUri/.test(skillMd)) missing.push('metadata._meta.ui.resourceUri recipe')
-				if (!/createUIResource/.test(skillMd)) missing.push('createUIResource recipe')
-				if (!/AppRenderer/.test(skillMd)) missing.push('AppRenderer recipe')
-				if (!/resources\/read/.test(skillMd)) missing.push('resources/read recipe')
-				if (!/createMCPServer/.test(skillMd) || !/createMCPClient/.test(skillMd)) {
-					missing.push('TanStack MCP registration recipe')
-				}
-				if (!/toolResult/.test(skillMd)) missing.push('toolResult recipe')
-				if (!/sandbox_proxy\.html/.test(skillMd)) missing.push('sandbox proxy recipe')
-				if (!/only inside the MCP UI iframe/.test(skillMd)) missing.push('iframe-only render rule')
 				if (!/No `ChatDrawer`, `PromptBar`, `AppNavbar`/.test(skillMd)) missing.push('no route-component reuse rule')
 				if (!/docs\/help\.md/.test(skillMd) || !/sentence case/.test(skillMd)) {
 					missing.push('hero and tool-status rules')
@@ -984,11 +1099,11 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 				if (!/one short sentence/.test(skillMd) || !/demo visitor/.test(skillMd)) {
 					missing.push('answer and demo-assignee rules')
 				}
-				if (!/without waiting|do not send another model turn/.test(skillMd)) {
+				if (!/without waiting|without sending another model turn|without another model turn/.test(skillMd)) {
 					missing.push('direct detail-open rule')
 				}
 				if (!/bare colon/.test(skillMd)) missing.push('empty markdown-link label rule')
-				if (!/No raw ids/.test(skillMd)) missing.push('guest card presentation rule')
+				if (!/No raw ids/.test(skillMd)) missing.push('card presentation rule')
 				if (!/\*\*`agentic-ux`\*\*\s*\(companion\)/.test(skillMd) && !/agentic-ux/.test(skillMd)) {
 					missing.push('companion wiring')
 				}
@@ -1006,9 +1121,7 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 				const messages = await readText(path.join(rootDir, 'src/services/a2ui/taskViewMessages.ts'))
 				const catalog = await readText(path.join(rootDir, 'src/services/a2ui/mantineCatalog.tsx'))
 				const chatRoute = await readText(path.join(rootDir, 'src/routes/api/chat.ts'))
-				const renderer = await readText(path.join(rootDir, 'src/components/AgenticMcp/AgenticMcpRenderer.tsx'))
 				const surface = await readText(path.join(rootDir, 'src/components/AgenticA2ui/AgenticA2uiSurface.tsx'))
-				const resources = await readText(path.join(rootDir, 'src/services/mcpUi/mcpUiResources.ts'))
 				const shell = await readText(path.join(rootDir, 'src/components/AgenticShell/AgenticShell.tsx'))
 				const thread = await readText(path.join(rootDir, 'src/components/AgenticShell/AgenticThread.tsx'))
 				const composer = await readText(path.join(rootDir, 'src/components/AgenticShell/AgenticComposer.tsx'))
@@ -1028,12 +1141,6 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 				}
 				if (!/Surface/.test(surface) || !/mantineTaskCatalog/.test(surface) || !/acceptA2uiMessages/.test(surface)) {
 					drift.push('AgenticA2uiSurface must render Surface through the Mantine catalog after acceptA2uiMessages')
-				}
-				if (!/AppRenderer/.test(renderer) || !/sandbox_proxy\.html/.test(renderer) || !/toolResult/.test(renderer)) {
-					drift.push('AgenticMcpRenderer must render AppRenderer through sandbox_proxy.html with toolResult')
-				}
-				if (!/createUIResource/.test(resources) || !/readMcpUiResource/.test(resources)) {
-					drift.push('mcpUiResources must register raw documents with createUIResource and readMcpUiResource')
 				}
 				if (!/buildTaskViewMessages/.test(messages) || !/open-task/.test(messages)) {
 					drift.push('task view messages must be built from tool data with an open-task action')
@@ -1073,6 +1180,9 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 				}
 				if (!/buildTaskViewMessages/.test(thread) || !/promptFromA2uiAction/.test(thread)) {
 					drift.push('the thread must render task data through the A2UI surface')
+				}
+				if (/AgenticMcpRenderer|sandbox_proxy/.test(thread)) {
+					drift.push('the thread must not render iframe MCP UI documents')
 				}
 				if (drift.length > 0) {
 					return fail('Agentic example drifted from the agentic-ux recipe', drift)

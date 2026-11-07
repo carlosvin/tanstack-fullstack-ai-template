@@ -83,7 +83,7 @@ async function createMinimalWorkspace(overrides: Record<string, string> = {}) {
 		FIXTURE_SKILLS.map((skill) => {
 			const extra =
 				skill.id === 'tanstack-promptable-fullstack-app-template'
-					? '## Fixed vs swappable stack\n## URL-Recoverable State & Prop-Driven Components\nOverusing useState and useEffect is a code smell.\n'
+					? '## Fixed vs swappable stack\n## URL-Recoverable State & Prop-Driven Components\nOverusing useState and useEffect is a code smell.\n### Tri-modal UX architecture (4 seams, 1 shared core)\n### Per-entity 3-UX checklist\n'
 					: skill.id === 'reference-tech-stack'
 						? '## Stack map\n'
 						: ''
@@ -98,7 +98,8 @@ async function createMinimalWorkspace(overrides: Record<string, string> = {}) {
 		'src/start.ts':
 			"import { webEnvMiddleware } from './middleware/webEnv'\nexport const startInstance = { requestMiddleware: [webEnvMiddleware] }\n",
 		'src/routes/__root.tsx': 'export const loader = () => getBrowserShellSession()\n',
-		'src/components/AppLayout/AppLayout.tsx': '{aiAvailable ? <ChatDrawer /> : null}',
+		'src/components/AppLayout/AppLayout.tsx':
+			'shellSession.promptConcept\n{aiAvailable ? <><AgenticChatProvider /><AgenticShell /><PromptChatProvider><ChatDrawer /><PromptBar /></PromptChatProvider></> : null}\n',
 		'src/services/api/serverFns.ts':
 			'export const x = () => toToolTask(); export const y = () => toToolUserProfile()\nconst trace = createWriteTrace(context.user.email)\nconst updateTrace = updateWriteTrace(context.user.email)\n',
 		'src/services/repository/mongoRepository.server.ts':
@@ -107,10 +108,19 @@ async function createMinimalWorkspace(overrides: Record<string, string> = {}) {
 			'export class SeedRepository { async updateTask(_id, _input, trace) { return { lastModifiedBy: trace?.lastModifiedBy } } }\n',
 		'src/services/schemas/repository.ts': 'export const TaskRepoSchema = { lastModifiedBy: true }\n',
 		'src/services/schemas/schemas.ts': 'export const TaskSchema = { lastModifiedBy: true }\n',
+		'src/services/schemas/shellSession.ts':
+			"export const PromptConceptSchema = z.enum(['side', 'prompt-first', 'agentic'])\nexport const ShellSessionSchema = z.object({ promptConcept: PromptConceptSchema })\n",
 		'src/services/schemas/taskMappers.ts':
 			'export const toToolTask = (row) => ({ lastModifiedBy: row.lastModifiedBy })\n',
+		'src/routes/index.tsx':
+			"const homeScreens = { side: SideHome, 'prompt-first': PromptFirstHome, agentic: AgenticHome } satisfies Record<PromptConcept, unknown>\n",
+		'src/components/PromptChat/ChatThread.tsx':
+			'export function ChatThread() { return <AgenticMessageItems messages={[]} opened={[]} today="" onPrompt={() => {}} /> }\n',
+		'src/components/PromptChat/PromptChatContext.tsx':
+			'export function PromptChatProvider() { const { opened, handlePrompt } = useInlineDetailViews(messages, sendMessage, today); return null }\n',
 		'AGENTS.md': '## Skill alignment roadmap\nPhase 3 chat gating is done.\n',
-		'src/routes/api/chat.ts': 'chat({ agentLoopStrategy: maxIterations(10) })\n',
+		'src/routes/api/chat.ts':
+			'promptConcept\nPROMPT_FIRST_LAYOUT\nAGENTIC_SYSTEM_PROMPT\nshowTasksViewTool\nnavigateToolDef\nchat({ agentLoopStrategy: maxIterations(10) })\n',
 		'vite.config.ts': "tanstackStart({ importProtection: { behavior: 'error' } })\n",
 		...skillFiles,
 		'instrument.env.shared.mts': 'export const DeploymentEnvSchema = {}\n',
@@ -296,6 +306,75 @@ Do not pick one.
 		expect(result.pass).toBe(false)
 		if (!result.pass) {
 			expect(result.files).toContain('src/components/TasksPage/TasksPage.tsx')
+		}
+	})
+
+	it('fails when shellSession.ts omits one of the 3 UX prompt concepts', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'src/services/schemas/shellSession.ts':
+				"export const PromptConceptSchema = z.enum(['side', 'prompt-first'])\nexport const ShellSessionSchema = z.object({ promptConcept: PromptConceptSchema })\n",
+		})
+		const result = await runEval(rootDir, 'architecture-three-ux-seams')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(result.files).toContain('src/services/schemas/shellSession.ts')
+		}
+	})
+
+	it('fails when routes/index.tsx does not exhaustively map all 3 PromptConcept values', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'src/routes/index.tsx': 'const homeScreens = { side: SideHome }\n',
+		})
+		const result = await runEval(rootDir, 'architecture-three-ux-seams')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(result.files).toContain('src/routes/index.tsx')
+		}
+	})
+
+	it('fails when ChatThread does not reuse AgenticMessageItems from AgenticThread', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'src/components/PromptChat/ChatThread.tsx': 'export function ChatThread() { return null }\n',
+		})
+		const result = await runEval(rootDir, 'architecture-three-ux-seams')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(result.files).toContain('src/components/PromptChat/ChatThread.tsx')
+		}
+	})
+
+	it('fails when AppLayout omits shellSession.promptConcept selection', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'src/components/AppLayout/AppLayout.tsx':
+				'{aiAvailable ? <><AgenticChatProvider /><AgenticShell /><PromptChatProvider><ChatDrawer /><PromptBar /></PromptChatProvider></> : null}\n',
+		})
+		const result = await runEval(rootDir, 'architecture-three-ux-seams')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(result.files).toContain('src/components/AppLayout/AppLayout.tsx')
+		}
+	})
+
+	it('fails when chat.ts omits promptConcept branching', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'src/routes/api/chat.ts': 'chat({ agentLoopStrategy: maxIterations(10) })\n',
+		})
+		const result = await runEval(rootDir, 'architecture-three-ux-seams')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(result.files).toContain('src/routes/api/chat.ts')
+		}
+	})
+
+	it('fails when PromptChatContext does not own useInlineDetailViews', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'src/components/PromptChat/PromptChatContext.tsx':
+				'export function PromptChatProvider({ children }) { return children }\n',
+		})
+		const result = await runEval(rootDir, 'architecture-three-ux-seams')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(result.files).toContain('src/components/PromptChat/PromptChatContext.tsx')
 		}
 	})
 })

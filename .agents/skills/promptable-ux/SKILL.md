@@ -41,7 +41,7 @@ This template publishes **multiple** skills. If only **this** skill is installed
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env
   ```
 
-- **`agentic-ux`** (companion) — Fully agentic tool-only shell. Mantine views are A2UI surfaces. Raw documents stay MCP UI resources. Install when the deployment has no domain screens.
+- **`agentic-ux`** (companion) — Fully agentic tool-only shell. Mantine views are declarative A2UI surfaces. Install when the deployment has no domain screens.
   ```bash
   npx skills add carlosvin/tanstack-fullstack-ai-template --skill agentic-ux
   ```
@@ -156,10 +156,21 @@ This template implements prompt-first when `PROMPT_CONCEPT=prompt-first` (see `s
 
 ### Minimal file shape (adapt to the project)
 
-- `PromptChatProvider` / shared hook: manages chat thread state across route changes.
+- `PromptChatProvider` / shared hook: manages chat thread state **and** opened A2UI detail views across route changes (clear both together).
 - `PromptBar` / `ChatComposer`: bottom-pinned input bar (typically in `AppShell.Footer`) with autosizing input, submit/stop, and suggestion chips.
 - `ChatThread` / `PromptThread`: full-height scrollable message thread with empty-state hero and suggestion chips.
 - One chat shell per app: no `Drawer` for chat in apps that commit to prompt-first. If a migration needs both temporarily, say so explicitly and remove the drawer before calling the migration done.
+
+### Switching & coexistence: extending the agentic chat core across `side` and `prompt-first`
+
+The two route-based concepts (`prompt-first` and `side`) are extensions of the **fully agentic** dynamic chat component (companion **`agentic-ux`**). Every AI chat panel in the codebase renders dynamic A2UI surfaces (`AgenticA2uiSurface`) alongside assistant markdown:
+
+- **Shared dynamic chat rendering (`src/components/AgenticShell/AgenticThread.tsx`, `src/components/PromptChat/ChatThread.tsx`):** `ChatThread` reuses `AgenticMessageItems` from `AgenticThread`, so `showTasksView` and `showTaskView` render interactive cards, tables, kanban lanes, timelines, and single-click detail views inside both `ChatDrawer` (`side`) and `PromptFirstLanding` (`prompt-first`).
+- **Shared route-aware chat context (`src/components/PromptChat/PromptChatContext.tsx`):** Both `side` and `prompt-first` mount `PromptChatProvider` once in `AppLayout` when `aiAvailable` is true. It owns `useInlineDetailViews` (so opened details survive prompt-first remounts), router-aware `browserContext` capture, and client `navigate` / `invalidateRouter` tools.
+- **Shared composer & presentation (`src/components/PromptChat/`):** `ChatComposer` (using `friendlyChatError`), `ChatThread`, `MessageBubble`, `MarkdownLink`, `toolLabels`, and `PromptChat.module.css` are reused unchanged by both route-based shells.
+- **Concept-specific chrome only:**
+  - `side` mounts `ChatDrawer` (`ChatThread` + `ChatComposer` inside a right `Drawer`) and opens it from `Header`.
+  - `prompt-first` mounts `PromptBar` in `AppShell.Footer` (`ChatComposer` with `onAfterSubmit` navigating to `/` when on a drill-down route) and renders `PromptFirstLanding` (`PromptFirstHero` when `messages.length === 0`, `ChatThread` once the conversation starts) on `/`.
 
 ## UX checklist
 
