@@ -278,11 +278,16 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 		{
 			id: 'observability-browser-shell-loader',
 			skill: 'observability-and-env',
-			description: 'Root loader calls getBrowserShellSession()',
+			description: 'Root route loads getBrowserShellSession once and exposes it to the loader',
 			async run() {
 				const root = await readText(path.join(rootDir, 'src/routes/__root.tsx'))
 				if (!/getBrowserShellSession\s*\(/.test(root)) {
-					return fail('src/routes/__root.tsx must call getBrowserShellSession() in the loader')
+					return fail('src/routes/__root.tsx must call getBrowserShellSession()')
+				}
+				if (!/context\.shellSession/.test(root) && !/loader:[\s\S]*getBrowserShellSession\s*\(/.test(root)) {
+					return fail(
+						'src/routes/__root.tsx must expose shellSession to the loader (beforeLoad context or a loader call)',
+					)
 				}
 				return pass()
 			},
@@ -580,8 +585,9 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 				if (!/getAssigneeOptionsTool/.test(tools) || !/name:\s*'getAssigneeOptions'/.test(tools)) {
 					return fail('tools.ts must define getAssigneeOptionsTool for the getAssigneeOptions server fn')
 				}
-				if (!/getAssigneeOptionsTool/.test(chat)) {
-					return fail('api/chat.ts must register getAssigneeOptionsTool in dataTools')
+				const dataToolsMatch = chat.match(/const dataTools\s*=\s*\[([\s\S]*?)\]/)
+				if (!dataToolsMatch || !/\bgetAssigneeOptionsTool\b/.test(dataToolsMatch[1])) {
+					return fail('api/chat.ts must register getAssigneeOptionsTool in the dataTools array')
 				}
 				return pass()
 			},

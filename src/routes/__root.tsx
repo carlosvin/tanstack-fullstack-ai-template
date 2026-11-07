@@ -16,20 +16,25 @@ import { watchNetlifyHud } from '@/utils/netlifyHud'
 
 export const Route = createRootRoute({
 	beforeLoad: async ({ location }) => {
+		// One shell-session fetch for the guard and the loader (avoids a second round trip).
+		const shellSession = await getBrowserShellSession()
 		// Agentic deployments have no domain screens — keep the shell on `/`.
-		if (location.pathname.startsWith('/api/') || location.pathname === '/') return
-		const { promptConcept } = await getBrowserShellSession()
-		if (promptConcept === 'agentic') {
+		if (
+			shellSession.promptConcept === 'agentic' &&
+			!location.pathname.startsWith('/api/') &&
+			location.pathname !== '/'
+		) {
 			throw redirect({ to: '/' })
 		}
+		return { shellSession }
 	},
-	loader: async () => {
-		const [currentUser, shellSession, aiAvailability] = await Promise.all([
-			getCurrentUser(),
-			getBrowserShellSession(),
-			getAIAvailability(),
-		])
-		return { currentUser, shellSession, aiAvailable: aiAvailability.available }
+	loader: async ({ context }) => {
+		const [currentUser, aiAvailability] = await Promise.all([getCurrentUser(), getAIAvailability()])
+		return {
+			currentUser,
+			shellSession: context.shellSession,
+			aiAvailable: aiAvailability.available,
+		}
 	},
 	head: ({ loaderData }) => {
 		const appName = loaderData?.shellSession.app.name ?? 'TaskHub'
