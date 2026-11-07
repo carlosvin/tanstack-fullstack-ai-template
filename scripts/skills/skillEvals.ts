@@ -607,6 +607,108 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 			},
 		},
 		{
+			id: 'architecture-three-ux-seams',
+			skill: 'tanstack-promptable-fullstack-app-template',
+			description:
+				'All 3 UX modes (side, prompt-first, agentic) are wired across the 4 seams: shellSession, AppLayout, routes/index.tsx, and routes/api/chat.ts',
+			async run() {
+				const { agentSkillsDir } = getSkillPaths(rootDir)
+				try {
+					const archSkill = await readText(
+						path.join(agentSkillsDir, 'tanstack-promptable-fullstack-app-template', 'SKILL.md'),
+					)
+					if (!/Tri-modal UX architecture/i.test(archSkill) || !/Per-entity 3-UX checklist/i.test(archSkill)) {
+						return fail(
+							'Architecture skill must document Tri-modal UX architecture (4 seams) and the Per-entity 3-UX checklist',
+						)
+					}
+				} catch {
+					// App-only fixtures may omit skill markdown.
+				}
+
+				const shellSessionPath = path.join(rootDir, 'src/services/schemas/shellSession.ts')
+				try {
+					const shellSession = await readText(shellSessionPath)
+					if (
+						!/PromptConceptSchema/.test(shellSession) ||
+						!/'side'/.test(shellSession) ||
+						!/'prompt-first'/.test(shellSession) ||
+						!/'agentic'/.test(shellSession) ||
+						!/promptConcept:\s*PromptConceptSchema/.test(shellSession)
+					) {
+						return fail(
+							'shellSession.ts must define PromptConceptSchema with side, prompt-first, and agentic and expose promptConcept on ShellSessionSchema',
+							['src/services/schemas/shellSession.ts'],
+						)
+					}
+				} catch {
+					// App-only fixtures may omit shellSession.ts.
+				}
+
+				const homeRoutePath = path.join(rootDir, 'src/routes/index.tsx')
+				try {
+					const homeRoute = await readText(homeRoutePath)
+					if (
+						!/Record<PromptConcept/.test(homeRoute) ||
+						!/satisfies\s+Record<PromptConcept/.test(homeRoute) ||
+						!/side:/.test(homeRoute) ||
+						!/'prompt-first':/.test(homeRoute) ||
+						!/agentic:/.test(homeRoute)
+					) {
+						return fail(
+							'src/routes/index.tsx must exhaustively map all 3 PromptConcept values with Record<PromptConcept, ...>',
+							['src/routes/index.tsx'],
+						)
+					}
+				} catch {
+					// App-only fixtures may omit routes/index.tsx.
+				}
+
+				const layoutPath = path.join(rootDir, 'src/components/AppLayout/AppLayout.tsx')
+				try {
+					const layout = await readText(layoutPath)
+					if (/shellSession\.promptConcept/.test(layout)) {
+						if (
+							!/AgenticChatProvider/.test(layout) ||
+							!/AgenticShell/.test(layout) ||
+							!/PromptChatProvider/.test(layout) ||
+							!/ChatDrawer/.test(layout) ||
+							!/PromptBar/.test(layout)
+						) {
+							return fail(
+								'AppLayout.tsx must wire AgenticChatProvider + AgenticShell for agentic and PromptChatProvider + ChatDrawer / PromptBar for side and prompt-first',
+								['src/components/AppLayout/AppLayout.tsx'],
+							)
+						}
+					}
+				} catch {
+					// App-only fixtures may omit AppLayout.tsx.
+				}
+
+				const chatRoutePath = path.join(rootDir, 'src/routes/api/chat.ts')
+				try {
+					const chatRoute = await readText(chatRoutePath)
+					if (/promptConcept/.test(chatRoute)) {
+						if (
+							!/PROMPT_FIRST_LAYOUT/.test(chatRoute) ||
+							!/AGENTIC_SYSTEM_PROMPT/.test(chatRoute) ||
+							!/showTasksViewTool/.test(chatRoute) ||
+							!/navigateToolDef/.test(chatRoute)
+						) {
+							return fail(
+								'src/routes/api/chat.ts must branch system prompts and tools across side, prompt-first, and agentic',
+								['src/routes/api/chat.ts'],
+							)
+						}
+					}
+				} catch {
+					// App-only fixtures may omit chat.ts.
+				}
+
+				return pass()
+			},
+		},
+		{
 			id: 'architecture-traceability-context',
 			skill: 'tanstack-promptable-fullstack-app-template',
 			description: 'Writes pass TraceabilityContext; repos persist createdBy/lastModifiedBy',

@@ -98,6 +98,15 @@ When the app already sets `PROMPT_CONCEPT` or already mounts one shell, keep tha
 
 When it is not clear which user experience to implement, ask which of the three to build and wait for an answer. Do not pick one. Do not place a prompt, add domain screens, or start an agentic shell until the developer chooses.
 
+### Tri-modal UX architecture (4 seams, 1 shared core)
+
+One codebase can ship one declared experience or all three experiences across deployments (`PROMPT_CONCEPT=side | prompt-first | agentic`) without duplicating domain logic, schemas, repositories, or server functions. Keep the shared foundation identical and branch only at these four seams using exhaustive `Record<PromptConcept, ...>` / `satisfies` maps so TypeScript enforces coverage of all three modes:
+
+1. **Seam 1 — Env & session (`src/services/schemas/shellSession.ts`, `src/env/webEnv.server.ts`):** Define `PromptConceptSchema = z.enum(['side', 'prompt-first', 'agentic'])`, parse `PROMPT_CONCEPT` once in `WebServerEnvSchema`, and project `promptConcept` onto `ShellSessionSchema` via `getBrowserShellSession` (companion **`observability-and-env`**).
+2. **Seam 2 — Root shell (`src/components/AppLayout/AppLayout.tsx`):** Read `shellSession.promptConcept`. When `agentic`, render `AgenticChatProvider` + `AgenticShell` (companion **`agentic-ux`**). When `side` or `prompt-first`, share `PromptChatProvider` and the main layout chrome, mounting the hidden side panel (`ChatDrawer`) for `side` and the bottom-pinned composer (`PromptBar`) for `prompt-first` (companion **`promptable-ux`**).
+3. **Seam 3 — Home route (`src/routes/index.tsx`):** Branch both the loader and the home component through exhaustive `Record<PromptConcept, ...>` maps (`satisfies Record<PromptConcept, ...>`). `side` and `prompt-first` load overview data (`loadHomeTasks`); `agentic` returns `[]` without querying. `SideHome` renders the overview page, `PromptFirstHome` renders the conversation landing when `aiAvailable` is true (with overview fallback when AI is off), and `AgenticHome` returns `null` because the root `AgenticShell` owns the stage.
+4. **Seam 4 — Chat endpoint (`src/routes/api/chat.ts`):** Share `dataTools` (every repository CRUD + `getDistinctValues` server tool) across all three modes. Branch only the surface tools (`navigateToolDef` + `invalidateRouterToolDef` for `side` and `prompt-first` vs `show*ViewTool` for `agentic`) and the system prompt (`BASE_SYSTEM_PROMPT` + `navigationSection` [+ `PROMPT_FIRST_LAYOUT`] vs `AGENTIC_SYSTEM_PROMPT` + `AGENTIC_LAYOUT`).
+
 ## Fixed vs swappable stack
 
 **Fixed by this skill (TanStack):** TanStack **Start**, **Router**, and **AI** (server functions, middleware, file routes, `validateSearch`, loaders, `chat()` / tools / SSE). Use **`@tanstack/cli`** for current library docs. This repo’s architecture lives in Agent Skills (`.agents/skills/*/SKILL.md`) only.
@@ -479,6 +488,27 @@ interface Repository {
 5. **Middleware:** `start.ts` — auth, invalidation, optional pre-auth `308` redirects for legacy paths.
 6. **Routes:** `validateSearch`, `loaderDeps`, loaders; parent layouts for shared `beforeLoad`/data.
 7. **Chat:** adapter, `chat()`, `buildSystemPrompt`, tool list — details in AGENTS.md §8. Follow **Choose a UX** before wiring chrome. When it is not clear which user experience to implement, ask which of the three and wait. **Side** and **prompt-first** load **`promptable-ux`**. **Agentic** loads **`agentic-ux`** and skips domain screens.
+
+### Per-entity 3-UX checklist
+
+When adding a new domain entity (for example `Project`, `Invoice`, or `Ticket`), build **Part A** once, then wire **Part B** for the declared UX (or all three in multi-demo apps):
+
+- **Part A — Shared foundation (100% reused across `side`, `prompt-first`, and `agentic`):**
+  1. **Three-layer schemas + mappers:** Add Layer 1 DB shapes in `src/services/schemas/repository.ts` and boundary parsers in `repoParsers.ts`, Layer 2 API/tool shapes with `.describe()` in `src/services/schemas/schemas.ts`, Layer 3 URL search schemas, and pure inbound/outbound `Schema.parse()` mappers.
+  2. **Repository contract + implementations:** Add collection owner (`createIndexes()`, private collection field) in `src/services/repository/`, wire into the `Repository` facade with `TraceabilityContext` on writes, and implement in both seed and database repositories.
+  3. **Server functions (`src/services/api/serverFns.ts`):** Export GET queries (`repositoryMiddleware`) and POST mutations (`requireAuthMiddleware`, `invalidateMiddleware`), mapping outputs through outbound `Schema.parse()` mappers.
+  4. **Shared server AI tools (`src/services/ai/tools.ts`):** Wrap every new `serverFns.ts` export with `toolDefinition` + `createSafeServerTool` (including `getDistinctValues` for filterable enum-ish fields) and register them in `dataTools` in `src/routes/api/chat.ts`.
+
+- **Part B — UX surface wiring (by experience):**
+  - **`side` & `prompt-first` (companion `promptable-ux`):**
+    1. **Thin routes (`src/routes/<entity>/`):** Add list, detail, create, and edit routes with `staticData.description`, `validateSearch`, `loaderDeps`, and isomorphic loaders calling `serverFns.ts`.
+    2. **Prop-driven components (`src/components/<Entity>Page/`):** Render loader data and URL search state via props with no `useState` / `useEffect` for recoverable state; reset forms with `key`.
+    3. **Navigation manifest & location context:** Add the route pattern to `UserFacingTo` in `src/services/ai/navigationManifest.ts` and resolve dynamic `current<Entity>Id` in `buildSystemPrompt` (`src/routes/api/chat.ts`) so client `navigate` and `invalidateRouter` tools work seamlessly.
+    4. **Prompt-first landing (`PromptFirstHero`):** When supporting `prompt-first`, expose summary counts or starter prompts on the landing hero while keeping `/<entity>` for drill-down.
+  - **`agentic` (companion `agentic-ux`):**
+    1. **Data-only view tools (`src/services/ai/<entity>Views.server.ts`):** Define `show<Entities>ViewTool` (with `presentation` separated from the repository filter and demo visitor emails stripped) and `show<Entity>ViewTool`; register both in the `agentic` branch of `src/routes/api/chat.ts`.
+    2. **Deterministic A2UI builder (`src/services/a2ui/<entity>ViewMessages.ts`):** Map tool payloads into allowlisted A2UI component trees validated by `acceptA2uiMessages` (cards, table, kanban, timeline, detail, plus `open-<entity>`, `toggle-select`, and `mark-selected` actions).
+    3. **Thread surface & direct actions (`src/components/AgenticShell/AgenticThread.tsx`):** Render the view tool output through `AgenticA2uiSurface`, add sentence-case labels in `toolLabels.ts`, and handle single-id detail opens directly from remembered thread data or `get<Entity>` without an extra model turn.
 
 ## Special Patterns (use when the feature applies)
 

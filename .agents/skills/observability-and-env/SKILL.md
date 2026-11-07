@@ -181,13 +181,22 @@ export const AppMetaSchema = z.object({
   version: z.string().min(1),
 })
 
+export const PromptConceptSchema = z
+  .enum(['side', 'prompt-first', 'agentic'])
+  .describe('Promptable UI (side) drawer vs always-visible prompt-first bar vs fully agentic tool-only shell.')
+
+export type PromptConcept = z.infer<typeof PromptConceptSchema>
+
 export const WebPublicEnvSchema = z.object({
   ENV: OptionalDeploymentEnvSchema,
   LOG_LEVEL: OptionalLogLevelSchema,
   SENTRY_DSN: OptionalTrimmedStringSchema,
 })
 
-export const ShellSessionSchema = WebPublicEnvSchema.extend({ app: AppMetaSchema })
+export const ShellSessionSchema = WebPublicEnvSchema.extend({
+  app: AppMetaSchema,
+  promptConcept: PromptConceptSchema,
+})
 export type ShellSession = z.infer<typeof ShellSessionSchema>
 ```
 
@@ -200,9 +209,12 @@ process. `WebServerEnvSchema` adds secrets on top of the public schemas.
 ```typescript
 import { z } from 'zod'
 import pkg from '../../package.json' with { type: 'json' }
-import { ShellSessionSchema, WebPublicEnvSchema } from '@/services/schemas/shellSession'
+import { envStringToUndefined } from '@/services/schemas/runtimeEnv'
+import { type PromptConcept, PromptConceptSchema, ShellSessionSchema, WebPublicEnvSchema } from '@/services/schemas/shellSession'
 
 export const WebServerEnvSchema = WebPublicEnvSchema.extend({
+  DISPLAY_NAME: z.preprocess(envStringToUndefined, z.string().min(1).default('TaskHub')),
+  PROMPT_CONCEPT: z.preprocess(envStringToUndefined, PromptConceptSchema.default('side' satisfies PromptConcept)),
   AUTH_HEADER_NAME: z.string().optional(),
   // ... secrets
 })
@@ -228,7 +240,8 @@ export function getShellSession(): ShellSession {
       ENV: env.ENV,
       LOG_LEVEL: env.LOG_LEVEL,
       SENTRY_DSN: env.SENTRY_DSN,
-      app: { name: pkg.name, version: pkg.version },
+      app: { name: env.DISPLAY_NAME, version: pkg.version },
+      promptConcept: env.PROMPT_CONCEPT,
     })
   }
   return cachedShellSession

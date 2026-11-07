@@ -161,6 +161,16 @@ This template implements prompt-first when `PROMPT_CONCEPT=prompt-first` (see `s
 - `ChatThread` / `PromptThread`: full-height scrollable message thread with empty-state hero and suggestion chips.
 - One chat shell per app: no `Drawer` for chat in apps that commit to prompt-first. If a migration needs both temporarily, say so explicitly and remove the drawer before calling the migration done.
 
+### Switching & coexistence across `side` and `prompt-first`
+
+When a codebase supports both route-based concepts across deployments (via `shellSession.promptConcept`), share the chat primitives so neither concept duplicates plumbing:
+
+- **Shared chat context (`src/components/PromptChat/PromptChatContext.tsx`):** Both `side` and `prompt-first` mount `PromptChatProvider` once in `AppLayout` when `aiAvailable` is true. It owns `useChat`, `browserContext` capture, and the client `navigate` and `invalidateRouter` tools.
+- **Shared presentation (`src/components/PromptChat/`):** `ChatComposer`, `ChatThread`, `MessageBubble`, `MarkdownLink`, `toolLabels`, and `PromptChat.module.css` are reused unchanged by both shells.
+- **Concept-specific chrome only:**
+  - `side` mounts `ChatDrawer` (`ChatThread` + `ChatComposer` inside a right `Drawer`) and opens it from `Header`.
+  - `prompt-first` mounts `PromptBar` in `AppShell.Footer` (`ChatComposer` with `onAfterSubmit` navigating to `/` when on a drill-down route) and renders `PromptFirstLanding` (`PromptFirstHero` when `messages.length === 0`, `ChatThread` once the conversation starts) on `/`.
+
 ## UX checklist
 
 - Concept chosen with the developer. When it is not clear which user experience to implement, ask which of the three (side, prompt-first, or agentic) and wait. This repo's sites keep their declared `PROMPT_CONCEPT`.

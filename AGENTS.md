@@ -43,7 +43,7 @@ This template is the reference app for the skill. **Already landed on `main`:** 
 
 **Phase 5 checklist:** `pnpm format && pnpm lint && pnpm test && pnpm build` → merge → Netlify auto-deploy from `main` → smoke-test **all** demos. **Netlify env** (post-#6): `SENTRY_DSN`, `ENV`, `LOG_LEVEL`, `REPOSITORY_TYPE=seed`, `OPENAI_API_KEY` (or chosen provider) — not `VITE_SENTRY_DSN`. **Prompt demos:** default site uses `PROMPT_CONCEPT=side` (or unset); link a second Netlify site with `PROMPT_CONCEPT=prompt-first` and a third with `PROMPT_CONCEPT=agentic`, each with a distinct `DISPLAY_NAME` (see README).
 
-See the skill **Implementation Flow** for the per-entity file checklist when adding domain entities.
+See the skill **Implementation Flow** (and its **Per-entity 3-UX checklist** + **Tri-modal UX architecture**) for the per-entity file checklist when adding domain entities across `side`, `prompt-first`, and `agentic`.
 
 **Example-preview workflow (all prompt demos):** every change to the example app shell or a skill contract must load the matching skill(s) first, update `.agents/skills/*/SKILL.md` when the contract changes, and land via PR so **all** Netlify sites build deploy previews (side drawer + prompt-first + agentic). Smoke-test all preview URLs before merge — a UI change is not done when only one preview is checked.
 

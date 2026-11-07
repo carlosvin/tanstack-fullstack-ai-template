@@ -83,7 +83,7 @@ async function createMinimalWorkspace(overrides: Record<string, string> = {}) {
 		FIXTURE_SKILLS.map((skill) => {
 			const extra =
 				skill.id === 'tanstack-promptable-fullstack-app-template'
-					? '## Fixed vs swappable stack\n## URL-Recoverable State & Prop-Driven Components\nOverusing useState and useEffect is a code smell.\n'
+					? '## Fixed vs swappable stack\n## URL-Recoverable State & Prop-Driven Components\nOverusing useState and useEffect is a code smell.\n### Tri-modal UX architecture (4 seams, 1 shared core)\n### Per-entity 3-UX checklist\n'
 					: skill.id === 'reference-tech-stack'
 						? '## Stack map\n'
 						: ''
@@ -296,6 +296,29 @@ Do not pick one.
 		expect(result.pass).toBe(false)
 		if (!result.pass) {
 			expect(result.files).toContain('src/components/TasksPage/TasksPage.tsx')
+		}
+	})
+
+	it('fails when shellSession.ts omits one of the 3 UX prompt concepts', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'src/services/schemas/shellSession.ts':
+				"export const PromptConceptSchema = z.enum(['side', 'prompt-first'])\nexport const ShellSessionSchema = z.object({ promptConcept: PromptConceptSchema })\n",
+		})
+		const result = await runEval(rootDir, 'architecture-three-ux-seams')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(result.files).toContain('src/services/schemas/shellSession.ts')
+		}
+	})
+
+	it('fails when routes/index.tsx does not exhaustively map all 3 PromptConcept values', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'src/routes/index.tsx': 'const homeScreens = { side: SideHome }\n',
+		})
+		const result = await runEval(rootDir, 'architecture-three-ux-seams')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(result.files).toContain('src/routes/index.tsx')
 		}
 	})
 })
