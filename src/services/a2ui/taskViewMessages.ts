@@ -768,7 +768,12 @@ function assigneeRows(tasks: Task[]): Array<[string, number]> {
 		const name = task.assignee?.trim() || 'Unassigned'
 		counts.set(name, (counts.get(name) ?? 0) + 1)
 	}
-	return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 8)
+	const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+	const rows = sorted.slice(0, 8)
+	if (sorted.length > 8) {
+		rows.push(['Other', sorted.slice(8).reduce((total, [, count]) => total + count, 0)])
+	}
+	return rows
 }
 
 function dueMonthRows(tasks: Task[]): Array<[string, number]> {
@@ -923,7 +928,7 @@ export function buildTaskViewMessages(
 		if (presentation === 'table') return tableMessages(tasks, asOf, selectedIds)
 		if (presentation === 'kanban') return kanbanMessages(tasks, asOf, selectedIds)
 		if (presentation === 'timeline') return timelineMessages(tasks, asOf, selectedIds)
-		if (presentation === 'chart') return chartMessages(tasks, asOf)
+		if (presentation === 'chart') return chartMessages(tasks, asOf ?? fallbackAsOf)
 		return listMessages(tasks, asOf, selectedIds)
 	}
 	if ('task' in data) {

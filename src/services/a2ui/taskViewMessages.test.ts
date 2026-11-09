@@ -171,6 +171,45 @@ describe('buildTaskViewMessages', () => {
 		expect(flat).not.toContain('Showing 20 of 21')
 	})
 
+	it.each([1, 8, 9, 10])('preserves all task counts with %i assignees', (assignees) => {
+		const tasks = Array.from({ length: assignees * 2 }, (_, index) => ({
+			...task,
+			id: `task-${index}`,
+			assignee: `person-${Math.floor(index / 2)}@example.com`,
+		}))
+		const messages = buildTaskViewMessages({ tasks, presentation: 'chart' })
+		const components = messages.flatMap((message) => message.surfaceUpdate?.components ?? [])
+		const rows = Array.from({ length: Math.min(assignees, 8) }, (_, index) => ({
+			name: { literalString: `person-${index}@example.com` },
+			count: { literalNumber: 2 },
+		}))
+		if (assignees > 8) {
+			rows.push({ name: { literalString: 'Other' }, count: { literalNumber: (assignees - 8) * 2 } })
+		}
+		expect(components.map((instance) => instance.component)).toContainEqual({
+			BarChart: expect.objectContaining({ orientation: { literalString: 'vertical' }, data: rows }),
+		})
+	})
+
+	it.each([
+		{ asOf: undefined, fallbackAsOf: '2026-10-17', expected: '1' },
+		{ asOf: '2026-09-30', fallbackAsOf: '2026-10-17', expected: '0' },
+		{ asOf: undefined, fallbackAsOf: undefined, expected: '—' },
+	])('uses the chart date with $asOf and fallback $fallbackAsOf', ({ asOf, fallbackAsOf, expected }) => {
+		const messages = buildTaskViewMessages(
+			{ tasks: [{ ...task, dueDate: '2026-10-01' }], presentation: 'chart', asOf },
+			[],
+			fallbackAsOf,
+		)
+		const components = messages.flatMap((message) => message.surfaceUpdate?.components ?? [])
+		expect(components.map((instance) => instance.component)).toContainEqual({
+			StatCard: expect.objectContaining({
+				label: { literalString: 'Overdue' },
+				value: { literalString: expected },
+			}),
+		})
+	})
+
 	it('says when no rows match', () => {
 		expect(visibleText(buildTaskViewMessages({ tasks: [] })).join(' ')).toContain('No tasks match')
 	})
