@@ -5,7 +5,8 @@ tags: [ux, description]
 inputs:
   prompt: >-
     Fully agentic UX. A thin prompt shell renders Mantine views as declarative
-    A2UI surfaces from tool data.
+    A2UI surfaces from tool data. A varied catalog, including charts and custom
+    visuals, is what gives those views their range.
 expected:
   outcomes:
     - type: task_completed

@@ -208,9 +208,9 @@ export type TaskFilter = z.infer<typeof TaskFilterSchema>
 
 /** How showTasksView draws the list. Cards are the default. */
 export const TaskListPresentationSchema = z
-	.enum(['cards', 'table', 'kanban', 'timeline'])
+	.enum(['cards', 'table', 'kanban', 'timeline', 'chart'])
 	.describe(
-		'How to draw the list. "table" for a table. "kanban" for status lanes. "timeline" for due-date groups. "cards" or omit for the card grid.',
+		'How to draw the list. "table" for a table. "kanban" for status lanes. "timeline" for due-date groups. "chart" for totals, a status mix, and breakdown charts. "cards" or omit for the card grid.',
 	)
 
 export const ShowTasksViewInputSchema = TaskFilterSchema.extend({

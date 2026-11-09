@@ -8,6 +8,7 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: A2UI property bags are untyped protocol values
 
 import { createActionHandler, createAdapter, extractValue, mapVariant } from '@a2ui-bridge/react'
+import { AreaChart, BarChart, DonutChart, LineChart, PieChart, Sparkline } from '@mantine/charts'
 // Mantine Components
 import {
 	// Disclosure
@@ -159,10 +160,24 @@ export const FlexAdapter = createAdapter(asComponent(Flex), {
 	displayName: 'FlexAdapter',
 })
 
-/** Grid adapter - grid layout */
+function gridColumns(value: unknown): number | Record<string, number> {
+	const raw = unwrap(value)
+	if (typeof raw === 'number' && Number.isFinite(raw) && raw > 0) return raw
+	if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+		const cols: Record<string, number> = {}
+		for (const [key, entry] of Object.entries(raw)) {
+			const count = asNumber(entry, Number.NaN)
+			if (Number.isFinite(count) && count > 0) cols[key] = count
+		}
+		if (Object.keys(cols).length > 0) return cols
+	}
+	return 2
+}
+
+/** Grid adapter - grid layout. `columns` may be a count or a base/sm map. */
 export const GridAdapter = createAdapter(SimpleGrid, {
 	mapProps: (a2ui, ctx) => ({
-		cols: extractValue(a2ui.columns) ?? extractValue(a2ui.cols) ?? 2,
+		cols: gridColumns(a2ui.columns ?? a2ui.cols),
 		spacing: extractValue(a2ui.gap) ?? extractValue(a2ui.spacing) ?? 'md',
 		verticalSpacing: extractValue(a2ui.verticalSpacing),
 		children: ctx.children,
@@ -1269,21 +1284,107 @@ export const ProgressAdapter = createAdapter(Progress, {
 	displayName: 'ProgressAdapter',
 })
 
-/** RingProgress adapter - circular progress */
+function unwrap(value: unknown): unknown {
+	const extracted = extractValue(value)
+	if (Array.isArray(extracted)) return extracted.map((item) => unwrap(item))
+	if (typeof extracted === 'object' && extracted !== null) {
+		const next: Record<string, unknown> = {}
+		for (const [key, item] of Object.entries(extracted)) next[key] = unwrap(item)
+		return next
+	}
+	return extracted
+}
+
+function asString(value: unknown, fallback = ''): string {
+	const unwrapped = unwrap(value)
+	return typeof unwrapped === 'string' ? unwrapped : fallback
+}
+
+function asNumber(value: unknown, fallback: number): number {
+	const unwrapped = unwrap(value)
+	return typeof unwrapped === 'number' && Number.isFinite(unwrapped) ? unwrapped : fallback
+}
+
+function asBoolean(value: unknown, fallback: boolean): boolean {
+	const unwrapped = unwrap(value)
+	return typeof unwrapped === 'boolean' ? unwrapped : fallback
+}
+
+function chartRows(value: unknown): Array<Record<string, unknown>> {
+	const unwrapped = unwrap(value)
+	if (!Array.isArray(unwrapped)) return []
+	return unwrapped.filter(
+		(row): row is Record<string, unknown> => typeof row === 'object' && row !== null && !Array.isArray(row),
+	)
+}
+
+function numberList(value: unknown): number[] {
+	const unwrapped = unwrap(value)
+	if (!Array.isArray(unwrapped)) return []
+	return unwrapped.filter((item): item is number => typeof item === 'number' && Number.isFinite(item))
+}
+
+function chartSeries(value: unknown): Array<{ name: string; color: string; label?: string }> {
+	return chartRows(value).flatMap((row) => {
+		const name = asString(row.name)
+		if (!name) return []
+		const label = asString(row.label)
+		return [{ name, color: asString(row.color, 'teal'), ...(label ? { label } : {}) }]
+	})
+}
+
+function sliceData(value: unknown): Array<{ name: string; value: number; color: string }> {
+	return chartRows(value).flatMap((row) => {
+		const name = asString(row.name)
+		if (!name) return []
+		return [{ name, value: asNumber(row.value, 0), color: asString(row.color, 'blue') }]
+	})
+}
+
+function barRows(value: unknown): Array<Record<string, string | number>> {
+	return chartRows(value).flatMap((row) => {
+		const next: Record<string, string | number> = {}
+		for (const [key, item] of Object.entries(row)) {
+			if (typeof item === 'string' || (typeof item === 'number' && Number.isFinite(item))) next[key] = item
+		}
+		return Object.keys(next).length > 0 ? [next] : []
+	})
+}
+
+/** Shares of a whole. Counts that sum past 100 become percentages so the ring stays a full circle. */
+function ringSections(value: unknown): Array<{ value: number; color: string; tooltip?: string }> | null {
+	const parsed = chartRows(value).flatMap((row) => {
+		const amount = asNumber(row.value, 0)
+		if (amount <= 0) return []
+		const tooltip = asString(row.tooltip) || asString(row.label)
+		return [{ value: amount, color: asString(row.color, 'blue'), ...(tooltip ? { tooltip } : {}) }]
+	})
+	if (parsed.length === 0) return null
+	const sum = parsed.reduce((total, section) => total + section.value, 0)
+	const scale = sum > 100 ? 100 / sum : 1
+	return parsed.map((section) => ({
+		...section,
+		value: Math.round(section.value * scale * 10) / 10,
+	}))
+}
+
+/** RingProgress adapter - one value, or a multi-section distribution. */
 export const RingProgressAdapter = createAdapter(RingProgress, {
 	mapProps: (a2ui) => {
-		const value = extractValue(a2ui.value) ?? extractValue(a2ui.progress) ?? 0
-		const color = extractValue(a2ui.color) ?? 'blue'
+		const sections = ringSections(a2ui.sections)
+		const value = asNumber(a2ui.value ?? a2ui.progress, 0)
+		const color = asString(a2ui.color, 'blue')
+		const resolved = sections ?? [{ value, color }]
+		const labelValue = sections ? resolved.reduce((total, section) => total + section.value, 0) : value
 
 		return {
-			sections: [{ value, color }],
-			size: extractValue(a2ui.size) ?? 120,
-			thickness: extractValue(a2ui.thickness) ?? 12,
-			roundCaps: extractValue(a2ui.roundCaps) ?? true,
-			label:
-				extractValue(a2ui.showLabel) !== false
-					? React.createElement(asComponent(Text), { size: 'lg', ta: 'center', fw: 700 }, `${value}%`)
-					: undefined,
+			sections: resolved,
+			size: asNumber(a2ui.size, 120),
+			thickness: asNumber(a2ui.thickness, 12),
+			roundCaps: asBoolean(a2ui.roundCaps, true),
+			label: asBoolean(a2ui.showLabel, true)
+				? React.createElement(asComponent(Text), { size: 'lg', ta: 'center', fw: 700 }, `${Math.round(labelValue)}%`)
+				: undefined,
 		}
 	},
 	displayName: 'RingProgressAdapter',
@@ -1786,4 +1887,367 @@ export const AnchorAdapter = createAdapter(asComponent(Anchor), {
 		children: extractValue(a2ui.label) ?? extractValue(a2ui.text) ?? ctx.children,
 	}),
 	displayName: 'AnchorAdapter',
+})
+
+// ============================================================================
+// CHARTS AND CUSTOM VISUALS
+// ============================================================================
+
+const NO_CHART = 'No chart data'
+
+function chartHeight(value: unknown): number {
+	const height = asNumber(value, 220)
+	return height > 0 ? height : 220
+}
+
+function barChartType(value: unknown): 'default' | 'stacked' | 'percent' | 'waterfall' {
+	const type = asString(value, 'default')
+	if (type === 'stacked' || type === 'percent' || type === 'waterfall') return type
+	return 'default'
+}
+
+function areaChartType(value: unknown): 'default' | 'stacked' | 'percent' | 'split' | 'stream' {
+	const type = asString(value, 'default')
+	if (type === 'stacked' || type === 'percent' || type === 'split' || type === 'stream') return type
+	return 'default'
+}
+
+function chartOrientation(value: unknown): 'horizontal' | 'vertical' {
+	return asString(value) === 'vertical' ? 'vertical' : 'horizontal'
+}
+
+function BarChartView({
+	data,
+	dataKey,
+	series,
+	type,
+	orientation,
+	height,
+	withLegend,
+}: {
+	data: Array<Record<string, string | number>>
+	dataKey: string
+	series: Array<{ name: string; color: string; label?: string }>
+	type: 'default' | 'stacked' | 'percent' | 'waterfall'
+	orientation: 'horizontal' | 'vertical'
+	height: number
+	withLegend: boolean
+}) {
+	if (data.length === 0 || series.length === 0) {
+		return React.createElement(asComponent(Text), { size: 'sm', c: 'dimmed' }, NO_CHART)
+	}
+	return React.createElement(BarChart, {
+		data,
+		dataKey,
+		series,
+		type,
+		orientation,
+		h: height,
+		mih: height,
+		withLegend,
+		withTooltip: true,
+	})
+}
+
+/** Bar chart. `series.name` selects a numeric field on each `data` row. */
+export const BarChartAdapter = createAdapter(BarChartView, {
+	mapProps: (a2ui) => ({
+		data: barRows(a2ui.data),
+		dataKey: asString(a2ui.dataKey, 'name'),
+		series: chartSeries(a2ui.series),
+		type: barChartType(a2ui.type),
+		orientation: chartOrientation(a2ui.orientation),
+		height: chartHeight(a2ui.height),
+		withLegend: asBoolean(a2ui.withLegend, true),
+	}),
+	displayName: 'BarChartAdapter',
+})
+
+function DonutChartView({
+	data,
+	chartLabel,
+	withLabels,
+	withLegend,
+	thickness,
+	size,
+}: {
+	data: Array<{ name: string; value: number; color: string }>
+	chartLabel?: string
+	withLabels: boolean
+	withLegend: boolean
+	thickness: number
+	size: number
+}) {
+	const slices = data.filter((slice) => slice.value > 0)
+	if (slices.length === 0) return React.createElement(asComponent(Text), { size: 'sm', c: 'dimmed' }, NO_CHART)
+	return React.createElement(DonutChart, {
+		data: slices,
+		chartLabel,
+		withLabels,
+		withLegend,
+		withTooltip: true,
+		thickness,
+		size,
+	})
+}
+
+/** Donut chart. Each `data` item is a named slice with a value and a theme color. */
+export const DonutChartAdapter = createAdapter(DonutChartView, {
+	mapProps: (a2ui) => ({
+		data: sliceData(a2ui.data),
+		chartLabel: asString(a2ui.chartLabel) || undefined,
+		withLabels: asBoolean(a2ui.withLabels, false),
+		withLegend: asBoolean(a2ui.withLegend, true),
+		thickness: asNumber(a2ui.thickness, 20),
+		size: asNumber(a2ui.size, 160),
+	}),
+	displayName: 'DonutChartAdapter',
+})
+
+function PieChartView({
+	data,
+	withLabels,
+	withLegend,
+	size,
+}: {
+	data: Array<{ name: string; value: number; color: string }>
+	withLabels: boolean
+	withLegend: boolean
+	size: number
+}) {
+	const slices = data.filter((slice) => slice.value > 0)
+	if (slices.length === 0) return React.createElement(asComponent(Text), { size: 'sm', c: 'dimmed' }, NO_CHART)
+	return React.createElement(PieChart, { data: slices, withLabels, withLegend, withTooltip: true, size })
+}
+
+/** Pie chart. Same slice shape as the donut, drawn as a filled pie. */
+export const PieChartAdapter = createAdapter(PieChartView, {
+	mapProps: (a2ui) => ({
+		data: sliceData(a2ui.data),
+		withLabels: asBoolean(a2ui.withLabels, false),
+		withLegend: asBoolean(a2ui.withLegend, true),
+		size: asNumber(a2ui.size, 160),
+	}),
+	displayName: 'PieChartAdapter',
+})
+
+function LineChartView({
+	data,
+	dataKey,
+	series,
+	height,
+	withLegend,
+}: {
+	data: Array<Record<string, string | number>>
+	dataKey: string
+	series: Array<{ name: string; color: string; label?: string }>
+	height: number
+	withLegend: boolean
+}) {
+	if (data.length === 0 || series.length === 0) {
+		return React.createElement(asComponent(Text), { size: 'sm', c: 'dimmed' }, NO_CHART)
+	}
+	return React.createElement(LineChart, {
+		data,
+		dataKey,
+		series,
+		h: height,
+		mih: height,
+		withLegend,
+		withTooltip: true,
+		curveType: 'monotone',
+	})
+}
+
+/** Line chart for a numeric series across ordered rows. */
+export const LineChartAdapter = createAdapter(LineChartView, {
+	mapProps: (a2ui) => ({
+		data: barRows(a2ui.data),
+		dataKey: asString(a2ui.dataKey, 'name'),
+		series: chartSeries(a2ui.series),
+		height: chartHeight(a2ui.height),
+		withLegend: asBoolean(a2ui.withLegend, true),
+	}),
+	displayName: 'LineChartAdapter',
+})
+
+function AreaChartView({
+	data,
+	dataKey,
+	series,
+	type,
+	height,
+	withLegend,
+}: {
+	data: Array<Record<string, string | number>>
+	dataKey: string
+	series: Array<{ name: string; color: string; label?: string }>
+	type: 'default' | 'stacked' | 'percent' | 'split' | 'stream'
+	height: number
+	withLegend: boolean
+}) {
+	if (data.length === 0 || series.length === 0) {
+		return React.createElement(asComponent(Text), { size: 'sm', c: 'dimmed' }, NO_CHART)
+	}
+	return React.createElement(AreaChart, {
+		data,
+		dataKey,
+		series,
+		type,
+		h: height,
+		mih: height,
+		withLegend,
+		withTooltip: true,
+		curveType: 'monotone',
+	})
+}
+
+/** Area chart. `type` can stack series when more than one is named. */
+export const AreaChartAdapter = createAdapter(AreaChartView, {
+	mapProps: (a2ui) => ({
+		data: barRows(a2ui.data),
+		dataKey: asString(a2ui.dataKey, 'name'),
+		series: chartSeries(a2ui.series),
+		type: areaChartType(a2ui.type),
+		height: chartHeight(a2ui.height),
+		withLegend: asBoolean(a2ui.withLegend, true),
+	}),
+	displayName: 'AreaChartAdapter',
+})
+
+function SparklineView({ data, color, height }: { data: number[]; color: string; height: number }) {
+	if (data.length < 2) return React.createElement(asComponent(Text), { size: 'sm', c: 'dimmed' }, NO_CHART)
+	return React.createElement(Sparkline, { data, color, h: height, curveType: 'monotone' })
+}
+
+/** Compact trend line. `data` is a list of numbers. */
+export const SparklineAdapter = createAdapter(SparklineView, {
+	mapProps: (a2ui) => ({
+		data: numberList(a2ui.data),
+		color: asString(a2ui.color, 'teal'),
+		height: chartHeight(a2ui.height ?? 48),
+	}),
+	displayName: 'SparklineAdapter',
+})
+
+function StatCardView({
+	label,
+	value,
+	delta,
+	deltaColor,
+	icon,
+	color,
+	sparkline,
+	ring,
+}: {
+	label: string
+	value: string
+	delta?: string
+	deltaColor: string
+	icon?: string
+	color: string
+	sparkline: number[]
+	ring?: number
+}) {
+	const IconComponent = getIcon(icon)
+	const ringValue = typeof ring === 'number' ? Math.min(Math.max(ring, 0), 100) : undefined
+	return React.createElement(
+		asComponent(Card),
+		{ withBorder: true, padding: 'md', radius: 'md' },
+		React.createElement(
+			Group,
+			{ justify: 'space-between', align: 'flex-start', wrap: 'nowrap', gap: 'sm' },
+			React.createElement(
+				Stack,
+				{ gap: 4 },
+				React.createElement(asComponent(Text), { size: 'xs', c: 'dimmed', tt: 'uppercase', fw: 700 }, label),
+				React.createElement(Title, { order: 3 }, value),
+				delta
+					? React.createElement(asComponent(Badge), { variant: 'light', color: deltaColor, tt: 'none' }, delta)
+					: null,
+			),
+			IconComponent
+				? React.createElement(
+						ThemeIcon,
+						{ variant: 'light', color, size: 'lg', radius: 'md' },
+						React.createElement(IconComponent, { size: 20 }),
+					)
+				: ringValue !== undefined
+					? React.createElement(RingProgress, {
+							size: 64,
+							thickness: 6,
+							roundCaps: true,
+							sections: [{ value: ringValue, color }],
+						})
+					: null,
+		),
+		sparkline.length >= 2
+			? React.createElement(Sparkline, { data: sparkline, color, h: 40, mt: 'sm', curveType: 'monotone' })
+			: null,
+	)
+}
+
+/**
+ * Purpose-built metric card: a label, a prominent value, an optional delta,
+ * and either a theme icon, a ring, or a sparkline.
+ */
+export const StatCardAdapter = createAdapter(StatCardView, {
+	mapProps: (a2ui) => {
+		const ring = unwrap(a2ui.ring)
+		return {
+			label: asString(a2ui.label, 'Metric'),
+			value: asString(a2ui.value ?? a2ui.metric, '—'),
+			delta: asString(a2ui.delta) || undefined,
+			deltaColor: asString(a2ui.deltaColor, 'gray'),
+			icon: asString(a2ui.icon) || undefined,
+			color: asString(a2ui.color, 'teal'),
+			sparkline: numberList(a2ui.sparkline),
+			ring: typeof ring === 'number' && Number.isFinite(ring) ? ring : undefined,
+		}
+	},
+	displayName: 'StatCardAdapter',
+})
+
+function DistributionBarView({ segments }: { segments: Array<{ label: string; value: number; color: string }> }) {
+	const visible = segments.filter((segment) => segment.value > 0)
+	const total = visible.reduce((sum, segment) => sum + segment.value, 0)
+	if (total <= 0) return React.createElement(asComponent(Text), { size: 'sm', c: 'dimmed' }, NO_CHART)
+	return React.createElement(
+		Stack,
+		{ gap: 'xs' },
+		React.createElement(
+			Progress.Root,
+			{ size: 'lg', radius: 'xl' },
+			visible.map((segment) =>
+				React.createElement(Progress.Section, {
+					key: segment.label,
+					value: (segment.value / total) * 100,
+					color: segment.color,
+				}),
+			),
+		),
+		React.createElement(
+			Group,
+			{ gap: 'xs' },
+			visible.map((segment) =>
+				React.createElement(
+					asComponent(Badge),
+					{ key: segment.label, variant: 'light', color: segment.color, tt: 'none' },
+					`${segment.label} ${segment.value}`,
+				),
+			),
+		),
+	)
+}
+
+/** Segmented proportion bar. Each segment is a labeled count drawn as a share of the total. */
+export const DistributionBarAdapter = createAdapter(DistributionBarView, {
+	mapProps: (a2ui) => ({
+		segments: chartRows(a2ui.segments ?? a2ui.data).flatMap((row) => {
+			const label = asString(row.label) || asString(row.name)
+			if (!label) return []
+			return [{ label, value: asNumber(row.value, 0), color: asString(row.color, 'blue') }]
+		}),
+	}),
+	displayName: 'DistributionBarAdapter',
 })

@@ -22,5 +22,9 @@ describe('task view tools', () => {
 			filter: { due: 'scheduled' },
 			presentation: 'timeline',
 		})
+		expect(taskListRequest({ presentation: 'chart', priority: 'high' })).toEqual({
+			filter: { priority: 'high' },
+			presentation: 'chart',
+		})
 	})
 })

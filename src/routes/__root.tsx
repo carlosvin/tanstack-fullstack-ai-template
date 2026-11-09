@@ -1,4 +1,5 @@
 import '@mantine/core/styles.css'
+import '@mantine/charts/styles.css'
 import '@mantine/notifications/styles.css'
 import '@/styles.css'
 import { ColorSchemeScript, createTheme, MantineProvider } from '@mantine/core'

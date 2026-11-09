@@ -20,7 +20,7 @@ import { getTask } from '@/services/api/serverFns'
 import { findRememberedTask } from '@/services/repository/conversationTasks'
 import { useCalendarToday } from '@/utils/useCalendarToday'
 
-const AGENTIC_STARTERS = ['Show my tasks', 'Show pending tasks', 'Show overdue tasks']
+const AGENTIC_STARTERS = ['Show my tasks', 'Show pending tasks', 'Show overdue tasks', 'Chart my tasks']
 
 const DETAIL_PROMPT = /^Open the detail view for (.+)\. The task id is ([^\s.]+)\.$/
 

@@ -92,7 +92,7 @@ Page components receive loader data as props and render in Vitest with `renderWi
 
 This project uses [Mantine](https://mantine.dev/) as the primary UI framework.
 
-- **Use Mantine components first**: Before creating custom components, check if Mantine provides one.
+- **Use Mantine components first**: Before creating custom components, check if Mantine provides one. Agentic views go further: the A2UI catalog stays varied on purpose, covering the kit plus `@mantine/charts` (`BarChart`, `DonutChart`, `PieChart`, `LineChart`, `AreaChart`, `Sparkline`) and custom `StatCard` / `DistributionBar` visuals so a generated view can explain numbers, not only list rows. See the [agentic-ux skill](.agents/skills/agentic-ux/SKILL.md).
 - **Styling props**: Use Mantine's built-in props (`c`, `fw`, `size`, `variant`, etc.) instead of CSS.
 - **CSS Modules**: When custom CSS beyond Mantine is needed, use CSS Modules (`Component.module.css`).
 - **Responsive props**: Use Mantine's object syntax for mobile-first values: `<SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>` (`base` is the narrow viewport; larger keys enhance).
@@ -250,7 +250,7 @@ This reference app’s `adapter.ts` selects the first configured provider: **Gem
 
 ### Server Tools
 
-Definitions in `src/services/ai/tools.ts` — each calls the same `serverFns.ts` exports as routes. When adding repository methods, add matching `toolDefinition` + `createSafeServerTool` entries (skill **Core Contract** #11).
+Definitions in `src/services/ai/tools.ts` — each calls the same `serverFns.ts` exports as routes. When adding repository methods, add matching `toolDefinition` + `createSafeServerTool` entries (skill **Core Contract** #11). Task list views (`showTasksView`) take a `presentation` of `cards`, `table`, `kanban`, `timeline`, or `chart`. `chart` draws totals and breakdown charts from the same task payload.
 
 ### Client Tools
 

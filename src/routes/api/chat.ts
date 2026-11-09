@@ -78,6 +78,7 @@ Each task has:
 - Use getAssigneeOptions for labeled assignee filters, or getDistinctValues plus getUserProfile when you need roles or a single profile.
 - Format responses clearly using markdown.
 - When listing tasks, include their status and priority.
+- When the user asks for numbers, counts, a breakdown, a chart, or a visual summary, call **showTasksView** with presentation "chart".
 - Be concise but thorough.`
 
 const PROMPT_FIRST_LAYOUT = `## Prompt-first layout
@@ -118,7 +119,7 @@ Each task has:
 
 ## Views and follow-ups
 - Prefer **showTasksView** and **showTaskView** when the user should see a list or detail. Do not describe pages or routes — views appear inline in the thread.
-- When the user asks for a table, call **showTasksView** with presentation "table". Cards or a grid use "cards". A kanban or status board uses "kanban". A timeline or schedule by due date uses "timeline". Otherwise omit presentation so the view uses cards.
+- When the user asks for a table, call **showTasksView** with presentation "table". Cards or a grid use "cards". A kanban or status board uses "kanban". A timeline or schedule by due date uses "timeline". Numbers, counts, a breakdown, or a chart use "chart". Otherwise omit presentation so the view uses cards.
 - After **createTask**, **updateTask**, **updateTasksStatus**, or **deleteTask**, call **showTasksView** or **showTaskView** again so the user sees fresh data. There is no page refresh tool.
 - A request to change several tasks uses **updateTasksStatus** once. Pass asOf from Browser Context when showing overdue tasks.
 

@@ -137,6 +137,40 @@ describe('buildTaskViewMessages', () => {
 		).not.toThrow()
 	})
 
+	it('draws totals and breakdown charts from the task counts', () => {
+		const later = { ...task, id: 'task-2', title: 'File the notes', dueDate: '2026-11-15', status: 'done' as const }
+		const messages = buildTaskViewMessages({
+			tasks: [task, later],
+			presentation: 'chart',
+			asOf: '2026-10-17',
+		})
+		const text = visibleText(messages).join(' ')
+		expect(text).toContain('2 tasks')
+		expect(text).toContain('Status mix')
+		expect(text).toContain('Priority')
+		expect(text).toContain('Assignees')
+		expect(text).toContain('Due dates')
+		const flat = JSON.stringify(messages)
+		expect(flat).toContain('StatCard')
+		expect(flat).toContain('DistributionBar')
+		expect(flat).toContain('DonutChart')
+		expect(flat).toContain('BarChart')
+		expect(flat).toContain('"base":{"literalNumber":1}')
+		expect(flat).toContain('"sm":{"literalNumber":2}')
+		expect(flat).toContain('ada@example.com')
+		expect(flat).toContain('2026-11')
+		expect(flat).not.toContain('Showing 20 of')
+		const processor = new A2uiMessageProcessor()
+		expect(() => processor.processMessages(messages)).not.toThrow()
+	})
+
+	it('charts every returned task instead of the 20-row page', () => {
+		const tasks = Array.from({ length: 21 }, (_, index) => ({ ...task, id: `task-${index}`, title: `Task ${index}` }))
+		const flat = JSON.stringify(buildTaskViewMessages({ tasks, presentation: 'chart' }))
+		expect(flat).toContain('21 tasks')
+		expect(flat).not.toContain('Showing 20 of 21')
+	})
+
 	it('says when no rows match', () => {
 		expect(visibleText(buildTaskViewMessages({ tasks: [] })).join(' ')).toContain('No tasks match')
 	})
