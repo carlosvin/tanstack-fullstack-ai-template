@@ -1116,11 +1116,11 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 					missing.push('Mantine A2UI catalog recipe')
 				}
 				if (!/Unknown component types render nothing/.test(skillMd)) missing.push('unknown component rule')
-				if (!/varied catalog/i.test(skillMd) || !/StatCard/.test(skillMd) || !/DistributionBar/.test(skillMd)) {
-					missing.push('varied catalog rule')
+				if (!/varied catalog/i.test(skillMd) || !/chosen UI kit already provides/.test(skillMd)) {
+					missing.push('components-first catalog rule')
 				}
-				if (!/@mantine\/charts/.test(skillMd) || !/BarChart/.test(skillMd) || !/DonutChart/.test(skillMd)) {
-					missing.push('chart catalog rule')
+				if (!/"chart"/.test(skillMd) || !/kit chart widgets/.test(skillMd)) {
+					missing.push('chart presentation rule')
 				}
 				if (!/## Security/.test(skillMd)) missing.push('Security section')
 				if (!/No `ChatDrawer`, `PromptBar`, `AppNavbar`/.test(skillMd)) missing.push('no route-component reuse rule')

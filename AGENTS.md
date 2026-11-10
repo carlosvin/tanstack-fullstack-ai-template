@@ -92,7 +92,7 @@ Page components receive loader data as props and render in Vitest with `renderWi
 
 This project uses [Mantine](https://mantine.dev/) as the primary UI framework.
 
-- **Use Mantine components first**: Before creating custom components, check if Mantine provides one. Agentic views go further: the A2UI catalog stays varied on purpose, covering the kit plus `@mantine/charts` (`BarChart`, `DonutChart`, `PieChart`, `LineChart`, `AreaChart`, `Sparkline`) and custom `StatCard` / `DistributionBar` visuals so a generated view can explain numbers, not only list rows. See the [agentic-ux skill](.agents/skills/agentic-ux/SKILL.md).
+- **Use Mantine components first**: Before creating custom components, check if Mantine provides one. Agentic views follow the same order in the [agentic-ux skill](.agents/skills/agentic-ux/SKILL.md): a kit component before a custom composite, and a chart when the view needs to explain numbers.
 - **Styling props**: Use Mantine's built-in props (`c`, `fw`, `size`, `variant`, etc.) instead of CSS.
 - **CSS Modules**: When custom CSS beyond Mantine is needed, use CSS Modules (`Component.module.css`).
 - **Responsive props**: Use Mantine's object syntax for mobile-first values: `<SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>` (`base` is the narrow viewport; larger keys enhance).
