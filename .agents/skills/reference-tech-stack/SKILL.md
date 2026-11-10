@@ -19,7 +19,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.5.1"
+  version: "1.6.0"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -85,7 +85,7 @@ coupling into the architecture skill.
 | Concern | Choice | Primary packages / notes | Handbook |
 |---------|--------|--------------------------|----------|
 | Runtime validation | **Zod** | `zod` — tools, repo, router search, env | Architecture skill samples; `src/services/schemas/`, `src/env/` |
-| UI kit | **Mantine** | `@mantine/core`, `@mantine/hooks`, `@mantine/notifications` | AGENTS.md §3 |
+| UI kit | **Mantine** | `@mantine/core`, `@mantine/hooks`, `@mantine/notifications`, `@mantine/charts` | AGENTS.md §3 |
 | Icons | **lucide-react** | One icon library; do not mix Tabler | AGENTS.md §3 |
 | Database | **MongoDB + seed** | `mongodb`; in-memory seed when unset | AGENTS.md §6; `src/services/repository/` |
 | Auth | **JWT header** | `jose` (unsigned/`alg:none` accepted in template); `Authorization` header | AGENTS.md §5 |
@@ -97,7 +97,7 @@ coupling into the architecture skill.
 | Unit tests | **Vitest** + Testing Library | jsdom; `renderWithProviders` | AGENTS.md §10 |
 | E2E | **Playwright** | Chromium; seed repo; auth via JWT headers | AGENTS.md §10 |
 | Deploy | **Netlify** | `@netlify/vite-plugin-tanstack-start`; Git deploy previews | AGENTS.md CI/CD; `netlify.toml` |
-| Agentic UI | **A2UI** | Mantine task views: `@a2ui-bridge/core` and `@a2ui-bridge/react` `Surface` with a local Mantine 9 catalog (`Column`, `Row`, `Card`, `Text`, `Title`, `Badge`, `Button`, `Table`, `Timeline`). Do not add `@a2ui-bridge/react-mantine` (Mantine 8 and Tabler). | **`agentic-ux`** |
+| Agentic UI | **A2UI** | Mantine task views: `@a2ui-bridge/core` and `@a2ui-bridge/react` `Surface` with a varied local Mantine 9 catalog (`Column`, `Row`, `Card`, `Text`, `Title`, `Badge`, `Button`, `Table`, `Timeline`), `@mantine/charts` primitives (`BarChart`, `DonutChart`, `PieChart`, `LineChart`, `AreaChart`, `Sparkline`), and custom visuals (`StatCard`, `DistributionBar`). Do not add `@a2ui-bridge/react-mantine` (Mantine 8 and Tabler). | **`agentic-ux`** |
 | Package manager | **pnpm** | Lockfile committed | AGENTS.md §12 / §15 |
 
 **Fixed (not listed as choices):** TanStack **Start**, **Router**, **AI**, and CLI — owned by the architecture skill.

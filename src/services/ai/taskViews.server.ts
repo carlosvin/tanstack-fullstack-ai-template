@@ -24,14 +24,16 @@ export function withoutDemoAssignee(filter: TaskFilter): TaskFilter {
 	return rest
 }
 
-/** Split the view choice from the repository filter. A table is opt-in. */
+/** Split the view choice from the repository filter. Cards are the default. */
 export function taskListRequest(args: ShowTasksViewInput): {
 	filter: TaskFilter
-	presentation: 'cards' | 'table' | 'kanban' | 'timeline'
+	presentation: 'cards' | 'table' | 'kanban' | 'timeline' | 'chart'
 } {
 	const { presentation, ...filter } = args
 	const view =
-		presentation === 'table' || presentation === 'kanban' || presentation === 'timeline' ? presentation : 'cards'
+		presentation === 'table' || presentation === 'kanban' || presentation === 'timeline' || presentation === 'chart'
+			? presentation
+			: 'cards'
 	return {
 		filter: withoutDemoAssignee(filter),
 		presentation: view,
@@ -42,7 +44,7 @@ export const showTasksViewTool = createSafeServerTool(
 	toolDefinition({
 		name: 'showTasksView',
 		description:
-			'Show the task list inline. Set presentation to "table" for a table, "kanban" for a status board, "timeline" for due dates, or "cards" for a card grid. Omit presentation for the card grid. Prefer this over getTasks when the user needs to see tasks. Returns the tasks and the presentation.',
+			'Show the task list inline. Set presentation to "table" for a table, "kanban" for a status board, "timeline" for due dates, "chart" when the user wants numbers, counts, a breakdown, or a chart, or "cards" for a card grid. Omit presentation for the card grid. Prefer this over getTasks when the user needs to see tasks. Returns the tasks and the presentation.',
 		inputSchema: ShowTasksViewInputSchema,
 	}),
 	async (args) => {

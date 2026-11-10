@@ -2,10 +2,11 @@
 name: agentic-ux
 description: >-
   **WORKFLOW SKILL** - Fully agentic UX. A thin prompt shell renders Mantine
-  views as declarative A2UI surfaces from tool data.
+  views as declarative A2UI surfaces from tool data. A varied catalog, including
+  charts and custom visuals, is what gives those views their range.
 
   USE FOR: fully agentic mode, A2UI surface, Mantine catalog, dynamic tool UI,
-  agent shell.
+  agent shell, charts.
 
   DO NOT USE FOR: side panel chat (use promptable-ux), prompt-first layout
   (use promptable-ux), schema layers or server boundaries (use
@@ -19,7 +20,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "0.5.0"
+  version: "0.6.0"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -106,6 +107,8 @@ The system prompt for this shell must say these rules. The view tool enforces th
 
 The declared UI kit chooses how a tool result becomes a declarative A2UI view. Read the kit from **`reference-tech-stack`**. Ask once when a new app has no kit, then wait. Strategy is deployment configuration. The model returns data. It does not emit markup, JSON blueprints, or renderer instructions.
 
+**Components first.** Before adding a custom composite to the catalog, use a component the chosen UI kit already provides. A varied catalog is the visual range of every generated view: the kit's layout, typography, inputs, feedback, overlays, navigation, data display, and disclosure, plus chart widgets when the kit can draw numbers, and a custom composite only for a visual no kit widget covers — a metric with a delta, or a share of a total. A narrow catalog forces every answer into the same cards. When the user asks what the numbers mean, draw the split. Keep the catalog allowlisted. Unknown component types still render nothing.
+
 | Composition | Examples | Renderer |
 |-------------|---------|----------|
 | Closed catalog | Mantine (this template), MUI, Ant Design, Chakra, PrimeReact | Host `Surface` from `@a2ui-bridge/react` plus that kit's allowlisted adapters |
@@ -113,11 +116,11 @@ The declared UI kit chooses how a tool result becomes a declarative A2UI view. R
 
 ### Mantine catalog
 
-This template's kit is Mantine 9 and `lucide-react`. Render task views with `useA2uiProcessor` and `Surface`. `createComponentMapping` registers every A2UI component type that has a Mantine adapter: layout, typography, inputs, feedback, overlays, navigation, data display, and disclosure, plus the aliases in that map (`Column`, `Row`, `Card`, `Text`, `Title`, `Badge`, `Button`, `Timeline`, `TimelineItem`, `Table`, `TableHead`, `TableBody`, `TableRow`, `TableHeaderCell`, `TableCell`, and the rest of the catalog). Unknown component types render nothing. Each type is one A2UI node the host maps onto one component. The model returns task data and does not pick components.
+This template's kit is Mantine 9 and `lucide-react`. Package names for charts and custom visuals live in **`reference-tech-stack`**. Render task views with `useA2uiProcessor` and `Surface`. `createComponentMapping` registers every A2UI component type that has an adapter: layout, typography, inputs, feedback, overlays, navigation, data display, and disclosure, plus the aliases in that map (`Column`, `Row`, `Card`, `Text`, `Title`, `Badge`, `Button`, `Timeline`, `TimelineItem`, `Table`, `TableHead`, `TableBody`, `TableRow`, `TableHeaderCell`, `TableCell`, and the rest of the catalog). Unknown component types render nothing. Each type is one A2UI node the host maps onto one component. The model returns task data and a presentation. It does not pick components or emit markup.
 
 `@a2ui-bridge/react-mantine@0.1.0` peers `@mantine/core` `^8` and `@tabler/icons-react`. Do not add that package, and do not add a second icon library. Keep `@a2ui-bridge/core` and `@a2ui-bridge/react`. The host ports that catalog onto Mantine 9 and `lucide-react` so the existing `MantineProvider` supplies theme and color scheme.
 
-`showTasksView` and `showTaskView` return task data only. `showTasksView` also returns `presentation`. `"table"` draws one row per task. `"cards"` or omitting it draws the card list. `"kanban"` draws one lane per status. `"timeline"` draws one item per due date, with tasks that have no date last. That choice is not part of the repository filter. `buildTaskViewMessages` turns the payload into A2UI messages. `acceptA2uiMessages` drops any component type outside the catalog before `processMessages`. People-facing text uses `literalString`. No raw ids. A list row is one control for the whole card, not a separate "Open" button. A table uses those table nodes. The title cell is the open button. Header cells name the columns. When more than 20 tasks match, the heading keeps the full count and a note says how many rows are shown. An empty result says no rows match and suggests dropping the filter.
+`showTasksView` and `showTaskView` return task data only. `showTasksView` also returns `presentation`. `"table"` draws one row per task. `"cards"` or omitting it draws the card list. `"kanban"` draws one lane per status. `"timeline"` draws one item per due date, with tasks that have no date last. `"chart"` draws totals, a status mix, and breakdowns from those same tasks, using kit chart widgets and a custom composite only where the kit has none. That choice is not part of the repository filter. `buildTaskViewMessages` turns the payload into A2UI messages. `acceptA2uiMessages` drops any component type outside the catalog before `processMessages`. People-facing text uses `literalString`. No raw ids. A list row is one control for the whole card, not a separate "Open" button. A table uses those table nodes. The title cell is the open button. Header cells name the columns. The host computes the counts. When more than 20 tasks match, list presentations keep the full count in the heading and a note says how many rows are shown. An empty result says no rows match and suggests dropping the filter. Chart totals use every returned task.
 
 `onAction` follows **UI actions**. `open-task` with one id opens that detail view without another model turn. When the thread already returned that task, the detail is that task. A missing id is loaded from the repository. The seed repository replays tasks from earlier tool results at the start of the next chat turn, because a new serverless instance does not keep the in-memory write. `back-to-list` is an ordinary prompt. Any other action name is ignored.
 
@@ -128,7 +131,7 @@ The three UX patterns form a layered hierarchy where **fully agentic** defines t
 - **Isolated at runtime in `agentic`:** `AppLayout` returns `AgenticChatProvider` + `AgenticShell` before building route chrome, so `ChatDrawer`, `PromptBar`, `Header`, and `AppNavbar` never mount. In `src/routes/index.tsx`, `loadHomeTasks.agentic` returns `[]` without querying and `AgenticHome` returns `null`.
 - **Reused across all 3 chat panels (`agentic`, `prompt-first`, and `side`):** `ChatThread` reuses `AgenticMessageItems` from `AgenticThread.tsx`; `PromptChatProvider` owns `useInlineDetailViews` so opened details survive route remounts. In `src/routes/api/chat.ts`, `dataTools` includes `showTasksViewTool` and `showTaskViewTool` for all three modes, while `side` and `prompt-first` add `navigateToolDef`, `invalidateRouterToolDef`, and route `MarkdownLink` navigation on top.
 - **Repeatable 3-step recipe for adding a new domain entity's dynamic UI across all 3 chat panels:**
-  1. **View tools (`src/services/ai/<entity>Views.server.ts`):** Add data-only `show<Entities>ViewTool` and `show<Entity>ViewTool` calling the shared `serverFns.ts` queries, stripping demo visitor emails on list filters, and separating `presentation` (`cards | table | kanban | timeline`) from the repository filter. Register both tools in `dataTools` in `src/routes/api/chat.ts` so every UX mode receives them.
+  1. **View tools (`src/services/ai/<entity>Views.server.ts`):** Add data-only `show<Entities>ViewTool` and `show<Entity>ViewTool` calling the shared `serverFns.ts` queries, stripping demo visitor emails on list filters, and separating `presentation` (`cards | table | kanban | timeline | chart`) from the repository filter. Register both tools in `dataTools` in `src/routes/api/chat.ts` so every UX mode receives them. Use `chart` when the user wants the numbers explained visually.
   2. **A2UI message builder (`src/services/a2ui/<entity>ViewMessages.ts`):** Turn the tool payload into allowlisted A2UI messages validated with `acceptA2uiMessages` and sealed component ids, emitting `open-<entity>`, `back-to-list`, `toggle-select`, and `mark-selected` actions.
   3. **Shared thread surface (`src/components/AgenticShell/AgenticThread.tsx`):** Match the new view tools in `AgenticMessageItems` (which automatically powers `AgenticThread`, `PromptFirstLanding`, and `ChatDrawer`), add sentence-case status labels in `toolLabels.ts`, and resolve single-id `open-<entity>` actions from remembered thread payloads (or `get<Entity>`) without sending another model turn.
 
@@ -152,7 +155,7 @@ Catalog actions map to host state or a follow-up prompt. Never to an in-app rout
 - No reused route-based components in `AgenticShell`. Mantine task views are A2UI surfaces built from tool data.
 - `getAIAvailability()` gates the prompt. Unconfigured AI shows the empty configuration state.
 - Chat state lives on the layout and survives scrolling. Prompt stays pinned on narrow viewports.
-- Surfaces render through the allowlisted Mantine catalog with error and retry states.
+- Surfaces render through the allowlisted catalog with error and retry states. A kit component comes before a custom composite. A request for numbers uses the chart presentation.
 - Empty hero uses view starters, not route help bullets. Tool status is sentence case. Errors are short alerts, never a provider payload.
 - A list answer is one sentence plus the view. A demo visitor email is not an assignee filter. A card that names one id opens that detail view without another model turn.
 - UI actions map to host selection or prompts only. No in-app navigation in `agentic` mode. Route links in markdown become prompts, and an empty link label uses that prompt text.

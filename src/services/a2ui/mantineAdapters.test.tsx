@@ -2,10 +2,14 @@ import { MantineProvider } from '@mantine/core'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import {
+	BarChartAdapter,
 	DateTimeInputAdapter,
+	DistributionBarAdapter,
+	DonutChartAdapter,
 	PasswordInputAdapter,
 	PinInputAdapter,
 	PopoverAdapter,
+	StatCardAdapter,
 	TabsAdapter,
 } from '@/services/a2ui/mantineAdapters'
 
@@ -117,5 +121,81 @@ describe('secret field adapters', () => {
 		expect(screen.getByText('Panel copy')).toBeTruthy()
 		fireEvent.click(screen.getByRole('button', { name: 'Open menu' }))
 		expect(await screen.findByText('Hidden note')).toBeTruthy()
+	})
+})
+
+describe('chart and custom visual adapters', () => {
+	it('renders a stat card with its metric and delta', () => {
+		render(
+			<MantineProvider>
+				<StatCardAdapter
+					node={{
+						id: 'total',
+						type: 'StatCard',
+						properties: {
+							label: { literalString: 'Total' },
+							value: { literalString: '12' },
+							delta: { literalString: '4 done' },
+							icon: { literalString: 'layers' },
+							color: { literalString: 'teal' },
+						},
+					}}
+					onAction={vi.fn()}
+					surfaceId="@default"
+					components={{}}
+				/>
+			</MantineProvider>,
+		)
+		expect(screen.getByText('Total')).toBeTruthy()
+		expect(screen.getByText('12')).toBeTruthy()
+		expect(screen.getByText('4 done')).toBeTruthy()
+	})
+
+	it('draws a distribution bar from labeled counts', () => {
+		render(
+			<MantineProvider>
+				<DistributionBarAdapter
+					node={{
+						id: 'mix',
+						type: 'DistributionBar',
+						properties: {
+							segments: [
+								{
+									label: { literalString: 'Pending' },
+									value: { literalNumber: 3 },
+									color: { literalString: 'yellow' },
+								},
+								{ label: { literalString: 'Done' }, value: { literalNumber: 1 }, color: { literalString: 'green' } },
+							],
+						},
+					}}
+					onAction={vi.fn()}
+					surfaceId="@default"
+					components={{}}
+				/>
+			</MantineProvider>,
+		)
+		expect(screen.getByText('Pending 3')).toBeTruthy()
+		expect(screen.getByText('Done 1')).toBeTruthy()
+	})
+
+	it('says when a chart has no slices or rows', () => {
+		render(
+			<MantineProvider>
+				<DonutChartAdapter
+					node={{ id: 'empty-donut', type: 'DonutChart', properties: { data: [] } }}
+					onAction={vi.fn()}
+					surfaceId="@default"
+					components={{}}
+				/>
+				<BarChartAdapter
+					node={{ id: 'empty-bar', type: 'BarChart', properties: { data: [], series: [] } }}
+					onAction={vi.fn()}
+					surfaceId="@default"
+					components={{}}
+				/>
+			</MantineProvider>,
+		)
+		expect(screen.getAllByText('No chart data')).toHaveLength(2)
 	})
 })

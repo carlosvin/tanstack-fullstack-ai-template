@@ -2,8 +2,8 @@
  * Mantine 9 catalog for agentic A2UI surfaces.
  *
  * Every A2UI component type that has a Mantine adapter is registered here,
- * including the aliases from the bridge catalog. A type that is not in this
- * map renders nothing.
+ * including chart primitives, custom visual components, and the aliases from
+ * the bridge catalog. A type that is not in this map renders nothing.
  */
 
 import { createComponentMapping } from '@a2ui-bridge/react'
@@ -17,11 +17,13 @@ import {
 	AlertAdapter,
 	// Links
 	AnchorAdapter,
+	AreaChartAdapter,
 	AspectRatioAdapter,
 	// Images
 	AvatarAdapter,
 	// Badges
 	BadgeAdapter,
+	BarChartAdapter,
 	BlockquoteAdapter,
 	BoxAdapter,
 	BreadcrumbAdapter,
@@ -38,7 +40,9 @@ import {
 	ColumnAdapter,
 	ContainerAdapter,
 	DateTimeInputAdapter,
+	DistributionBarAdapter,
 	DividerAdapter,
+	DonutChartAdapter,
 	DrawerAdapter,
 	FieldsetAdapter,
 	FileInputAdapter,
@@ -49,6 +53,7 @@ import {
 	IndicatorAdapter,
 	// Text Inputs
 	InputAdapter,
+	LineChartAdapter,
 	// Data Display
 	ListAdapter,
 	MantineListAdapter,
@@ -65,6 +70,7 @@ import {
 	PaginationAdapter,
 	PaperAdapter,
 	PasswordInputAdapter,
+	PieChartAdapter,
 	PinInputAdapter,
 	PopoverAdapter,
 	PopoverDropdownAdapter,
@@ -83,8 +89,10 @@ import {
 	// Sliders
 	SliderAdapter,
 	SpaceAdapter,
+	SparklineAdapter,
 	SpinnerAdapter,
 	SpoilerAdapter,
+	StatCardAdapter,
 	StepperAdapter,
 	SwitchAdapter,
 	TabAdapter,
@@ -469,6 +477,49 @@ export const mantineTaskCatalog = createComponentMapping(
 		collapsible: AccordionAdapter,
 		Expandable: AccordionAdapter,
 		expandable: AccordionAdapter,
+
+		// Charts - Primary
+		BarChart: BarChartAdapter,
+		DonutChart: DonutChartAdapter,
+		PieChart: PieChartAdapter,
+		LineChart: LineChartAdapter,
+		AreaChart: AreaChartAdapter,
+		Sparkline: SparklineAdapter,
+
+		// Charts - Case variants & Aliases
+		barChart: BarChartAdapter,
+		barchart: BarChartAdapter,
+		donutChart: DonutChartAdapter,
+		donutchart: DonutChartAdapter,
+		pieChart: PieChartAdapter,
+		piechart: PieChartAdapter,
+		lineChart: LineChartAdapter,
+		linechart: LineChartAdapter,
+		areaChart: AreaChartAdapter,
+		areachart: AreaChartAdapter,
+		sparkline: SparklineAdapter,
+
+		// Custom visuals - Primary
+		StatCard: StatCardAdapter,
+		DistributionBar: DistributionBarAdapter,
+
+		// Custom visuals - Case variants & Aliases
+		statCard: StatCardAdapter,
+		statcard: StatCardAdapter,
+		KpiCard: StatCardAdapter,
+		kpiCard: StatCardAdapter,
+		kpicard: StatCardAdapter,
+		MetricCard: StatCardAdapter,
+		metricCard: StatCardAdapter,
+		metriccard: StatCardAdapter,
+		distributionBar: DistributionBarAdapter,
+		distributionbar: DistributionBarAdapter,
+		StackedBar: DistributionBarAdapter,
+		stackedBar: DistributionBarAdapter,
+		stackedbar: DistributionBarAdapter,
+		MeterGroup: DistributionBarAdapter,
+		meterGroup: DistributionBarAdapter,
+		metergroup: DistributionBarAdapter,
 
 		// Links - Primary
 		Anchor: AnchorAdapter,

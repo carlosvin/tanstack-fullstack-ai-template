@@ -66,6 +66,27 @@ describe('AgenticA2uiSurface', () => {
 		expect(screen.queryByText('task-1')).toBeNull()
 	})
 
+	it('renders chart totals and the status mix', async () => {
+		render(
+			<MantineProvider>
+				<AgenticA2uiSurface
+					messages={buildTaskViewMessages({
+						tasks: [task, { ...task, id: 'task-2', title: 'File the notes', status: 'done' }],
+						presentation: 'chart',
+						asOf: '2026-10-17',
+					})}
+					onAction={vi.fn()}
+				/>
+			</MantineProvider>,
+		)
+		expect(await screen.findByText('Status mix')).toBeTruthy()
+		expect(screen.getByText('Total')).toBeTruthy()
+		expect(screen.getAllByText('2').length).toBeGreaterThan(0)
+		expect(screen.getByText('Pending 1')).toBeTruthy()
+		expect(screen.getByText('Done 1')).toBeTruthy()
+		expect(screen.getByText('Priority')).toBeTruthy()
+	})
+
 	it('renders kanban lanes and a timeline item', async () => {
 		const { unmount } = render(
 			<MantineProvider>

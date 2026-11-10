@@ -1116,6 +1116,12 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 					missing.push('Mantine A2UI catalog recipe')
 				}
 				if (!/Unknown component types render nothing/.test(skillMd)) missing.push('unknown component rule')
+				if (!/varied catalog/i.test(skillMd) || !/chosen UI kit already provides/.test(skillMd)) {
+					missing.push('components-first catalog rule')
+				}
+				if (!/"chart"/.test(skillMd) || !/kit chart widgets/.test(skillMd)) {
+					missing.push('chart presentation rule')
+				}
 				if (!/## Security/.test(skillMd)) missing.push('Security section')
 				if (!/No `ChatDrawer`, `PromptBar`, `AppNavbar`/.test(skillMd)) missing.push('no route-component reuse rule')
 				if (!/docs\/help\.md/.test(skillMd) || !/sentence case/.test(skillMd)) {
@@ -1171,8 +1177,27 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 				if (!/buildTaskViewMessages/.test(messages) || !/open-task/.test(messages)) {
 					drift.push('task view messages must be built from tool data with an open-task action')
 				}
+				if (
+					!/presentation === 'chart'/.test(taskViews) ||
+					!/StatCard/.test(messages) ||
+					!/DistributionBar/.test(messages) ||
+					!/DonutChart/.test(messages) ||
+					!/BarChart/.test(messages)
+				) {
+					drift.push(
+						'showTasksView chart presentation must build StatCard, DistributionBar, DonutChart, and BarChart nodes',
+					)
+				}
 				if (/dangerouslySetInnerHTML/.test(catalog) || !/UnknownA2uiNode/.test(catalog)) {
 					drift.push('the Mantine catalog must drop unknown components and must not inject HTML')
+				}
+				if (
+					!/BarChartAdapter/.test(catalog) ||
+					!/DonutChartAdapter/.test(catalog) ||
+					!/StatCardAdapter/.test(catalog) ||
+					!/DistributionBarAdapter/.test(catalog)
+				) {
+					drift.push('the Mantine catalog must register chart primitives and custom visual components')
 				}
 				if (/emitMcpUiResource|showTasksViewTool/.test(tools)) {
 					drift.push('tools.ts must not register the view tools')

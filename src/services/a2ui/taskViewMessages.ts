@@ -7,11 +7,11 @@
 
 import type { ServerToClientMessage, UserAction } from '@a2ui-bridge/core'
 import { z } from 'zod'
-import { TASK_STATUSES } from '@/constants/options'
+import { TASK_PRIORITIES, TASK_STATUSES } from '@/constants/options'
 import { isAllowedA2uiComponent } from '@/services/a2ui/mantineCatalog'
 import { type Task, TaskSchema, type TaskStatus, TaskStatusSchema } from '@/services/schemas/schemas'
 import { isRealCalendarDate } from '@/utils/calendarDate'
-import { statusLabel } from '@/utils/taskDisplay'
+import { priorityLabel, statusLabel } from '@/utils/taskDisplay'
 import { isTaskOverdue } from '@/utils/taskDue'
 
 const MAX_TASKS = 20
@@ -55,6 +55,14 @@ type ComponentInstance = z.infer<typeof ComponentInstanceSchema>
 function clip(value: string, max: number): string {
 	if (value.length <= max) return value
 	return `${value.slice(0, max - 1)}…`
+}
+
+function boundString(value: string, max = MAX_TITLE) {
+	return { literalString: clip(value, max) }
+}
+
+function boundNumber(value: number) {
+	return { literalNumber: value }
 }
 
 function textNode(id: string, text: string, usageHint: 'h3' | 'body' | 'caption', max = MAX_DESCRIPTION) {
@@ -698,6 +706,178 @@ function detailMessages(task: Task, asOf?: string): ServerToClientMessage[] {
 	return messages(nodes)
 }
 
+function countStatus(tasks: Task[], status: Task['status']): number {
+	return tasks.filter((task) => task.status === status).length
+}
+
+function statCard(
+	id: string,
+	label: string,
+	value: string,
+	icon: string,
+	color: string,
+	delta?: string,
+): ComponentInstance {
+	return {
+		id,
+		component: {
+			StatCard: {
+				label: boundString(label, MAX_BADGE),
+				value: boundString(value, MAX_BADGE),
+				icon: boundString(icon, 40),
+				color: boundString(color, 20),
+				...(delta ? { delta: boundString(delta, MAX_BADGE), deltaColor: boundString(color, 20) } : {}),
+			},
+		},
+	}
+}
+
+function barChartNode(
+	id: string,
+	rows: Array<[string, number]>,
+	color: string,
+	orientation: 'horizontal' | 'vertical' = 'horizontal',
+	height = 220,
+): ComponentInstance {
+	return {
+		id,
+		component: {
+			BarChart: {
+				dataKey: boundString('name', 20),
+				height: boundNumber(height),
+				orientation: boundString(orientation, 20),
+				series: [
+					{
+						name: boundString('count', 20),
+						color: boundString(color, 20),
+						label: boundString('Tasks', 20),
+					},
+				],
+				data: rows.map(([name, count]) => ({
+					name: boundString(name, MAX_BADGE),
+					count: boundNumber(count),
+				})),
+			},
+		},
+	}
+}
+
+function assigneeRows(tasks: Task[]): Array<[string, number]> {
+	const counts = new Map<string, number>()
+	for (const task of tasks) {
+		const name = task.assignee?.trim() || 'Unassigned'
+		counts.set(name, (counts.get(name) ?? 0) + 1)
+	}
+	const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+	const rows = sorted.slice(0, 8)
+	if (sorted.length > 8) {
+		rows.push(['Other', sorted.slice(8).reduce((total, [, count]) => total + count, 0)])
+	}
+	return rows
+}
+
+function dueMonthRows(tasks: Task[]): Array<[string, number]> {
+	const counts = new Map<string, number>()
+	for (const task of tasks) {
+		if (!task.dueDate) continue
+		const month = task.dueDate.slice(0, 7)
+		counts.set(month, (counts.get(month) ?? 0) + 1)
+	}
+	return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+}
+
+/** Totals, a status mix, and breakdown charts. Numbers come only from the task payload. */
+function chartMessages(tasks: Task[], asOf: string | undefined): ServerToClientMessage[] {
+	const done = countStatus(tasks, 'done')
+	const inProgress = countStatus(tasks, 'in-progress')
+	const overdue = asOf ? tasks.filter((task) => isTaskOverdue(task, asOf)).length : null
+	const completion = tasks.length === 0 ? 0 : Math.round((done / tasks.length) * 100)
+	const childIds = ['heading', 'stats']
+	const nodes: ComponentInstance[] = [
+		titleNode('heading', tasks.length === 1 ? '1 task' : `${tasks.length} tasks`),
+		{
+			id: 'stats',
+			component: {
+				Grid: {
+					columns: { base: boundNumber(1), sm: boundNumber(2) },
+					children: { explicitList: ['stat-total', 'stat-done', 'stat-progress', 'stat-overdue'] },
+				},
+			},
+		},
+		statCard('stat-total', 'Total', String(tasks.length), 'layers', 'teal'),
+		statCard('stat-done', 'Done', `${completion}%`, 'checkcircle', 'green', `${done} done`),
+		statCard('stat-progress', 'In progress', String(inProgress), 'activity', 'blue'),
+		statCard(
+			'stat-overdue',
+			'Overdue',
+			overdue === null ? '—' : String(overdue),
+			'overdue',
+			'red',
+			overdue === null ? undefined : overdue === 1 ? '1 task' : `${overdue} tasks`,
+		),
+	]
+	if (tasks.length === 0) {
+		childIds.push('empty-title', 'empty-note')
+		nodes.push(
+			textNode('empty-title', 'No tasks match', 'h3', MAX_TITLE),
+			textNode('empty-note', 'Try another filter, or ask to see every task.', 'body'),
+		)
+		return messages([{ id: 'root', component: { Column: { children: { explicitList: childIds } } } }, ...nodes])
+	}
+
+	const slices = TASK_STATUSES.flatMap((status) => {
+		const value = countStatus(tasks, status)
+		if (value === 0) return []
+		return [
+			{
+				name: boundString(statusLabel(status), MAX_BADGE),
+				label: boundString(statusLabel(status), MAX_BADGE),
+				value: boundNumber(value),
+				color: boundString(statusColor(status), 20),
+			},
+		]
+	})
+	childIds.push('status-title', 'mix', 'status-chart', 'priority-title', 'priority-chart')
+	nodes.push(
+		titleNode('status-title', 'Status mix'),
+		{ id: 'mix', component: { DistributionBar: { segments: slices } } },
+		{
+			id: 'status-chart',
+			component: {
+				DonutChart: {
+					data: slices,
+					chartLabel: boundString(String(tasks.length), 12),
+					withLegend: { literalBool: true },
+				},
+			},
+		},
+		titleNode('priority-title', 'Priority'),
+		barChartNode(
+			'priority-chart',
+			TASK_PRIORITIES.map((priority) => [
+				priorityLabel(priority),
+				tasks.filter((task) => task.priority === priority).length,
+			]),
+			'teal',
+		),
+	)
+
+	const people = assigneeRows(tasks)
+	if (people.length > 0) {
+		childIds.push('people-title', 'people-chart')
+		nodes.push(
+			titleNode('people-title', 'Assignees'),
+			barChartNode('people-chart', people, 'blue', 'vertical', Math.max(180, people.length * 40)),
+		)
+	}
+	const dueMonths = dueMonthRows(tasks)
+	if (dueMonths.length > 0) {
+		childIds.push('due-title', 'due-chart')
+		nodes.push(titleNode('due-title', 'Due dates'), barChartNode('due-chart', dueMonths, 'orange'))
+	}
+	return messages([{ id: 'root', component: { Column: { children: { explicitList: childIds } } } }, ...nodes])
+}
+
 function parseTasks(value: unknown): Task[] | null {
 	if (!Array.isArray(value)) return null
 	const tasks: Task[] = []
@@ -738,13 +918,17 @@ export function buildTaskViewMessages(
 		if (!tasks) return note('This view has no data yet.')
 		const presentation =
 			'presentation' in data &&
-			(data.presentation === 'table' || data.presentation === 'kanban' || data.presentation === 'timeline')
+			(data.presentation === 'table' ||
+				data.presentation === 'kanban' ||
+				data.presentation === 'timeline' ||
+				data.presentation === 'chart')
 				? data.presentation
 				: 'cards'
 		const asOf = readAsOf(data)
 		if (presentation === 'table') return tableMessages(tasks, asOf, selectedIds)
 		if (presentation === 'kanban') return kanbanMessages(tasks, asOf, selectedIds)
 		if (presentation === 'timeline') return timelineMessages(tasks, asOf, selectedIds)
+		if (presentation === 'chart') return chartMessages(tasks, asOf ?? fallbackAsOf)
 		return listMessages(tasks, asOf, selectedIds)
 	}
 	if ('task' in data) {
