@@ -202,7 +202,7 @@ flowchart TB
 ### Key Design Decisions
 
 - **Repository Pattern**: All data access goes through an interface. A seed implementation ships for development; swap to MongoDB (or anything else) via environment variable.
-- **Auth via Middleware**: A global TanStack Start middleware extracts JWT identity from headers and provides typed `AuthContext` to every server function. Mutations additionally use function-level `requireAuthMiddleware` so only POST server functions require authentication; queries stay unauthenticated.
+- **Auth via Middleware**: A global TanStack Start middleware verifies the JWT in the configured header (HS256 secret or JWKS) and provides typed `AuthContext` to every server function. Unsigned header tokens are ignored unless `AUTH_ALLOW_UNSIGNED_TOKENS=true` and no verifier is configured. Mutations additionally use function-level `requireAuthMiddleware` so only POST server functions require authentication; queries stay unauthenticated.
 - **Invalidation Middleware**: All POST server functions chain `invalidateMiddleware`, which calls `router.invalidate()` on the client after mutations. Components never invalidate manually. The AI chat uses an `invalidateRouter` client tool for the same purpose.
 - **Task CRUD UI**: Add, edit, and delete tasks from the list and detail pages. Only the task creator can edit or delete; anyone logged in can create. Buttons are gated by auth and creator checks.
 - **Promptable by Default**: AI tools call the same server functions that the UI uses — a single code path for validation, auth, and data access. Read and mutation tools go through the shared `createSafeServerTool()` helper so errors still return `{ error, code }` without repeating wrapper logic in every tool. A **getCurrentUserContext** tool lets the AI check who is logged in and what they can do. When the user is not allowed, tools return errors with 401/403 so the AI can inform the user. [Client tools](https://tanstack.com/ai/latest/docs/guides/client-tools) (`navigate`, `invalidateRouter`) run in the browser via `@tanstack/ai-client`.
@@ -211,7 +211,7 @@ flowchart TB
 - **Schemas = Source of Truth**: Every domain type is a schema with `.describe()` metadata. Types are inferred, JSON Schemas flow to AI tools automatically.
 - **URL-as-State**: Page state (filters, selections, tabs) lives in URL search params, not component state. Shareable, bookmarkable, survives refresh.
 - **Loaders-First**: Data is fetched in route loaders, never in `useEffect` + `useState`. Loaders provide caching, SSR, and parallel fetching for free.
-- **E2E Tests Against Seed Data**: Playwright tests run against the dev server with `REPOSITORY_TYPE=seed`. An unsigned JWT fixture provides authenticated browser contexts. Tests cover dashboard, task list, task detail, and full CRUD — all without a real database.
+- **E2E Tests Against Seed Data**: Playwright tests run against the dev server with `REPOSITORY_TYPE=seed` and `AUTH_ALLOW_UNSIGNED_TOKENS=true`. An unsigned JWT fixture provides authenticated browser contexts. Tests cover dashboard, task list, task detail, and full CRUD — all without a real database.
 
 ## Project Structure
 
@@ -268,6 +268,11 @@ See [`.env.example`](.env.example) for the full list with documentation.
 | `AZURE_OPENAI_DEPLOYMENT` | No | `gpt-4o` | Model deployment name. |
 | `SENTRY_DSN` | No | — | Sentry DSN for server and browser observability. Observability disabled without it. |
 | `AUTH_HEADER_NAME` | No | `Authorization` | HTTP header containing the JWT. |
+| `AUTH_JWT_SECRET` | No | — | HS256 secret. When set, header JWTs must verify. |
+| `AUTH_JWKS_URL` | No | — | JWKS URL used when `AUTH_JWT_SECRET` is unset. |
+| `AUTH_JWT_ISSUER` | No | — | Expected `iss` claim when a verifier is configured. |
+| `AUTH_JWT_AUDIENCE` | No | — | Expected `aud` claim when a verifier is configured. |
+| `AUTH_ALLOW_UNSIGNED_TOKENS` | No | `false` | Dev-only. Accept unsigned header JWTs when no verifier is set. |
 
 ## Extending the Template
 
@@ -347,7 +352,7 @@ pnpm skills:waza   # Waza skill readiness, spec coverage, and mock evals
 - **UI**: [Mantine](https://mantine.dev/) (component library + hooks)
 - **Database**: [MongoDB](https://www.mongodb.com/) (via repository pattern)
 - **Validation**: [Zod](https://zod.dev/) (schemas as source of truth)
-- **Auth**: [jose](https://github.com/panva/jose) (JWT decode, any JS runtime)
+- **Auth**: [jose](https://github.com/panva/jose) (JWT verify, any JS runtime)
 - **Observability**: [Sentry](https://sentry.io/) (behind interface, optional)
 - **Testing**: [Vitest](https://vitest.dev/) + [Testing Library](https://testing-library.com/) (unit), [Playwright](https://playwright.dev/) (E2E)
 - **Linting**: [Biome](https://biomejs.dev/)

@@ -3,8 +3,10 @@ import { getCookie, setCookie } from '@tanstack/react-start/server'
 import { webServerEnv } from '@/env/webEnv.server'
 import { repositoryMiddleware } from '@/middleware/repository'
 import { type AccessTicket, buildAccessTicket } from '@/services/auth/accessTicket'
+import { resolveTokenPolicy, type TokenPolicy } from '@/services/auth/tokenPolicy'
+import { verifyAccessToken } from '@/services/auth/tokenVerifier.server'
 import type { UserIdentity } from '@/services/schemas/schemas'
-import { extractIdentityFromJwt } from '@/utils/jwt.server'
+import { extractBearerToken } from '@/utils/jwt.server'
 import { createServerLogger } from '@/utils/serverLogger'
 import { resolveAccessTicket, TEST_AUTH_COOKIE_NAME } from '@/utils/testAuth.server'
 
@@ -12,6 +14,37 @@ const log = createServerLogger('auth')
 
 /** Header name to read the JWT from. Configured via AUTH_HEADER_NAME env var. */
 const AUTH_HEADER_NAME = webServerEnv.AUTH_HEADER_NAME ?? 'Authorization'
+
+let loggedTokenPolicy = false
+
+function currentTokenPolicy(): TokenPolicy {
+	const policy = resolveTokenPolicy({
+		jwtSecret: webServerEnv.AUTH_JWT_SECRET,
+		jwksUrl: webServerEnv.AUTH_JWKS_URL,
+		issuer: webServerEnv.AUTH_JWT_ISSUER,
+		audience: webServerEnv.AUTH_JWT_AUDIENCE,
+		allowUnsignedTokens: webServerEnv.AUTH_ALLOW_UNSIGNED_TOKENS,
+	})
+	if (!loggedTokenPolicy) {
+		loggedTokenPolicy = true
+		switch (policy.mode) {
+			case 'unsigned-dev':
+				log.warn('AUTH_ALLOW_UNSIGNED_TOKENS is enabled. Header JWTs are accepted without a signature check.')
+				break
+			case 'header-off':
+				log.info('Authorization header identities are disabled until AUTH_JWT_SECRET or AUTH_JWKS_URL is set.')
+				break
+			case 'verified':
+				log.info({ strategy: policy.strategy }, 'JWT signature verification is enabled')
+				break
+			default: {
+				const unreachable: never = policy
+				throw new Error(`Unexpected token policy: ${String(unreachable)}`)
+			}
+		}
+	}
+	return policy
+}
 
 /** Paths that skip repository profile lookup (health, static, public config). */
 const PUBLIC_ROUTE_PREFIXES = ['/api/health', '/.well-known', '/assets'] as const
@@ -47,27 +80,33 @@ export interface AuthContext {
  * `context.accessTicket`.
  *
  * Runs on every request (SSR, server functions, API routes).
- * - If a valid JWT is present in the auth header, the decoded identity is used.
+ * - A verified JWT in the auth header supplies the identity. Unsigned header tokens are ignored
+ *   unless `AUTH_ALLOW_UNSIGNED_TOKENS` is set and no verifier is configured.
  * - Otherwise a persistent test user is minted (or restored from the test-auth cookie).
  */
 export const authMiddleware = createMiddleware()
 	.middleware([repositoryMiddleware])
 	.server(async ({ next, request, context }) => {
 		const pathname = new URL(request.url).pathname
-		const authHeader = request.headers.get(AUTH_HEADER_NAME)
+		const headerIdentity = await verifyAccessToken(
+			currentTokenPolicy(),
+			extractBearerToken(request.headers.get(AUTH_HEADER_NAME)),
+		)
 
 		if (isPublicRoute(pathname)) {
-			const headerIdentity = extractIdentityFromJwt(authHeader)
-			const user = headerIdentity.email ? headerIdentity : ANONYMOUS_USER
 			log.debug({ pathname }, 'public route — skipped profile load')
 			return next({
 				context: {
-					accessTicket: buildAccessTicket({ user, profile: null, isTestUser: false }),
+					accessTicket: buildAccessTicket({
+						user: headerIdentity ?? ANONYMOUS_USER,
+						profile: null,
+						isTestUser: false,
+					}),
 				},
 			})
 		}
 
-		const ticket = resolveAccessTicket(authHeader, getCookie(TEST_AUTH_COOKIE_NAME))
+		const ticket = resolveAccessTicket(headerIdentity, getCookie(TEST_AUTH_COOKIE_NAME))
 
 		if (ticket.newTestAuthToken) {
 			setCookie(TEST_AUTH_COOKIE_NAME, ticket.newTestAuthToken, {

@@ -10,7 +10,7 @@
  */
 import { config } from 'dotenv'
 import { z } from 'zod'
-import { envStringToUndefined, OptionalTrimmedStringSchema } from '@/services/schemas/runtimeEnv'
+import { envStringToBoolean, envStringToUndefined, OptionalTrimmedStringSchema } from '@/services/schemas/runtimeEnv'
 import {
 	type PromptConcept,
 	PromptConceptSchema,
@@ -41,6 +41,23 @@ export const WebServerEnvSchema = WebPublicEnvSchema.extend({
 	AUTH_HEADER_NAME: OptionalTrimmedStringSchema.describe(
 		'HTTP header name for the JWT. Default: Authorization when unset or blank.',
 	),
+	AUTH_JWT_SECRET: OptionalTrimmedStringSchema.describe(
+		'HMAC secret for HS256 access tokens. When set, Authorization header JWTs must verify with this secret.',
+	),
+	AUTH_JWKS_URL: z
+		.preprocess(envStringToUndefined, z.url().optional())
+		.describe('JWKS URL for asymmetric access tokens. Used when AUTH_JWT_SECRET is unset.'),
+	AUTH_JWT_ISSUER: OptionalTrimmedStringSchema.describe(
+		'Expected JWT iss claim. Checked only when signature verification is configured.',
+	),
+	AUTH_JWT_AUDIENCE: OptionalTrimmedStringSchema.describe(
+		'Expected JWT aud claim. Checked only when signature verification is configured.',
+	),
+	AUTH_ALLOW_UNSIGNED_TOKENS: z
+		.preprocess(envStringToBoolean, z.boolean())
+		.describe(
+			'Dev-only escape hatch. When true and no verifier is configured, accept unsigned Authorization header JWTs. Never enable this on a shared or production deployment.',
+		),
 	MONGODB_URI: OptionalTrimmedStringSchema.describe('MongoDB connection string. Absent → in-memory seed repository.'),
 	MONGODB_DB_NAME: z.string().optional().describe('MongoDB database name. Default: app-db.'),
 	REPOSITORY_TYPE: z

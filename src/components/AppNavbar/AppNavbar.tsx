@@ -38,7 +38,7 @@ export function AppNavbar({ pathname, currentUser, appMeta, promptConcept = 'sid
 			<AppShell.Section>
 				{currentUser ? (
 					<Tooltip
-						label={`Demo test user (${currentUser.identity.email}). Actions are attributed to this identity. Provide a real JWT in the auth header to use your own account.`}
+						label={`Demo test user (${currentUser.identity.email}). Actions are attributed to this identity. Provide a signed JWT in the auth header to use your own account.`}
 						disabled={!currentUser.isTestUser}
 						multiline
 						w={280}

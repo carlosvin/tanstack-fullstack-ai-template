@@ -135,8 +135,12 @@ If your team prefers [`@tabler/icons-react`](https://tabler.io/icons) (the Manti
 | Post-mutation invalidation | `src/middleware/invalidate.ts` |
 | Guard helpers | `src/utils/auth.ts` — `requireAuth`, `requireGroup` |
 | JWT parsing | `src/utils/jwt.server.ts` |
+| Token policy | `src/services/auth/tokenPolicy.ts` |
+| Signature verification | `src/services/auth/tokenVerifier.server.ts` |
 
 - **JWT header:** `AUTH_HEADER_NAME` env var (default: `Authorization`).
+- **Verification:** `AUTH_JWT_SECRET` (HS256) or `AUTH_JWKS_URL` (asymmetric). Optional `AUTH_JWT_ISSUER` and `AUTH_JWT_AUDIENCE` are checked only when a verifier is set. The secret wins when both verifiers are set. With neither verifier, header identities are ignored.
+- **Unsigned header tokens:** `AUTH_ALLOW_UNSIGNED_TOKENS=true` is a dev-only opt-in, and only when no verifier is configured. Do not set it on a shared or production deployment. The demo `test-auth` cookie stays an unsigned token minted by the server; it is not accepted as a general identity.
 - **Mutations only:** POST server functions chain `requireAuthMiddleware`; GET queries are unauthenticated unless the handler adds auth middleware.
 - **Custom authorization:** Chain composable middleware off `authMiddleware` (see `requireAuth.ts`).
 
@@ -360,7 +364,7 @@ When modifying: add server tools to the `tools` array; add client tool defs and 
 
 - **Framework**: Playwright with Chromium.
 - **Config**: `playwright.config.ts` — single worker, serial CRUD tests, `REPOSITORY_TYPE=seed`.
-- **Auth fixture**: `e2e/auth.ts` provides `authedPage` / `authedContext` fixtures using unsigned JWTs sent via `extraHTTPHeaders`.
+- **Auth fixture**: `e2e/auth.ts` provides `authedPage` / `authedContext` fixtures using unsigned JWTs sent via `extraHTTPHeaders`. Playwright starts the app with `AUTH_ALLOW_UNSIGNED_TOKENS=true` so those fixtures stay valid.
 - **Convention**: Spec files in `e2e/` as `*.spec.ts`.
 - **Running**: `pnpm test:e2e` (reuses existing dev server or starts one with seed data).
 
@@ -410,7 +414,7 @@ When creating a new project from this template or migrating an existing one, con
 Package manager is **pnpm**; the standard commands live in `package.json` and section 15 above (`pnpm dev`, `pnpm lint`, `pnpm test`, `pnpm build`, `pnpm test:e2e`). Node 22 works fine even though the `Dockerfile` pins Node 24 (there is no `engines` field). The app runs on **port 3000**.
 
 - **No external services required.** With no `MONGODB_URI`, the app uses the in-memory **seed** repository, so `pnpm dev` is fully functional on its own. MongoDB, an AI provider (Gemini/Azure OpenAI), and Sentry are all optional — the app degrades gracefully when their env vars are unset.
-- **Auth is header-only.** The auth middleware reads a JWT from the `Authorization` header (`src/middleware/auth.ts`); there is no cookie/session login. A plain browser is therefore anonymous and cannot mutate (the "Add task" button and edit/delete icons are hidden). E2E tests inject an unsigned JWT via `extraHTTPHeaders` (`e2e/auth.ts`). To manually exercise authenticated flows in a real browser, put a small reverse proxy in front of `:3000` that adds an `Authorization: Bearer <unsigned-jwt>` header (unsigned `alg:none` tokens are accepted — signatures are not verified).
+- **Auth is header-only.** The auth middleware reads a JWT from the `Authorization` header (`src/middleware/auth.ts`); there is no cookie/session login. With no `AUTH_JWT_SECRET` or `AUTH_JWKS_URL`, that header is ignored and a plain browser gets the demo `test-auth` cookie identity. To send a real header identity, set `AUTH_JWT_SECRET` and sign HS256 tokens, or set `AUTH_JWKS_URL` for an identity provider. `AUTH_ALLOW_UNSIGNED_TOKENS=true` accepts unsigned header JWTs only for local demos, and only when no verifier is set. E2E turns that flag on and injects an unsigned JWT via `extraHTTPHeaders` (`e2e/auth.ts`). A reverse proxy in front of `:3000` can add the header for a manual browser session.
 - **E2E gotcha — `networkidle` hangs in dev mode.** `pnpm test:e2e` defaults to starting `pnpm dev` (see `playwright.config.ts`, `reuseExistingServer: true`). The `@tanstack/devtools-vite` plugin holds an open background connection in dev, so specs that use `page.goto(..., { waitUntil: 'networkidle' })` never settle and time out. To get a clean run, start a **production** server first and let Playwright reuse it: `pnpm build` then `REPOSITORY_TYPE=seed PORT=3000 pnpm start`, then `pnpm test:e2e` in another shell.
 - **Mantine Select is a combobox.** E2E helpers in `e2e/helpers.ts` (`selectMantineOption`) target `getByRole('combobox')`, not `textbox`.
 - **Harmless noise:** `pnpm install` prints an "Ignored build scripts" warning (esbuild/swc/etc.) — build/dev/test all work anyway. `pnpm test` (Vitest) prints a "close timed out" / "module is not defined" message during teardown after all tests pass.

@@ -802,6 +802,37 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 			},
 		},
 		{
+			id: 'architecture-verified-auth-identity',
+			skill: 'tanstack-promptable-fullstack-app-template',
+			description: 'Bearer identity is signature-verified before the access ticket is built',
+			async run() {
+				const { agentSkillsDir } = getSkillPaths(rootDir)
+				const skillMd = await readText(
+					path.join(agentSkillsDir, 'tanstack-promptable-fullstack-app-template', 'SKILL.md'),
+				)
+				const core = skillMd.split('## Core Contract')[1]?.split('## Architecture Checklist')[0] ?? ''
+				if (!/signature-verified/.test(core)) {
+					return fail('Core Contract must require signature verification of bearer identity')
+				}
+				const authPath = path.join(rootDir, 'src/middleware/auth.ts')
+				let auth: string
+				try {
+					auth = await readText(authPath)
+				} catch {
+					return pass()
+				}
+				if (/extractIdentityFromJwt\(/.test(auth)) {
+					return fail('auth middleware must not build identity from decode-only extractIdentityFromJwt', [
+						'src/middleware/auth.ts',
+					])
+				}
+				if (!/verifyAccessToken\(/.test(auth)) {
+					return fail('auth middleware must verify access tokens before buildAccessTicket', ['src/middleware/auth.ts'])
+				}
+				return pass()
+			},
+		},
+		{
 			id: 'handbook-ai-gating-status',
 			skill: 'tanstack-promptable-fullstack-app-template',
 			description: 'AGENTS.md does not claim chat UI always renders (Phase 3 is done)',
