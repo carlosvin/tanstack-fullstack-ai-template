@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createUnsignedJwt, extractIdentityFromJwt } from '@/utils/jwt.server'
+import { createUnsignedJwt, extractBearerToken, extractIdentityFromJwt } from '@/utils/jwt.server'
 
 function createTestJwt(payload: Record<string, unknown>): string {
 	const header = btoa(JSON.stringify({ alg: 'none', typ: 'JWT' }))
@@ -16,6 +16,15 @@ describe('createUnsignedJwt', () => {
 		}
 
 		expect(extractIdentityFromJwt(createUnsignedJwt(identity))).toEqual(identity)
+	})
+})
+
+describe('extractBearerToken', () => {
+	it('strips a Bearer prefix and returns null when the header is empty', () => {
+		expect(extractBearerToken(null)).toBeNull()
+		expect(extractBearerToken('Bearer   ')).toBeNull()
+		expect(extractBearerToken('Bearer abc.def.ghi')).toBe('abc.def.ghi')
+		expect(extractBearerToken('raw-token')).toBe('raw-token')
 	})
 })
 

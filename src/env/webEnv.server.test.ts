@@ -24,6 +24,15 @@ describe('webEnv', () => {
 		expect(parsed.DISPLAY_NAME).toBe('My App')
 	})
 
+	it('keeps header verification off unless a verifier or the dev flag is set', () => {
+		expect(WebServerEnvSchema.parse({}).AUTH_ALLOW_UNSIGNED_TOKENS).toBe(false)
+		expect(WebServerEnvSchema.parse({ AUTH_ALLOW_UNSIGNED_TOKENS: 'true' }).AUTH_ALLOW_UNSIGNED_TOKENS).toBe(true)
+		expect(WebServerEnvSchema.parse({ AUTH_JWT_SECRET: '  secret  ' }).AUTH_JWT_SECRET).toBe('secret')
+		expect(WebServerEnvSchema.parse({ AUTH_JWKS_URL: 'https://idp.example/jwks' }).AUTH_JWKS_URL).toBe(
+			'https://idp.example/jwks',
+		)
+	})
+
 	it('defaults PROMPT_CONCEPT to side and accepts prompt-first and agentic', () => {
 		expect(WebServerEnvSchema.parse({}).PROMPT_CONCEPT).toBe('side')
 		expect(WebServerEnvSchema.parse({ PROMPT_CONCEPT: 'prompt-first' }).PROMPT_CONCEPT).toBe('prompt-first')

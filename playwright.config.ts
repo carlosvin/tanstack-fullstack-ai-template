@@ -23,6 +23,11 @@ export default defineConfig({
 		url: 'http://localhost:3000',
 		reuseExistingServer: true,
 		timeout: 30_000,
-		env: { NODE_ENV: 'development', OPENAI_API_KEY: 'sk-e2e-placeholder' },
+		env: {
+			NODE_ENV: 'development',
+			OPENAI_API_KEY: 'sk-e2e-placeholder',
+			// E2E sends unsigned fixture JWTs. This flag is dev/test only.
+			AUTH_ALLOW_UNSIGNED_TOKENS: 'true',
+		},
 	},
 })
