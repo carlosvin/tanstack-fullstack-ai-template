@@ -31,7 +31,7 @@ import { HttpError } from '@/utils/httpError'
 /** Fetch tasks with optional filters. Maps tools-layer filter to repo-layer. */
 export const getTasks = createServerFn({ method: 'GET' })
 	.middleware([repositoryMiddleware])
-	.inputValidator(TaskFilterSchema.optional())
+	.validator(TaskFilterSchema.optional())
 	.handler(async ({ data: filter, context }) => {
 		const repoFilter = filter ? TaskRepoFilterSchema.parse(filter) : undefined
 		const rows = await getObservability({}).startSpan('getTasks', () => context.repository.getTasks(repoFilter))
@@ -41,7 +41,7 @@ export const getTasks = createServerFn({ method: 'GET' })
 /** Fetch a single task by ID. */
 export const getTask = createServerFn({ method: 'GET' })
 	.middleware([repositoryMiddleware])
-	.inputValidator(TaskIdInputSchema)
+	.validator(TaskIdInputSchema)
 	.handler(async ({ data, context }) => {
 		const row = await getObservability({}).startSpan('getTask', () => context.repository.getTask(data.taskId))
 		return row ? toToolTask(row) : null
@@ -50,7 +50,7 @@ export const getTask = createServerFn({ method: 'GET' })
 /** Fetch distinct values for a filterable task field (assignee, status, priority). */
 export const getDistinctValues = createServerFn({ method: 'GET' })
 	.middleware([repositoryMiddleware])
-	.inputValidator(DistinctValuesInputSchema)
+	.validator(DistinctValuesInputSchema)
 	.handler(async ({ data, context }) => {
 		const values = await getObservability({}).startSpan('getDistinctValues', () =>
 			context.repository.getDistinctValues(data.field),
@@ -77,7 +77,7 @@ export const getAssigneeOptions = createServerFn({ method: 'GET' })
 /** Fetch a user profile by email. */
 export const getUserProfile = createServerFn({ method: 'GET' })
 	.middleware([repositoryMiddleware])
-	.inputValidator(UserProfileByEmailSchema)
+	.validator(UserProfileByEmailSchema)
 	.handler(async ({ data, context }) => {
 		const row = await getObservability({}).startSpan('getUserProfile', () =>
 			context.repository.getUserProfile(data.email),
@@ -88,7 +88,7 @@ export const getUserProfile = createServerFn({ method: 'GET' })
 /** Fetch repository-backed access roles for a user email. */
 export const getUserAccess = createServerFn({ method: 'GET' })
 	.middleware([repositoryMiddleware])
-	.inputValidator(UserProfileByEmailSchema)
+	.validator(UserProfileByEmailSchema)
 	.handler(async ({ data, context }) => {
 		const row = await getObservability({}).startSpan('getUserAccess', () =>
 			context.repository.getUserAccess(data.email),
@@ -133,7 +133,7 @@ export const getCurrentUser = createServerFn({ method: 'GET' })
 /** Create a new task. Maps tools-layer input to repo-layer. */
 export const createTask = createServerFn({ method: 'POST' })
 	.middleware([requireAuthMiddleware, invalidateMiddleware])
-	.inputValidator(TaskInputSchema)
+	.validator(TaskInputSchema)
 	.handler(async ({ data, context }) => {
 		const repoInput = TaskRepoInputSchema.parse(data)
 		const trace = createWriteTrace(context.accessTicket.identity.email)
@@ -146,7 +146,7 @@ export const createTask = createServerFn({ method: 'POST' })
 /** Update an existing task. Only the creator may edit. */
 export const updateTask = createServerFn({ method: 'POST' })
 	.middleware([requireAuthMiddleware, invalidateMiddleware])
-	.inputValidator(UpdateTaskInputSchema)
+	.validator(UpdateTaskInputSchema)
 	.handler(async ({ data, context }) => {
 		const task = await context.repository.getTask(data.taskId)
 		if (!task) throw new HttpError(404, 'Task not found')
@@ -162,7 +162,7 @@ export const updateTask = createServerFn({ method: 'POST' })
 /** Set one status on many tasks. Each row is checked for the creator. */
 export const updateTasksStatus = createServerFn({ method: 'POST' })
 	.middleware([requireAuthMiddleware, invalidateMiddleware])
-	.inputValidator(BulkTaskStatusInputSchema)
+	.validator(BulkTaskStatusInputSchema)
 	.handler(async ({ data, context }) =>
 		getObservability({}).startSpan('updateTasksStatus', () =>
 			applyBulkStatus(context.repository, context.accessTicket, data),
@@ -172,7 +172,7 @@ export const updateTasksStatus = createServerFn({ method: 'POST' })
 /** Delete a task. Only the creator may delete. */
 export const deleteTask = createServerFn({ method: 'POST' })
 	.middleware([requireAuthMiddleware, invalidateMiddleware])
-	.inputValidator(TaskIdInputSchema)
+	.validator(TaskIdInputSchema)
 	.handler(async ({ data, context }) => {
 		const task = await context.repository.getTask(data.taskId)
 		if (!task) throw new HttpError(404, 'Task not found')
