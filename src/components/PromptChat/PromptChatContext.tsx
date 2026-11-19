@@ -11,7 +11,7 @@ import { toInternalRouterLinkTarget } from '@/utils/internalLinks'
 import { useCalendarToday } from '@/utils/useCalendarToday'
 
 export interface PromptChatContextValue {
-	messages: UIMessage[]
+	messages: readonly UIMessage[]
 	isLoading: boolean
 	error: Error | null
 	input: string
@@ -39,6 +39,7 @@ export function usePromptChat(): PromptChatContextValue {
 
 export function PromptChatProvider({ children }: { children: ReactNode }) {
 	const [input, setInput] = useState('')
+	const [threadId, setThreadId] = useState(() => crypto.randomUUID())
 	const router = useRouter()
 	const today = useCalendarToday()
 
@@ -81,9 +82,14 @@ export function PromptChatProvider({ children }: { children: ReactNode }) {
 		[],
 	)
 
-	const chatOptions = createChatClientOptions({ connection, tools })
+	const chatOptions = createChatClientOptions({ connection, tools, threadId })
 
-	const { messages, sendMessage, isLoading, error, clear, stop } = useChat(chatOptions)
+	const { messages, sendMessage, isLoading, error, clear: clearChat, stop } = useChat(chatOptions)
+
+	const clear = useCallback(() => {
+		clearChat()
+		setThreadId(crypto.randomUUID())
+	}, [clearChat])
 
 	const handleSubmit = useCallback(() => {
 		if (!input.trim() || isLoading) return

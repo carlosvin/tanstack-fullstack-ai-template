@@ -109,7 +109,11 @@ export function TaskViewResult({
  * Shared hook for opening an inline task detail view from an A2UI card/row action
  * without sending an extra model turn. Used across all 3 chat panels (`agentic`, `prompt-first`, and `side`).
  */
-export function useInlineDetailViews(messages: UIMessage[], sendMessage: (text: string) => void, today: string) {
+export function useInlineDetailViews(
+	messages: readonly UIMessage[],
+	sendMessage: (text: string) => void,
+	today: string,
+) {
 	const [opened, setOpened] = useState<OpenedDetail[]>([])
 	const hasMessages = messages.length > 0
 	const [hadMessages, setHadMessages] = useState(hasMessages)
@@ -154,7 +158,7 @@ export function AgenticMessageItems({
 	onPrompt,
 	markdownLinkComponent,
 }: {
-	messages: UIMessage[]
+	messages: readonly UIMessage[]
 	opened: OpenedDetail[]
 	today: string
 	onPrompt: (text: string) => void

@@ -6,7 +6,7 @@ import type { BrowserContext } from '@/services/schemas/schemas'
 import { captureAgenticBrowserContext } from '@/utils/browserContext'
 
 export interface AgenticChatContextValue {
-	messages: UIMessage[]
+	messages: readonly UIMessage[]
 	isLoading: boolean
 	error: Error | null
 	input: string
@@ -35,6 +35,7 @@ export function useAgenticChat(): AgenticChatContextValue {
  */
 export function AgenticChatProvider({ children }: { children: ReactNode }) {
 	const [input, setInput] = useState('')
+	const [threadId, setThreadId] = useState(() => crypto.randomUUID())
 
 	const browserContextRef = useRef<BrowserContext | null>(null)
 
@@ -48,9 +49,14 @@ export function AgenticChatProvider({ children }: { children: ReactNode }) {
 		[],
 	)
 
-	const chatOptions = createChatClientOptions({ connection })
+	const chatOptions = createChatClientOptions({ connection, threadId })
 
-	const { messages, sendMessage, isLoading, error, clear, stop } = useChat(chatOptions)
+	const { messages, sendMessage, isLoading, error, clear: clearChat, stop } = useChat(chatOptions)
+
+	const clear = useCallback(() => {
+		clearChat()
+		setThreadId(crypto.randomUUID())
+	}, [clearChat])
 
 	const handleSubmit = useCallback(() => {
 		if (!input.trim() || isLoading) return
