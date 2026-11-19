@@ -5,6 +5,10 @@
  * A later request, including the detail read after a card click, can run in
  * another process and would otherwise report the new task as missing.
  * Replaying tool results restores those tasks before the next read.
+ *
+ * Supports TanStack UIMessage `parts` and AG-UI wire messages (`toolCalls` on
+ * assistants + `{ role: 'tool' }` fan-out). `chatParamsFromRequest` drops
+ * `parts`, so AG-UI fields are required after the AI 1.x migration.
  */
 
 import { type TaskRepo, TaskRepoSchema } from '@/services/schemas/repository'
@@ -50,30 +54,76 @@ function tasksInPayload(payload: unknown): TaskRepo[] {
 	return parsed.success ? [parsed.data] : []
 }
 
+function rememberToolCall(calls: Map<string, ToolCall>, id: string, name: string, input: unknown) {
+	calls.set(id, { name, input })
+}
+
 function toolCalls(messages: unknown): Map<string, ToolCall> {
 	const calls = new Map<string, ToolCall>()
 	if (!Array.isArray(messages)) return calls
 	for (const message of messages) {
-		if (!isRecord(message) || !Array.isArray(message.parts)) continue
-		for (const part of message.parts) {
-			if (
-				!isRecord(part) ||
-				part.type !== 'tool-call' ||
-				typeof part.id !== 'string' ||
-				typeof part.name !== 'string'
-			) {
-				continue
+		if (!isRecord(message)) continue
+		if (Array.isArray(message.parts)) {
+			for (const part of message.parts) {
+				if (
+					!isRecord(part) ||
+					part.type !== 'tool-call' ||
+					typeof part.id !== 'string' ||
+					typeof part.name !== 'string'
+				) {
+					continue
+				}
+				const input =
+					part.input !== undefined
+						? part.input
+						: typeof part.arguments === 'string'
+							? parseJson(part.arguments)
+							: undefined
+				rememberToolCall(calls, part.id, part.name, input)
 			}
-			const input =
-				part.input !== undefined
-					? part.input
-					: typeof part.arguments === 'string'
-						? parseJson(part.arguments)
-						: undefined
-			calls.set(part.id, { name: part.name, input })
+		}
+		if (message.role === 'assistant' && Array.isArray(message.toolCalls)) {
+			for (const call of message.toolCalls) {
+				if (!isRecord(call) || typeof call.id !== 'string') continue
+				const fn = isRecord(call.function) ? call.function : undefined
+				const name = typeof fn?.name === 'string' ? fn.name : undefined
+				if (!name) continue
+				const input =
+					typeof fn?.arguments === 'string'
+						? parseJson(fn.arguments)
+						: fn?.arguments !== undefined
+							? fn.arguments
+							: undefined
+				rememberToolCall(calls, call.id, name, input)
+			}
 		}
 	}
 	return calls
+}
+
+function applyToolResult(
+	tasks: Map<string, TaskRepo>,
+	deleted: Set<string>,
+	calls: Map<string, ToolCall>,
+	toolCallId: string | undefined,
+	content: unknown,
+) {
+	const call = typeof toolCallId === 'string' ? calls.get(toolCallId) : undefined
+	const payload = payloadFromContent(content)
+	if (call?.name === 'deleteTask' && !(isRecord(payload) && 'error' in payload)) {
+		const taskId =
+			isRecord(call.input) && typeof call.input.taskId === 'string' && call.input.taskId.length > 0
+				? call.input.taskId
+				: null
+		if (!taskId) return
+		tasks.delete(taskId)
+		deleted.add(taskId)
+		return
+	}
+	for (const task of tasksInPayload(payload)) {
+		tasks.set(task.id, task)
+		deleted.delete(task.id)
+	}
 }
 
 export function conversationTaskState(messages: unknown): ConversationTaskState {
@@ -83,25 +133,27 @@ export function conversationTaskState(messages: unknown): ConversationTaskState 
 	if (!Array.isArray(messages)) return { tasks: [], deletedIds: [] }
 
 	for (const message of messages) {
-		if (!isRecord(message) || !Array.isArray(message.parts)) continue
-		for (const part of message.parts) {
-			if (!isRecord(part) || part.type !== 'tool-result') continue
-			const call = typeof part.toolCallId === 'string' ? calls.get(part.toolCallId) : undefined
-			const payload = payloadFromContent(part.content)
-			if (call?.name === 'deleteTask' && !(isRecord(payload) && 'error' in payload)) {
-				const taskId =
-					isRecord(call.input) && typeof call.input.taskId === 'string' && call.input.taskId.length > 0
-						? call.input.taskId
-						: null
-				if (!taskId) continue
-				tasks.delete(taskId)
-				deleted.add(taskId)
-				continue
+		if (!isRecord(message)) continue
+		if (Array.isArray(message.parts)) {
+			for (const part of message.parts) {
+				if (!isRecord(part) || part.type !== 'tool-result') continue
+				applyToolResult(
+					tasks,
+					deleted,
+					calls,
+					typeof part.toolCallId === 'string' ? part.toolCallId : undefined,
+					part.content,
+				)
 			}
-			for (const task of tasksInPayload(payload)) {
-				tasks.set(task.id, task)
-				deleted.delete(task.id)
-			}
+		}
+		if (message.role === 'tool') {
+			applyToolResult(
+				tasks,
+				deleted,
+				calls,
+				typeof message.toolCallId === 'string' ? message.toolCallId : undefined,
+				message.content,
+			)
 		}
 	}
 

@@ -37,6 +37,48 @@ function thread(parts: unknown[]) {
 	return [{ id: 'm1', role: 'assistant', parts }]
 }
 
+/** AG-UI wire shape after `chatParamsFromRequest` drops `parts`. */
+function aguiThread(
+	entries: Array<
+		| { kind: 'call'; id: string; name: string; input: unknown }
+		| { kind: 'result'; toolCallId: string; payload: unknown }
+	>,
+) {
+	const messages: Record<string, unknown>[] = []
+	let assistantCalls: unknown[] = []
+	let segment = 0
+	const flushCalls = () => {
+		if (assistantCalls.length === 0) return
+		messages.push({
+			id: `a${segment}`,
+			role: 'assistant',
+			content: '',
+			toolCalls: assistantCalls,
+		})
+		assistantCalls = []
+		segment += 1
+	}
+	for (const entry of entries) {
+		if (entry.kind === 'call') {
+			assistantCalls.push({
+				id: entry.id,
+				type: 'function',
+				function: { name: entry.name, arguments: JSON.stringify(entry.input) },
+			})
+			continue
+		}
+		flushCalls()
+		messages.push({
+			id: `t-${entry.toolCallId}`,
+			role: 'tool',
+			toolCallId: entry.toolCallId,
+			content: JSON.stringify(entry.payload),
+		})
+	}
+	flushCalls()
+	return messages
+}
+
 describe('conversationTaskState', () => {
 	it('keeps a created task when a later list from a fresh process omits it', () => {
 		const messages = thread([
@@ -83,6 +125,32 @@ describe('conversationTaskState', () => {
 		expect(state.tasks).toEqual([])
 		expect(state.deletedIds).toEqual(['task-7'])
 		expect(findRememberedTask(deleted, 'task-7')).toBeNull()
+	})
+
+	it('replays AG-UI toolCalls and tool messages after parts are stripped', () => {
+		const messages = aguiThread([
+			{ kind: 'call', id: 'create', name: 'createTask', input: { title: created.title } },
+			{ kind: 'result', toolCallId: 'create', payload: { task: created, message: 'Task created.' } },
+			{ kind: 'call', id: 'list', name: 'showTasksView', input: {} },
+			{ kind: 'result', toolCallId: 'list', payload: { tasks: [seedOnly], presentation: 'cards' } },
+		])
+		expect(messages.every((message) => !('parts' in message))).toBe(true)
+		const state = conversationTaskState(messages)
+		expect(state.tasks.map((task) => task.id)).toEqual(['task-7', 'task-1'])
+		expect(findRememberedTask(messages, 'task-7')?.title).toBe('Fix timeline display issue')
+	})
+
+	it('replays AG-UI deletions from tool messages', () => {
+		const messages = aguiThread([
+			{ kind: 'call', id: 'create', name: 'createTask', input: { title: created.title } },
+			{ kind: 'result', toolCallId: 'create', payload: { task: created } },
+			{ kind: 'call', id: 'delete', name: 'deleteTask', input: { taskId: 'task-7' } },
+			{ kind: 'result', toolCallId: 'delete', payload: { message: 'Task deleted.' } },
+		])
+		const state = conversationTaskState(messages)
+		expect(state.tasks).toEqual([])
+		expect(state.deletedIds).toEqual(['task-7'])
+		expect(findRememberedTask(messages, 'task-7')).toBeNull()
 	})
 })
 

@@ -113,7 +113,7 @@ Full seam notes: [references/tri-modal-ux.md](./references/tri-modal-ux.md).
 
 **Fixed by this skill (TanStack):** TanStack **Start**, **Router**, and **AI** (server functions, middleware, file routes, `validateSearch`, loaders, `chat()` / tools / SSE). Use **`@tanstack/cli`** for current library docs. This repo’s architecture lives in Agent Skills (`.agents/skills/*/SKILL.md`) only.
 
-**Always prefer latest `@tanstack/*`:** Before non-trivial work (and whenever touching Start, Router, AI, or AI-MCP), check published versions for every `@tanstack/*` dependency the app uses (`pnpm outdated` / registry / `@tanstack/cli`). **Aim for the latest compatible release** of each package in the same major line when possible; when a major is available and migration docs exist (e.g. TanStack AI 1.0), plan the upgrade rather than staying on a stale minor. Upgrade related `@tanstack/ai*` packages **together**. Apply migration guides, then re-run `pnpm format && pnpm lint && pnpm test && pnpm build`. Do not leave known-recommended TanStack upgrades unaddressed without a recorded incompatibility.
+**Always prefer latest `@tanstack/*`:** Before Start/Router/AI/MCP work, check published versions (`pnpm outdated`, registry, `@tanstack/cli`). Prefer the newest compatible release; when a major ships with migration docs (e.g. AI 1.0), plan that upgrade. Bump related `@tanstack/ai*` packages together, apply migrations, then `pnpm format && pnpm lint && pnpm test && pnpm build`. Do not skip known-recommended upgrades without a recorded incompatibility.
 
 **Swappable (not prescribed here):** runtime validation, database, auth mechanism, AI provider, observability vendors, UI kit, markdown renderer, lint/test/deploy tooling. Patterns stay interface-first (`Schema.parse()`, repository interfaces, `AIAdapterService`, `ObservabilityService`).
 
@@ -471,14 +471,14 @@ const debouncedSearch = debounce((value: string) => {
 - **Distinct values:** `getDistinctValues` → GET server fn → read-only AI tool so filters match real data.
 - **Dynamic AI navigation:** derive route/help context from `router.flatRoutes` + `validateSearch` introspection where possible.
 - **Prompt chrome and mobile first:** when it is not clear which user experience to implement, ask **Choose a UX** and wait, then load **`promptable-ux`** or **`agentic-ux`**. Do not choose the layout inside this skill. Existing deployments keep their declared `PROMPT_CONCEPT`.
-- **Optional MCP server (opt-in):** TanStack AI maps server tools 1:1 to MCP via [`createMCPServer`](https://tanstack.com/ai/latest/docs/mcp/server) from `@tanstack/ai-mcp/server`. Reuse the same `toolDefinition(...).server()` / `createSafeServerTool` instances already registered for `/api/chat` data tools — mount `server.fetch(request)` on a Start route (this template: `/api/mcp`). **Not** Core Contract #11: chat tool coverage stays required; MCP is optional for hosts such as Cursor or Claude Desktop. **Do not** expose browser client tools (`navigate`, `invalidateRouter`) or in-app A2UI view tools (`show*View`) as MCP Apps UI / `ui.resourceUri` resources. Send `Authorization` when the host calls a deployed URL. Reference: `src/services/ai/mcpServer.server.ts`, `src/routes/api/mcp.ts`.
+- **Optional MCP server (opt-in):** Same server tools as `/api/chat` data tools can be served with [`createMCPServer`](https://tanstack.com/ai/latest/docs/mcp/server) (`@tanstack/ai-mcp/server`) — this template: `/api/mcp`. **Not** Core Contract #11. Omit client tools (`navigate`, `invalidateRouter`) and A2UI `show*View` / MCP Apps `ui.resourceUri`. Deployed hosts should send `Authorization`. Ref: `mcpServer.server.ts`, `routes/api/mcp.ts`.
 
 ## Agent Skills, TanStack CLI, and AI
 
 - **Agent Skills (only standard):** this template’s skills are [agentskills.io](https://agentskills.io) folders — `.agents/skills/<name>/SKILL.md`. Edit those files directly. Install into other projects with `npx skills add carlosvin/tanstack-fullstack-ai-template` (all skills) or `--skill <id>`. List: `npx skills add carlosvin/tanstack-fullstack-ai-template --list`. Similar: `gh skill install carlosvin/tanstack-fullstack-ai-template`. Do not maintain a second skill format (canonical YAML, TanStack Intent package skills, or generated copies).
 - **CLI (prefer current docs over memory):** `npx @tanstack/cli --help` → `libraries`, `search-docs "<query>" --library router|start|ai`, `doc <library> <path>`.
-- **Versions:** check `@tanstack/*` against latest before scaffolding or upgrading; prefer latest (see **Fixed vs swappable stack**). Companion **`reference-tech-stack`** names packages for *this* template but does not pin stale minors.
-- **AI stack:** `@tanstack/ai`, `@tanstack/ai-react`, optional `@tanstack/ai-mcp` — provider table, SSE wiring, system prompt sections, chat endpoint anatomy, and optional MCP are spelled out in **AGENTS.md §8**.
+- **Versions:** prefer latest `@tanstack/*` (see **Fixed vs swappable stack**); **`reference-tech-stack`** names packages, not stale pins.
+- **AI stack:** `@tanstack/ai`, `@tanstack/ai-react`, optional `@tanstack/ai-mcp` — wiring and MCP in **AGENTS.md §8**.
 
 ## Use the handbook (AGENTS.md)
 

@@ -864,7 +864,8 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 					missing.push('mcpServer.server.ts must createMCPServer with shared data tools')
 				}
 				const mcpImports = mcpServer.match(/from ['"]@\/services\/ai\/tools['"][\s\S]*?\}/m)?.[0] ?? ''
-				const mcpToolsBlock = mcpServer.match(/tools:\s*mcpDataTools|export const mcpDataTools = \[[\s\S]*?\]/)?.[0] ?? ''
+				const mcpToolsBlock =
+					mcpServer.match(/tools:\s*mcpDataTools|export const mcpDataTools = \[[\s\S]*?\]/)?.[0] ?? ''
 				if (
 					/showTasksViewTool|showTaskViewTool|navigateToolDef|invalidateRouterToolDef/.test(mcpImports) ||
 					/showTasksViewTool|showTaskViewTool|navigateToolDef|invalidateRouterToolDef/.test(mcpToolsBlock)
