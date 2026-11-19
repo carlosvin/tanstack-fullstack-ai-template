@@ -181,12 +181,12 @@ How to split collection repositories, own indexes, and dispose connections: [rep
 
 ```tsx
 export const myMutation = createServerFn({ method: 'POST' })
-  .middleware([requireAuthMiddleware, invalidateMiddleware])
-  .inputValidator(MyInputSchema)
-  .handler(async ({ data, context }) => {
-    const trace = createWriteTrace(context.accessTicket.identity.email)
-    return context.repository.doSomething(data, trace)
-  })
+ .middleware([requireAuthMiddleware, invalidateMiddleware])
+ .validator(MyInputSchema)
+ .handler(async ({ data, context }) => {
+ const trace = createWriteTrace(context.accessTicket.identity.email)
+ return context.repository.doSomething(data, trace)
+ })
 
 const result = await processResponse(() => myMutation({ data: input }))
 ```
@@ -210,8 +210,10 @@ Routes live in `src/routes/`; tree is auto-generated in `routeTree.gen.ts`. Rout
 | `src/services/ai/adapter.ts` | Provider implementation (Gemini → OpenAI/Gateway → Azure) |
 | `src/services/ai/tools.ts` | Server + client tool definitions |
 | `src/services/ai/serverTool.ts` | `createSafeServerTool` / `safeToolHandler` |
+| `src/services/ai/mcpServer.server.ts` | Optional MCP: `createMCPServer` reusing chat data tools |
 | `src/services/ai/navigationManifest.ts` | AI route matching + prompt section; `buildAppNavigation(router)` from `routesById` |
 | `src/routes/api/chat.ts` | SSE endpoint, `BASE_SYSTEM_PROMPT`, `buildSystemPrompt` |
+| `src/routes/api/mcp.ts` | Optional MCP HTTP endpoint (`GET`/`POST`/`DELETE` → `handleMcp`) |
 | `src/components/PromptChat/PromptChatContext.tsx` | Side + prompt-first: `useChat`, client `navigate` / `invalidateRouter`, `browserContext` |
 | `src/components/AgenticChat/AgenticChatContext.tsx` | Agentic: `useChat` without route client tools |
 | `src/components/AgenticShell/AgenticThread.tsx` | Shared markdown + A2UI thread (`AgenticMessageItems`) used by all three shells |
@@ -261,9 +263,13 @@ Client tools execute in the browser and are defined in `src/services/ai/tools.ts
 
 When adding client tools: export the `toolDefinition(...)` from `tools.ts`, pass it to `chat()` in the chat endpoint for side/prompt-first, and add a `.client()` implementation in `PromptChatContext.tsx` via `clientTools()`.
 
+### Optional MCP server
+
+TanStack AI can expose the same server tools over MCP with [`createMCPServer`](https://tanstack.com/ai/latest/docs/mcp/server) (`@tanstack/ai-mcp`). This template ships an opt-in example at `/api/mcp` (`mcpServer.server.ts`) that reuses chat **data** tools only — not client tools and not A2UI `show*View` tools as MCP Apps UI. Core Contract #11 still only requires chat tool coverage; MCP is optional. MCP hosts should send `Authorization` when calling a deployed URL.
+
 ### Chat Client Setup
 
-The chat UI uses `useChat` from `@tanstack/ai-react` and `fetchServerSentEvents` from `@tanstack/ai-client` to connect to the `/api/chat` SSE endpoint. Client tools are wired with `clientTools()` and passed to `useChat` — they execute automatically when the AI calls them (no `onToolCall` callback needed):
+The chat UI uses `useChat` from `@tanstack/ai-react` and `fetchServerSentEvents` from `@tanstack/ai-client` to connect to the `/api/chat` SSE endpoint. Client tools are wired with `clientTools()` and passed to `useChat` — they execute automatically when the AI calls them (no `onToolCall` callback needed). Pass a stable `threadId` (required in TanStack AI 1.x). Connection `body` fields (e.g. `browserContext`) land on the server as AG-UI `forwardedProps`:
 
 ```tsx
 import { useChat, fetchServerSentEvents } from '@tanstack/ai-react'
@@ -274,17 +280,20 @@ const navigateClient = navigateToolDef.client((args) => {
   return { success: true }
 })
 const tools = clientTools(navigateClient, invalidateClient)
+const threadId = crypto.randomUUID() // stable per conversation; rotate on clear
 
 const { messages, sendMessage, isLoading } = useChat(
   createChatClientOptions({
-    connection: fetchServerSentEvents('/api/chat'),
+    connection: fetchServerSentEvents('/api/chat', () => ({
+      body: { browserContext },
+    })),
     tools,
-    body: { browserContext },
+    threadId,
   }),
 )
 ```
 
-`createChatClientOptions()` enables full type inference for messages via `InferChatMessages<typeof options>`. The `body` field passes additional data (like `browserContext`) alongside messages to the server endpoint.
+`createChatClientOptions()` enables full type inference for messages via `InferChatMessages<typeof options>`. The chat endpoint uses `chatParamsFromRequest` and reads `browserContext` from `params.forwardedProps`.
 
 ### App navigation and links
 
@@ -295,7 +304,7 @@ When routes or `validateSearch` schemas change, set `staticData.description` on 
 
 ### AI System Prompt Context
 
-`buildSystemPrompt()` in `src/routes/api/chat.ts` merges `BASE_SYSTEM_PROMPT`, navigation manifest, and dynamic blocks (Current User, Browser Context, Current Location). Clients send `browserContext` from `PromptChatContext` / `AgenticChatContext` (agentic sets `surface: 'agentic'` and omits path fields); server validates with `BrowserContextSchema` in `schemas.ts`.
+`buildSystemPrompt()` in `src/routes/api/chat.ts` merges `BASE_SYSTEM_PROMPT`, navigation manifest, and dynamic blocks (Current User, Browser Context, Current Location). Clients send `browserContext` via the chat connection body (AG-UI `forwardedProps`) from `PromptChatContext` / `AgenticChatContext` (agentic sets `surface: 'agentic'` and omits path fields); server validates with `BrowserContextSchema` in `schemas.ts`.
 
 When adding dynamic route segments, add pattern-matching in `buildSystemPrompt()` so the AI can resolve "this task" to the current id.
 
@@ -324,9 +333,9 @@ The chat endpoint is a TanStack Start file-based route at `/api/chat` with two s
 
 **GET handler** — `{ available: boolean }` from `getAIAdapterService().isConfigured()`.
 
-**POST handler flow:** check adapter → parse `{ messages, browserContext }` → `buildSystemPrompt` → assemble tools → `chat({ …, agentLoopStrategy: maxIterations(N) })` → SSE via `toServerSentEventsResponse`. Set `maxIterations` explicitly (skill **Core Contract** #13).
+**POST handler flow:** check adapter → `chatParamsFromRequest` (messages, `threadId`, `forwardedProps`) → parse `browserContext` from `forwardedProps` → `buildSystemPrompt` → assemble tools → `chat({ …, threadId, agentLoopStrategy: maxIterations(N) })` → SSE via `toServerSentEventsResponse`. Set `maxIterations` explicitly (skill **Core Contract** #13).
 
-When modifying: add server tools to the `tools` array; add client tool defs and wire `.client()` in `PromptChatContext` for side/prompt-first; update `BASE_SYSTEM_PROMPT` and `navigationManifest.ts` when domain or routes change.
+When modifying: add server tools to the `tools` array; add client tool defs and wire `.client()` in `PromptChatContext` for side/prompt-first; update the optional MCP tool list in `mcpServer.server.ts` when adding data tools; update `BASE_SYSTEM_PROMPT` and `navigationManifest.ts` when domain or routes change.
 
 ## 9. Observability
 
@@ -372,6 +381,7 @@ This project uses [Biome](https://biomejs.dev/) as the default linter and format
 
 - **Always use latest versions**: When adding dependencies, run `pnpm add <pkg>` without a version suffix so the package manager resolves the newest release. Never pin exact versions unless there is a known incompatibility.
 - **Keep dependencies up to date**: Run `pnpm outdated` to check for stale packages and `pnpm update` to align the lockfile with the latest compatible versions within current ranges.
+- **`@tanstack/*` stay current**: Before non-trivial Start/Router/AI work, check published versions for every `@tanstack/*` package in use and prefer the latest compatible release (upgrade related `@tanstack/ai*` packages together). Follow TanStack migration guides when a major is available; do not leave known-recommended upgrades unaddressed without a recorded incompatibility. Architecture skill **Fixed vs swappable stack**.
 - **Major version upgrades are conscious decisions**: When `pnpm outdated` shows a major version bump, upgrade explicitly with `pnpm add <pkg>@latest`, then verify with `pnpm lint && pnpm test && pnpm build` before committing.
 - **After any dependency change**, run the full validation checklist (section 15) to catch regressions.
 

@@ -826,6 +826,61 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 			},
 		},
 		{
+			id: 'architecture-optional-mcp-and-latest-tanstack',
+			skill: 'tanstack-promptable-fullstack-app-template',
+			description:
+				'Skill documents optional MCP opt-in + latest @tanstack/*; example uses createMCPServer without MCP UI for task views',
+			async run() {
+				const { agentSkillsDir } = getSkillPaths(rootDir)
+				const templateSkill = await readText(
+					path.join(agentSkillsDir, 'tanstack-promptable-fullstack-app-template', 'SKILL.md'),
+				)
+				const special = templateSkill.split('## Special Patterns')[1] ?? ''
+				const fixed = templateSkill.split('## Fixed vs swappable stack')[1]?.split('## ')[0] ?? ''
+				const missing = []
+				if (!/Optional MCP server \(opt-in\)/.test(special) || !/createMCPServer/.test(special)) {
+					missing.push('Special Patterns must document optional createMCPServer MCP opt-in')
+				}
+				if (!/Core Contract #11/.test(special) || !/optional/i.test(special)) {
+					missing.push('MCP must be marked optional / not Core Contract #11')
+				}
+				if (!/Always prefer latest/.test(fixed) || !/@tanstack\/\*/.test(fixed)) {
+					missing.push('Fixed vs swappable stack must require checking latest @tanstack/* versions')
+				}
+				const mcpServerPath = path.join(rootDir, 'src/services/ai/mcpServer.server.ts')
+				const mcpRoutePath = path.join(rootDir, 'src/routes/api/mcp.ts')
+				let mcpServer: string
+				let mcpRoute: string
+				try {
+					mcpServer = await readText(mcpServerPath)
+					mcpRoute = await readText(mcpRoutePath)
+				} catch {
+					return fail('Optional MCP reference example is missing', [
+						'src/services/ai/mcpServer.server.ts',
+						'src/routes/api/mcp.ts',
+					])
+				}
+				if (!/createMCPServer/.test(mcpServer) || !/mcpDataTools|getTasksTool/.test(mcpServer)) {
+					missing.push('mcpServer.server.ts must createMCPServer with shared data tools')
+				}
+				const mcpImports = mcpServer.match(/from ['"]@\/services\/ai\/tools['"][\s\S]*?\}/m)?.[0] ?? ''
+				const mcpToolsBlock = mcpServer.match(/tools:\s*mcpDataTools|export const mcpDataTools = \[[\s\S]*?\]/)?.[0] ?? ''
+				if (
+					/showTasksViewTool|showTaskViewTool|navigateToolDef|invalidateRouterToolDef/.test(mcpImports) ||
+					/showTasksViewTool|showTaskViewTool|navigateToolDef|invalidateRouterToolDef/.test(mcpToolsBlock)
+				) {
+					missing.push('MCP server must not expose client tools or A2UI show*View tools')
+				}
+				if (!/handleMcp/.test(mcpRoute) || !/createFileRoute\('\/api\/mcp'\)/.test(mcpRoute)) {
+					missing.push('src/routes/api/mcp.ts must mount handleMcp at /api/mcp')
+				}
+				if (/ui\.resourceUri|resourceUri/.test(mcpServer)) {
+					missing.push('MCP server must not wire MCP Apps ui.resourceUri for task views')
+				}
+				return missing.length === 0 ? pass() : fail('Optional MCP / latest TanStack contract drifted', missing)
+			},
+		},
+		{
 			id: 'architecture-import-protection',
 			skill: 'tanstack-promptable-fullstack-app-template',
 			description: 'vite.config.ts configures tanstackStart importProtection',
@@ -935,6 +990,12 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 				const skillMd = await readText(skillMdPath)
 				if (!/## Stack map/.test(skillMd)) {
 					return fail('reference-tech-stack SKILL.md must include a Stack map section')
+				}
+				if (!/Optional MCP|createMCPServer|@tanstack\/ai-mcp/.test(skillMd)) {
+					return fail('reference-tech-stack Stack map must mention optional MCP / @tanstack/ai-mcp')
+				}
+				if (!/TanStack packages stay current|latest/.test(skillMd)) {
+					return fail('reference-tech-stack must tell agents to keep @tanstack/* current')
 				}
 				return pass()
 			},
