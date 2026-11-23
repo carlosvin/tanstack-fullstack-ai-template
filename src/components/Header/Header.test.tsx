@@ -10,6 +10,13 @@ vi.mock('@/components/Link/Link', () => ({
 
 const appMeta = { name: 'TaskHub', version: '1.0.0' }
 
+/** jsdom 31 hides `hiddenFrom="sm"` at its fixed 1024px viewport, and the accessible name is empty while `display: none`. */
+function getNavToggle() {
+	const burger = document.querySelector('button[aria-label="Toggle navigation"]')
+	if (!(burger instanceof HTMLButtonElement)) throw new Error('Toggle navigation button not found')
+	return burger
+}
+
 describe('Header', () => {
 	it('shows the Ask AI control when aiAvailable is true', () => {
 		renderWithProviders(
@@ -46,7 +53,7 @@ describe('Header', () => {
 		const onToggleNav = vi.fn()
 		renderWithProviders(<Header navOpened={false} onToggleNav={onToggleNav} appMeta={appMeta} />)
 
-		fireEvent.click(screen.getByRole('button', { name: 'Toggle navigation' }))
+		fireEvent.click(getNavToggle())
 		expect(onToggleNav).toHaveBeenCalledTimes(1)
 	})
 })
