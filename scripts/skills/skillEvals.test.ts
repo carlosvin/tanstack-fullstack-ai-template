@@ -377,4 +377,119 @@ Do not pick one.
 			expect(result.files).toContain('src/components/PromptChat/PromptChatContext.tsx')
 		}
 	})
+
+	it('fails architecture vendor-agnostic when Fixed vs swappable omits AIAdapterService / @tanstack/ai-*', async () => {
+		const rootDir = await createMinimalWorkspace()
+		const result = await runEval(rootDir, 'template-skill-vendor-agnostic')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(result.message).toMatch(/AIAdapterService|@tanstack\/ai-\*/)
+		}
+	})
+
+	it('fails architecture vendor-agnostic when the skill pins OpenAI', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md': `---
+name: tanstack-promptable-fullstack-app-template
+description: "**WORKFLOW SKILL** - Fixture. USE FOR: architecture. DO NOT USE FOR: packages."
+license: MIT
+---
+
+## Companion skills (install if missing)
+
+## Fixed vs swappable stack
+
+**AI provider (adapter boundary):** any \`@tanstack/ai-*\` behind \`AIAdapterService\`. Prefer OpenAI for this app.
+
+## Next
+`,
+		})
+		const result = await runEval(rootDir, 'template-skill-vendor-agnostic')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(result.message).toMatch(/OpenAI|LLM vendor/)
+		}
+	})
+
+	it('fails architecture vendor-agnostic when the skill pins GOOGLE_API_KEY', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md': `---
+name: tanstack-promptable-fullstack-app-template
+description: "**WORKFLOW SKILL** - Fixture. USE FOR: architecture. DO NOT USE FOR: packages."
+license: MIT
+---
+
+## Companion skills (install if missing)
+
+## Fixed vs swappable stack
+
+**AI provider (adapter boundary):** any \`@tanstack/ai-*\` behind \`AIAdapterService\`. Set GOOGLE_API_KEY.
+
+## Next
+`,
+		})
+		const result = await runEval(rootDir, 'template-skill-vendor-agnostic')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(result.message).toMatch(/GOOGLE_API_KEY|LLM vendor/)
+		}
+	})
+
+	it('fails reference-tech-stack-map when the AI row omits AIAdapterService', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'.agents/skills/reference-tech-stack/SKILL.md': `---
+name: reference-tech-stack
+description: "**UTILITY SKILL** - Fixture. USE FOR: packages. DO NOT USE FOR: architecture."
+license: MIT
+---
+
+## Companion skills (install if missing)
+
+## Stack map (this repository)
+
+| Concern | Choice | Primary packages / notes | Handbook |
+|---------|--------|--------------------------|----------|
+| AI adapter | **This repository’s default:** Gemini → OpenAI | clones may pick any \`@tanstack/ai-*\` | AGENTS.md §8 |
+| Optional MCP | createMCPServer | @tanstack/ai-mcp | AGENTS.md §8 |
+
+## How to use these defaults
+
+5. **TanStack packages stay current:** prefer latest.
+`,
+		})
+		const result = await runEval(rootDir, 'reference-tech-stack-map')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(result.message).toMatch(/AIAdapterService/)
+		}
+	})
+
+	it('fails reference-tech-stack-map when the AI row omits this-repository labeling', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'.agents/skills/reference-tech-stack/SKILL.md': `---
+name: reference-tech-stack
+description: "**UTILITY SKILL** - Fixture. USE FOR: packages. DO NOT USE FOR: architecture."
+license: MIT
+---
+
+## Companion skills (install if missing)
+
+## Stack map (this repository)
+
+| Concern | Choice | Primary packages / notes | Handbook |
+|---------|--------|--------------------------|----------|
+| AI adapter | **Gemini → OpenAI** | any \`@tanstack/ai-*\`; \`AIAdapterService\` | AGENTS.md §8 |
+| Optional MCP | createMCPServer | @tanstack/ai-mcp | AGENTS.md §8 |
+
+## How to use these defaults
+
+5. **TanStack packages stay current:** prefer latest.
+`,
+		})
+		const result = await runEval(rootDir, 'reference-tech-stack-map')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(result.message).toMatch(/this repository|repo|template/i)
+		}
+	})
 })

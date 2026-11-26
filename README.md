@@ -33,7 +33,7 @@ Defaults for the reference app — swappable at the [interface boundary](#swappa
 
 | Concern | Default |
 |---------|---------|
-| Framework / routing / AI | [TanStack Start](https://tanstack.com/start) · [Router](https://tanstack.com/router) · [AI](https://tanstack.com/ai) |
+| Framework / routing / AI | [TanStack Start](https://tanstack.com/start) · [Router](https://tanstack.com/router) · [AI](https://tanstack.com/ai) (`AIAdapterService` + any `@tanstack/ai-*`; this repo: Gemini → OpenAI/Gateway → Azure) |
 | UI | [Mantine](https://mantine.dev/) |
 | Validation | [Zod](https://zod.dev/) |
 | Data | [MongoDB](https://www.mongodb.com/) + in-memory seed |
@@ -113,7 +113,7 @@ flowchart TB
     subgraph Impl ["Implementations (swappable)"]
         direction LR
         DB["MongoDB, Postgres, ..."]
-        LLM["OpenAI, Anthropic, ..."]
+        LLM["Any @tanstack/ai-* adapter"]
         Mon["Sentry, Datadog, ..."]
     end
 
@@ -131,7 +131,7 @@ flowchart TB
 | Layer | Interface | Default | Alternatives |
 |-------|-----------|---------|-------------|
 | **Database** | `Repository` | [MongoDB](https://www.mongodb.com/) | [Postgres](https://www.postgresql.org/), [DynamoDB](https://aws.amazon.com/dynamodb/), [Supabase](https://supabase.com/), in-memory |
-| **AI Provider** | `AIAdapterService` | Gemini → OpenAI / Gateway → Azure | [Anthropic](https://www.anthropic.com/), [Ollama](https://ollama.com/), any OpenAI-compatible |
+| **AI Provider** | `AIAdapterService` | This repo: Gemini → OpenAI / Gateway → Azure (`@tanstack/ai-gemini` + `@tanstack/ai-openai`) | Any [TanStack AI](https://tanstack.com/ai) `@tanstack/ai-*` adapter ([Anthropic](https://www.anthropic.com/), [OpenRouter](https://openrouter.ai/), [Ollama](https://ollama.com/), Groq, Grok, …) |
 | **Observability** | `ObservabilityService` | [Sentry](https://sentry.io/) | [Datadog](https://www.datadoghq.com/), [OpenTelemetry](https://opentelemetry.io/), no-op |
 | **UI Library** | — (component layer) | [Mantine](https://mantine.dev/) | [shadcn/ui](https://ui.shadcn.com/), [Chakra](https://chakra-ui.com/), [Ant Design](https://ant.design/), [Radix](https://www.radix-ui.com/) |
 | **Schema Validation** | — ([Standard Schema](https://github.com/standard-schema/standard-schema)) | [Zod](https://zod.dev/) | [ArkType](https://arktype.io/), [Valibot](https://valibot.dev/), [Effect Schema](https://effect.website/docs/schema/introduction/) |
@@ -167,7 +167,7 @@ src/
 │   ├── api/serverFns.ts        # Server functions (TanStack Start)
 │   ├── ai/
 │   │   ├── types.ts            # AIAdapterService interface
-│   │   ├── adapter.ts          # Provider implementation + factory
+│   │   ├── adapter.ts          # AIAdapterService factory (Gemini → OpenAI/Gateway → Azure)
 │   │   └── tools.ts            # AI tool definitions
 │   ├── observability/
 │   │   ├── types.ts            # ObservabilityService interface
@@ -195,7 +195,9 @@ See [`.env.example`](.env.example) for the full list.
 | `MONGODB_DB_NAME` | No | `app-db` | Database name. |
 | `REPOSITORY_TYPE` | No | auto | `seed` or `mongo`. Auto-detected from `MONGODB_URI`. |
 | `PROMPT_CONCEPT` | No | `side` | UX shell: `side`, `prompt-first`, or `agentic`. |
-| `GEMINI_API_KEY` / `OPENAI_API_KEY` / `AZURE_OPENAI_*` | No | — | First configured provider wins (Gemini → OpenAI/Gateway → Azure). Chat chrome optional until one is set (see `.env.example` for gateway vars). |
+| `GEMINI_API_KEY` / `GOOGLE_API_KEY` | No | — | Gemini (first match). `GOOGLE_API_KEY` is an accepted alias. |
+| `OPENAI_API_KEY` / `NETLIFY_AI_GATEWAY_*` | No | — | OpenAI / Netlify AI Gateway (second match). Gateway key/base URL auto-injected on Netlify. |
+| `AZURE_OPENAI_*` | No | — | Azure OpenAI (third match; needs endpoint). Chat chrome optional until any provider is set — see `.env.example`. |
 | `SENTRY_DSN` | No | — | Observability disabled without it. |
 | `AUTH_JWT_SECRET` / `AUTH_JWKS_URL` | No* | — | Verifier for signed bearer JWTs (`exp` required). Secret: HS256, min 32 chars, wins over JWKS. JWKS needs `AUTH_JWT_ISSUER`. |
 | `AUTH_HEADER_NAME` | No | `Authorization` | HTTP header containing the JWT. |
@@ -217,7 +219,7 @@ See [`.env.example`](.env.example) for the full list.
 ### Swapping layers
 
 - **Database** — implement `Repository`, construct it in `ensureRepository()`, inject via `repositoryMiddleware`.
-- **AI** — implement `AIAdapterService` in `src/services/ai/types.ts`; update the factory in `adapter.ts`.
+- **AI** — install a `@tanstack/ai-*` adapter package, implement `AIAdapterService` so `getAdapter()` returns that TanStack AI adapter, update `adapter.ts`. Do not call vendor LLM SDKs from routes/tools/chat — see AGENTS.md §8.
 - **Observability** — implement `ObservabilityService`; update `getObservability.ts` and `instrument.server.mts`.
 - **UI** — replace Mantine imports; repository / server functions / middleware stay unchanged.
 
