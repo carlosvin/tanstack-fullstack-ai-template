@@ -383,7 +383,7 @@ Do not pick one.
 		const result = await runEval(rootDir, 'template-skill-vendor-agnostic')
 		expect(result.pass).toBe(false)
 		if (!result.pass) {
-			expect(result.message).toMatch(/AIAdapterService|@tanstack\/ai-\*/)
+			expect(formatEvalFailure(result)).toMatch(/AIAdapterService|@tanstack\/ai-\*/)
 		}
 	})
 
@@ -407,7 +407,7 @@ license: MIT
 		const result = await runEval(rootDir, 'template-skill-vendor-agnostic')
 		expect(result.pass).toBe(false)
 		if (!result.pass) {
-			expect(result.message).toMatch(/OpenAI|LLM vendor/)
+			expect(formatEvalFailure(result)).toMatch(/OpenAI|LLM vendor/)
 		}
 	})
 
@@ -431,7 +431,7 @@ license: MIT
 		const result = await runEval(rootDir, 'template-skill-vendor-agnostic')
 		expect(result.pass).toBe(false)
 		if (!result.pass) {
-			expect(result.message).toMatch(/GOOGLE_API_KEY|LLM vendor/)
+			expect(formatEvalFailure(result)).toMatch(/GOOGLE_API_KEY|LLM vendor/)
 		}
 	})
 
@@ -460,7 +460,7 @@ license: MIT
 		const result = await runEval(rootDir, 'reference-tech-stack-map')
 		expect(result.pass).toBe(false)
 		if (!result.pass) {
-			expect(result.message).toMatch(/AIAdapterService/)
+			expect(formatEvalFailure(result)).toMatch(/AIAdapterService/)
 		}
 	})
 
@@ -489,7 +489,7 @@ license: MIT
 		const result = await runEval(rootDir, 'reference-tech-stack-map')
 		expect(result.pass).toBe(false)
 		if (!result.pass) {
-			expect(result.message).toMatch(/this repository|repo|template/i)
+			expect(formatEvalFailure(result)).toMatch(/this repository|repo|template/i)
 		}
 	})
 })
