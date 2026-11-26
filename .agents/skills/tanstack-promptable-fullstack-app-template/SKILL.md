@@ -113,15 +113,13 @@ Full seam notes: [references/tri-modal-ux.md](./references/tri-modal-ux.md).
 
 **Fixed by this skill (TanStack):** TanStack **Start**, **Router**, and **AI** (server functions, middleware, file routes, `validateSearch`, loaders, `chat()` / tools / SSE). Use **`@tanstack/cli`** for current library docs. This repo’s architecture lives in Agent Skills (`.agents/skills/*/SKILL.md`) only.
 
-**Always prefer latest `@tanstack/*`:** Before Start/Router/AI/MCP work, check published versions (`pnpm outdated`, registry, `@tanstack/cli`). Prefer the newest compatible release; when a major ships with migration docs (e.g. AI 1.0), plan that upgrade. Bump related `@tanstack/ai*` packages together, apply migrations, then `pnpm format && pnpm lint && pnpm test && pnpm build`. Do not skip known-recommended upgrades without a recorded incompatibility.
+**Always prefer latest `@tanstack/*`:** Before Start/Router/AI/MCP work, check published versions (`pnpm outdated`, registry, `@tanstack/cli`). Prefer the newest compatible release; bump related `@tanstack/ai*` together, apply migrations, then `pnpm format && pnpm lint && pnpm test && pnpm build`. Do not skip known-recommended upgrades without a recorded incompatibility.
 
 **Swappable (not prescribed here):** runtime validation, database, auth mechanism, AI provider, observability vendors, UI kit, markdown renderer, lint/test/deploy tooling. Patterns stay interface-first (`Schema.parse()`, repository interfaces, `AIAdapterService`, `ObservabilityService`).
 
-**AI provider (adapter boundary):** “AI provider” means **any** TanStack AI adapter package (`@tanstack/ai-*`) behind `AIAdapterService` (`isConfigured` / `getMissingConfigMessage` / `getAdapter`). `getAdapter()` returns a value suitable for `chat({ adapter })`. Do **not** call vendor LLM SDKs from routes, tools, or chat handlers. Do **not** name a required vendor, API key, or concrete `@tanstack/ai-<vendor>` package in this skill — concrete keys and packages live in **`reference-tech-stack`** and AGENTS.md §8. When scaffolding and the LLM preference is unclear, ask which provider to use, then install only the chosen `@tanstack/ai-*` adapter(s).
+**AI provider (adapter boundary):** any `@tanstack/ai-*` behind `AIAdapterService` (`isConfigured` / `getMissingConfigMessage` / `getAdapter` → `chat({ adapter })`). No vendor LLM SDKs in routes/tools/chat; no vendor/API-key/`@tanstack/ai-<vendor>` pin here — **`reference-tech-stack`** / AGENTS.md §8. Ask which provider when scaffolding if unclear, then install only that adapter.
 
-Concrete packages for *this* template: companion skill **`reference-tech-stack`**. Env/logging bootstrap: **`observability-and-env`**.
-
-Pick **one validator library** per app and use it consistently across router search, server-fn validators, and AI tool schemas. Code samples below use **Zod as the reference syntax** (see **`reference-tech-stack`**); translate idioms when using ArkType or Valibot.
+Concrete packages for *this* template: **`reference-tech-stack`**. Env/logging: **`observability-and-env`**. One validator library per app (samples use Zod; see **`reference-tech-stack`**).
 
 ## Common failure modes (avoid these)
 
@@ -171,8 +169,7 @@ Scan before changing code:
 - **Auth ticket is repository-backed and server-enforced:** middleware builds the ticket from the repository (`getUserProfile` → `buildAccessTicket`, or `getUserAccess`); guards run in **server handlers**, never UI-only. Bearer identity is signature-verified first.
 - **Writes use `TraceabilityContext`:** pass audit fields from the ticket (or stock `context.user.email`) through a single context object on `Repository` mutations — avoid sprinkling raw `email` arguments. Repository implementations must **persist** `createdBy` / `lastModifiedBy` from that context onto the entity.
 - **Navigation is one decision:** ship the **router defaults bundle** and the **project `Link` wrapper** (`search: true`) together so URL state survives navigation.
-- **AI stack is complete:** every repo method → server tool + safe handler; client **`navigate`** / **`invalidateRouter`**; root **`getAIAvailability()`**; chat payload includes **`browserContext`**; **`chat({ agentLoopStrategy: maxIterations(N) })`**.
-- **AI adapter boundary:** chat uses `AIAdapterService.getAdapter()` with a TanStack AI `@tanstack/ai-*` adapter only — never a vendor LLM SDK from app/chat code; vendor choice stays in **`reference-tech-stack`** / AGENTS.md §8.
+- **AI stack is complete:** every repo method → server tool + safe handler; client **`navigate`** / **`invalidateRouter`**; root **`getAIAvailability()`**; chat payload includes **`browserContext`**; **`chat({ agentLoopStrategy: maxIterations(N) })`**; adapter via `AIAdapterService.getAdapter()` (`@tanstack/ai-*` only — vendor choice in **`reference-tech-stack`** / AGENTS.md §8).
 - **Routes:** **`validateSearch`** + **`loaderDeps`**; duplicate **`beforeLoad`** / shared loaders only on **parent** layouts; recover page state from URL path + search params and pass props to isolated components instead of `useState` / `useEffect`.
 - **Metadata discipline:** schema field descriptions for narrative copy; structured extras for units/formats; closed vocabularies = `as const` tuple + schema enum + inferred type.
 - **Server boundaries:** loaders call `serverFns` only — no `process.env` secrets, DB drivers, or repo imports in route files; `*.server.ts` for DB drivers / Node SDKs; `createServerOnlyFn` for non-RPC infra; `importProtection` updated for new node packages.
@@ -445,7 +442,7 @@ interface Repository {
 4. **AI tools:** each server function → `toolDefinition` + `createSafeServerTool`; wire client tools in the prompt shell (AGENTS.md §8). Prompt placement: **Choose a UX**, then **`promptable-ux`** or **`agentic-ux`**. When it is not clear which user experience to implement, ask which of the three and wait.
 5. **Middleware:** `start.ts` — auth, invalidation, optional pre-auth `308` redirects for legacy paths.
 6. **Routes:** `validateSearch`, `loaderDeps`, loaders; parent layouts for shared `beforeLoad`/data.
-7. **Chat:** choose/implement a `@tanstack/ai-*` adapter via `AIAdapterService` (ask which provider when scaffolding if unclear); wire `chat()`, `buildSystemPrompt`, and the tool list — details in AGENTS.md §8. Follow **Choose a UX** before wiring chrome. When it is not clear which user experience to implement, ask which of the three and wait. **Side** and **prompt-first** load **`promptable-ux`**. **Agentic** loads **`agentic-ux`** and skips domain screens.
+7. **Chat:** `@tanstack/ai-*` via `AIAdapterService` (ask provider if unclear); `chat()`, `buildSystemPrompt`, tools — AGENTS.md §8. **Choose a UX** before chrome; **side** / **prompt-first** → **`promptable-ux`**; **agentic** → **`agentic-ux`** (no domain screens).
 
 ### Per-entity 3-UX checklist
 
@@ -458,7 +455,7 @@ Add Part A once for every UX; add Part B only when the deployment includes route
 
 - **Overlay repository:** a `Repository` decorator over a read-only upstream plus sparse user overrides; pure `applyOverrides`; writes only to overrides. This is optional composition — not a Core Contract read/write factory split.
 - **URL bulk edit:** selection and category tabs in search params; batched mutation; per-row auth.
-- **Debounced free-text search (URL-as-state):** Keep filters in validated search params + `loaderDeps`, but do **not** control free-text search from the URL on every keystroke. Use an uncontrolled text input (`defaultValue` from the current search param) and a debounced callback — your UI library's debounce hook, `@tanstack/pacer`, or a small local helper — to `navigate({ replace: true, search })` only after the user pauses. Discrete filters (dropdowns, tabs, segmented controls) may navigate immediately. Call `navigate` from the debounce callback — do not watch a debounced value in `useEffect` just to navigate. **UI-agnostic:** this skill does not prescribe a component library; follow the project's UI kit in **AGENTS.md §3** for concrete input/select components.
+- **Debounced free-text search (URL-as-state):** Keep filters in `validateSearch` + `loaderDeps`; do **not** write free-text to the URL every keystroke. Uncontrolled input (`defaultValue` from search) + debounced `navigate({ replace: true, search })` (UI debounce hook, `@tanstack/pacer`, or local helper). Discrete filters may navigate immediately. Navigate from the debounce callback — not via `useEffect` on a debounced value. Concrete inputs: **AGENTS.md §3**.
 
   ```typescript
 const updateSearch = (updates: Partial<Search>, replace = false) => {
@@ -482,7 +479,7 @@ const debouncedSearch = debounce((value: string) => {
 - **Agent Skills (only standard):** this template’s skills are [agentskills.io](https://agentskills.io) folders — `.agents/skills/<name>/SKILL.md`. Edit those files directly. Install into other projects with `npx skills add carlosvin/tanstack-fullstack-ai-template` (all skills) or `--skill <id>`. List: `npx skills add carlosvin/tanstack-fullstack-ai-template --list`. Similar: `gh skill install carlosvin/tanstack-fullstack-ai-template`. Do not maintain a second skill format (canonical YAML, TanStack Intent package skills, or generated copies).
 - **CLI (prefer current docs over memory):** `npx @tanstack/cli --help` → `libraries`, `search-docs "<query>" --library router|start|ai`, `doc <library> <path>`.
 - **Versions:** prefer latest `@tanstack/*` (see **Fixed vs swappable stack**); **`reference-tech-stack`** names packages, not stale pins.
-- **AI stack:** `@tanstack/ai`, `@tanstack/ai-react`, optional `@tanstack/ai-mcp`, plus a chosen `@tanstack/ai-*` provider adapter behind `AIAdapterService` — wiring and MCP in **AGENTS.md §8**. Ask which provider when scaffolding if unclear; do not prescribe a vendor in this skill.
+- **AI stack:** `@tanstack/ai`, `@tanstack/ai-react`, optional `@tanstack/ai-mcp`, plus a chosen `@tanstack/ai-*` behind `AIAdapterService` — **AGENTS.md §8** (ask provider if unclear; no vendor pin here).
 
 ## Use the handbook (AGENTS.md)
 
