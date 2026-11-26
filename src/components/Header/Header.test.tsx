@@ -49,4 +49,26 @@ describe('Header', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Toggle navigation' }))
 		expect(onToggleNav).toHaveBeenCalledTimes(1)
 	})
+
+	it('shows the user menu when currentUser is provided', () => {
+		renderWithProviders(
+			<Header
+				navOpened={false}
+				onToggleNav={vi.fn()}
+				appMeta={appMeta}
+				currentUser={{
+					identity: { email: 'alice@example.com', name: 'Alice Johnson', groups: [] },
+					profile: {
+						email: 'alice@example.com',
+						name: 'Alice Johnson',
+						avatarUrl: 'https://example.com/a.png',
+					},
+					isTestUser: false,
+					roles: [],
+				}}
+			/>,
+		)
+
+		expect(screen.getByRole('button', { name: 'Open user menu' })).toBeTruthy()
+	})
 })

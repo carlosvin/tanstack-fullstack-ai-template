@@ -162,4 +162,20 @@ describe('SeedRepository', () => {
 			expect(access).toBeNull()
 		})
 	})
+
+	describe('updateUserPreferences', () => {
+		it('updates theme on an existing profile', async () => {
+			const updated = await repo.updateUserPreferences('alice@example.com', { theme: 'light' })
+			expect(updated.preferences?.theme).toBe('light')
+			const again = await repo.getUserProfile('alice@example.com')
+			expect(again?.preferences?.theme).toBe('light')
+		})
+
+		it('creates a stub profile when the email is new', async () => {
+			const created = await repo.updateUserPreferences('newbie@example.com', { theme: 'dark' }, { name: 'Newbie' })
+			expect(created.email).toBe('newbie@example.com')
+			expect(created.name).toBe('Newbie')
+			expect(created.preferences?.theme).toBe('dark')
+		})
+	})
 })

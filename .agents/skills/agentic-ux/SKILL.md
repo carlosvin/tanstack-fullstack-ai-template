@@ -20,7 +20,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "0.6.0"
+  version: "0.7.0"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -78,7 +78,7 @@ Discover all skills: `npx skills add carlosvin/tanstack-fullstack-ai-template --
 
 ## Shell
 
-- One root layout per deployment. Conversation state lives there so scrolling never wipes the thread. Layout: app bar with identity only (name in the bar; version in a tooltip), a centered conversation column, and a bottom-pinned composer that stays reachable regardless of thread length. The column and the composer share one width: the space under the header, capped so a line stays readable on an ultra-wide monitor. A tool view fills that column.
+- One root layout per deployment. Conversation state lives there so scrolling never wipes the thread. Layout: app bar with **product identity** (app name in the bar; version in a tooltip) plus the signed-in **User Menu** (avatar / initials from `CurrentUser` — same account-only pattern as **`promptable-ux`**), a centered conversation column, and a bottom-pinned composer that stays reachable regardless of thread length. The column and the composer share one width: the space under the header, capped so a line stays readable on an ultra-wide monitor. A tool view fills that column. **Settings** from the User Menu opens an **in-shell modal** with the shared settings form — do not navigate to `/settings` or mount domain routes in `agentic` mode.
 - When empty, the stage is a centered hero: icon, welcome text, and starter controls that ask for inline views (`Show my tasks`, a status filter, a priority filter). Do not reuse `docs/help.md` bullets that point at dashboards or routes.
 - As the conversation progresses, the stage is the scrollable thread. Order inside one reply: one short markdown sentence, a sentence-case tool status (`showing tasks`, not the raw tool name), then the A2UI surface. Text-only replies stay markdown with GFM tables, code, and links.
 - Prompt behavior: Enter sends, Shift+Enter inserts a newline, stop while generating, clear once messages exist. Clearing the thread also clears a detail view opened from a card.
@@ -152,7 +152,8 @@ Catalog actions map to host state or a follow-up prompt. Never to an in-app rout
 ## UX checklist
 
 - Mode declared. No drawer, prompt-first bar, overview, drill-down, navbar, or domain route in `agentic` deployment.
-- No reused route-based components in `AgenticShell`. Mantine task views are A2UI surfaces built from tool data.
+- App bar hosts product identity plus User Menu; Settings opens an in-shell modal (not a route).
+- No reused route-based page shells in `AgenticShell`. Shared settings form content is fine inside a modal. Mantine task views are A2UI surfaces built from tool data.
 - `getAIAvailability()` gates the prompt. Unconfigured AI shows the empty configuration state.
 - Chat state lives on the layout and survives scrolling. Prompt stays pinned on narrow viewports.
 - Surfaces render through the allowlisted catalog with error and retry states. A kit component comes before a custom composite. A request for numbers uses the chart presentation.

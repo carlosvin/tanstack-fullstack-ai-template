@@ -74,7 +74,7 @@ export function AppLayout({ currentUser, shellSession, aiAvailable = false, chil
 	if (isAgentic) {
 		return (
 			<AgenticChatProvider>
-				<AgenticShell appMeta={shellSession.app} aiAvailable={aiAvailable} />
+				<AgenticShell appMeta={shellSession.app} aiAvailable={aiAvailable} currentUser={currentUser} />
 			</AgenticChatProvider>
 		)
 	}
@@ -96,19 +96,14 @@ export function AppLayout({ currentUser, shellSession, aiAvailable = false, chil
 					onToggleNav={toggleNav}
 					onNavigate={closeNav}
 					appMeta={shellSession.app}
+					currentUser={currentUser}
 					aiAvailable={aiAvailable}
 					promptConcept={promptConcept}
 					onOpenChat={isSideConcept ? openChat : undefined}
 				/>
 			</AppShell.Header>
 			<AppShell.Navbar p="md">
-				<AppNavbar
-					pathname={pathname}
-					currentUser={currentUser}
-					appMeta={shellSession.app}
-					promptConcept={promptConcept}
-					onNavigate={closeNav}
-				/>
+				<AppNavbar pathname={pathname} appMeta={shellSession.app} promptConcept={promptConcept} onNavigate={closeNav} />
 			</AppShell.Navbar>
 			<AppShell.Main>{children}</AppShell.Main>
 			{showPromptFirstFooter ? (

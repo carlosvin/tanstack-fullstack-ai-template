@@ -15,6 +15,8 @@ import {
 	type TaskRepoFilter,
 	type TaskRepoInput,
 	type UserAccessRepo,
+	type UserPreferencesRepo,
+	UserPreferencesRepoSchema,
 	type UserProfileRepo,
 	UserProfileRepoSchema,
 } from '@/services/schemas/repository'
@@ -154,6 +156,30 @@ export class SeedRepository implements Repository {
 	async getUserAccess(email: string): Promise<UserAccessRepo | null> {
 		const profile = await this.getUserProfile(email)
 		return profile ? toUserAccessRepo(profile) : null
+	}
+
+	async updateUserPreferences(
+		email: string,
+		preferences: UserPreferencesRepo,
+		identity?: { name: string },
+	): Promise<UserProfileRepo> {
+		const prefs = UserPreferencesRepoSchema.parse(preferences)
+		const index = this.users.findIndex((u) => u.email.toLowerCase() === email.toLowerCase())
+		if (index === -1) {
+			const created = UserProfileRepoSchema.parse({
+				email,
+				name: identity?.name || email,
+				preferences: prefs,
+			})
+			this.users.push(created)
+			return created
+		}
+		const next = UserProfileRepoSchema.parse({
+			...this.users[index],
+			preferences: prefs,
+		})
+		this.users[index] = next
+		return next
 	}
 
 	async createTask(input: TaskRepoInput, trace?: TraceabilityContext): Promise<TaskRepo> {

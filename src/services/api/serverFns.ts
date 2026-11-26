@@ -8,7 +8,7 @@ import { getAIAdapterService } from '@/services/ai/adapter'
 import { applyBulkStatus } from '@/services/api/bulkTaskStatus'
 import { getObservability } from '@/services/observability/getObservability'
 import { createWriteTrace, updateWriteTrace } from '@/services/repository/traceability'
-import { TaskRepoFilterSchema, TaskRepoInputSchema } from '@/services/schemas/repository'
+import { TaskRepoFilterSchema, TaskRepoInputSchema, UserPreferencesRepoSchema } from '@/services/schemas/repository'
 import {
 	AssigneeOptionListSchema,
 	BulkTaskStatusInputSchema,
@@ -19,6 +19,7 @@ import {
 	TaskIdInputSchema,
 	TaskInputSchema,
 	UpdateTaskInputSchema,
+	UpdateUserPreferencesSchema,
 	UserProfileByEmailSchema,
 } from '@/services/schemas/schemas'
 import { toToolTask, toToolUserAccess, toToolUserProfile } from '@/services/schemas/taskMappers'
@@ -129,6 +130,22 @@ export const getCurrentUser = createServerFn({ method: 'GET' })
 // Handlers throw HttpError on auth/not-found failures; callers normalize
 // via processResponse (UI) or safeToolHandler (AI).
 // ============================================================================
+
+/** Persist theme (and future) preferences for the signed-in user. */
+export const updateUserPreferences = createServerFn({ method: 'POST' })
+	.middleware([requireAuthMiddleware, invalidateMiddleware])
+	.validator(UpdateUserPreferencesSchema)
+	.handler(async ({ data, context }) => {
+		const email = context.accessTicket.identity.email
+		if (!email) throw new HttpError(401, 'Authentication required')
+		const preferences = UserPreferencesRepoSchema.parse(data)
+		const row = await getObservability({}).startSpan('updateUserPreferences', () =>
+			context.repository.updateUserPreferences(email, preferences, {
+				name: context.accessTicket.identity.name,
+			}),
+		)
+		return toToolUserProfile(row)
+	})
 
 /** Create a new task. Maps tools-layer input to repo-layer. */
 export const createTask = createServerFn({ method: 'POST' })

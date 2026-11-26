@@ -85,7 +85,7 @@ coupling into the architecture skill.
 | Concern | Choice | Primary packages / notes | Handbook |
 |---------|--------|--------------------------|----------|
 | Runtime validation | **Zod** | `zod` — tools, repo, router search, env | Architecture skill samples; `src/services/schemas/`, `src/env/` |
-| UI kit | **Mantine** | `@mantine/core`, `@mantine/hooks`, `@mantine/notifications`, `@mantine/charts` | AGENTS.md §3 |
+| UI kit | **Mantine** | `@mantine/core`, `@mantine/hooks`, `@mantine/notifications`, `@mantine/charts`. **User Menu:** `Avatar` (image or initials) + `Menu` as the far-right account control; see **`promptable-ux`** / **`agentic-ux`**. | AGENTS.md §3 |
 | Icons | **lucide-react** | One icon library; do not mix Tabler | AGENTS.md §3 |
 | Database | **MongoDB + seed** | `mongodb`; in-memory seed when unset | AGENTS.md §6; `src/services/repository/` |
 | Auth | **JWT header** | `jose` verifies HS256 (`AUTH_JWT_SECRET`, min 32) or JWKS (`AUTH_JWKS_URL` + required `AUTH_JWT_ISSUER`); require `exp`; unsigned `alg:none` only when `AUTH_ALLOW_UNSIGNED_TOKENS=true` outside production | AGENTS.md §5 |
@@ -113,7 +113,7 @@ coupling into the architecture skill.
 
 ## Expressing the UX concepts in this stack
 
-**`promptable-ux`** owns mobile first and the two prompt concepts. In *this* template, express mobile first with Mantine responsive props (`base`, then `sm` / `md` / `lg`). The reference app declares **Promptable UI (side)**: navigation that overflows a narrow header uses `AppShell` + `Burger` + `NavLink`, and the prompt is a right `Drawer` (AGENTS.md §3 and §8), not a permanent aside. Prompt-first would still use those responsive props; it would not add a second drawer.
+**`promptable-ux`** owns mobile first and the two prompt concepts. In *this* template, express mobile first with Mantine responsive props (`base`, then `sm` / `md` / `lg`). The reference app declares **Promptable UI (side)**: navigation that overflows a narrow header uses `AppShell` + `Burger` + `NavLink`, and the prompt is a right `Drawer` (AGENTS.md §3 and §8), not a permanent aside. Prompt-first would still use those responsive props; it would not add a second drawer. Signed-in identity uses Mantine `Avatar` + `Menu` in the header utility area (`UserMenu`); Settings is `/settings` for side / prompt-first and an in-shell `Modal` for agentic.
 
 ## Verification
 

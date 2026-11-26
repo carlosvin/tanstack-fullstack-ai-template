@@ -21,6 +21,7 @@ import {
 	getUserProfileTool,
 	updateTasksStatusTool,
 	updateTaskTool,
+	updateUserPreferencesTool,
 } from '@/services/ai/tools'
 
 /** Server tools shared with chat `dataTools` (CRUD / query only). */
@@ -33,6 +34,7 @@ export const mcpDataTools = [
 	getUserAccessTool,
 	getAppRuntimeInfoTool,
 	getCurrentUserContextTool,
+	updateUserPreferencesTool,
 	createTaskTool,
 	updateTaskTool,
 	updateTasksStatusTool,

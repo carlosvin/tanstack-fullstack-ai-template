@@ -75,7 +75,8 @@ test.describe('Task list', () => {
 		// Playwright webServer sets AUTH_JWT_SECRET, so verified mode suppresses the demo cookie.
 		await page.goto('/tasks')
 
-		await expect(page.getByText('Anonymous')).toBeVisible()
+		await expect(page.getByRole('button', { name: 'Open user menu' })).toBeVisible()
+		await expect(page.getByTitle('Anonymous')).toBeVisible()
 		await expect(page.getByRole('button', { name: 'Add task' })).toHaveCount(0)
 	})
 })

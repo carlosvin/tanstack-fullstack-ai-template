@@ -8,6 +8,7 @@ export function getToolLabel(toolName: string): string {
 		invalidateRouter: 'refreshing data',
 		getUserAccess: 'checking access roles',
 		getCurrentUserContext: 'checking permissions',
+		updateUserPreferences: 'updating preferences',
 		createTask: 'creating task',
 		updateTask: 'updating task',
 		updateTasksStatus: 'updating tasks',

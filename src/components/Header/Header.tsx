@@ -1,6 +1,8 @@
 import { ActionIcon, Burger, Group, Text, Tooltip, useMantineColorScheme } from '@mantine/core'
 import { CheckSquare, MessageCircle, Moon, Sun } from 'lucide-react'
 import { Link } from '@/components/Link/Link'
+import { UserMenu } from '@/components/UserMenu/UserMenu'
+import type { CurrentUser } from '@/services/schemas/schemas'
 import type { AppMeta, PromptConcept } from '@/services/schemas/shellSession'
 
 interface HeaderProps {
@@ -8,6 +10,7 @@ interface HeaderProps {
 	onToggleNav: () => void
 	onNavigate?: () => void
 	appMeta: AppMeta
+	currentUser?: CurrentUser
 	aiAvailable?: boolean
 	promptConcept?: PromptConcept
 	onOpenChat?: () => void
@@ -18,6 +21,7 @@ export function Header({
 	onToggleNav,
 	onNavigate,
 	appMeta,
+	currentUser,
 	aiAvailable = false,
 	promptConcept = 'side',
 	onOpenChat,
@@ -61,6 +65,8 @@ export function Header({
 						</ActionIcon>
 					</Tooltip>
 				) : null}
+
+				{currentUser ? <UserMenu currentUser={currentUser} /> : null}
 			</Group>
 		</Group>
 	)

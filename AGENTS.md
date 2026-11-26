@@ -225,6 +225,8 @@ Routes live in `src/routes/`; tree is auto-generated in `routeTree.gen.ts`. Rout
 
 **Promptable gating (skill #12):** root loader calls `getAIAvailability()`; `AppLayout` / `Header` mount chat UI only when configured (no disabled placeholder).
 
+**User Menu (promptable-ux / agentic-ux):** `Header` and `AgenticShell` host a far-right `UserMenu` from root-loader `currentUser` (avatar / initials → account dropdown → Settings). Side / prompt-first use `/settings`; agentic opens the same `SettingsPage` in a modal. Prefer Mantine `Avatar` + `Menu`. Do not use the menu for primary app navigation.
+
 ### AI Adapter Interface
 
 The AI provider is behind the `AIAdapterService` interface defined in `src/services/ai/types.ts`:
@@ -410,6 +412,19 @@ pnpm skills:waza # Waza skill readiness + spec coverage + mock evals (needs `waz
 pnpm build     # Verify production build
 ```
 
+### When to run E2E (and which demos)
+
+Run `pnpm test:e2e` whenever the change can break browser-visible behavior — not only when you edited an `e2e/*.spec.ts` file. Prefer E2E (in addition to unit tests) for:
+
+- App chrome / layout / navigation (Header, User Menu, Settings, AppNavbar, prompt shells)
+- Auth-gated mutations, forms, and URL-recoverable search state
+- AI chat drawer / PromptBar / agentic shell wiring
+- Route tree or `validateSearch` changes that loaders and client tools depend on
+
+For shell or skill-contract UI work, also smoke **all three** `PROMPT_CONCEPT` demos (`side`, `prompt-first`, `agentic`) — local servers with different env values, or Netlify deploy previews. A change is not done when only one concept was exercised. Capture screenshots or a short walkthrough when the UX is the deliverable.
+
+Prefer a production server for E2E (`pnpm build` then `REPOSITORY_TYPE=seed PORT=3000 OPENAI_API_KEY=sk-e2e-placeholder pnpm start`, then `pnpm test:e2e`) so AI-gated chrome is present and `networkidle` does not hang on Vite devtools. See **Cursor Cloud specific instructions**.
+
 ### Post-Setup / Migration Verification
 
 When creating a new project from this template or migrating an existing one, confirm all of the following before considering the setup complete:
@@ -425,7 +440,8 @@ Package manager is **pnpm**; the standard commands live in `package.json` and se
 
 - **No external services required.** With no `MONGODB_URI`, the app uses the in-memory **seed** repository, so `pnpm dev` is fully functional on its own. MongoDB, an AI provider (Gemini/Azure OpenAI), and Sentry are all optional — the app degrades gracefully when their env vars are unset.
 - **Auth is header-only.** The auth middleware reads a JWT from the `Authorization` header (`src/middleware/auth.ts`); there is no cookie/session login. With no `AUTH_JWT_SECRET` or `AUTH_JWKS_URL`, that header is ignored and a plain browser gets the demo `test-auth` cookie identity. To send a real header identity, set `AUTH_JWT_SECRET` (min 32 chars) and sign HS256 tokens, or set `AUTH_JWKS_URL` + `AUTH_JWT_ISSUER`. `AUTH_ALLOW_UNSIGNED_TOKENS=true` accepts `alg:none` header JWTs only for local demos, and only when no verifier is set; startup fails if that flag is combined with `ENV` or `NODE_ENV` production. E2E signs Alice with `AUTH_JWT_SECRET` (`e2e/auth.ts`). A reverse proxy in front of `:3000` can add the header for a manual browser session.
-- **E2E gotcha — `networkidle` hangs in dev mode.** `pnpm test:e2e` defaults to starting `pnpm dev` (see `playwright.config.ts`, `reuseExistingServer: true`). The `@tanstack/devtools-vite` plugin holds an open background connection in dev, so specs that use `page.goto(..., { waitUntil: 'networkidle' })` never settle and time out. To get a clean run, start a **production** server first and let Playwright reuse it: `pnpm build` then `REPOSITORY_TYPE=seed PORT=3000 AUTH_JWT_SECRET='e2e-test-secret-at-least-32-bytes!!' pnpm start`, then `pnpm test:e2e` in another shell. The secret must match `e2e/auth.ts` / `playwright.config.ts` or Alice fixtures will not authenticate.
+- **E2E when it validates the change.** Follow section 15 **When to run E2E** for chrome, auth, forms, chat shells, and route/search work. After those runs, smoke `PROMPT_CONCEPT=side`, `prompt-first`, and `agentic` (separate ports or Netlify previews) before calling a multi-demo UI change done.
+- **E2E gotcha — `networkidle` hangs in dev mode.** `pnpm test:e2e` defaults to starting `pnpm dev` (see `playwright.config.ts`, `reuseExistingServer: true`). The `@tanstack/devtools-vite` plugin holds an open background connection in dev, so specs that use `page.goto(..., { waitUntil: 'networkidle' })` never settle and time out. To get a clean run, start a **production** server first and let Playwright reuse it: `pnpm build` then `REPOSITORY_TYPE=seed PORT=3000 AUTH_JWT_SECRET='e2e-test-secret-at-least-32-bytes!!' OPENAI_API_KEY=sk-e2e-placeholder pnpm start`, then `pnpm test:e2e` in another shell. The secret must match `e2e/auth.ts` / `playwright.config.ts` or Alice fixtures will not authenticate. Set a placeholder `OPENAI_API_KEY` so AI-gated header controls mount (chat specs mock the SSE body).
 - **Mantine Select is a combobox.** E2E helpers in `e2e/helpers.ts` (`selectMantineOption`) target `getByRole('combobox')`, not `textbox`.
 - **Harmless noise:** `pnpm install` prints an "Ignored build scripts" warning (esbuild/swc/etc.) — build/dev/test all work anyway. `pnpm test` (Vitest) prints a "close timed out" / "module is not defined" message during teardown after all tests pass.
 - **Deploys are Netlify-only.** PR previews and production deploys come from Netlify Git integration, not GitHub Actions. GHA `ci.yml` validates on PRs and `main`; `skills.yml` validates published skills (including Waza); `commitlint.yml` lints Conventional Commits on PRs; `release-please.yml` opens/updates Release PRs on push to `main`. Netlify publishes. Confirm deploy previews are enabled in the Netlify site settings.
