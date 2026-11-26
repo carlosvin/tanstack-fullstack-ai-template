@@ -33,6 +33,15 @@ describe('webEnv', () => {
 		)
 	})
 
+	it('rejects AUTH_ALLOW_UNSIGNED_TOKENS when ENV is production', () => {
+		expect(() => WebServerEnvSchema.parse({ ENV: 'production', AUTH_ALLOW_UNSIGNED_TOKENS: 'true' })).toThrow(
+			/AUTH_ALLOW_UNSIGNED_TOKENS/,
+		)
+		expect(
+			WebServerEnvSchema.parse({ ENV: 'staging', AUTH_ALLOW_UNSIGNED_TOKENS: 'true' }).AUTH_ALLOW_UNSIGNED_TOKENS,
+		).toBe(true)
+	})
+
 	it('defaults PROMPT_CONCEPT to side and accepts prompt-first and agentic', () => {
 		expect(WebServerEnvSchema.parse({}).PROMPT_CONCEPT).toBe('side')
 		expect(WebServerEnvSchema.parse({ PROMPT_CONCEPT: 'prompt-first' }).PROMPT_CONCEPT).toBe('prompt-first')

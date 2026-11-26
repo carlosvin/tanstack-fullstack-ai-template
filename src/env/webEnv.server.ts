@@ -77,6 +77,15 @@ export const WebServerEnvSchema = WebPublicEnvSchema.extend({
 	NETLIFY_AI_GATEWAY_BASE_URL: OptionalTrimmedStringSchema.describe(
 		'Netlify AI Gateway base URL (auto-injected on Netlify).',
 	),
+}).superRefine((env, ctx) => {
+	if (env.AUTH_ALLOW_UNSIGNED_TOKENS && env.ENV === 'production') {
+		ctx.addIssue({
+			code: 'custom',
+			path: ['AUTH_ALLOW_UNSIGNED_TOKENS'],
+			message:
+				'AUTH_ALLOW_UNSIGNED_TOKENS cannot be enabled when ENV=production. Set AUTH_JWT_SECRET or AUTH_JWKS_URL instead.',
+		})
+	}
 })
 
 export type WebServerEnv = z.infer<typeof WebServerEnvSchema>

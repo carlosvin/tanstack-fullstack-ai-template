@@ -47,7 +47,10 @@ export async function verifyAccessToken(policy: TokenPolicy, rawToken: string | 
 		const { payload } =
 			policy.strategy === 'secret'
 				? await jwtVerify(rawToken, new TextEncoder().encode(policy.key), { ...options, algorithms: ['HS256'] })
-				: await jwtVerify(rawToken, jwksFor(policy.url), options)
+				: await jwtVerify(rawToken, jwksFor(policy.url), {
+						...options,
+						algorithms: ['RS256', 'PS256', 'ES256', 'EdDSA'],
+					})
 		return identityFromClaims(payload)
 	} catch (err) {
 		log.debug({ err: err instanceof Error ? err.name : 'unknown' }, 'rejected access token')

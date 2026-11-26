@@ -272,7 +272,7 @@ See [`.env.example`](.env.example) for the full list with documentation.
 | `AUTH_JWKS_URL` | No | — | JWKS URL used when `AUTH_JWT_SECRET` is unset. |
 | `AUTH_JWT_ISSUER` | No | — | Expected `iss` claim when a verifier is configured. |
 | `AUTH_JWT_AUDIENCE` | No | — | Expected `aud` claim when a verifier is configured. |
-| `AUTH_ALLOW_UNSIGNED_TOKENS` | No | `false` | Dev-only. Accept unsigned header JWTs when no verifier is set. |
+| `AUTH_ALLOW_UNSIGNED_TOKENS` | No | `false` | Dev-only. Accept unsigned header JWTs when no verifier is set. Rejected when `ENV=production`. |
 
 ## Extending the Template
 
