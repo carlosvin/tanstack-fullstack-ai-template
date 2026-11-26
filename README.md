@@ -47,7 +47,7 @@ Defaults for the reference app — swappable at the [interface boundary](#swappa
 1. `pnpm install && pnpm dev` — seed data, no DB or API keys required.
 2. Define domain schemas and the entity end-to-end (repository → server functions → routes).
 3. Expose the same server functions as AI tools.
-4. When ready: set `MONGODB_URI`, an AI provider key, and optionally `SENTRY_DSN`.
+4. For a durable deploy: set `MONGODB_URI` and leave `REPOSITORY_TYPE` unset (or `mongo` — an explicit `seed` overrides the URI); set `AUTH_JWT_SECRET` or `AUTH_JWKS_URL` (+ `AUTH_JWT_ISSUER`) so signed `Authorization` headers are trusted; add an AI provider key; optionally `SENTRY_DSN`. Without a JWT verifier, header identity is ignored and the demo cookie remains.
 
 Details: [Extending the Template](#extending-the-template) · [Using This Template](#using-this-template).
 
@@ -196,7 +196,10 @@ See [`.env.example`](.env.example) for the full list.
 | `PROMPT_CONCEPT` | No | `side` | UX shell: `side`, `prompt-first`, or `agentic`. |
 | `GEMINI_API_KEY` / `OPENAI_API_KEY` / `AZURE_OPENAI_*` | No | — | First configured provider wins (Gemini → OpenAI/Gateway → Azure). Chat disabled without one. |
 | `SENTRY_DSN` | No | — | Observability disabled without it. |
+| `AUTH_JWT_SECRET` / `AUTH_JWKS_URL` | No* | — | Verifier for signed bearer JWTs (`exp` required; JWKS needs `AUTH_JWT_ISSUER`). Without one, header identity is ignored. |
 | `AUTH_HEADER_NAME` | No | `Authorization` | HTTP header containing the JWT. |
+
+* Required for production identity — set a verifier before trusting caller headers. Demo Netlify sites may keep `REPOSITORY_TYPE=seed`; real apps should use Mongo as above.
 
 ## Extending the Template
 
@@ -263,6 +266,8 @@ Each layer is independently valuable:
 ### Deploy demos
 
 One codebase, three Netlify sites — set `PROMPT_CONCEPT` and a distinct `DISPLAY_NAME` per site (`side` / `prompt-first` / `agentic`). Same build as `netlify.toml`. Helper scripts: `scripts/netlify/setup-prompt-first-site.sh`, `scripts/netlify/setup-agentic-site.sh`. Enable **Deploy Previews** and disable **Branch deploys** so each PR gets one preview URL per UX mode.
+
+These demo sites may use `REPOSITORY_TYPE=seed` for zero-ops previews. For a production app on Netlify, follow [Path to production](#path-to-production): Mongo (`MONGODB_URI`, not `seed`) plus a JWT verifier.
 
 ## License
 
