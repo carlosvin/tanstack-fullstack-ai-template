@@ -1,18 +1,17 @@
-import { AppShell, NavLink, ScrollArea, Text, Tooltip } from '@mantine/core'
+import { AppShell, NavLink, ScrollArea, Text } from '@mantine/core'
 import { Code, LayoutDashboard, ListTodo, Sparkles } from 'lucide-react'
 import { Link } from '@/components/Link/Link'
-import type { CurrentUser } from '@/services/schemas/schemas'
 import type { AppMeta, PromptConcept } from '@/services/schemas/shellSession'
 
 interface AppNavbarProps {
 	pathname: string
-	currentUser?: CurrentUser
 	appMeta: AppMeta
 	promptConcept?: PromptConcept
 	onNavigate?: () => void
 }
 
-export function AppNavbar({ pathname, currentUser, appMeta, promptConcept = 'side', onNavigate }: AppNavbarProps) {
+/** Primary nav only — identity / Settings live in the header User Menu. */
+export function AppNavbar({ pathname, appMeta, promptConcept = 'side', onNavigate }: AppNavbarProps) {
 	const isPromptFirst = promptConcept === 'prompt-first'
 
 	return (
@@ -36,25 +35,6 @@ export function AppNavbar({ pathname, currentUser, appMeta, promptConcept = 'sid
 				/>
 			</AppShell.Section>
 			<AppShell.Section>
-				{currentUser ? (
-					<Tooltip
-						label={`Demo test user (${currentUser.identity.email}). Actions are attributed to this identity. Provide a real JWT in the auth header to use your own account.`}
-						disabled={!currentUser.isTestUser}
-						multiline
-						w={280}
-					>
-						<Text
-							size="sm"
-							c="dimmed"
-							truncate
-							px="sm"
-							py="xs"
-							style={currentUser.isTestUser ? { cursor: 'help' } : undefined}
-						>
-							{currentUser.profile?.name || currentUser.identity.name}
-						</Text>
-					</Tooltip>
-				) : null}
 				<NavLink
 					component="a"
 					href="https://github.com/carlosvin/tanstack-fullstack-ai-template"

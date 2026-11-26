@@ -12,6 +12,7 @@ import { useEffect } from 'react'
 import { AppLayout } from '@/components/AppLayout/AppLayout'
 import { ErrorDisplay } from '@/components/ErrorDisplay/ErrorDisplay'
 import { NotFoundPage } from '@/components/NotFoundPage/NotFoundPage'
+import { PreferredColorScheme } from '@/components/PreferredColorScheme/PreferredColorScheme'
 import { getAIAvailability, getBrowserShellSession, getCurrentUser } from '@/services/api/serverFns'
 import { watchNetlifyHud } from '@/utils/netlifyHud'
 
@@ -80,6 +81,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			</head>
 			<body>
 				<MantineProvider defaultColorScheme="auto" theme={theme}>
+					<PreferredColorScheme theme={currentUser?.profile?.preferences?.theme} />
 					<ModalsProvider>
 						<Notifications position="top-right" />
 						<AppLayout currentUser={currentUser} shellSession={shellSession} aiAvailable={aiAvailable}>

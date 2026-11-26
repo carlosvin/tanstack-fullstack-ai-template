@@ -57,20 +57,10 @@ describe('AppNavbar', () => {
 		expect(screen.getByRole('link', { name: /tasks/i }).hasAttribute('data-active')).toBe(true)
 	})
 
-	it('shows the display name for test users', () => {
-		renderNavbar(
-			<AppNavbar
-				pathname="/"
-				appMeta={appMeta}
-				currentUser={{
-					identity: { email: 'random1234@example.com', name: 'Test User 1234', groups: [] },
-					profile: null,
-					isTestUser: true,
-					roles: [],
-				}}
-			/>,
-		)
+	it('does not put identity or Settings in the navbar', () => {
+		renderNavbar(<AppNavbar pathname="/settings" appMeta={appMeta} />)
 
-		expect(screen.getByText('Test User 1234')).toBeTruthy()
+		expect(screen.queryByRole('link', { name: /settings/i })).toBeNull()
+		expect(screen.queryByText(/demo identity/i)).toBeNull()
 	})
 })

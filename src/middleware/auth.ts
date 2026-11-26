@@ -78,8 +78,8 @@ export const authMiddleware = createMiddleware()
 
 		const { user, isTestUser } = ticket
 
-		// Test users are ephemeral and never stored in the repository — skip the lookup.
-		const profile = user.email && !isTestUser ? await context.repository.getUserProfile(user.email) : null
+		// Load a repository profile when present (including demo identities that saved Settings prefs).
+		const profile = user.email ? await context.repository.getUserProfile(user.email) : null
 
 		return next({
 			context: {

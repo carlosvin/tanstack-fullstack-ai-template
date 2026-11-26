@@ -4,6 +4,7 @@ import type {
 	TaskRepoFilter,
 	TaskRepoInput,
 	UserAccessRepo,
+	UserPreferencesRepo,
 	UserProfileRepo,
 } from '@/services/schemas/repository'
 
@@ -29,6 +30,12 @@ export interface Repository {
 	getDistinctValues(field: DistinctValueField): Promise<string[]>
 	getUserProfile(email: string): Promise<UserProfileRepo | null>
 	getUserAccess(email: string): Promise<UserAccessRepo | null>
+	/** Upsert preferences on the user profile (creates a stub profile when missing). */
+	updateUserPreferences(
+		email: string,
+		preferences: UserPreferencesRepo,
+		identity?: { name: string },
+	): Promise<UserProfileRepo>
 	createTask(input: TaskRepoInput, trace?: TraceabilityContext): Promise<TaskRepo>
 	updateTask(taskId: string, input: Partial<TaskRepoInput>, trace?: TraceabilityContext): Promise<TaskRepo | null>
 	deleteTask(taskId: string): Promise<boolean>

@@ -24,6 +24,7 @@ export type UserFacingTo = Exclude<FileRouteTypes['to'], `/api/${string}`>
  */
 const USER_FACING_ROUTE_PATTERNS = {
 	'/': '/',
+	'/settings': '/settings',
 	'/tasks': '/tasks',
 	'/tasks/new': '/tasks/new',
 	'/tasks/$taskId': '/tasks/$taskId',
