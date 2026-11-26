@@ -8,6 +8,7 @@ import type {
 	TaskRepoFilter,
 	TaskRepoInput,
 	UserAccessRepo,
+	UserPreferencesRepo,
 	UserProfileRepo,
 } from '@/services/schemas/repository'
 
@@ -47,6 +48,14 @@ export class MongoRepository implements Repository, IndexableRepository {
 
 	getUserAccess(email: string): Promise<UserAccessRepo | null> {
 		return this.users.getUserAccess(email)
+	}
+
+	updateUserPreferences(
+		email: string,
+		preferences: UserPreferencesRepo,
+		identity?: { name: string },
+	): Promise<UserProfileRepo> {
+		return this.users.updateUserPreferences(email, preferences, identity)
 	}
 
 	createTask(input: TaskRepoInput, trace?: TraceabilityContext): Promise<TaskRepo> {

@@ -30,6 +30,12 @@ export const UserProfileRepoSchema = z.object({
 
 export type UserProfileRepo = z.infer<typeof UserProfileRepoSchema>
 
+export const UserPreferencesRepoSchema = z.object({
+	theme: z.enum(['light', 'dark', 'auto']).default('auto'),
+})
+
+export type UserPreferencesRepo = z.infer<typeof UserPreferencesRepoSchema>
+
 /** Repository-backed access record used to build the request auth ticket. */
 export const UserAccessRepoSchema = z.object({
 	email: z.string(),

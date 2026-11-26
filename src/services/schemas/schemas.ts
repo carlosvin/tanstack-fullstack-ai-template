@@ -89,6 +89,13 @@ export const CurrentUserSchema = z.object({
 
 export type CurrentUser = z.infer<typeof CurrentUserSchema>
 
+/** Theme preference update for the signed-in user (Settings). */
+export const UpdateUserPreferencesSchema = z.object({
+	theme: z.enum(['light', 'dark', 'auto']).describe('Preferred color scheme'),
+})
+
+export type UpdateUserPreferences = z.infer<typeof UpdateUserPreferencesSchema>
+
 export const UserAccessSchema = z.object({
 	email: z.string().describe('Email address of the user whose access to look up'),
 	name: z.string().describe('Display name'),

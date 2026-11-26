@@ -27,6 +27,7 @@ import {
 	navigateToolDef,
 	updateTasksStatusTool,
 	updateTaskTool,
+	updateUserPreferencesTool,
 } from '@/services/ai/tools'
 import { getObservability } from '@/services/observability/getObservability'
 import {
@@ -285,6 +286,7 @@ export const Route = createFileRoute('/api/chat')({
 					getUserAccessTool,
 					getAppRuntimeInfoTool,
 					getCurrentUserContextTool,
+					updateUserPreferencesTool,
 					createTaskTool,
 					updateTaskTool,
 					updateTasksStatusTool,

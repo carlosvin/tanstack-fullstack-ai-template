@@ -23,6 +23,7 @@ import {
 	getUserProfile,
 	updateTask,
 	updateTasksStatus,
+	updateUserPreferences,
 } from '@/services/api/serverFns'
 import {
 	AppRuntimeInfoSchema,
@@ -33,6 +34,7 @@ import {
 	TaskInputSchema,
 	TasksListSearchSchema,
 	UpdateTaskInputSchema,
+	UpdateUserPreferencesSchema,
 	UserProfileByEmailSchema,
 } from '@/services/schemas/schemas'
 
@@ -189,6 +191,19 @@ export const getCurrentUserContextTool = createSafeServerTool(getCurrentUserCont
 // ---------------------------------------------------------------------------
 // Mutations — server functions throw on error; safeToolHandler catches.
 // ---------------------------------------------------------------------------
+
+const updateUserPreferencesToolDef = toolDefinition({
+	name: 'updateUserPreferences',
+	description:
+		'Update the signed-in user theme preference (light, dark, or auto). Requires login. Returns the updated profile.',
+	inputSchema: UpdateUserPreferencesSchema,
+})
+
+/** AI server tool: update signed-in user preferences (requires auth). */
+export const updateUserPreferencesTool = createSafeServerTool(updateUserPreferencesToolDef, async (args) => {
+	const profile = await updateUserPreferences({ data: args })
+	return { profile, message: 'Preferences updated.' }
+})
 
 const createTaskToolDef = toolDefinition({
 	name: 'createTask',
