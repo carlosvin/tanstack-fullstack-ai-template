@@ -1,20 +1,18 @@
 import { AppShell, NavLink, ScrollArea, Text } from '@mantine/core'
-import { Code, LayoutDashboard, ListTodo, Settings, Sparkles } from 'lucide-react'
+import { Code, LayoutDashboard, ListTodo, Sparkles } from 'lucide-react'
 import { Link } from '@/components/Link/Link'
-import type { CurrentUser } from '@/services/schemas/schemas'
 import type { AppMeta, PromptConcept } from '@/services/schemas/shellSession'
 
 interface AppNavbarProps {
 	pathname: string
-	currentUser?: CurrentUser
 	appMeta: AppMeta
 	promptConcept?: PromptConcept
 	onNavigate?: () => void
 }
 
-export function AppNavbar({ pathname, currentUser, appMeta, promptConcept = 'side', onNavigate }: AppNavbarProps) {
+/** Primary nav only — identity / Settings live in the header User Menu. */
+export function AppNavbar({ pathname, appMeta, promptConcept = 'side', onNavigate }: AppNavbarProps) {
 	const isPromptFirst = promptConcept === 'prompt-first'
-	const displayName = currentUser ? currentUser.profile?.name || currentUser.identity.name : null
 
 	return (
 		<>
@@ -37,17 +35,6 @@ export function AppNavbar({ pathname, currentUser, appMeta, promptConcept = 'sid
 				/>
 			</AppShell.Section>
 			<AppShell.Section>
-				{currentUser ? (
-					<NavLink
-						component={Link}
-						to="/settings"
-						label={displayName || 'Settings'}
-						description={currentUser.isTestUser ? 'Demo identity · Settings' : 'Settings'}
-						leftSection={<Settings size={18} />}
-						active={pathname === '/settings'}
-						onClick={onNavigate}
-					/>
-				) : null}
 				<NavLink
 					component="a"
 					href="https://github.com/carlosvin/tanstack-fullstack-ai-template"

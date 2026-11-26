@@ -103,13 +103,7 @@ export function AppLayout({ currentUser, shellSession, aiAvailable = false, chil
 				/>
 			</AppShell.Header>
 			<AppShell.Navbar p="md">
-				<AppNavbar
-					pathname={pathname}
-					currentUser={currentUser}
-					appMeta={shellSession.app}
-					promptConcept={promptConcept}
-					onNavigate={closeNav}
-				/>
+				<AppNavbar pathname={pathname} appMeta={shellSession.app} promptConcept={promptConcept} onNavigate={closeNav} />
 			</AppShell.Navbar>
 			<AppShell.Main>{children}</AppShell.Main>
 			{showPromptFirstFooter ? (

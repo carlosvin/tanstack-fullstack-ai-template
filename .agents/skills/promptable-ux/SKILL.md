@@ -18,7 +18,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.4.0"
+  version: "1.4.1"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -106,7 +106,7 @@ These rules apply to both concepts. The prompt stack does not change between the
 10. **Prompt behavior.** Show tool activity as short status labels, a thinking state while the model runs, and errors in an alert. Enter sends; Shift+Enter inserts a newline. Offer stop while generating, and clear once messages exist. Suggested prompts may come from the single help document (`docs/help.md`), which can also back the help route and a help tool. Filter choices and the prompt offer distinct values from the data, not a hardcoded list.
 11. **Both color schemes.** Every prompt surface and domain view works in light and dark, using theme tokens. Keep one icon library.
 12. **Auth stays on the server.** Hiding a button is not a guard. Mutations stay behind the auth ticket. Chat affordances follow `aiAvailable`.
-13. **User Menu (account menu) in the app bar.** Connect the signed-in identity from the root loader (`CurrentUser` / auth ticket) to a far-right utility control in the top bar. The industry pattern is a **User Menu** (also Account Menu / Global Profile): an **avatar** (photo from `profile.avatarUrl`, else initials from name or email) opens a dropdown that is **account-only** — not primary app navigation. Menu order: identity header (display name + email) → **Settings** (and Profile when the app has one) → divider → **Sign out** last when the app can clear a session. Omit Sign out when auth is header-only and no clearable session exists (this template). Place the control after theme / notifications / open-chat utilities. Do not leave identity as a non-interactive name in the navbar footer alone. Kit widgets for *this* template: **`reference-tech-stack`** (Mantine `Avatar` + `Menu`). Settings destination: **`/settings`** route for side and prompt-first; see **`agentic-ux`** for the in-shell modal in agentic mode.
+13. **User Menu (account menu) in the app bar.** Connect the signed-in identity from the root loader (`CurrentUser` / auth ticket) to a far-right utility control in the top bar. The industry pattern is a **User Menu** (also Account Menu / Global Profile): an **avatar** (photo from `profile.avatarUrl`, else initials from name or email) opens a dropdown that is **account-only** — not primary app navigation. Menu order: identity header (display name + email) → **Settings** (and Profile when the app has one) → divider → **Sign out** last when the app can clear a session. Omit Sign out when auth is header-only and no clearable session exists (this template). Place the control after theme / notifications / open-chat utilities. Identity and Settings live **only** in this User Menu — do not also put a display name or Settings `NavLink` in the side navbar footer. Kit widgets for *this* template: **`reference-tech-stack`** (Mantine `Avatar` + `Menu`). Settings destination: **`/settings`** route for side and prompt-first; see **`agentic-ux`** for the in-shell modal in agentic mode.
 
 ### Common failure modes
 
