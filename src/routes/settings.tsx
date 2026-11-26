@@ -14,8 +14,11 @@ function SettingsRoute() {
 		return null
 	}
 
+	const themeKey = currentUser.profile?.preferences?.theme ?? 'auto'
+
 	return (
 		<SettingsPage
+			key={`${currentUser.identity.email}-${themeKey}`}
 			currentUser={currentUser}
 			onSaved={async () => {
 				await router.invalidate()

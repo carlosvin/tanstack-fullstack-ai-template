@@ -60,7 +60,16 @@ export class MongoUserRepository implements UserCollectionRepository {
 			avatarUrl: existing?.avatarUrl,
 			preferences: prefs,
 		})
-		await this.collection.updateOne({ email: next.email }, { $set: next }, { upsert: true, collation: EMAIL_COLLATION })
+		// Omit undefined optional fields — Mongo's default serialize writes them as null,
+		// which UserProfileRepoSchema then rejects on the next auth profile load.
+		const $set: Record<string, unknown> = {
+			email: next.email,
+			name: next.name,
+			preferences: next.preferences,
+		}
+		if (next.role !== undefined) $set.role = next.role
+		if (next.avatarUrl !== undefined) $set.avatarUrl = next.avatarUrl
+		await this.collection.updateOne({ email: next.email }, { $set }, { upsert: true, collation: EMAIL_COLLATION })
 		return next
 	}
 }

@@ -11,6 +11,7 @@ import {
 	useMantineColorScheme,
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
+import { useRouter } from '@tanstack/react-router'
 import { Moon, Sparkles, Sun } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { AgenticComposer } from '@/components/AgenticShell/AgenticComposer'
@@ -35,6 +36,7 @@ const AGENTIC_FOOTER_MIN_HEIGHT = 76
  * Settings opens an in-shell modal. Task views arrive as Mantine A2UI surfaces.
  */
 export function AgenticShell({ appMeta, aiAvailable, currentUser }: AgenticShellProps) {
+	const router = useRouter()
 	const { colorScheme, toggleColorScheme } = useMantineColorScheme()
 	const [footerHeight, setFooterHeight] = useState(AGENTIC_FOOTER_MIN_HEIGHT)
 	const footerMeasureRef = useRef<HTMLDivElement>(null)
@@ -112,7 +114,15 @@ export function AgenticShell({ appMeta, aiAvailable, currentUser }: AgenticShell
 			</AppShell>
 			{currentUser ? (
 				<Modal opened={settingsOpened} onClose={closeSettings} title="Settings" size="md">
-					<SettingsPage currentUser={currentUser} onSaved={closeSettings} embedded />
+					<SettingsPage
+						key={`${currentUser.identity.email}-${currentUser.profile?.preferences?.theme ?? 'auto'}`}
+						currentUser={currentUser}
+						onSaved={async () => {
+							closeSettings()
+							await router.invalidate()
+						}}
+						embedded
+					/>
 				</Modal>
 			) : null}
 		</>

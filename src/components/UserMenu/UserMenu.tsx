@@ -1,6 +1,6 @@
 import { Avatar, Menu, Text, UnstyledButton } from '@mantine/core'
+import { useNavigate } from '@tanstack/react-router'
 import { Settings } from 'lucide-react'
-import { Link } from '@/components/Link/Link'
 import type { CurrentUser } from '@/services/schemas/schemas'
 
 export interface UserMenuProps {
@@ -24,10 +24,19 @@ function initialsFrom(name: string, email: string): string {
  * utility area opens an account-only dropdown (identity → Settings).
  */
 export function UserMenu({ currentUser, onOpenSettings }: UserMenuProps) {
+	const navigate = useNavigate()
 	const displayName = currentUser.profile?.name || currentUser.identity.name
 	const email = currentUser.identity.email
 	const avatarUrl = currentUser.profile?.avatarUrl
 	const initials = initialsFrom(displayName, email)
+
+	const openSettings = () => {
+		if (onOpenSettings) {
+			onOpenSettings()
+			return
+		}
+		void navigate({ to: '/settings' })
+	}
 
 	return (
 		<Menu shadow="md" width={260} position="bottom-end" withinPortal>
@@ -59,15 +68,9 @@ export function UserMenu({ currentUser, onOpenSettings }: UserMenuProps) {
 					) : null}
 				</Menu.Label>
 				<Menu.Divider />
-				{onOpenSettings ? (
-					<Menu.Item leftSection={<Settings size={16} />} onClick={onOpenSettings}>
-						Settings
-					</Menu.Item>
-				) : (
-					<Menu.Item component={Link} to="/settings" leftSection={<Settings size={16} />}>
-						Settings
-					</Menu.Item>
-				)}
+				<Menu.Item leftSection={<Settings size={16} />} onClick={openSettings}>
+					Settings
+				</Menu.Item>
 			</Menu.Dropdown>
 		</Menu>
 	)
