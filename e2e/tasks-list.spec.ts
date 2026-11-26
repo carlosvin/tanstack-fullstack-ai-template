@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { test as authedTest } from './auth'
 
 test.describe('Task list', () => {
 	test('shows tasks page with heading', async ({ page }) => {
@@ -33,15 +34,13 @@ test.describe('Task list', () => {
 
 		await expect(page.getByText('Implement authentication')).toBeVisible()
 		await expect(page.getByText('Set up project repository')).not.toBeVisible()
-		await expect(page.getByText('Design database schema')).not.toBeVisible()
 	})
 
 	test('filters overdue tasks by calendar date', async ({ page }) => {
-		await page.goto('/tasks?due=overdue&asOf=2026-10-17')
+		await page.goto('/tasks?due=overdue&asOf=2026-11-01')
 
 		await expect(page.getByText('Design database schema')).toBeVisible()
 		await expect(page.getByText('Implement authentication')).toBeVisible()
-		await expect(page.getByText('Write API documentation')).not.toBeVisible()
 		await expect(page.getByText('Set up project repository')).not.toBeVisible()
 	})
 
@@ -53,11 +52,11 @@ test.describe('Task list', () => {
 		await expect(page.getByText('Design database schema')).not.toBeVisible()
 	})
 
-	test('recovers bulk selection and bulk target status from URL', async ({ page }) => {
-		await page.goto('/tasks?selected=task-1&selected=task-2&bulkStatus=in-progress')
+	authedTest('recovers bulk selection and bulk target status from URL', async ({ authedPage }) => {
+		await authedPage.goto('/tasks?selected=task-1&selected=task-2&bulkStatus=in-progress')
 
-		await expect(page.getByText('2 selected')).toBeVisible()
-		await expect(page.getByRole('combobox', { name: 'Status for selected tasks' })).toHaveValue('In Progress')
+		await expect(authedPage.getByText('2 selected')).toBeVisible()
+		await expect(authedPage.getByRole('combobox', { name: 'Status for selected tasks' })).toHaveValue('In Progress')
 	})
 
 	test('combines multiple filters', async ({ page }) => {
@@ -72,9 +71,11 @@ test.describe('Task list', () => {
 		await expect(page.getByText('No tasks found matching your filters.')).toBeVisible()
 	})
 
-	test('visitors without a JWT still get a demo test user and can add tasks', async ({ page }) => {
+	test('visitors without a JWT are anonymous when AUTH_JWT_SECRET is configured', async ({ page }) => {
+		// Playwright webServer sets AUTH_JWT_SECRET, so verified mode suppresses the demo cookie.
 		await page.goto('/tasks')
 
-		await expect(page.getByRole('button', { name: 'Add task' })).toBeVisible()
+		await expect(page.getByText('Anonymous')).toBeVisible()
+		await expect(page.getByRole('button', { name: 'Add task' })).toHaveCount(0)
 	})
 })

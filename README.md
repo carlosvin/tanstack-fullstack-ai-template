@@ -211,7 +211,7 @@ flowchart TB
 - **Schemas = Source of Truth**: Every domain type is a schema with `.describe()` metadata. Types are inferred, JSON Schemas flow to AI tools automatically.
 - **URL-as-State**: Page state (filters, selections, tabs) lives in URL search params, not component state. Shareable, bookmarkable, survives refresh.
 - **Loaders-First**: Data is fetched in route loaders, never in `useEffect` + `useState`. Loaders provide caching, SSR, and parallel fetching for free.
-- **E2E Tests Against Seed Data**: Playwright tests run against the dev server with `REPOSITORY_TYPE=seed` and `AUTH_ALLOW_UNSIGNED_TOKENS=true`. An unsigned JWT fixture provides authenticated browser contexts. Tests cover dashboard, task list, task detail, and full CRUD — all without a real database.
+- **E2E Tests Against Seed Data**: Playwright tests run against the dev server with `REPOSITORY_TYPE=seed` and a shared `AUTH_JWT_SECRET`. An HS256 Alice JWT fixture provides authenticated browser contexts. Tests cover dashboard, task list, task detail, and full CRUD — all without a real database.
 
 ## Project Structure
 
@@ -268,11 +268,11 @@ See [`.env.example`](.env.example) for the full list with documentation.
 | `AZURE_OPENAI_DEPLOYMENT` | No | `gpt-4o` | Model deployment name. |
 | `SENTRY_DSN` | No | — | Sentry DSN for server and browser observability. Observability disabled without it. |
 | `AUTH_HEADER_NAME` | No | `Authorization` | HTTP header containing the JWT. |
-| `AUTH_JWT_SECRET` | No | — | HS256 secret. When set, header JWTs must verify. |
+| `AUTH_JWT_SECRET` | No | — | HS256 secret (min 32 chars). When set, header JWTs must verify and include `exp`. |
 | `AUTH_JWKS_URL` | No | — | JWKS URL used when `AUTH_JWT_SECRET` is unset. |
-| `AUTH_JWT_ISSUER` | No | — | Expected `iss` claim when a verifier is configured. |
+| `AUTH_JWT_ISSUER` | When JWKS | — | Expected `iss`. Required for JWKS; optional for HMAC. |
 | `AUTH_JWT_AUDIENCE` | No | — | Expected `aud` claim when a verifier is configured. |
-| `AUTH_ALLOW_UNSIGNED_TOKENS` | No | `false` | Dev-only. Accept unsigned header JWTs when no verifier is set. Rejected when `ENV=production`. |
+| `AUTH_ALLOW_UNSIGNED_TOKENS` | No | `false` | Dev-only `alg:none` header JWTs when no verifier is set. Rejected when `ENV` or `NODE_ENV` is production. |
 
 ## Extending the Template
 

@@ -48,12 +48,23 @@ describe('resolveTokenPolicy', () => {
 		expect(policy).toMatchObject({ mode: 'verified', strategy: 'secret', key: 'secret-value' })
 	})
 
-	it('verifies with JWKS when no secret is set', () => {
-		expect(resolveTokenPolicy({ jwksUrl: 'https://idp.example/jwks', allowUnsignedTokens: true })).toEqual({
+	it('verifies with JWKS when no secret is set and issuer is present', () => {
+		expect(
+			resolveTokenPolicy({
+				jwksUrl: 'https://idp.example/jwks',
+				issuer: 'https://idp.example',
+				allowUnsignedTokens: true,
+			}),
+		).toEqual({
 			mode: 'verified',
 			strategy: 'jwks',
 			url: 'https://idp.example/jwks',
+			issuer: 'https://idp.example',
 		})
+	})
+
+	it('throws when JWKS is configured without an issuer', () => {
+		expect(() => resolveTokenPolicy({ jwksUrl: 'https://idp.example/jwks' })).toThrow(/AUTH_JWT_ISSUER/)
 	})
 
 	it('covers every policy mode', () => {

@@ -1,7 +1,6 @@
-import { createRemoteJWKSet, type JWTVerifyGetKey, jwtVerify } from 'jose'
+import { createRemoteJWKSet, decodeJwt, decodeProtectedHeader, type JWTVerifyGetKey, jwtVerify } from 'jose'
 import type { TokenPolicy } from '@/services/auth/tokenPolicy'
 import { JwtIdentityClaimsSchema, type UserIdentity, UserIdentitySchema } from '@/services/schemas/schemas'
-import { extractIdentityFromJwt } from '@/utils/jwt.server'
 import { createServerLogger } from '@/utils/serverLogger'
 
 const log = createServerLogger('tokenVerifier')
@@ -18,12 +17,35 @@ function jwksFor(url: string): JWTVerifyGetKey {
 
 function identityFromClaims(payload: unknown): UserIdentity | null {
 	const claims = JwtIdentityClaimsSchema.parse(payload)
-	if (!claims.email) return null
+	if (!claims.email) {
+		log.debug('rejected access token: verified payload has no email claim')
+		return null
+	}
 	return UserIdentitySchema.parse({
 		email: claims.email,
 		name: claims.name ?? '',
 		groups: claims.groups ?? [],
 	})
+}
+
+/** Decode-only path for unsigned-dev: alg must be `none`, and exp must not be past. */
+function decodeUnsignedDevToken(rawToken: string): UserIdentity | null {
+	try {
+		const header = decodeProtectedHeader(rawToken)
+		if (header.alg !== 'none') {
+			log.debug({ alg: header.alg }, 'rejected unsigned-dev token: alg is not none')
+			return null
+		}
+		const payload = decodeJwt(rawToken)
+		if (typeof payload.exp === 'number' && payload.exp * 1000 <= Date.now()) {
+			log.debug('rejected unsigned-dev token: expired')
+			return null
+		}
+		return identityFromClaims(payload)
+	} catch (err) {
+		log.debug({ err: err instanceof Error ? err.name : 'unknown' }, 'rejected unsigned-dev token')
+		return null
+	}
 }
 
 /**
@@ -35,12 +57,12 @@ export async function verifyAccessToken(policy: TokenPolicy, rawToken: string | 
 	if (policy.mode === 'header-off' || !rawToken) return null
 
 	if (policy.mode === 'unsigned-dev') {
-		const decoded = extractIdentityFromJwt(rawToken)
-		return decoded.email ? decoded : null
+		return decodeUnsignedDevToken(rawToken)
 	}
 
 	try {
 		const options = {
+			requiredClaims: ['exp'] as string[],
 			...(policy.issuer ? { issuer: policy.issuer } : {}),
 			...(policy.audience ? { audience: policy.audience } : {}),
 		}
@@ -49,6 +71,7 @@ export async function verifyAccessToken(policy: TokenPolicy, rawToken: string | 
 				? await jwtVerify(rawToken, new TextEncoder().encode(policy.key), { ...options, algorithms: ['HS256'] })
 				: await jwtVerify(rawToken, jwksFor(policy.url), {
 						...options,
+						issuer: policy.issuer,
 						algorithms: ['RS256', 'PS256', 'ES256', 'EdDSA'],
 					})
 		return identityFromClaims(payload)

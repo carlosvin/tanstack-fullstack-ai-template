@@ -41,14 +41,16 @@ export const WebServerEnvSchema = WebPublicEnvSchema.extend({
 	AUTH_HEADER_NAME: OptionalTrimmedStringSchema.describe(
 		'HTTP header name for the JWT. Default: Authorization when unset or blank.',
 	),
-	AUTH_JWT_SECRET: OptionalTrimmedStringSchema.describe(
-		'HMAC secret for HS256 access tokens. When set, Authorization header JWTs must verify with this secret.',
-	),
+	AUTH_JWT_SECRET: z
+		.preprocess(envStringToUndefined, z.string().min(32).optional())
+		.describe(
+			'HMAC secret for HS256 access tokens (min 32 characters). When set, Authorization header JWTs must verify with this secret.',
+		),
 	AUTH_JWKS_URL: z
 		.preprocess(envStringToUndefined, z.url().optional())
 		.describe('JWKS URL for asymmetric access tokens. Used when AUTH_JWT_SECRET is unset.'),
 	AUTH_JWT_ISSUER: OptionalTrimmedStringSchema.describe(
-		'Expected JWT iss claim. Checked only when signature verification is configured.',
+		'Expected JWT iss claim. Required when AUTH_JWKS_URL is set; optional for AUTH_JWT_SECRET.',
 	),
 	AUTH_JWT_AUDIENCE: OptionalTrimmedStringSchema.describe(
 		'Expected JWT aud claim. Checked only when signature verification is configured.',
@@ -56,7 +58,7 @@ export const WebServerEnvSchema = WebPublicEnvSchema.extend({
 	AUTH_ALLOW_UNSIGNED_TOKENS: z
 		.preprocess(envStringToBoolean, z.boolean())
 		.describe(
-			'Dev-only escape hatch. When true and no verifier is configured, accept unsigned Authorization header JWTs. Never enable this on a shared or production deployment.',
+			'Dev-only escape hatch. When true and no verifier is configured, accept alg:none Authorization header JWTs. Refused when ENV or NODE_ENV is production.',
 		),
 	MONGODB_URI: OptionalTrimmedStringSchema.describe('MongoDB connection string. Absent → in-memory seed repository.'),
 	MONGODB_DB_NAME: z.string().optional().describe('MongoDB database name. Default: app-db.'),
@@ -78,12 +80,20 @@ export const WebServerEnvSchema = WebPublicEnvSchema.extend({
 		'Netlify AI Gateway base URL (auto-injected on Netlify).',
 	),
 }).superRefine((env, ctx) => {
-	if (env.AUTH_ALLOW_UNSIGNED_TOKENS && env.ENV === 'production') {
+	const nodeEnv = process.env.NODE_ENV
+	if (env.AUTH_ALLOW_UNSIGNED_TOKENS && (env.ENV === 'production' || nodeEnv === 'production')) {
 		ctx.addIssue({
 			code: 'custom',
 			path: ['AUTH_ALLOW_UNSIGNED_TOKENS'],
 			message:
-				'AUTH_ALLOW_UNSIGNED_TOKENS cannot be enabled when ENV=production. Set AUTH_JWT_SECRET or AUTH_JWKS_URL instead.',
+				'AUTH_ALLOW_UNSIGNED_TOKENS cannot be enabled when ENV or NODE_ENV is production. Set AUTH_JWT_SECRET or AUTH_JWKS_URL instead.',
+		})
+	}
+	if (env.AUTH_JWKS_URL && !env.AUTH_JWT_SECRET && !env.AUTH_JWT_ISSUER) {
+		ctx.addIssue({
+			code: 'custom',
+			path: ['AUTH_JWT_ISSUER'],
+			message: 'AUTH_JWT_ISSUER is required when AUTH_JWKS_URL is set (and AUTH_JWT_SECRET is unset).',
 		})
 	}
 })

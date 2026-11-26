@@ -26,8 +26,9 @@ export default defineConfig({
 		env: {
 			NODE_ENV: 'development',
 			OPENAI_API_KEY: 'sk-e2e-placeholder',
-			// E2E sends unsigned fixture JWTs. This flag is dev/test only.
-			AUTH_ALLOW_UNSIGNED_TOKENS: 'true',
+			// Must match e2e/auth.ts E2E_AUTH_JWT_SECRET so Alice fixtures verify even when
+			// reuseExistingServer reuses a process that was started with the same secret.
+			AUTH_JWT_SECRET: 'e2e-test-secret-at-least-32-bytes!!',
 		},
 	},
 })

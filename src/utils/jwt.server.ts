@@ -1,4 +1,4 @@
-import { decodeJwt } from 'jose'
+import { decodeJwt, SignJWT } from 'jose'
 import { JwtIdentityClaimsSchema, type UserIdentity, UserIdentitySchema } from '@/services/schemas/schemas'
 
 const JWT_HEADER = { alg: 'none', typ: 'JWT' } as const
@@ -21,6 +21,28 @@ function encodeJwtPart(value: unknown): string {
 export function createUnsignedJwt(identity: UserIdentity): string {
 	const payload = { email: identity.email, name: identity.name, groups: identity.groups }
 	return `${encodeJwtPart(JWT_HEADER)}.${encodeJwtPart(payload)}.`
+}
+
+/** Creates an HS256 JWT for local/e2e fixtures. Requires a secret of at least 32 characters. */
+export async function createHs256Jwt(
+	identity: UserIdentity,
+	secret: string,
+	options?: { expiresIn?: string | number; issuer?: string; audience?: string },
+): Promise<string> {
+	if (secret.length < 32) {
+		throw new Error('HS256 secret must be at least 32 characters')
+	}
+	const jwt = new SignJWT({
+		email: identity.email,
+		name: identity.name,
+		groups: identity.groups,
+	})
+		.setProtectedHeader({ alg: 'HS256' })
+		.setIssuedAt()
+		.setExpirationTime(options?.expiresIn ?? '2h')
+	if (options?.issuer) jwt.setIssuer(options.issuer)
+	if (options?.audience) jwt.setAudience(options.audience)
+	return jwt.sign(new TextEncoder().encode(secret))
 }
 
 /** Returns the raw token from a header value, stripping an optional Bearer prefix. */

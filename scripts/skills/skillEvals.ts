@@ -829,6 +829,20 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 				if (!/verifyAccessToken\(/.test(auth)) {
 					return fail('auth middleware must verify access tokens before buildAccessTicket', ['src/middleware/auth.ts'])
 				}
+				if (!/resolveRequestAccess\(/.test(auth)) {
+					return fail('auth middleware must resolve principals via resolveRequestAccess', ['src/middleware/auth.ts'])
+				}
+				const resolvePath = path.join(rootDir, 'src/services/auth/resolveRequestAccess.ts')
+				try {
+					const resolve = await readText(resolvePath)
+					if (!/policy\.mode === ['"]verified['"]/.test(resolve)) {
+						return fail('resolveRequestAccess must suppress the demo cookie in verified mode', [
+							'src/services/auth/resolveRequestAccess.ts',
+						])
+					}
+				} catch {
+					return fail('Missing src/services/auth/resolveRequestAccess.ts')
+				}
 				return pass()
 			},
 		},

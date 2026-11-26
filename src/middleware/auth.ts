@@ -3,12 +3,13 @@ import { getCookie, setCookie } from '@tanstack/react-start/server'
 import { webServerEnv } from '@/env/webEnv.server'
 import { repositoryMiddleware } from '@/middleware/repository'
 import { type AccessTicket, buildAccessTicket } from '@/services/auth/accessTicket'
+import { resolveRequestAccess } from '@/services/auth/resolveRequestAccess'
 import { resolveTokenPolicy, type TokenPolicy } from '@/services/auth/tokenPolicy'
 import { verifyAccessToken } from '@/services/auth/tokenVerifier.server'
 import type { UserIdentity } from '@/services/schemas/schemas'
 import { extractBearerToken } from '@/utils/jwt.server'
 import { createServerLogger } from '@/utils/serverLogger'
-import { resolveAccessTicket, TEST_AUTH_COOKIE_NAME } from '@/utils/testAuth.server'
+import { TEST_AUTH_COOKIE_NAME } from '@/utils/testAuth.server'
 
 const log = createServerLogger('auth')
 
@@ -82,16 +83,15 @@ export interface AuthContext {
  * Runs on every request (SSR, server functions, API routes).
  * - A verified JWT in the auth header supplies the identity. Unsigned header tokens are ignored
  *   unless `AUTH_ALLOW_UNSIGNED_TOKENS` is set and no verifier is configured.
+ * - When a verifier is configured, missing/invalid headers become anonymous (no demo cookie).
  * - Otherwise a persistent test user is minted (or restored from the test-auth cookie).
  */
 export const authMiddleware = createMiddleware()
 	.middleware([repositoryMiddleware])
 	.server(async ({ next, request, context }) => {
 		const pathname = new URL(request.url).pathname
-		const headerIdentity = await verifyAccessToken(
-			currentTokenPolicy(),
-			extractBearerToken(request.headers.get(AUTH_HEADER_NAME)),
-		)
+		const policy = currentTokenPolicy()
+		const headerIdentity = await verifyAccessToken(policy, extractBearerToken(request.headers.get(AUTH_HEADER_NAME)))
 
 		if (isPublicRoute(pathname)) {
 			log.debug({ pathname }, 'public route — skipped profile load')
@@ -106,7 +106,7 @@ export const authMiddleware = createMiddleware()
 			})
 		}
 
-		const ticket = resolveAccessTicket(headerIdentity, getCookie(TEST_AUTH_COOKIE_NAME))
+		const ticket = resolveRequestAccess(policy, headerIdentity, getCookie(TEST_AUTH_COOKIE_NAME))
 
 		if (ticket.newTestAuthToken) {
 			setCookie(TEST_AUTH_COOKIE_NAME, ticket.newTestAuthToken, {

@@ -3,9 +3,9 @@
 import { exportJWK, generateKeyPair, SignJWT } from 'jose'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { verifyAccessToken } from '@/services/auth/tokenVerifier.server'
-import { createUnsignedJwt } from '@/utils/jwt.server'
+import { createHs256Jwt, createUnsignedJwt } from '@/utils/jwt.server'
 
-const SECRET = 'test-secret-at-least-32-bytes!!'
+const SECRET = 'test-secret-at-least-32-bytes!!!'
 const secretKey = new TextEncoder().encode(SECRET)
 
 const alice = { email: 'alice@example.com', name: 'Alice', groups: ['editors'] }
@@ -55,6 +55,16 @@ describe('verifyAccessToken', () => {
 		expect(await verifyAccessToken({ mode: 'verified', strategy: 'secret', key: SECRET }, token)).toBeNull()
 	})
 
+	it('rejects a token without an exp claim', async () => {
+		const token = await new SignJWT(alice).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().sign(secretKey)
+		expect(await verifyAccessToken({ mode: 'verified', strategy: 'secret', key: SECRET }, token)).toBeNull()
+	})
+
+	it('rejects a verified payload that has no email', async () => {
+		const token = await signHs256({ name: 'No Email', groups: [] })
+		expect(await verifyAccessToken({ mode: 'verified', strategy: 'secret', key: SECRET }, token)).toBeNull()
+	})
+
 	it('rejects an issuer or audience mismatch', async () => {
 		const token = await signHs256({ ...alice, iss: 'https://other.example', aud: 'taskhub' })
 		expect(
@@ -70,10 +80,15 @@ describe('verifyAccessToken', () => {
 		expect(await verifyAccessToken({ mode: 'verified', strategy: 'secret', key: SECRET }, token)).toBeNull()
 	})
 
-	it('decodes an unsigned token only in unsigned-dev mode', async () => {
+	it('decodes alg:none tokens only in unsigned-dev mode', async () => {
 		const token = createUnsignedJwt(alice)
 		expect(await verifyAccessToken({ mode: 'unsigned-dev' }, token)).toEqual(alice)
 		expect(await verifyAccessToken({ mode: 'unsigned-dev' }, 'not-a-jwt')).toBeNull()
+	})
+
+	it('rejects HS256 tokens in unsigned-dev mode even with a garbage signature', async () => {
+		const token = await createHs256Jwt(alice, SECRET)
+		expect(await verifyAccessToken({ mode: 'unsigned-dev' }, token)).toBeNull()
 	})
 
 	it('verifies an RS256 token against a JWKS document', async () => {

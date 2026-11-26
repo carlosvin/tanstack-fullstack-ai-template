@@ -25,26 +25,42 @@ export type TokenPolicy =
 			mode: 'verified'
 			strategy: 'jwks'
 			url: string
-			issuer?: string
+			/** Required for JWKS so tokens from other apps at the same IdP are rejected. */
+			issuer: string
 			audience?: string
 	  }
 	| { mode: 'unsigned-dev' }
 	| { mode: 'header-off' }
 
-function verifiedClaims(input: TokenPolicyInput): { issuer?: string; audience?: string } {
-	return {
-		...(input.issuer ? { issuer: input.issuer } : {}),
-		...(input.audience ? { audience: input.audience } : {}),
-	}
+function optionalAudience(input: TokenPolicyInput): { audience?: string } {
+	return input.audience ? { audience: input.audience } : {}
 }
 
-/** Pick one token mode. A configured verifier always rejects unsigned header tokens. */
+/**
+ * Pick one token mode. A configured verifier always rejects unsigned header tokens.
+ * JWKS requires an issuer — call sites should fail env parse before reaching here without one.
+ */
 export function resolveTokenPolicy(input: TokenPolicyInput): TokenPolicy {
 	if (input.jwtSecret) {
-		return { mode: 'verified', strategy: 'secret', key: input.jwtSecret, ...verifiedClaims(input) }
+		return {
+			mode: 'verified',
+			strategy: 'secret',
+			key: input.jwtSecret,
+			...(input.issuer ? { issuer: input.issuer } : {}),
+			...optionalAudience(input),
+		}
 	}
 	if (input.jwksUrl) {
-		return { mode: 'verified', strategy: 'jwks', url: input.jwksUrl, ...verifiedClaims(input) }
+		if (!input.issuer) {
+			throw new Error('AUTH_JWT_ISSUER is required when AUTH_JWKS_URL is set')
+		}
+		return {
+			mode: 'verified',
+			strategy: 'jwks',
+			url: input.jwksUrl,
+			issuer: input.issuer,
+			...optionalAudience(input),
+		}
 	}
 	if (input.allowUnsignedTokens) return { mode: 'unsigned-dev' }
 	return { mode: 'header-off' }
