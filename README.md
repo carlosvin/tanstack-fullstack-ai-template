@@ -219,7 +219,7 @@ See [`.env.example`](.env.example) for the full list.
 ### Swapping layers
 
 - **Database** — implement `Repository`, construct it in `ensureRepository()`, inject via `repositoryMiddleware`.
-- **AI** — install a `@tanstack/ai-*` adapter package, implement `AIAdapterService` so `getAdapter()` returns that TanStack AI adapter, update `adapter.ts`. Do not call vendor LLM SDKs from routes/tools/chat — see AGENTS.md §8.
+- **AI** — wrap a `@tanstack/ai-*` adapter in `AIAdapterService` and update `adapter.ts` (AGENTS.md §8).
 - **Observability** — implement `ObservabilityService`; update `getObservability.ts` and `instrument.server.mts`.
 - **UI** — replace Mantine imports; repository / server functions / middleware stay unchanged.
 

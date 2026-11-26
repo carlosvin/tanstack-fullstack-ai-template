@@ -977,14 +977,9 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 					path.join(agentSkillsDir, 'tanstack-promptable-fullstack-app-template', 'SKILL.md'),
 				)
 				const violations = []
-				for (const pattern of ARCHITECTURE_VENDOR_FORBIDDEN) {
+				for (const pattern of [...ARCHITECTURE_VENDOR_FORBIDDEN, ...ARCHITECTURE_LLM_VENDOR_FORBIDDEN]) {
 					if (pattern.test(templateSkill)) {
 						violations.push(`SKILL.md matches ${pattern}`)
-					}
-				}
-				for (const pattern of ARCHITECTURE_LLM_VENDOR_FORBIDDEN) {
-					if (pattern.test(templateSkill)) {
-						violations.push(`SKILL.md matches LLM vendor pattern ${pattern}`)
 					}
 				}
 				if (!/## Fixed vs swappable stack/.test(templateSkill)) {

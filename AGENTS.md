@@ -423,7 +423,7 @@ Run `pnpm test:e2e` whenever the change can break browser-visible behavior — n
 
 For shell or skill-contract UI work, also smoke **all three** `PROMPT_CONCEPT` demos (`side`, `prompt-first`, `agentic`) — local servers with different env values, or Netlify deploy previews. A change is not done when only one concept was exercised. Capture screenshots or a short walkthrough when the UX is the deliverable.
 
-Prefer a production server for E2E (`pnpm build` then `REPOSITORY_TYPE=seed PORT=3000 OPENAI_API_KEY=sk-e2e-placeholder pnpm start`, then `pnpm test:e2e`) so AI-gated chrome is present and `networkidle` does not hang on Vite devtools. Any configured provider key works for gating (`OPENAI_API_KEY` or `GEMINI_API_KEY` placeholder is enough). See **Cursor Cloud specific instructions**.
+Prefer a production server for E2E (`pnpm build` then `REPOSITORY_TYPE=seed PORT=3000 OPENAI_API_KEY=sk-e2e-placeholder pnpm start`, then `pnpm test:e2e`) so AI-gated chrome is present and `networkidle` does not hang on Vite devtools. See **Cursor Cloud specific instructions**.
 
 ### Post-Setup / Migration Verification
 

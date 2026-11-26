@@ -169,7 +169,7 @@ Scan before changing code:
 - **Auth ticket is repository-backed and server-enforced:** middleware builds the ticket from the repository (`getUserProfile` → `buildAccessTicket`, or `getUserAccess`); guards run in **server handlers**, never UI-only. Bearer identity is signature-verified first.
 - **Writes use `TraceabilityContext`:** pass audit fields from the ticket (or stock `context.user.email`) through a single context object on `Repository` mutations — avoid sprinkling raw `email` arguments. Repository implementations must **persist** `createdBy` / `lastModifiedBy` from that context onto the entity.
 - **Navigation is one decision:** ship the **router defaults bundle** and the **project `Link` wrapper** (`search: true`) together so URL state survives navigation.
-- **AI stack is complete:** every repo method → server tool + safe handler; client **`navigate`** / **`invalidateRouter`**; root **`getAIAvailability()`**; chat payload includes **`browserContext`**; **`chat({ agentLoopStrategy: maxIterations(N) })`**; adapter via `AIAdapterService.getAdapter()` (`@tanstack/ai-*` only — vendor choice in **`reference-tech-stack`** / AGENTS.md §8).
+- **AI stack is complete:** every repo method → server tool + safe handler; client **`navigate`** / **`invalidateRouter`**; root **`getAIAvailability()`**; chat payload includes **`browserContext`**; **`chat({ agentLoopStrategy: maxIterations(N) })`**; adapter boundary under **Fixed vs swappable stack**.
 - **Routes:** **`validateSearch`** + **`loaderDeps`**; duplicate **`beforeLoad`** / shared loaders only on **parent** layouts; recover page state from URL path + search params and pass props to isolated components instead of `useState` / `useEffect`.
 - **Metadata discipline:** schema field descriptions for narrative copy; structured extras for units/formats; closed vocabularies = `as const` tuple + schema enum + inferred type.
 - **Server boundaries:** loaders call `serverFns` only — no `process.env` secrets, DB drivers, or repo imports in route files; `*.server.ts` for DB drivers / Node SDKs; `createServerOnlyFn` for non-RPC infra; `importProtection` updated for new node packages.
@@ -442,7 +442,7 @@ interface Repository {
 4. **AI tools:** each server function → `toolDefinition` + `createSafeServerTool`; wire client tools in the prompt shell (AGENTS.md §8). Prompt placement: **Choose a UX**, then **`promptable-ux`** or **`agentic-ux`**. When it is not clear which user experience to implement, ask which of the three and wait.
 5. **Middleware:** `start.ts` — auth, invalidation, optional pre-auth `308` redirects for legacy paths.
 6. **Routes:** `validateSearch`, `loaderDeps`, loaders; parent layouts for shared `beforeLoad`/data.
-7. **Chat:** `@tanstack/ai-*` via `AIAdapterService` (ask provider if unclear); `chat()`, `buildSystemPrompt`, tools — AGENTS.md §8. **Choose a UX** before chrome; **side** / **prompt-first** → **`promptable-ux`**; **agentic** → **`agentic-ux`** (no domain screens).
+7. **Chat:** adapter boundary under **Fixed vs swappable stack**; `chat()`, `buildSystemPrompt`, tools — AGENTS.md §8. **Choose a UX** before chrome; **side** / **prompt-first** → **`promptable-ux`**; **agentic** → **`agentic-ux`** (no domain screens).
 
 ### Per-entity 3-UX checklist
 
@@ -479,7 +479,7 @@ const debouncedSearch = debounce((value: string) => {
 - **Agent Skills (only standard):** this template’s skills are [agentskills.io](https://agentskills.io) folders — `.agents/skills/<name>/SKILL.md`. Edit those files directly. Install into other projects with `npx skills add carlosvin/tanstack-fullstack-ai-template` (all skills) or `--skill <id>`. List: `npx skills add carlosvin/tanstack-fullstack-ai-template --list`. Similar: `gh skill install carlosvin/tanstack-fullstack-ai-template`. Do not maintain a second skill format (canonical YAML, TanStack Intent package skills, or generated copies).
 - **CLI (prefer current docs over memory):** `npx @tanstack/cli --help` → `libraries`, `search-docs "<query>" --library router|start|ai`, `doc <library> <path>`.
 - **Versions:** prefer latest `@tanstack/*` (see **Fixed vs swappable stack**); **`reference-tech-stack`** names packages, not stale pins.
-- **AI stack:** `@tanstack/ai`, `@tanstack/ai-react`, optional `@tanstack/ai-mcp`, plus a chosen `@tanstack/ai-*` behind `AIAdapterService` — **AGENTS.md §8** (ask provider if unclear; no vendor pin here).
+- **AI stack:** `@tanstack/ai`, `@tanstack/ai-react`, optional `@tanstack/ai-mcp`, plus chosen `@tanstack/ai-*` — **Fixed vs swappable stack** + AGENTS.md §8.
 
 ## Use the handbook (AGENTS.md)
 
