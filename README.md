@@ -1,92 +1,93 @@
 # TanStack AI-Promptable Full-Stack Template
 
-A production-ready full-stack starter template for building **AI-promptable** internal tools and web applications.
+Opinionated [TanStack Start](https://tanstack.com/start) starter for **AI-promptable** apps: one schema → repository → server-function path powers both the UI and the AI tools. External services sit behind interfaces (DB, AI, observability). Seed data means `pnpm dev` works with zero config.
 
-Built with [TanStack Start](https://tanstack.com/start) — with every external service behind an interface so you can swap implementations without touching application code.
+**[Live Demo — side](https://fullstack-promptable-app-example.netlify.app)** · **[Live Demo — prompt-first](https://fullstack-promptable-prompt-first.netlify.app)** · **[Live Demo — agentic](https://fullstack-promptable-agentic.netlify.app)** · **[Blog](building-ai-promptable-fullstack-apps.md)**
 
-**Default stack**: [Mantine](https://mantine.dev/) + [MongoDB](https://www.mongodb.com/) + [TanStack AI](https://tanstack.com/ai) (OpenAI) + [Sentry](https://sentry.io/). All swappable.
+## Why this exists
 
-**[Live Demo — Promptable UI (side)](https://fullstack-promptable-app-example.netlify.app)** · **[Live Demo — Prompt-first](https://fullstack-promptable-prompt-first.netlify.app)** · **[Live Demo — Fully agentic](https://fullstack-promptable-agentic.netlify.app)** | **[Blog Post](building-ai-promptable-fullstack-apps.md)**
+Most full-stack apps rebuild the same foundation every time — auth, data access, UI shell, observability, and AI plumbing — before any product code lands. This template freezes those decisions so you ship domain features from day one, without rewriting when you leave the prototype stage.
 
-This repo ships **three prompt UX examples** from one codebase. Set `PROMPT_CONCEPT` per Netlify site:
+## What you get
 
-| Demo | `PROMPT_CONCEPT` | `DISPLAY_NAME` (suggested) |
-|------|------------------|----------------------------|
-| Side drawer (default) | `side` | `TaskHub` |
-| Prompt-first bar | `prompt-first` | `TaskHub Prompt-first` |
-| Fully agentic shell | `agentic` | `TaskHub Agentic` |
+- **Prototype → MVP without rewrites** — start on the in-memory seed repository; flip to MongoDB (or another `Repository`) via env. Same interfaces, routes, and AI tools.
+- **One code path for UI + AI** — tools call the same server functions as loaders and forms, so auth, validation, and errors stay consistent.
+- **Solid boundaries** — schemas as source of truth; repository / AI / observability interfaces; URL-as-state and loaders-first for scalable, bookmarkable UI.
+- **Agent-ready** — published [Agent Skills](https://agentskills.io) encode the architecture contract so scaffolding and refactors stay aligned.
 
-Link **additional Netlify sites** to the same repository (base directory `/`, same `pnpm build` as `netlify.toml`). Give each site its own `DISPLAY_NAME` and shared AI/observability env vars. Production on the default site stays on `main`; the prompt-first site uses `PROMPT_CONCEPT=prompt-first` and the agentic site uses `PROMPT_CONCEPT=agentic` in site settings (see `scripts/netlify/setup-prompt-first-site.sh` and `scripts/netlify/setup-agentic-site.sh`).
+## Three UX modes, one codebase
 
-On pull requests, **each linked site** gets its own Netlify deploy preview (one check / URL per site): side drawer on `fullstack-promptable-app-example`, prompt-first on `fullstack-promptable-prompt-first`, agentic shell on `fullstack-promptable-agentic`. Enable **Deploy Previews** and disable **Branch deploys** in all projects’ Build & deploy settings.
+Pick one experience per deployment (`PROMPT_CONCEPT`). Same schemas, repositories, and tools underneath.
+
+| Mode | Best for | What the user sees | Demo |
+|------|----------|--------------------|------|
+| **side** (default) | Product apps with domain screens | Routes + header; AI chat in a right drawer until opened | [side](https://fullstack-promptable-app-example.netlify.app) |
+| **prompt-first** | Conversation-led workflows | Bottom prompt bar and conversation stage, same domain routes | [prompt-first](https://fullstack-promptable-prompt-first.netlify.app) |
+| **agentic** | Tool-only / agent shells | Thin shell; views rendered from tool / A2UI data — no hand-built domain screens | [agentic](https://fullstack-promptable-agentic.netlify.app) |
+
+Multi-site Netlify wiring: [Deploy demos](#deploy-demos).
+
+## Opinionated stack
+
+Defaults for the reference app — swappable at the [interface boundary](#swappable-layers).
+
+| Concern | Default |
+|---------|---------|
+| Framework / routing / AI | [TanStack Start](https://tanstack.com/start) · [Router](https://tanstack.com/router) · [AI](https://tanstack.com/ai) |
+| UI | [Mantine](https://mantine.dev/) |
+| Validation | [Zod](https://zod.dev/) |
+| Data | [MongoDB](https://www.mongodb.com/) + in-memory seed |
+| Auth | [jose](https://github.com/panva/jose) (JWT header) |
+| Observability | [Sentry](https://sentry.io/) + pino (optional / no-op) |
+| Test / lint | [Vitest](https://vitest.dev/) · [Playwright](https://playwright.dev/) · [Biome](https://biomejs.dev/) |
+| Deploy | [Netlify](https://www.netlify.com/) (Nitro SSR) |
+
+## Path to production
+
+1. `pnpm install && pnpm dev` — seed data, no DB or API keys required.
+2. Define domain schemas and the entity end-to-end (repository → server functions → routes).
+3. Expose the same server functions as AI tools.
+4. When ready: set `MONGODB_URI`, an AI provider key, and optionally `SENTRY_DSN`.
+
+Details: [Extending the Template](#extending-the-template) · [Using This Template](#using-this-template).
+
+## Quick start
+
+```bash
+pnpm install
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). Docker: `docker build -t my-app . && docker run --rm -p 3000:3000 my-app`.
 
 ## Use the Agent Skill
 
-This repo publishes **[Agent Skills](https://agentskills.io)** in `.agents/skills/*/SKILL.md` (the only skill format).
-
-Install them into your coding agent with [`npx skills`](https://github.com/vercel-labs/skills):
+This repo publishes skills under `.agents/skills/*/SKILL.md`. Install into your coding agent:
 
 ```bash
 npx skills add carlosvin/tanstack-fullstack-ai-template
 ```
 
-Or install one skill at a time:
+Install details, per-skill roles, and other install paths: **[skills/README.md](./skills/README.md)**. Ops handbook: **[AGENTS.md](./AGENTS.md)**. Architecture contract: the `tanstack-promptable-fullstack-app-template` skill.
 
-```bash
-npx skills add carlosvin/tanstack-fullstack-ai-template --skill tanstack-promptable-fullstack-app-template
-npx skills add carlosvin/tanstack-fullstack-ai-template --skill observability-and-env
-npx skills add carlosvin/tanstack-fullstack-ai-template --skill reference-tech-stack
-npx skills add carlosvin/tanstack-fullstack-ai-template --skill repository-architecture
-npx skills add carlosvin/tanstack-fullstack-ai-template --skill promptable-ux
-```
-
-Similar: `gh skill install carlosvin/tanstack-fullstack-ai-template`.
-
-Install details, skill roles, and global/`--agent` flags: **[skills/README.md](./skills/README.md)**. **[AGENTS.md](./AGENTS.md)** is the ops handbook; the architecture skill is the contract agents must not break.
-
-**Why it helps:** fewer regressions when scaffolding features, migrating code, or refactoring routes — agents follow the same non-obvious invariants the template depends on.
-
-**When to use it:** starting from this template, adding entities or AI tools, adopting the pattern in another TanStack Start app, or fixing duplicated parent/child route work.
-
-### Other ways to install
-
-- **GitHub CLI:** `gh skill install carlosvin/tanstack-fullstack-ai-template`
-- **Manual copy:** copy `.agents/skills/<id>/` to `~/.cursor/skills/`, `~/.claude/skills/`, or your editor’s documented skills path.
-- **Using this repo as-is:** agents that read `.agents/skills/` already see the skills — no extra step.
-- **Shell fallback** (only if `npx skills` / `gh skill` are unavailable):  
-  `curl -sL https://raw.githubusercontent.com/carlosvin/tanstack-fullstack-ai-template/main/scripts/skills/install.sh | bash -s -- --force`
-
-More user-focused detail: **[skills/README.md](./skills/README.md)** · Editing/validating skills: **[skills/AUTHORING.md](./skills/AUTHORING.md)**.
-
-### Try it
-
-Ask your agent:
+**Ask your agent:**
 
 - "What are the core contract items in the TanStack fullstack skill I must not violate?"
 - "Add a new domain entity following this template’s schema layers, repository, server functions, routes, and AI tools."
 - "Should any of my nested routes move shared `beforeLoad` or loader work to a parent layout?"
 
-### What the skill enforces (outcomes)
-
-- **One tools-layer schema** for both server functions and AI tools; **parse both ways** (tools ↔ repo) at mapper boundaries.
-- **Thin routes**; **loaders** fetch data; **URL search params** hold filters/tabs/selections with `loaderDeps` for cache keys.
-- **POST mutations** use auth + invalidation middleware; callers normalize errors consistently for UI and AI.
-- **AI:** expose repository capabilities as tools; client **navigate** / **invalidateRouter**; gate chat on availability; bounded agent loop in `chat()`.
-- **Parent layouts** own shared guards and expensive reads; children read parent loader data instead of duplicating work.
-- **TypeScript** after parsing: preserve inference — prefer `satisfies`, exhaustive handling, and guards over `any` and loose `as` casts.
+**What the skill enforces:** one tools-layer schema for UI and AI; thin routes with loaders and URL search state; POST mutations with auth + invalidation; repository capabilities as tools plus client `navigate` / `invalidateRouter`; parent layouts own shared work; preserve TypeScript inference after parse.
 
 ## Architecture
 
-The architecture is organized in layers with clear interface boundaries. The interfaces are the contract — the implementations are your choice.
-
-### High-Level Overview
+Layers with clear interface boundaries — the interfaces are the contract; implementations are your choice.
 
 ```mermaid
 flowchart TB
     subgraph Client ["Client Layer"]
         direction LR
         Pages["Pages & Components"]
-        Chat["AI Chat Drawer"]
+        Chat["AI Chat"]
     end
 
     subgraph Mid ["Middleware Layer"]
@@ -125,93 +126,27 @@ flowchart TB
     Schemas -..-> Boundary
 ```
 
-### Detailed Data Flow
-
-```mermaid
-flowchart TB
-    subgraph client ["Client (Browser)"]
-        UILib["UI Components"]
-        Router["TanStack Router"]
-        ChatUI["Chat Drawer"]
-    end
-
-    subgraph middleware ["Global Middleware"]
-        Auth["Auth Middleware"]
-        Invalidate["Invalidate Middleware"]
-    end
-
-    subgraph serverFns ["Server Functions (TanStack Start)"]
-        Queries["Queries (GET)"]
-        Mutations["Mutations (POST)"]
-        ChatAPI["Chat API (SSE)"]
-    end
-
-    subgraph interfaces ["Interface Boundaries"]
-        RepoInterface["Repository"]
-        AIInterface["AIAdapterService"]
-        ObsInterface["ObservabilityService"]
-    end
-
-    subgraph implementations ["Swappable Implementations"]
-        direction LR
-        MongoDB["MongoDB"]
-        SeedRepo["Seed (in-memory)"]
-        OpenAI["OpenAI / Azure"]
-        Sentry["Sentry"]
-        NoOp["No-op"]
-    end
-
-    subgraph schemas ["Schema Layer"]
-        Zod["Zod Schemas"]
-    end
-
-    Router --> Queries
-    ChatUI --> ChatAPI
-    UILib --> Mutations
-
-    Queries --> RepoInterface
-    Mutations --> RepoInterface
-    ChatAPI --> AIInterface
-    Queries --> ObsInterface
-    Mutations --> ObsInterface
-
-    RepoInterface --> MongoDB
-    RepoInterface --> SeedRepo
-    AIInterface --> OpenAI
-    ObsInterface --> Sentry
-    ObsInterface --> NoOp
-
-    Zod -.-> serverFns
-    Zod -.-> interfaces
-    Auth -.-> serverFns
-    Invalidate -.-> Mutations
-```
-
 ### Swappable Layers
 
 | Layer | Interface | Default | Alternatives |
 |-------|-----------|---------|-------------|
 | **Database** | `Repository` | [MongoDB](https://www.mongodb.com/) | [Postgres](https://www.postgresql.org/), [DynamoDB](https://aws.amazon.com/dynamodb/), [Supabase](https://supabase.com/), in-memory |
-| **AI Provider** | `AIAdapterService` | [OpenAI](https://platform.openai.com/) (Azure) | [Anthropic](https://www.anthropic.com/), [Gemini](https://ai.google.dev/), [Ollama](https://ollama.com/), any OpenAI-compatible |
+| **AI Provider** | `AIAdapterService` | Gemini → OpenAI / Gateway → Azure | [Anthropic](https://www.anthropic.com/), [Ollama](https://ollama.com/), any OpenAI-compatible |
 | **Observability** | `ObservabilityService` | [Sentry](https://sentry.io/) | [Datadog](https://www.datadoghq.com/), [OpenTelemetry](https://opentelemetry.io/), no-op |
-| **UI Library** | — (component layer) | [Mantine](https://mantine.dev/) | [MongoDB.design](https://www.mongodb.design/), [shadcn/ui](https://ui.shadcn.com/), [Chakra](https://chakra-ui.com/), [Ant Design](https://ant.design/), [Radix](https://www.radix-ui.com/) |
-| **Schema Validation** | — ([Standard Schema](https://github.com/standard-schema/standard-schema) spec) | [Zod](https://zod.dev/) | [ArkType](https://arktype.io/), [Valibot](https://valibot.dev/), [Effect Schema](https://effect.website/docs/schema/introduction/) |
+| **UI Library** | — (component layer) | [Mantine](https://mantine.dev/) | [shadcn/ui](https://ui.shadcn.com/), [Chakra](https://chakra-ui.com/), [Ant Design](https://ant.design/), [Radix](https://www.radix-ui.com/) |
+| **Schema Validation** | — ([Standard Schema](https://github.com/standard-schema/standard-schema)) | [Zod](https://zod.dev/) | [ArkType](https://arktype.io/), [Valibot](https://valibot.dev/), [Effect Schema](https://effect.website/docs/schema/introduction/) |
 
-**Schema library note:** [ArkType](https://arktype.io/) is a very good alternative to Zod (and many prefer its syntax). This template uses Zod because it is more widely known and has broad ecosystem support. With Zod v4 you can attach extra metadata to fields—e.g. formatting or units—which helps both UI rendering and AI tool hints; the same idea applies if you swap to ArkType or another schema library.
+Zod is the default for ecosystem reach; any Standard Schema library works at the same boundaries. Zod v4 field metadata (formatting, units) helps both UI and AI tool hints.
 
 ### Key Design Decisions
 
-- **Repository Pattern**: All data access goes through an interface. A seed implementation ships for development; swap to MongoDB (or anything else) via environment variable.
-- **Auth via Middleware**: A global TanStack Start middleware verifies the JWT in the configured header (HS256 secret or JWKS) and provides typed `AuthContext` to every server function. Unsigned header tokens are ignored unless `AUTH_ALLOW_UNSIGNED_TOKENS=true` and no verifier is configured. Mutations additionally use function-level `requireAuthMiddleware` so only POST server functions require authentication; queries stay unauthenticated.
-- **Invalidation Middleware**: All POST server functions chain `invalidateMiddleware`, which calls `router.invalidate()` on the client after mutations. Components never invalidate manually. The AI chat uses an `invalidateRouter` client tool for the same purpose.
-- **Task CRUD UI**: Add, edit, and delete tasks from the list and detail pages. Only the task creator can edit or delete; anyone logged in can create. Buttons are gated by auth and creator checks.
-- **Promptable by Default**: AI tools call the same server functions that the UI uses — a single code path for validation, auth, and data access. Read and mutation tools go through the shared `createSafeServerTool()` helper so errors still return `{ error, code }` without repeating wrapper logic in every tool. A **getCurrentUserContext** tool lets the AI check who is logged in and what they can do. When the user is not allowed, tools return errors with 401/403 so the AI can inform the user. [Client tools](https://tanstack.com/ai/latest/docs/guides/client-tools) (`navigate`, `invalidateRouter`) run in the browser via `@tanstack/ai-client`. Optionally, the same server tools can be served over [MCP](https://tanstack.com/ai/latest/docs/mcp/server) at `/api/mcp` via `@tanstack/ai-mcp` (`createMCPServer`) for hosts such as Cursor.
-- **URL-Aware AI Prompt**: The chat request includes browser context and current location (`currentPathname`, `currentSearch`, `currentHref`). The system prompt includes this as `Current Location` context and uses route-pattern guidance (for example `/tasks/$taskId` -> `/tasks/<taskId>`) so references like "this task" resolve to the page in view.
-- **Observability as a Plugin**: Behind an `ObservabilityService` interface. No DSN configured? A no-op implementation is used. Want Datadog? Implement the interface.
-- **Schemas = Source of Truth**: Every domain type is a schema with `.describe()` metadata. Types are inferred, JSON Schemas flow to AI tools automatically.
-- **URL-as-State**: Page state (filters, selections, tabs) lives in URL search params, not component state. Shareable, bookmarkable, survives refresh.
-- **Loaders-First**: Data is fetched in route loaders, never in `useEffect` + `useState`. Loaders provide caching, SSR, and parallel fetching for free.
-- **E2E Tests Against Seed Data**: Playwright tests run against the dev server with `REPOSITORY_TYPE=seed` and a shared `AUTH_JWT_SECRET`. An HS256 Alice JWT fixture provides authenticated browser contexts. Tests cover dashboard, task list, task detail, and full CRUD — all without a real database.
+- **Repository pattern** — all data access through an interface; seed for local, Mongo (or other) via env.
+- **Auth + invalidation middleware** — JWT → typed access ticket; POST mutations chain `requireAuthMiddleware` and `invalidateMiddleware` so the client refreshes without manual `router.invalidate()`.
+- **Promptable by default** — AI tools wrap the same server functions via `createSafeServerTool()`; client tools (`navigate`, `invalidateRouter`) run in the browser; optional MCP at `/api/mcp`.
+- **URL-aware AI** — chat sends browser location so “this task” resolves to the page in view.
+- **Schemas = source of truth** — `.describe()` metadata; types inferred; JSON Schema flows to tools.
+- **URL-as-state + loaders-first** — filters/selections in search params; data in route loaders (caching, SSR, no `useEffect` fetch).
+- **Observability as a plugin** — no DSN → no-op; swap the `ObservabilityService` implementation when needed.
 
 ## Project Structure
 
@@ -231,7 +166,7 @@ src/
 │   ├── api/serverFns.ts        # Server functions (TanStack Start)
 │   ├── ai/
 │   │   ├── types.ts            # AIAdapterService interface
-│   │   ├── adapter.ts          # OpenAI implementation + factory
+│   │   ├── adapter.ts          # Provider implementation + factory
 │   │   └── tools.ts            # AI tool definitions
 │   ├── observability/
 │   │   ├── types.ts            # ObservabilityService interface
@@ -246,117 +181,54 @@ src/
 ├── constants/                  # Shared enums
 └── test-utils/                 # Vitest helpers
 
-e2e/                               # Playwright E2E tests
-├── auth.ts                        # Unsigned JWT helper + authenticated fixtures
-├── dashboard.spec.ts
-├── tasks-list.spec.ts
-├── task-detail.spec.ts
-└── task-crud.spec.ts
+e2e/                               # Playwright E2E tests (seed + JWT fixtures)
 ```
 
 ## Environment Variables
 
-See [`.env.example`](.env.example) for the full list with documentation.
+See [`.env.example`](.env.example) for the full list.
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `MONGODB_URI` | No | — | MongoDB connection string. If absent, seed repo is used. |
 | `MONGODB_DB_NAME` | No | `app-db` | Database name. |
 | `REPOSITORY_TYPE` | No | auto | `seed` or `mongo`. Auto-detected from `MONGODB_URI`. |
-| `AZURE_OPENAI_API_KEY` | No | — | OpenAI API key. AI chat is disabled without it. |
-| `AZURE_OPENAI_ENDPOINT` | No | — | OpenAI base URL (e.g., `https://host/openai/v1`). |
-| `AZURE_OPENAI_DEPLOYMENT` | No | `gpt-4o` | Model deployment name. |
-| `SENTRY_DSN` | No | — | Sentry DSN for server and browser observability. Observability disabled without it. |
+| `PROMPT_CONCEPT` | No | `side` | UX shell: `side`, `prompt-first`, or `agentic`. |
+| `GEMINI_API_KEY` / `OPENAI_API_KEY` / `AZURE_OPENAI_*` | No | — | First configured provider wins (Gemini → OpenAI/Gateway → Azure). Chat disabled without one. |
+| `SENTRY_DSN` | No | — | Observability disabled without it. |
 | `AUTH_HEADER_NAME` | No | `Authorization` | HTTP header containing the JWT. |
-| `AUTH_JWT_SECRET` | No | — | HS256 secret (min 32 chars). When set, header JWTs must verify and include `exp`. |
-| `AUTH_JWKS_URL` | No | — | JWKS URL used when `AUTH_JWT_SECRET` is unset. |
-| `AUTH_JWT_ISSUER` | When JWKS | — | Expected `iss`. Required for JWKS; optional for HMAC. |
-| `AUTH_JWT_AUDIENCE` | No | — | Expected `aud` claim when a verifier is configured. |
-| `AUTH_ALLOW_UNSIGNED_TOKENS` | No | `false` | Dev-only `alg:none` header JWTs when no verifier is set. Rejected when `ENV` or `NODE_ENV` is production. |
 
 ## Extending the Template
 
 ### Adding a New Entity (End-to-End)
 
 1. **Schema**: Add Zod schemas in `src/services/schemas/schemas.ts` with `.describe()` on every field.
-2. **Repository**: Add methods to the `Repository` interface in `types.ts`. Implement them in `seedRepository.ts` and in the owning Mongo collection repository (`mongoTaskRepository.server.ts` or `mongoUserRepository.server.ts`). Delegate from `mongoRepository.server.ts`. Declare any new index in that collection owner's `createIndexes()`.
+2. **Repository**: Add methods to the `Repository` interface in `types.ts`. Implement them in `seedRepository.ts` and in the owning Mongo collection repository. Delegate from `mongoRepository.server.ts`. Declare indexes in that collection owner’s `createIndexes()`.
 3. **Server Functions**: Add `createServerFn` wrappers in `src/services/api/serverFns.ts`. Chain `.middleware([invalidateMiddleware])` on mutations.
-4. **AI Tools**: Expose methods as tools in `src/services/ai/tools.ts` that call your server functions through `createSafeServerTool()`. Update the system prompt.
-   - Keep `src/services/ai/navigationManifest.ts` aligned with routes (including dynamic segments like `/tasks/$taskId`).
-   - Ensure chat requests include current URL context in `browserContext` so the prompt can reason about the current page.
+4. **AI Tools**: Expose methods as tools in `src/services/ai/tools.ts` via `createSafeServerTool()`. Keep `navigationManifest.ts` aligned with routes; send `browserContext` from the chat client.
 5. **Routes**: Create route files under `src/routes/`. Use loaders to fetch data.
-6. **Tests**: Write unit tests for the seed repository and E2E tests in `e2e/` for the new routes.
+6. **Tests**: Unit-test the seed repository; add E2E coverage in `e2e/` for new routes.
 
-### Swapping the Database
+### Swapping layers
 
-Implement `Repository` for the new driver. Construct it with `new` inside `ensureRepository()` and inject it with `repositoryMiddleware`. Keep the client inside a scope that closes on dispose, and keep collection access inside collection repositories.
+- **Database** — implement `Repository`, construct it in `ensureRepository()`, inject via `repositoryMiddleware`.
+- **AI** — implement `AIAdapterService` in `src/services/ai/types.ts`; update the factory in `adapter.ts`.
+- **Observability** — implement `ObservabilityService`; update `getObservability.ts` and `instrument.server.mts`.
+- **UI** — replace Mantine imports; repository / server functions / middleware stay unchanged.
 
-### Swapping the AI Provider
-
-Create a new class implementing `AIAdapterService` from `src/services/ai/types.ts`. Update the factory in `adapter.ts`.
-
-### Swapping Observability
-
-1. Create a new class implementing `ObservabilityService` from `src/services/observability/types.ts`.
-2. Update the factory in `src/services/observability/getObservability.ts`.
-3. Update `instrument.server.mts` (and rebuild so `.output/server/instrument.server.mjs` reflects the change) for server-side init.
-
-### Swapping the UI Library
-
-Replace Mantine imports in components. The architectural layers (repository, server functions, middleware) are unaffected.
-
-## Generated Example
-
-You can easily run it just by.
+## Scripts
 
 ```bash
-
-# Install dependencies
-pnpm install
-
-# Start the dev server (uses in-memory seed data, no DB required)
-pnpm dev
+pnpm dev           # Dev server on port 3000
+pnpm build         # Production build
+pnpm start         # Run production server
+pnpm test          # Unit tests (Vitest)
+pnpm test:e2e      # E2E tests (Playwright, seed data)
+pnpm lint          # Lint + typecheck (Biome)
+pnpm format        # Auto-format (Biome)
+pnpm skills:check  # Companion reciprocity + install commands
+pnpm skills:waza   # Waza skill readiness + mock evals
 ```
-
-Open [http://localhost:3000](http://localhost:3000). The app works immediately with seed data — no database, no API keys, no configuration needed.
-
-### Run it with Docker
-
-```bash
-docker build -t my-app .
-docker run --rm -p 3000:3000 my-app
-```
-
-### Scripts
-
-```bash
-# commands for the app generated by the skill
-pnpm dev        # Start dev server on port 3000
-pnpm build      # Production build
-pnpm start      # Run production server
-pnpm test       # Run unit tests (Vitest)
-pnpm test:e2e   # Run E2E tests (Playwright, uses seed data)
-pnpm lint       # Lint + typecheck (Biome)
-pnpm format     # Auto-format (Biome)
-
-# skill authoring
-pnpm skills:check  # Companion reciprocity + npx skills install commands
-pnpm skills:waza   # Waza skill readiness, spec coverage, and mock evals
-```
-
-## Tech Stack
-
-- **Framework**: [TanStack Start](https://tanstack.com/start) (full-stack React with SSR)
-- **Routing**: [TanStack Router](https://tanstack.com/router) (file-based, type-safe)
-- **AI**: [TanStack AI](https://tanstack.com/ai) (multi-provider, tool calling)
-- **UI**: [Mantine](https://mantine.dev/) (component library + hooks)
-- **Database**: [MongoDB](https://www.mongodb.com/) (via repository pattern)
-- **Validation**: [Zod](https://zod.dev/) (schemas as source of truth)
-- **Auth**: [jose](https://github.com/panva/jose) (JWT verify, any JS runtime)
-- **Observability**: [Sentry](https://sentry.io/) (behind interface, optional)
-- **Testing**: [Vitest](https://vitest.dev/) + [Testing Library](https://testing-library.com/) (unit), [Playwright](https://playwright.dev/) (E2E)
-- **Linting**: [Biome](https://biomejs.dev/)
-- **Server**: [Nitro](https://nitro.build/) (universal JavaScript server)
 
 ## Using This Template
 
@@ -365,36 +237,32 @@ pnpm skills:waza   # Waza skill readiness, spec coverage, and mock evals
 ```bash
 git clone https://github.com/carlosvin/tanstack-fullstack-ai-template.git my-app
 cd my-app
-rm -rf .git && git init    # Start fresh git history
+rm -rf .git && git init
 pnpm install
-pnpm dev                   # Works immediately with seed data
+pnpm dev
 ```
 
-Then follow the end-to-end workflow:
-
-1. Define your domain schemas in `src/services/schemas/schemas.ts` (Zod schemas with `.describe()` on every field, types inferred via `z.infer<>`)
-2. Define your repository interface in `src/services/repository/types.ts` (`Repository`)
-3. Implement the seed repository in `seedRepository.ts` (in-memory data for development)
-4. Add server functions in `src/services/api/serverFns.ts` (GET for loaders, POST with `invalidateMiddleware` for mutations)
-5. Expose methods as AI tools in `src/services/ai/tools.ts` that call your server functions through `createSafeServerTool()`
-6. Create file-based routes under `src/routes/` (data in loaders, state in URL search params)
-7. When ready for real data, implement `mongoRepository.server.ts` and set `MONGODB_URI`
+Then follow [Path to production](#path-to-production) and [Adding a New Entity](#adding-a-new-entity-end-to-end).
 
 ### Option B: AI-assisted (skill)
 
-See **[Use the Agent Skill](#use-the-agent-skill)** above for install commands, quick prompts, and what the skill enforces. Contributor workflow: **[skills/AUTHORING.md](./skills/AUTHORING.md)**.
+See [Use the Agent Skill](#use-the-agent-skill). Contributor workflow: **[skills/AUTHORING.md](./skills/AUTHORING.md)**.
 
 ### Option C: Adopt Incrementally (Existing Project)
 
-You don't need to adopt the whole pattern at once. Each layer is independently valuable:
+Each layer is independently valuable:
 
-1. **Schema layer** — Move types to a centralized schema file with `.describe()` metadata
-2. **Repository interface** — Extract data access behind `Repository`
-3. **Server functions** — Wrap repository calls with `createServerFn` and `processResponse()`
-4. **Auth middleware** — Add global JWT extraction and typed `AuthContext`
-5. **Observability interface** — Put monitoring behind `ObservabilityService`
-6. **AI tools** — Expose read methods as tools for the chat assistant
-7. **Route migration** — Move `useEffect` data fetching into loaders, `useState` into URL search params
+1. Schema layer with `.describe()` metadata
+2. `Repository` interface for data access
+3. Server functions + `processResponse()`
+4. Auth middleware + typed access ticket
+5. `ObservabilityService`
+6. AI tools over the same server functions
+7. Loaders + URL search params instead of `useEffect` / local page state
+
+### Deploy demos
+
+One codebase, three Netlify sites — set `PROMPT_CONCEPT` and a distinct `DISPLAY_NAME` per site (`side` / `prompt-first` / `agentic`). Same build as `netlify.toml`. Helper scripts: `scripts/netlify/setup-prompt-first-site.sh`, `scripts/netlify/setup-agentic-site.sh`. Enable **Deploy Previews** and disable **Branch deploys** so each PR gets one preview URL per UX mode.
 
 ## License
 
