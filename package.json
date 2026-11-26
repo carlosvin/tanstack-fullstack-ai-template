@@ -2,7 +2,7 @@
 	"name": "tanstack-fullstack-template",
 	"private": true,
 	"type": "module",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"scripts": {
 		"dev": "NODE_OPTIONS='--import tsx --import ./instrument.server.mts' vite dev --port 3000",
 		"build": "vite build && tsc -p tsconfig.instrument.json && cp package.json .output/server/package.json",
