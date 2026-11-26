@@ -158,7 +158,7 @@ export type Task = z.infer<typeof TaskSchema>
 This single definition serves four purposes:
 
 1. **TypeScript types** — inferred via `z.infer<>`
-2. **Server function validation** — passed to `.inputValidator(Schema)`
+2. **Server function validation** — passed to `.validator(Schema)`
 3. **AI tool schemas** — converted to JSON Schema automatically
 4. **Documentation** — `.describe()` metadata is embedded everywhere
 
@@ -203,7 +203,7 @@ Adding a new domain entity is a six-step process:
 1. **Zod schema** in `schemas.ts` with `.describe()` annotations
 2. **Repository methods** in the interface, then implement in seed and MongoDB
 3. **Server functions** wrapping the repository (GET for loaders, POST with `invalidateMiddleware` for mutations)
-4. **AI tools** that call the server functions through `createSafeServerTool()`, plus a **getCurrentUserContext** tool so the AI knows who is logged in and what they can do
+4. **AI tools** that call the server functions through `createSafeServerTool()`, plus a **getCurrentUserContext** tool so the AI knows who is logged in and what they can do. Optionally expose those same server tools over MCP with TanStack AI’s `createMCPServer` (`/api/mcp` in this template) when an MCP host should call them outside the in-app chat UI
 5. **Routes** for the UI pages
 6. **Tests** for the seed repository, new utilities, and E2E flows (Playwright runs against seed data)
 

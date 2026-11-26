@@ -113,6 +113,8 @@ Full seam notes: [references/tri-modal-ux.md](./references/tri-modal-ux.md).
 
 **Fixed by this skill (TanStack):** TanStack **Start**, **Router**, and **AI** (server functions, middleware, file routes, `validateSearch`, loaders, `chat()` / tools / SSE). Use **`@tanstack/cli`** for current library docs. This repo’s architecture lives in Agent Skills (`.agents/skills/*/SKILL.md`) only.
 
+**Always prefer latest `@tanstack/*`:** Before Start/Router/AI/MCP work, check published versions (`pnpm outdated`, registry, `@tanstack/cli`). Prefer the newest compatible release; when a major ships with migration docs (e.g. AI 1.0), plan that upgrade. Bump related `@tanstack/ai*` packages together, apply migrations, then `pnpm format && pnpm lint && pnpm test && pnpm build`. Do not skip known-recommended upgrades without a recorded incompatibility.
+
 **Swappable (not prescribed here):** runtime validation, database, auth mechanism, AI provider, observability vendors, UI kit, markdown renderer, lint/test/deploy tooling. Patterns stay interface-first (`Schema.parse()`, repository interfaces, `AIAdapterService`, `ObservabilityService`).
 
 Concrete packages for *this* template: companion skill **`reference-tech-stack`**. Env/logging bootstrap: **`observability-and-env`**.
@@ -138,10 +140,10 @@ Pick **one validator library** per app and use it consistently across router sea
 3. **Three schema layers + trust boundaries:** **Repository** (DB-shaped), **tools / server-fn** (API-shaped, shared between `createServerFn` and `toolDefinition`), **router search** (URL-shaped). Translate between layers with `Schema.parse()`. Untrusted values become typed **only** at trust boundaries, using the **chosen runtime validator** (`Schema.parse()` or equivalent — not parallel parsers):
    - **Repository implementations:** documents/rows from a database and JSON from external APIs are parsed with the **repository-layer** schema before they enter the app.
    - **URL search params:** TanStack Router `validateSearch` (the search schema is the validator).
-   - **Other untrusted edges:** `createServerFn` `.inputValidator`, AI `toolDefinition` inputSchema, env (companion `observability-and-env`), and third-party widgets that type values as bare `string` (parse with the **same** schema).
+   - **Other untrusted edges:** `createServerFn` `.validator`, AI `toolDefinition` inputSchema, env (companion `observability-and-env`), and third-party widgets that type values as bare `string` (parse with the **same** schema).
    After a value has crossed a trust boundary, keep **schema-inferred types** through UI, handlers, and tools — do not widen back to `string` and re-parse with a helper that duplicates the schema.
 4. **TypeScript inside the typed flow:** After trust boundaries, preserve **inferred types end-to-end** — prefer `satisfies`, discriminated unions, `as const` tuples, and **exhaustive `switch`** (e.g. `default` branch calling `assertNever`) over `any`, broad `unknown` plumbing, or `as` casts (only use `as` at documented third-party/library seams per AGENTS.md). TypeScript narrows **already-typed** unions; it is not a substitute for `Schema.parse()` on untrusted input.
-5. **Repository vs tools:** Repository implementations use repository-layer schemas only. **Server functions and AI tools share the same tools-layer schemas** (`.inputValidator` / `toolDefinition` inputSchema). TanStack AI parses tool arguments with `inputSchema` before server `execute` and before client `.client()` handlers, so those handlers receive the parsed value and pass it through. UI and AI consume tools-layer types only — never import repository schemas at those edges.
+5. **Repository vs tools:** Repository implementations use repository-layer schemas only. **Server functions and AI tools share the same tools-layer schemas** (`.validator` / `toolDefinition` inputSchema). TanStack AI parses tool arguments with `inputSchema` before server `execute` and before client `.client()` handlers, so those handlers receive the parsed value and pass it through. UI and AI consume tools-layer types only — never import repository schemas at those edges.
 6. **Server functions:** GET queries throw on failure; POST mutations chain `.middleware([requireAuthMiddleware, invalidateMiddleware])`; handlers return data or throw `HttpError`; callers normalize with `processResponse` / `safeToolHandler` / `createSafeServerTool`.
 7. **Routes:** Thin route files (`createFileRoute`, `validateSearch`, `loaderDeps`, `loader`, `component`); page UI in `src/components/`. **Loaders** fetch via server functions — no `useEffect` data fetching for route data.
 8. **URL-as-state:** Recover filters, sort, selection, bulk-action choices, and modal routes from the path and `validateSearch`. Copying that state into `useState` with `useEffect` is a **code smell**. Keep UI-only fields (`selected`, `bulkStatus`) out of `loaderDeps`. Page components take loader data, search, and callbacks as props; reset a form with `key`, not an effect. Ephemeral chrome (mobile nav, side chat, drafts, spinners) stays local.
@@ -159,7 +161,7 @@ Pick **one validator library** per app and use it consistently across router sea
 
 Scan before changing code:
 
-- **One tools-layer schema per wire shape:** `createServerFn` `.inputValidator(Schema)` and AI `toolDefinition({ inputSchema })` share the same schema — no duplicate hand-written wire types.
+- **One tools-layer schema per wire shape:** `createServerFn` `.validator(Schema)` and AI `toolDefinition({ inputSchema })` share the same schema — no duplicate hand-written wire types.
 - **Parse both directions:** tools → repository inputs and repository rows → tools/API outputs each end in the target layer’s `Schema.parse()` (pure mapper functions are fine if the final step is always `.parse()`).
 - **Trust boundaries use the validator:** repository implementations `Schema.parse` DB documents / API JSON; routes use `validateSearch`; untyped widget values use the same schema `.parse()` — no `Array.find` / homemade parsers that duplicate enums.
 - **No type erasure:** after `Schema.parse` / `validateSearch`, carry **schema-inferred types** through server functions, repos, tools, and components — do not widen back to `Record<string, unknown>` / `any`.
@@ -201,7 +203,7 @@ export const Route = createFileRoute('/tasks/')({
 // src/services/api/serverFns.ts — server-only handler body
 export const getTasks = createServerFn({ method: 'GET' })
   .middleware([repositoryMiddleware])
-  .inputValidator(TaskFilterSchema.optional())
+  .validator(TaskFilterSchema.optional())
   .handler(async ({ data: filter, context }) => {
     const repoFilter = filter ? TaskRepoFilterSchema.parse(filter) : undefined
     return context.repository.getTasks(repoFilter)
@@ -287,7 +289,7 @@ Refresh, share, and AI `navigate` restore filters, sort, selection, `bulkStatus`
 
 **Layer 1 — Repository (DB-shaped):** define in `src/services/schemas/repository.ts` (target layout; today some apps still colocate in `schemas.ts`). No field descriptions required here. Infer types from your validator.
 
-**Layer 2 — Tools / server functions (API-shaped):** one schema for `.inputValidator(Schema)` and `toolDefinition({ inputSchema })`. Server functions parse at `.inputValidator`. Server `execute` and client `.client()` handlers already receive the `inputSchema` parse, so pass those args through.
+**Layer 2 — Tools / server functions (API-shaped):** one schema for `.validator(Schema)` and `toolDefinition({ inputSchema })`. Server functions parse at `.validator`. Server `execute` and client `.client()` handlers already receive the `inputSchema` parse, so pass those args through.
 
 *Reference implementation (Zod) — use ArkType or Valibot with TanStack adapters when preferred:*
 
@@ -470,12 +472,14 @@ const debouncedSearch = debounce((value: string) => {
 - **Distinct values:** `getDistinctValues` → GET server fn → read-only AI tool so filters match real data.
 - **Dynamic AI navigation:** derive route/help context from `router.flatRoutes` + `validateSearch` introspection where possible.
 - **Prompt chrome and mobile first:** when it is not clear which user experience to implement, ask **Choose a UX** and wait, then load **`promptable-ux`** or **`agentic-ux`**. Do not choose the layout inside this skill. Existing deployments keep their declared `PROMPT_CONCEPT`.
+- **Optional MCP server (opt-in):** Same server tools as `/api/chat` data tools can be served with [`createMCPServer`](https://tanstack.com/ai/latest/docs/mcp/server) (`@tanstack/ai-mcp/server`) — this template: `/api/mcp`. **Not** Core Contract #11. Omit client tools (`navigate`, `invalidateRouter`) and A2UI `show*View` / MCP Apps `ui.resourceUri`. Deployed hosts should send `Authorization`. Ref: `mcpServer.server.ts`, `routes/api/mcp.ts`.
 
 ## Agent Skills, TanStack CLI, and AI
 
 - **Agent Skills (only standard):** this template’s skills are [agentskills.io](https://agentskills.io) folders — `.agents/skills/<name>/SKILL.md`. Edit those files directly. Install into other projects with `npx skills add carlosvin/tanstack-fullstack-ai-template` (all skills) or `--skill <id>`. List: `npx skills add carlosvin/tanstack-fullstack-ai-template --list`. Similar: `gh skill install carlosvin/tanstack-fullstack-ai-template`. Do not maintain a second skill format (canonical YAML, TanStack Intent package skills, or generated copies).
 - **CLI (prefer current docs over memory):** `npx @tanstack/cli --help` → `libraries`, `search-docs "<query>" --library router|start|ai`, `doc <library> <path>`.
-- **AI stack:** `@tanstack/ai`, `@tanstack/ai-react`, `/api/chat` — provider table, SSE wiring, system prompt sections, and chat endpoint anatomy are spelled out in **AGENTS.md §8**.
+- **Versions:** prefer latest `@tanstack/*` (see **Fixed vs swappable stack**); **`reference-tech-stack`** names packages, not stale pins.
+- **AI stack:** `@tanstack/ai`, `@tanstack/ai-react`, optional `@tanstack/ai-mcp` — wiring and MCP in **AGENTS.md §8**.
 
 ## Use the handbook (AGENTS.md)
 

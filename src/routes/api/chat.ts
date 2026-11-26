@@ -1,4 +1,10 @@
-import { chat, convertMessagesToModelMessages, maxIterations, toServerSentEventsResponse } from '@tanstack/ai'
+import {
+	chat,
+	chatParamsFromRequest,
+	convertMessagesToModelMessages,
+	maxIterations,
+	toServerSentEventsResponse,
+} from '@tanstack/ai'
 import { createFileRoute } from '@tanstack/react-router'
 import { getRouterInstance } from '@tanstack/react-start'
 import { getShellSession } from '@/env/webEnv.server'
@@ -245,12 +251,19 @@ export const Route = createFileRoute('/api/chat')({
 					return Response.json({ error: message }, { status: 503 })
 				}
 
-				const body = await request.json()
-				await rememberSeedTasks(body.messages)
+				let params: Awaited<ReturnType<typeof chatParamsFromRequest>>
+				try {
+					params = await chatParamsFromRequest(request)
+				} catch (err) {
+					if (err instanceof Response) return err
+					throw err
+				}
+
+				await rememberSeedTasks(params.messages)
 
 				const { accessTicket } = context
 
-				const browserContextResult = BrowserContextSchema.safeParse(body.browserContext)
+				const browserContextResult = BrowserContextSchema.safeParse(params.forwardedProps.browserContext)
 				const browserContext: BrowserContext | null = browserContextResult.success ? browserContextResult.data : null
 
 				const router = await getRouterInstance()
@@ -283,7 +296,8 @@ export const Route = createFileRoute('/api/chat')({
 
 				const stream = chat({
 					adapter,
-					messages: convertMessagesToModelMessages(body.messages ?? []) as Parameters<typeof chat>[0]['messages'],
+					messages: convertMessagesToModelMessages(params.messages) as Parameters<typeof chat>[0]['messages'],
+					threadId: params.threadId,
 					systemPrompts: [systemPrompt],
 					tools,
 					agentLoopStrategy: maxIterations(10),

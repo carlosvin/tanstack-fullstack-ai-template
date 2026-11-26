@@ -19,7 +19,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.7.0"
+  version: "1.8.0"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -89,7 +89,8 @@ coupling into the architecture skill.
 | Icons | **lucide-react** | One icon library; do not mix Tabler | AGENTS.md §3 |
 | Database | **MongoDB + seed** | `mongodb`; in-memory seed when unset | AGENTS.md §6; `src/services/repository/` |
 | Auth | **JWT header** | `jose` verifies HS256 (`AUTH_JWT_SECRET`) or JWKS (`AUTH_JWKS_URL`); unsigned header tokens only when `AUTH_ALLOW_UNSIGNED_TOKENS=true` and no verifier is set | AGENTS.md §5 |
-| AI adapter | **Gemini → OpenAI/Gateway → Azure** | `@tanstack/ai-gemini` + `@tanstack/ai-openai`; first configured provider wins (`GEMINI_API_KEY`, then `OPENAI_API_KEY` / Netlify AI Gateway, then Azure) | AGENTS.md §8; `src/services/ai/adapter.ts` |
+| AI adapter | **Gemini → OpenAI/Gateway → Azure** | `@tanstack/ai-gemini` + `@tanstack/ai-openai`; first configured provider wins (`GEMINI_API_KEY`, then `OPENAI_API_KEY` / Netlify AI Gateway, then Azure). Keep all `@tanstack/ai*` on the **latest** matching line together. | AGENTS.md §8; `src/services/ai/adapter.ts` |
+| Optional MCP | **`createMCPServer`** | `@tanstack/ai-mcp` — opt-in HTTP MCP for the same server tools (`/api/mcp`); not required by Core Contract #11 | Architecture skill **Special Patterns**; AGENTS.md §8 |
 | Chat markdown | **react-markdown + remark-gfm** | GFM tables/links/code in `ChatDrawer` | AGENTS.md §8 |
 | Logging | **pino** (+ `pino-pretty` in TTY) | Via `createServerLogger` | **`observability-and-env`**; AGENTS.md §9 |
 | Error tracking | **Sentry** | `@sentry/tanstackstart-react`; `SENTRY_DSN` | **`observability-and-env`**; AGENTS.md §9 |
@@ -108,6 +109,7 @@ coupling into the architecture skill.
 2. Do not add a second library for the same concern unless you are intentionally migrating.
 3. Keep interfaces when swapping (repository, `AIAdapterService`, `ObservabilityService`); update this stack map and AGENTS.md; leave the architecture skill vendor-agnostic.
 4. UI and schema *how-to* live in AGENTS.md §3 / the architecture skill — this skill only names packages. Prompt concepts live in **`promptable-ux`**.
+5. **TanStack packages stay current:** before dependency work, check `@tanstack/*` for newer releases and upgrade toward latest when migration cost is acceptable (architecture skill **Fixed vs swappable stack**). Do not treat this map as a pin to old minors.
 
 ## Expressing the UX concepts in this stack
 
