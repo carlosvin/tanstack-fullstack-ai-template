@@ -4,30 +4,32 @@ import '@testing-library/dom'
 
 afterEach(cleanup)
 
-Object.defineProperty(window, 'matchMedia', {
-	writable: true,
-	value: (query: string) => ({
-		matches: false,
-		media: query,
-		onchange: null,
-		addListener: () => {},
-		removeListener: () => {},
-		addEventListener: () => {},
-		removeEventListener: () => {},
-		dispatchEvent: () => false,
-	}),
-})
+if (typeof window !== 'undefined') {
+	Object.defineProperty(window, 'matchMedia', {
+		writable: true,
+		value: (query: string) => ({
+			matches: false,
+			media: query,
+			onchange: null,
+			addListener: () => {},
+			removeListener: () => {},
+			addEventListener: () => {},
+			removeEventListener: () => {},
+			dispatchEvent: () => false,
+		}),
+	})
 
-window.ResizeObserver = class {
-	observe() {}
-	unobserve() {}
-	disconnect() {}
-}
+	window.ResizeObserver = class {
+		observe() {}
+		unobserve() {}
+		disconnect() {}
+	}
 
-window.MutationObserver = class {
-	observe() {}
-	disconnect() {}
-	takeRecords() {
-		return []
+	window.MutationObserver = class {
+		observe() {}
+		disconnect() {}
+		takeRecords() {
+			return []
+		}
 	}
 }

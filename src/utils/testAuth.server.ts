@@ -43,15 +43,15 @@ export interface ResolvedAccessTicket {
 }
 
 /**
- * Resolves the request access ticket from the auth header and optional test-auth cookie.
+ * Resolves the request access ticket from an already-verified header identity and the test-auth cookie.
  * Header identity always wins; otherwise reuse or mint a demo test user.
+ * The header value must already have passed {@link verifyAccessToken}. This function does not decode it.
  */
 export function resolveAccessTicket(
-	authHeader: string | null,
+	headerIdentity: UserIdentity | null,
 	cookieToken: string | null | undefined,
 ): ResolvedAccessTicket {
-	const headerIdentity = extractIdentityFromJwt(authHeader)
-	if (headerIdentity.email) {
+	if (headerIdentity?.email) {
 		return { user: headerIdentity, isTestUser: false }
 	}
 

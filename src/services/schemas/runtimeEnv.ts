@@ -15,6 +15,14 @@ export function envStringToUndefined(val: unknown): unknown {
 	return s === '' ? undefined : s
 }
 
+/** `true` / `1` become true. Everything else, including unset, is false. */
+export function envStringToBoolean(val: unknown): boolean {
+	if (typeof val === 'boolean') return val
+	if (val == null) return false
+	const s = String(val).trim().toLowerCase()
+	return s === 'true' || s === '1'
+}
+
 export type { DeploymentEnv }
 export { DEPLOYMENT_ENV_VALUES, DeploymentEnvSchema }
 

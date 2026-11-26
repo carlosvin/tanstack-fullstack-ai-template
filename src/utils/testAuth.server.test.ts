@@ -13,13 +13,7 @@ describe('createRandomTestIdentity', () => {
 
 describe('resolveAccessTicket', () => {
 	it('uses header identity when present and marks user as not a test user', () => {
-		const token = createUnsignedJwt({
-			email: 'alice@example.com',
-			name: 'Alice',
-			groups: [],
-		})
-
-		const ticket = resolveAccessTicket(`Bearer ${token}`, null)
+		const ticket = resolveAccessTicket({ email: 'alice@example.com', name: 'Alice', groups: [] }, null)
 
 		expect(ticket.user.email).toBe('alice@example.com')
 		expect(ticket.isTestUser).toBe(false)
@@ -76,21 +70,29 @@ describe('resolveAccessTicket', () => {
 	})
 
 	it('prefers header identity over cookie', () => {
-		const headerToken = createUnsignedJwt({
-			email: 'alice@example.com',
-			name: 'Alice',
-			groups: ['admin'],
-		})
 		const cookieToken = createUnsignedJwt({
 			email: 'random9999@example.com',
 			name: 'Test User 9999',
 			groups: [],
 		})
 
-		const ticket = resolveAccessTicket(`Bearer ${headerToken}`, cookieToken)
+		const ticket = resolveAccessTicket({ email: 'alice@example.com', name: 'Alice', groups: ['admin'] }, cookieToken)
 
 		expect(ticket.user.email).toBe('alice@example.com')
 		expect(ticket.user.groups).toEqual(['admin'])
 		expect(ticket.isTestUser).toBe(false)
+	})
+
+	it('ignores an empty header identity and reuses the demo cookie', () => {
+		const cookieToken = createUnsignedJwt({
+			email: 'random1234abcd@example.com',
+			name: 'Test User 1234',
+			groups: [],
+		})
+
+		const ticket = resolveAccessTicket({ email: '', name: '', groups: [] }, cookieToken)
+
+		expect(ticket.user.email).toBe('random1234abcd@example.com')
+		expect(ticket.isTestUser).toBe(true)
 	})
 })

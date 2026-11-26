@@ -66,22 +66,34 @@ A factory function auto-detects which to use based on whether `MONGODB_URI` is s
 
 TanStack Start supports [global middleware](https://tanstack.com/start/latest/docs/framework/react/guide/middleware) — functions that run on every request before any handler executes.
 
-We use this for authentication: the middleware reads the JWT from the configured header, decodes the identity, and when the user is authenticated it loads their profile from the repository. Both are attached to the request context:
+We use this for authentication: the middleware reads the JWT from the configured header, **verifies** it (HS256 secret or JWKS — decoding alone is not authorization), and when the user is authenticated it loads their profile from the repository into an access ticket:
 
 ```typescript
-// src/middleware/auth.ts
-export const authMiddleware = createMiddleware().server(async ({ next, request }) => {
-  const authHeader = request.headers.get(AUTH_HEADER_NAME)
-  const identity = extractIdentityFromJwt(authHeader)
-  const user = identity.email ? identity : ANONYMOUS_USER
+// src/middleware/auth.ts (simplified)
+export const authMiddleware = createMiddleware()
+  .middleware([repositoryMiddleware])
+  .server(async ({ next, request, context }) => {
+    const headerIdentity = await verifyAccessToken(
+      resolveTokenPolicy({ /* AUTH_JWT_SECRET / AUTH_JWKS_URL / … */ }),
+      extractBearerToken(request.headers.get(AUTH_HEADER_NAME)),
+    )
+    // Missing/invalid header → demo cookie identity (or anonymous on public routes)
+    const ticket = resolveAccessTicket(headerIdentity, getCookie(TEST_AUTH_COOKIE_NAME))
+    const profile =
+      ticket.user.email && !ticket.isTestUser
+        ? await context.repository.getUserProfile(ticket.user.email)
+        : null
 
-  let userProfile = null
-  if (user.email) {
-    userProfile = await context.repository.getUserProfile(user.email)
-  }
-
-  return next({ context: { user, userProfile } })
-})
+    return next({
+      context: {
+        accessTicket: buildAccessTicket({
+          user: ticket.user,
+          profile,
+          isTestUser: ticket.isTestUser,
+        }),
+      },
+    })
+  })
 ```
 
 Registered globally in `src/start.ts`:
@@ -92,7 +104,7 @@ export const startInstance = createStart(() => ({
 }))
 ```
 
-Every server function automatically receives `context.user` and `context.userProfile` — no manual header extraction. For mutations, we chain a function-level **requireAuthMiddleware** (`src/middleware/requireAuth.ts`) so only POST server functions require authentication; read-only queries stay unauthenticated. The handler can then assume `context.user` is defined. For other cases, use the composable guards `requireAuth(context)` and `requireGroup(context, group)` from `src/utils/auth.ts`; they throw with 401/403 so your handler code stays minimal.
+Every server function automatically receives `context.accessTicket` — no manual header extraction. For mutations, we chain a function-level **requireAuthMiddleware** (`src/middleware/requireAuth.ts`) so only POST server functions require authentication; read-only queries stay unauthenticated. The handler can then assume `context.accessTicket` is defined. For other cases, use the composable guards on the ticket (and helpers like `requireAuth` / `requireGroup` from `src/utils/auth.ts`); they throw with 401/403 so your handler code stays minimal. See AGENTS.md §5 for `AUTH_JWT_*` and the unsigned-dev escape hatch.
 
 ### Promptable by Design
 

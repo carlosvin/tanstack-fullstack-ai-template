@@ -1,11 +1,11 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './auth'
 
 /**
  * Smoke: User Menu in the header opens Settings (side/prompt-first).
- * Relies on the demo test-auth cookie minted when no JWT is present.
+ * Uses a signed Alice JWT — verified mode (AUTH_JWT_SECRET) has no demo cookie.
  */
 test.describe('User Menu and Settings', () => {
-	test('avatar menu opens Settings page', async ({ page }) => {
+	test('avatar menu opens Settings page', async ({ authedPage: page }) => {
 		await page.goto('/')
 		await expect(page.getByRole('button', { name: 'Open user menu' })).toBeVisible()
 		await page.getByRole('button', { name: 'Open user menu' }).click()

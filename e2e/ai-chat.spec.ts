@@ -11,15 +11,13 @@ function assistantSse(text: string): string {
 		sseEvent({ type: 'TEXT_MESSAGE_CONTENT', messageId: 'a1', delta: text }),
 		sseEvent({ type: 'TEXT_MESSAGE_END', messageId: 'a1' }),
 		sseEvent({ type: 'RUN_FINISHED', runId: 'run-1', finishReason: 'stop' }),
-		'data: [DONE]\n\n',
 	].join('')
 }
 
 function errorSse(message: string): string {
 	return [
 		sseEvent({ type: 'RUN_STARTED', runId: 'run-err' }),
-		sseEvent({ type: 'RUN_ERROR', runId: 'run-err', error: { message, code: 'invalid_api_key' } }),
-		'data: [DONE]\n\n',
+		sseEvent({ type: 'RUN_ERROR', runId: 'run-err', message, code: 'invalid_api_key' }),
 	].join('')
 }
 
