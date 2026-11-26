@@ -57,7 +57,7 @@ describe('AppNavbar', () => {
 		expect(screen.getByRole('link', { name: /tasks/i }).hasAttribute('data-active')).toBe(true)
 	})
 
-	it('shows the display name for test users', () => {
+	it('links the display name to Settings for test users', () => {
 		renderNavbar(
 			<AppNavbar
 				pathname="/"
@@ -71,6 +71,8 @@ describe('AppNavbar', () => {
 			/>,
 		)
 
-		expect(screen.getByText('Test User 1234')).toBeTruthy()
+		const settings = screen.getByRole('link', { name: /test user 1234/i })
+		expect(settings.getAttribute('href')).toBe('/settings')
+		expect(screen.getByText(/demo identity/i)).toBeTruthy()
 	})
 })

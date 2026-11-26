@@ -1,5 +1,5 @@
-import { AppShell, NavLink, ScrollArea, Text, Tooltip } from '@mantine/core'
-import { Code, LayoutDashboard, ListTodo, Sparkles } from 'lucide-react'
+import { AppShell, NavLink, ScrollArea, Text } from '@mantine/core'
+import { Code, LayoutDashboard, ListTodo, Settings, Sparkles } from 'lucide-react'
 import { Link } from '@/components/Link/Link'
 import type { CurrentUser } from '@/services/schemas/schemas'
 import type { AppMeta, PromptConcept } from '@/services/schemas/shellSession'
@@ -14,6 +14,7 @@ interface AppNavbarProps {
 
 export function AppNavbar({ pathname, currentUser, appMeta, promptConcept = 'side', onNavigate }: AppNavbarProps) {
 	const isPromptFirst = promptConcept === 'prompt-first'
+	const displayName = currentUser ? currentUser.profile?.name || currentUser.identity.name : null
 
 	return (
 		<>
@@ -37,23 +38,15 @@ export function AppNavbar({ pathname, currentUser, appMeta, promptConcept = 'sid
 			</AppShell.Section>
 			<AppShell.Section>
 				{currentUser ? (
-					<Tooltip
-						label={`Demo test user (${currentUser.identity.email}). Actions are attributed to this identity. Provide a real JWT in the auth header to use your own account.`}
-						disabled={!currentUser.isTestUser}
-						multiline
-						w={280}
-					>
-						<Text
-							size="sm"
-							c="dimmed"
-							truncate
-							px="sm"
-							py="xs"
-							style={currentUser.isTestUser ? { cursor: 'help' } : undefined}
-						>
-							{currentUser.profile?.name || currentUser.identity.name}
-						</Text>
-					</Tooltip>
+					<NavLink
+						component={Link}
+						to="/settings"
+						label={displayName || 'Settings'}
+						description={currentUser.isTestUser ? 'Demo identity · Settings' : 'Settings'}
+						leftSection={<Settings size={18} />}
+						active={pathname === '/settings'}
+						onClick={onNavigate}
+					/>
 				) : null}
 				<NavLink
 					component="a"
