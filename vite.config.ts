@@ -5,13 +5,13 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact from '@vitejs/plugin-react-swc'
 import { nitro } from 'nitro/vite'
 import { defineConfig } from 'vite'
-import viteTsConfigPaths from 'vite-tsconfig-paths'
 import { configDefaults } from 'vitest/config'
 
 export default defineConfig(({ command }) => ({
 	resolve: {
 		alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
 		dedupe: ['react', 'react-dom'],
+		tsconfigPaths: true,
 	},
 	build: {
 		rollupOptions: {
@@ -30,7 +30,6 @@ export default defineConfig(({ command }) => ({
 	plugins: [
 		devtools(),
 		nitro(),
-		viteTsConfigPaths({ projects: ['./tsconfig.json'] }),
 		tanstackStart({
 			importProtection: {
 				// Unit tests import server-only modules directly in the jsdom

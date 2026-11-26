@@ -13,7 +13,8 @@
 		"declaration": false,
 		"sourceMap": false,
 		"allowImportingTsExtensions": true,
-		"rewriteRelativeImportExtensions": true
+		"rewriteRelativeImportExtensions": true,
+		"types": ["node"]
 	},
 	"include": [
 		"./instrument.env.shared.mts",

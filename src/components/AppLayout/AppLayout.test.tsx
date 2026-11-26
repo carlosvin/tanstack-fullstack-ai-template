@@ -40,10 +40,17 @@ async function renderAppLayout() {
 	return router
 }
 
+/** jsdom 31 hides `hiddenFrom="sm"` at its fixed 1024px viewport, and the accessible name is empty while `display: none`. */
+function getNavToggle() {
+	const burger = document.querySelector('button[aria-label="Toggle navigation"]')
+	if (!(burger instanceof HTMLButtonElement)) throw new Error('Toggle navigation button not found')
+	return burger
+}
+
 describe('AppLayout', () => {
 	it('keeps the mobile nav open through intent preload until the route changes', async () => {
 		const router = await renderAppLayout()
-		const burger = screen.getByRole('button', { name: 'Toggle navigation' })
+		const burger = getNavToggle()
 
 		fireEvent.click(burger)
 		expect(burger.querySelector('[data-opened]')).toBeTruthy()
@@ -68,7 +75,7 @@ describe('AppLayout', () => {
 
 	it('closes the mobile nav when the pathname changes without a nav click', async () => {
 		const router = await renderAppLayout()
-		const burger = screen.getByRole('button', { name: 'Toggle navigation' })
+		const burger = getNavToggle()
 
 		fireEvent.click(burger)
 		expect(burger.querySelector('[data-opened]')).toBeTruthy()

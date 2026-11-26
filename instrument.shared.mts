@@ -29,7 +29,8 @@ export function initSentry({ serverName, dsn, environment, release }: InitSentry
 		environment,
 		serverName,
 		...(release ? { release } : {}),
-		sendDefaultPii: true,
+		// v11 collects the same categories `sendDefaultPii: true` did. Leave
+		// `dataCollection` unset so that default stays in effect.
 		tracesSampleRate: environment === 'production' ? 0.1 : 1.0,
 	})
 }
