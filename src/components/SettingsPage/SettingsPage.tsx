@@ -15,13 +15,15 @@ export interface SettingsPageProps {
 	currentUser: CurrentUser
 	/** After a successful save (route: invalidate; modal: optional close). */
 	onSaved?: () => void | Promise<void>
+	/** When true (agentic Modal), omit the page Title — the Modal already titles the surface. */
+	embedded?: boolean
 }
 
 /**
  * Minimal account Settings surface: identity readout + theme preference.
  * Shared by `/settings` (side / prompt-first) and the agentic Settings modal.
  */
-export function SettingsPage({ currentUser, onSaved }: SettingsPageProps) {
+export function SettingsPage({ currentUser, onSaved, embedded = false }: SettingsPageProps) {
 	const displayName = currentUser.profile?.name || currentUser.identity.name
 	const email = currentUser.identity.email
 	const role = currentUser.profile?.role
@@ -52,12 +54,18 @@ export function SettingsPage({ currentUser, onSaved }: SettingsPageProps) {
 
 	return (
 		<Stack gap="lg" maw={480}>
-			<Stack gap={4}>
-				<Title order={2}>Settings</Title>
+			{embedded ? (
 				<Text size="sm" c="dimmed">
 					Account identity and preferences for this app.
 				</Text>
-			</Stack>
+			) : (
+				<Stack gap={4}>
+					<Title order={2}>Settings</Title>
+					<Text size="sm" c="dimmed">
+						Account identity and preferences for this app.
+					</Text>
+				</Stack>
+			)}
 
 			<Stack gap="xs">
 				<Text size="sm" fw={600}>

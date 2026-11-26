@@ -112,7 +112,7 @@ export function AgenticShell({ appMeta, aiAvailable, currentUser }: AgenticShell
 			</AppShell>
 			{currentUser ? (
 				<Modal opened={settingsOpened} onClose={closeSettings} title="Settings" size="md">
-					<SettingsPage currentUser={currentUser} onSaved={closeSettings} />
+					<SettingsPage currentUser={currentUser} onSaved={closeSettings} embedded />
 				</Modal>
 			) : null}
 		</>
