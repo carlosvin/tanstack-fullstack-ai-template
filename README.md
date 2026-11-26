@@ -1,6 +1,6 @@
 # TanStack AI-Promptable Full-Stack Template
 
-Opinionated [TanStack Start](https://tanstack.com/start) starter for **AI-promptable** apps: one schema → repository → server-function path powers both the UI and the AI tools. External services sit behind interfaces (DB, AI, observability). Seed data means `pnpm dev` works with zero config.
+Opinionated [TanStack Start](https://tanstack.com/start) starter for **AI-promptable** apps: one tools→repository schema pipeline and server-function path powers both the UI and the AI tools. External services sit behind interfaces (DB, AI, observability). Seed data means `pnpm dev` works with zero config.
 
 **[Live Demo — side](https://fullstack-promptable-app-example.netlify.app)** · **[Live Demo — prompt-first](https://fullstack-promptable-prompt-first.netlify.app)** · **[Live Demo — agentic](https://fullstack-promptable-agentic.netlify.app)** · **[Blog](building-ai-promptable-fullstack-apps.md)**
 
@@ -10,14 +10,14 @@ Most full-stack apps rebuild the same foundation every time — auth, data acces
 
 ## What you get
 
-- **Prototype → MVP without rewrites** — start on the in-memory seed repository; flip to MongoDB (or another `Repository`) via env. Same interfaces, routes, and AI tools.
+- **Prototype → MVP without rewrites** — start on the in-memory seed repository; flip seed ↔ Mongo via env (`REPOSITORY_TYPE` / `MONGODB_URI`). Other stores implement `Repository`. Same interfaces, routes, and AI tools.
 - **One code path for UI + AI** — tools call the same server functions as loaders and forms, so auth, validation, and errors stay consistent.
 - **Solid boundaries** — schemas as source of truth; repository / AI / observability interfaces; URL-as-state and loaders-first for scalable, bookmarkable UI.
 - **Agent-ready** — published [Agent Skills](https://agentskills.io) encode the architecture contract so scaffolding and refactors stay aligned.
 
 ## Three UX modes, one codebase
 
-Pick one experience per deployment (`PROMPT_CONCEPT`). Same schemas, repositories, and tools underneath.
+Pick one experience per deployment (`PROMPT_CONCEPT`). Same schemas, repositories, and tools underneath. Chat chrome mounts only when an AI provider is configured.
 
 | Mode | Best for | What the user sees | Demo |
 |------|----------|--------------------|------|
@@ -47,7 +47,7 @@ Defaults for the reference app — swappable at the [interface boundary](#swappa
 1. `pnpm install && pnpm dev` — seed data, no DB or API keys required.
 2. Define domain schemas and the entity end-to-end (repository → server functions → routes).
 3. Expose the same server functions as AI tools.
-4. For a durable deploy: set `MONGODB_URI` and leave `REPOSITORY_TYPE` unset (or `mongo` — an explicit `seed` overrides the URI); set `AUTH_JWT_SECRET` or `AUTH_JWKS_URL` (+ `AUTH_JWT_ISSUER`) so signed `Authorization` headers are trusted; add an AI provider key; optionally `SENTRY_DSN`. Without a JWT verifier, header identity is ignored and the demo cookie remains.
+4. For a durable deploy: set `MONGODB_URI` and leave `REPOSITORY_TYPE` unset (or `mongo` — an explicit `seed` overrides the URI); set `AUTH_JWT_SECRET` (HS256, min 32 chars; wins if both are set) or `AUTH_JWKS_URL` (+ `AUTH_JWT_ISSUER`) so signed `Authorization` headers are trusted; optionally an AI provider key and `SENTRY_DSN`. Without a JWT verifier, the demo `test-auth` cookie is a write-capable identity — set a verifier before any shared or Mongo-backed deploy (unauthenticated requests then become anonymous and mutations return 401).
 
 Details: [Extending the Template](#extending-the-template) · [Using This Template](#using-this-template).
 
@@ -140,11 +140,11 @@ Zod is the default for ecosystem reach; any Standard Schema library works at the
 
 ### Key Design Decisions
 
-- **Repository pattern** — all data access through an interface; seed for local, Mongo (or other) via env.
+- **Repository pattern** — all data access through an interface; seed ↔ Mongo via env; other stores implement `Repository`.
 - **Auth + invalidation middleware** — JWT → typed access ticket; POST mutations chain `requireAuthMiddleware` and `invalidateMiddleware` so the client refreshes without manual `router.invalidate()`.
 - **Promptable by default** — AI tools wrap the same server functions via `createSafeServerTool()`; client tools (`navigate`, `invalidateRouter`) run in the browser; optional MCP at `/api/mcp`.
 - **URL-aware AI** — chat sends browser location so “this task” resolves to the page in view.
-- **Schemas = source of truth** — `.describe()` metadata; types inferred; JSON Schema flows to tools.
+- **Schemas = source of truth** — tools-layer and repository-layer schemas with `.describe()`; types inferred; JSON Schema flows to tools.
 - **URL-as-state + loaders-first** — filters/selections in search params; data in route loaders (caching, SSR, no `useEffect` fetch).
 - **Observability as a plugin** — no DSN → no-op; swap the `ObservabilityService` implementation when needed.
 
@@ -161,7 +161,8 @@ src/
 ├── routes/                     # File-based routes (pages)
 ├── components/                 # React components
 ├── services/
-│   ├── schemas/schemas.ts      # Zod schemas (single source of truth)
+│   ├── schemas/schemas.ts      # Tools-layer Zod schemas
+│   ├── schemas/repository.ts   # Repository-layer Zod schemas
 │   ├── repository/             # Interface + Seed + Mongo implementations
 │   ├── api/serverFns.ts        # Server functions (TanStack Start)
 │   ├── ai/
@@ -177,7 +178,7 @@ src/
 ├── utils/
 │   ├── auth.ts                 # requireAuth(), requireGroup()
 │   ├── httpError.ts            # HttpError class
-│   └── jwt.ts                  # JWT decode
+│   └── jwt.server.ts           # JWT verify / decode (server-only)
 ├── constants/                  # Shared enums
 └── test-utils/                 # Vitest helpers
 
@@ -194,12 +195,13 @@ See [`.env.example`](.env.example) for the full list.
 | `MONGODB_DB_NAME` | No | `app-db` | Database name. |
 | `REPOSITORY_TYPE` | No | auto | `seed` or `mongo`. Auto-detected from `MONGODB_URI`. |
 | `PROMPT_CONCEPT` | No | `side` | UX shell: `side`, `prompt-first`, or `agentic`. |
-| `GEMINI_API_KEY` / `OPENAI_API_KEY` / `AZURE_OPENAI_*` | No | — | First configured provider wins (Gemini → OpenAI/Gateway → Azure). Chat disabled without one. |
+| `GEMINI_API_KEY` / `OPENAI_API_KEY` / `AZURE_OPENAI_*` | No | — | First configured provider wins (Gemini → OpenAI/Gateway → Azure). Chat chrome optional until one is set (see `.env.example` for gateway vars). |
 | `SENTRY_DSN` | No | — | Observability disabled without it. |
-| `AUTH_JWT_SECRET` / `AUTH_JWKS_URL` | No* | — | Verifier for signed bearer JWTs (`exp` required; JWKS needs `AUTH_JWT_ISSUER`). Without one, header identity is ignored. |
+| `AUTH_JWT_SECRET` / `AUTH_JWKS_URL` | No* | — | Verifier for signed bearer JWTs (`exp` required). Secret: HS256, min 32 chars, wins over JWKS. JWKS needs `AUTH_JWT_ISSUER`. |
 | `AUTH_HEADER_NAME` | No | `Authorization` | HTTP header containing the JWT. |
+| `AUTH_ALLOW_UNSIGNED_TOKENS` | No | `false` | Dev-only `alg:none` when no verifier is set. Never enable on a shared deploy; rejected in production. |
 
-* Required for production identity — set a verifier before trusting caller headers. Demo Netlify sites may keep `REPOSITORY_TYPE=seed`; real apps should use Mongo as above.
+* Required for production identity — without a verifier the demo cookie can mutate data. Demo Netlify sites may keep `REPOSITORY_TYPE=seed`; real apps should use Mongo as above.
 
 ## Extending the Template
 
@@ -207,7 +209,7 @@ See [`.env.example`](.env.example) for the full list.
 
 1. **Schema**: Add Zod schemas in `src/services/schemas/schemas.ts` with `.describe()` on every field.
 2. **Repository**: Add methods to the `Repository` interface in `types.ts`. Implement them in `seedRepository.ts` and in the owning Mongo collection repository. Delegate from `mongoRepository.server.ts`. Declare indexes in that collection owner’s `createIndexes()`.
-3. **Server Functions**: Add `createServerFn` wrappers in `src/services/api/serverFns.ts`. Chain `.middleware([invalidateMiddleware])` on mutations.
+3. **Server Functions**: Add `createServerFn` wrappers in `src/services/api/serverFns.ts`. Chain `.middleware([requireAuthMiddleware, invalidateMiddleware])` on mutations.
 4. **AI Tools**: Expose methods as tools in `src/services/ai/tools.ts` via `createSafeServerTool()`. Keep `navigationManifest.ts` aligned with routes; send `browserContext` from the chat client.
 5. **Routes**: Create route files under `src/routes/`. Use loaders to fetch data.
 6. **Tests**: Unit-test the seed repository; add E2E coverage in `e2e/` for new routes.
@@ -227,7 +229,7 @@ pnpm build         # Production build
 pnpm start         # Run production server
 pnpm test          # Unit tests (Vitest)
 pnpm test:e2e      # E2E tests (Playwright, seed data)
-pnpm lint          # Lint + typecheck (Biome)
+pnpm lint          # Biome + typecheck + skill checks
 pnpm format        # Auto-format (Biome)
 pnpm skills:check  # Companion reciprocity + install commands
 pnpm skills:waza   # Waza skill readiness + mock evals
