@@ -221,6 +221,8 @@ Routes live in `src/routes/`; tree is auto-generated in `routeTree.gen.ts`. Rout
 
 **Promptable gating (skill #12):** root loader calls `getAIAvailability()`; `AppLayout` / `Header` mount chat UI only when configured (no disabled placeholder).
 
+**User Menu (promptable-ux / agentic-ux):** `Header` and `AgenticShell` host a far-right `UserMenu` from root-loader `currentUser` (avatar / initials → account dropdown → Settings). Side / prompt-first use `/settings`; agentic opens the same `SettingsPage` in a modal. Prefer Mantine `Avatar` + `Menu`. Do not use the menu for primary app navigation.
+
 ### AI Adapter Interface
 
 The AI provider is behind the `AIAdapterService` interface defined in `src/services/ai/types.ts`:

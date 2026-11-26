@@ -18,7 +18,7 @@ description: >-
 license: MIT
 metadata:
   author: Carlos Martin-Sanchez
-  version: "1.3.2"
+  version: "1.4.0"
   repository: https://github.com/carlosvin/tanstack-fullstack-ai-template
 ---
 
@@ -106,6 +106,7 @@ These rules apply to both concepts. The prompt stack does not change between the
 10. **Prompt behavior.** Show tool activity as short status labels, a thinking state while the model runs, and errors in an alert. Enter sends; Shift+Enter inserts a newline. Offer stop while generating, and clear once messages exist. Suggested prompts may come from the single help document (`docs/help.md`), which can also back the help route and a help tool. Filter choices and the prompt offer distinct values from the data, not a hardcoded list.
 11. **Both color schemes.** Every prompt surface and domain view works in light and dark, using theme tokens. Keep one icon library.
 12. **Auth stays on the server.** Hiding a button is not a guard. Mutations stay behind the auth ticket. Chat affordances follow `aiAvailable`.
+13. **User Menu (account menu) in the app bar.** Connect the signed-in identity from the root loader (`CurrentUser` / auth ticket) to a far-right utility control in the top bar. The industry pattern is a **User Menu** (also Account Menu / Global Profile): an **avatar** (photo from `profile.avatarUrl`, else initials from name or email) opens a dropdown that is **account-only** — not primary app navigation. Menu order: identity header (display name + email) → **Settings** (and Profile when the app has one) → divider → **Sign out** last when the app can clear a session. Omit Sign out when auth is header-only and no clearable session exists (this template). Place the control after theme / notifications / open-chat utilities. Do not leave identity as a non-interactive name in the navbar footer alone. Kit widgets for *this* template: **`reference-tech-stack`** (Mantine `Avatar` + `Menu`). Settings destination: **`/settings`** route for side and prompt-first; see **`agentic-ux`** for the in-shell modal in agentic mode.
 
 ### Common failure modes
 
@@ -128,7 +129,7 @@ The domain UI is the product. The prompt is always reachable and hidden until th
 - Opening the prompt must not navigate away or drop URL search state.
 - An internal link in an assistant message navigates without closing the panel or clearing the thread.
 
-**Reference app (this template):** `AppLayout` mounts `ChatDrawer` closed. `Header` opens it (`aria-label="Open AI chat"`). The panel is a right-side drawer and becomes full viewport below the `sm` breakpoint. It is not an `AppShell.Aside`. Match that recipe when extending this repo. File paths and markdown CSS: AGENTS.md §3 and §8.
+**Reference app (this template):** `AppLayout` mounts `ChatDrawer` closed. `Header` opens it (`aria-label="Open AI chat"`) and hosts the **User Menu** from `currentUser` (far right, after theme / chat). The panel is a right-side drawer and becomes full viewport below the `sm` breakpoint. It is not an `AppShell.Aside`. Match that recipe when extending this repo. File paths and markdown CSS: AGENTS.md §3 and §8.
 
 ## Prompt-first
 
@@ -136,7 +137,7 @@ The prompt is the primary agentic entry point. In modern agentic UX, the convers
 
 Layout and hierarchy:
 
-1. **App bar** — identity, current location, and navigation. Keep it clean and minimal.
+1. **App bar** — product identity (name / version tooltip), current location / nav overflow, and the signed-in **User Menu** (avatar → Settings). Keep it clean and minimal.
 2. **Conversation stage (main)** — the agentic interaction surface. When empty, renders a clean hero state with welcome text and suggested starter prompt chips. As conversation progresses, it displays a scrollable message thread with rich Markdown, tables, and internal route links.
 3. **Bottom-pinned composer (footer)** — the prompt input is pinned at the bottom of the viewport (e.g. `AppShell.Footer`), always accessible regardless of scroll position or thread length. Includes autosizing text input, send/stop button, and quick-action chips.
 4. **Dedicated drill-down surfaces** — task lists, detail views, and forms live on their dedicated routes (`/tasks`, `/tasks/$taskId`). When navigated, the user inspects or manipulates focused domain data with the prompt composer remaining pinned at the bottom (or accessible) for context-aware commands.
@@ -183,6 +184,7 @@ The two route-based concepts (`prompt-first` and `side`) are extensions of the *
 - Overview and drill-down read the same loaders. No second fetch path.
 - Narrow layout and both color schemes checked.
 - Mutations stay server-guarded. `invalidateRouter` runs after writes.
+- App bar hosts a User Menu from `CurrentUser` (avatar / initials → Settings). Account menu is not used for primary nav.
 
 ## What stays on other skills
 
@@ -190,8 +192,10 @@ The two route-based concepts (`prompt-first` and `side`) are extensions of the *
 |---------|----------------|
 | `getAIAvailability()` gate, tool coverage, agent loop | Architecture Core Contract #11–#13 |
 | Routes, loaders, URL search, debounced search | Architecture Core Contract #7–#8 and Special Patterns |
+| Auth ticket / `getCurrentUser` / profile writes | Architecture Core Contract #10 |
 | Markdown package and CSS for this repo | AGENTS.md §8; **`reference-tech-stack`** |
-| Breakpoint props for this repo | AGENTS.md §3; **`reference-tech-stack`** |
+| Breakpoint props / Avatar + Menu kit | AGENTS.md §3; **`reference-tech-stack`** |
+| Agentic in-shell Settings modal | **`agentic-ux`** |
 
 ## Verification
 
