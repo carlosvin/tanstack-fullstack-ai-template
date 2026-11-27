@@ -32,8 +32,12 @@ const ARCHITECTURE_VENDOR_FORBIDDEN = [
 	/\bBiome\b/,
 ]
 
-/** LLM vendor pins — architecture skill must stay at the TanStack AI adapter boundary. */
-const ARCHITECTURE_LLM_VENDOR_FORBIDDEN = [
+/**
+ * Concrete LLM provider names, env keys, and `@tanstack/ai-<provider>` packages.
+ * These providers are *allowed* in the app (`reference-tech-stack` / AGENTS.md §8 / `adapter.ts`);
+ * they must not be *pinned* in architecture-skill prose (use `AIAdapterService` + `@tanstack/ai-*` instead).
+ */
+const ARCHITECTURE_SKILL_LLM_PROVIDER_PINS = [
 	/\bGemini\b/,
 	/\bOpenAI\b/,
 	/\bAnthropic\b/,
@@ -970,14 +974,14 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 			id: 'template-skill-vendor-agnostic',
 			skill: 'tanstack-promptable-fullstack-app-template',
 			description:
-				'Architecture skill stays vendor-agnostic (incl. LLM vendors) and documents Fixed vs swappable stack at the TanStack AI adapter boundary',
+				'Architecture skill stays vendor-agnostic (no concrete LLM provider pins) and documents Fixed vs swappable stack at the TanStack AI adapter boundary',
 			async run() {
 				const { agentSkillsDir } = getSkillPaths(rootDir)
 				const templateSkill = await readText(
 					path.join(agentSkillsDir, 'tanstack-promptable-fullstack-app-template', 'SKILL.md'),
 				)
 				const violations = []
-				for (const pattern of [...ARCHITECTURE_VENDOR_FORBIDDEN, ...ARCHITECTURE_LLM_VENDOR_FORBIDDEN]) {
+				for (const pattern of [...ARCHITECTURE_VENDOR_FORBIDDEN, ...ARCHITECTURE_SKILL_LLM_PROVIDER_PINS]) {
 					if (pattern.test(templateSkill)) {
 						violations.push(`SKILL.md matches ${pattern}`)
 					}
