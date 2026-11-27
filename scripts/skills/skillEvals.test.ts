@@ -377,4 +377,74 @@ Do not pick one.
 			expect(result.files).toContain('src/components/PromptChat/PromptChatContext.tsx')
 		}
 	})
+
+	const architectureFixture = FIXTURE_SKILLS.find((s) => s.id === 'tanstack-promptable-fullstack-app-template')
+	const referenceFixture = FIXTURE_SKILLS.find((s) => s.id === 'reference-tech-stack')
+	if (!architectureFixture || !referenceFixture) {
+		throw new Error('Missing FIXTURE_SKILLS entries for architecture / reference-tech-stack')
+	}
+
+	it('fails architecture vendor-agnostic when Fixed vs swappable omits AIAdapterService / @tanstack/ai-*', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md': fixtureSkillMd(
+				architectureFixture,
+				'## Fixed vs swappable stack\nSwappable AI provider — no adapter contract named here.\n',
+			),
+		})
+		const result = await runEval(rootDir, 'template-skill-vendor-agnostic')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(formatEvalFailure(result)).toMatch(/AIAdapterService|@tanstack\/ai-\*/)
+		}
+	})
+
+	it.each([
+		['OpenAI', 'Prefer OpenAI for this app.', /OpenAI/],
+		['GOOGLE_API_KEY', 'Set GOOGLE_API_KEY.', /GOOGLE_API_KEY/],
+	] as const)('fails architecture vendor-agnostic when the skill pins %s', async (_label, pinLine, expected) => {
+		const rootDir = await createMinimalWorkspace({
+			'.agents/skills/tanstack-promptable-fullstack-app-template/SKILL.md': fixtureSkillMd(
+				architectureFixture,
+				`## Fixed vs swappable stack\n\n**AI provider (adapter boundary):** any \`@tanstack/ai-*\` behind \`AIAdapterService\`. ${pinLine}\n`,
+			),
+		})
+		const result = await runEval(rootDir, 'template-skill-vendor-agnostic')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(formatEvalFailure(result)).toMatch(expected)
+		}
+	})
+
+	function referenceStackMd(aiRow: string) {
+		return fixtureSkillMd(
+			referenceFixture,
+			`## Stack map\n\n| Concern | Choice | Primary packages / notes | Handbook |\n|---------|--------|--------------------------|----------|\n${aiRow}\n| Optional MCP | createMCPServer | @tanstack/ai-mcp | AGENTS.md §8 |\n\n## How to use these defaults\n\n5. **TanStack packages stay current:** prefer latest.\n`,
+		)
+	}
+
+	it('fails reference-tech-stack-map when the AI row omits AIAdapterService', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'.agents/skills/reference-tech-stack/SKILL.md': referenceStackMd(
+				'| AI adapter | **This repository’s default:** Gemini → OpenAI | clones may pick any `@tanstack/ai-*` | AGENTS.md §8 |',
+			),
+		})
+		const result = await runEval(rootDir, 'reference-tech-stack-map')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(formatEvalFailure(result)).toMatch(/AIAdapterService/)
+		}
+	})
+
+	it('fails reference-tech-stack-map when the AI row omits this-repository labeling', async () => {
+		const rootDir = await createMinimalWorkspace({
+			'.agents/skills/reference-tech-stack/SKILL.md': referenceStackMd(
+				'| AI adapter | **Gemini → OpenAI** | any `@tanstack/ai-*`; `AIAdapterService` | AGENTS.md §8 |',
+			),
+		})
+		const result = await runEval(rootDir, 'reference-tech-stack-map')
+		expect(result.pass).toBe(false)
+		if (!result.pass) {
+			expect(formatEvalFailure(result)).toMatch(/this repository|repo|template/i)
+		}
+	})
 })

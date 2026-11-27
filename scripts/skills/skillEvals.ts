@@ -32,6 +32,38 @@ const ARCHITECTURE_VENDOR_FORBIDDEN = [
 	/\bBiome\b/,
 ]
 
+/**
+ * Concrete LLM provider names, env keys, and `@tanstack/ai-<provider>` packages.
+ * These providers are *allowed* in the app (`reference-tech-stack` / AGENTS.md §8 / `adapter.ts`);
+ * they must not be *pinned* in architecture-skill prose (use `AIAdapterService` + `@tanstack/ai-*` instead).
+ */
+const ARCHITECTURE_SKILL_LLM_PROVIDER_PINS = [
+	/\bGemini\b/,
+	/\bOpenAI\b/,
+	/\bAnthropic\b/,
+	/\bOpenRouter\b/,
+	/\bOllama\b/,
+	/\bGroq\b/,
+	/\bGrok\b/,
+	/\bAzure OpenAI\b/,
+	/GEMINI_/,
+	/GOOGLE_API_KEY/,
+	/OPENAI_API_KEY/,
+	/OPENAI_BASE_URL/,
+	/OPENAI_MODEL/,
+	/ANTHROPIC_/,
+	/AZURE_OPENAI_/,
+	/OPENROUTER_/,
+	/NETLIFY_AI_GATEWAY_/,
+	/@tanstack\/ai-gemini/,
+	/@tanstack\/ai-openai/,
+	/@tanstack\/ai-anthropic/,
+	/@tanstack\/ai-openrouter/,
+	/@tanstack\/ai-ollama/,
+	/@tanstack\/ai-groq/,
+	/@tanstack\/ai-grok/,
+]
+
 async function walkFiles(
 	dir: string,
 	options: { extensions?: string[] | null; ignoreDirs?: Set<string> } = {},
@@ -941,20 +973,28 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 		{
 			id: 'template-skill-vendor-agnostic',
 			skill: 'tanstack-promptable-fullstack-app-template',
-			description: 'Architecture skill stays vendor-agnostic and documents Fixed vs swappable stack',
+			description:
+				'Architecture skill stays vendor-agnostic (no concrete LLM provider pins) and documents Fixed vs swappable stack at the TanStack AI adapter boundary',
 			async run() {
 				const { agentSkillsDir } = getSkillPaths(rootDir)
 				const templateSkill = await readText(
 					path.join(agentSkillsDir, 'tanstack-promptable-fullstack-app-template', 'SKILL.md'),
 				)
 				const violations = []
-				for (const pattern of ARCHITECTURE_VENDOR_FORBIDDEN) {
+				for (const pattern of [...ARCHITECTURE_VENDOR_FORBIDDEN, ...ARCHITECTURE_SKILL_LLM_PROVIDER_PINS]) {
 					if (pattern.test(templateSkill)) {
 						violations.push(`SKILL.md matches ${pattern}`)
 					}
 				}
 				if (!/## Fixed vs swappable stack/.test(templateSkill)) {
 					violations.push('SKILL.md missing "Fixed vs swappable stack" section')
+				}
+				const fixed = templateSkill.split('## Fixed vs swappable stack')[1]?.split('## ')[0] ?? ''
+				if (!/AIAdapterService/.test(fixed)) {
+					violations.push('Fixed vs swappable stack must mention AIAdapterService')
+				}
+				if (!/@tanstack\/ai-\*/.test(fixed)) {
+					violations.push('Fixed vs swappable stack must mention @tanstack/ai-* adapter packages')
 				}
 				return violations.length === 0
 					? pass()
@@ -1042,6 +1082,26 @@ export function createSkillEvals(rootDir = defaultRootDir): SkillEval[] {
 				}
 				if (!/TanStack packages stay current|latest/.test(skillMd)) {
 					return fail('reference-tech-stack must tell agents to keep @tanstack/* current')
+				}
+				const stackMap = skillMd.split('## Stack map')[1]?.split('## ')[0] ?? ''
+				const aiAdapterRow =
+					stackMap
+						.split('\n')
+						.find((line) => /^\|\s*AI adapter\s*\|/i.test(line))
+						?.trim() ?? ''
+				if (!aiAdapterRow) {
+					return fail('reference-tech-stack Stack map must include an AI adapter row')
+				}
+				if (!/AIAdapterService/.test(aiAdapterRow)) {
+					return fail('reference-tech-stack AI adapter row must mention AIAdapterService')
+				}
+				if (!/@tanstack\/ai-\*/.test(aiAdapterRow)) {
+					return fail('reference-tech-stack AI adapter row must mention @tanstack/ai-* adapters')
+				}
+				if (!/this (repository|repo|template)/i.test(aiAdapterRow)) {
+					return fail(
+						'reference-tech-stack AI adapter row must label the listed order as this repository/repo/template default',
+					)
 				}
 				return pass()
 			},

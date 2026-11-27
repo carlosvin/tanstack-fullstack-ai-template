@@ -46,12 +46,13 @@ CI runs this in `.github/workflows/skills.yml` with a pinned `waza` binary. Conf
 - Bounded agent loop in `chat.ts`
 - `importProtection` in `vite.config.ts`
 - Agent Skills companion reciprocity and `npx skills` install commands (`pnpm skills:check`)
-- Architecture skill documents **Fixed vs swappable stack** and stays vendor-agnostic in prose
+- Architecture skill documents **Fixed vs swappable stack** and stays vendor-agnostic in prose (TanStack AI adapter boundary only — no concrete LLM provider pins like Gemini/OpenAI; those belong in `reference-tech-stack`)
 - `choose-ux-asks-when-unclear` requires **Choose a UX** to name side, prompt-first, and agentic, and requires the architecture skill plus both UX companions to ask which of the three and wait when it is not clear
 
 ### `reference-tech-stack`
 
 - `SKILL.md` includes a **Stack map** section
+- AI adapter row labels **this repository/repo/template** default and mentions `AIAdapterService` and `@tanstack/ai-*`
 
 ### `repository-architecture`
 
